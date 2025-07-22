@@ -9,8 +9,16 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  cursor: pointer;
+  cursor: default;
   outline: none;
+  /* 禁用移动端触摸高亮 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .clockPage:focus {
@@ -52,13 +60,7 @@
   min-width: 100vw;
 }
 
-/* Prevent text selection on the entire page */
-.clockPage {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
+/* Text selection prevention is now handled in the main .clockPage rule above */
 
 /* Smooth transitions for mode changes */
 .timeDisplay {
