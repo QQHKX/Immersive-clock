@@ -251,7 +251,7 @@ yarn preview
 
 ## 作者
 
-**QQHKX** - [网站](https://qqhkx.com) | [邮箱](mailto:contact@qqhkx.com)
+**QQHKX** - [网站](https://qqhkx.com)
 
 ## 更新日志
 
