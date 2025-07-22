@@ -21,9 +21,15 @@
   letter-spacing: 0.5px;
 }
 
-.author {
-  font-weight: 300;
-  font-style: italic;
+.link {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
 }
 
 /* Hover effect for the entire info block */
