@@ -25,6 +25,13 @@
   cursor: pointer;
   opacity: 0.7;
   transition: all var(--transition-fast);
+  /* 防止触摸时的选择高亮 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .time.clickable:hover {
@@ -36,6 +43,25 @@
 .time.clickable:focus {
   outline: none;
   opacity: 1;
+}
+
+/* 触摸设备的激活状态 */
+.time.clickable:active {
+  opacity: 1;
+  transform: scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* 为触摸设备优化的样式 */
+@media (hover: none) and (pointer: coarse) {
+  .time.clickable {
+    opacity: 0.8;
+  }
+  
+  .time.clickable:active {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 .placeholder {
