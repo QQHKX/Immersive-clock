@@ -154,11 +154,7 @@ export function ControlBar() {
       <div className={styles.modeControls}>
         {mode === 'countdown' && renderCountdownControls()}
         {mode === 'stopwatch' && renderStopwatchControls()}
-        {mode === 'clock' && (
-          <div className={styles.placeholder}>
-            时钟模式无需控制
-          </div>
-        )}
+        {mode === 'clock' && null}
       </div>
       
       <div className={styles.globalControls}>
