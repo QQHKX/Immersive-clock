@@ -1,4 +1,11 @@
-# Logs
+# 依赖目录
+node_modules
+
+# 构建输出
+dist
+dist-ssr
+
+# 日志文件
 logs
 *.log
 npm-debug.log*
@@ -7,14 +14,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# 本地环境文件
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
 
-# Editor directories and files
+# 编辑器目录和文件
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -22,3 +32,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 测试覆盖率报告
+coverage
+
+# 缓存目录
+.cache
+.temp
+.vercel
+
+# 其他
+.env
+.env.production
+.env.development
+.env.test
+.eslintcache
+.stylelintcache

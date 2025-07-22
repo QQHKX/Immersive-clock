@@ -1,7 +1,10 @@
 {
-  "name": "immersive-clock-react",
+  "name": "immersive-clock",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
+  "author": "QQHKX <contact@qqhkx.com>",
+  "homepage": "https://qqhkx.com",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
