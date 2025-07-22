@@ -8,19 +8,21 @@
   bottom: 0;
   pointer-events: none;
   z-index: var(--z-hud);
-  transition: opacity 0.2s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hud.visible {
   opacity: 1;
   visibility: visible;
   pointer-events: none;
+  animation: hud-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .hud.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  animation: hud-fade-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .hudContent {
@@ -45,6 +47,7 @@
   top: 25%;
   left: 0;
   right: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bottomSection {
@@ -52,6 +55,88 @@
   justify-content: center;
   align-items: flex-end;
   pointer-events: auto;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* HUD动画效果 */
+@keyframes hud-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes hud-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 顶部区域动画 */
+.hud.visible .topSection {
+  animation: slide-down-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+}
+
+.hud.hidden .topSection {
+  animation: slide-up-fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 底部区域动画 */
+.hud.visible .bottomSection {
+  animation: slide-up-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+.hud.hidden .bottomSection {
+  animation: slide-down-fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slide-down-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-up-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-up-fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.98);
+  }
+}
+
+@keyframes slide-down-fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
 }
 
 /* Responsive adjustments */
@@ -64,5 +149,29 @@
 @media (max-width: 480px) {
   .hudContent {
     padding: 1rem;
+  }
+}
+
+/* 减少动画效果（无障碍支持） */
+@media (prefers-reduced-motion: reduce) {
+  .hud,
+  .topSection,
+  .bottomSection {
+    transition: opacity 0.2s ease;
+  }
+  
+  .hud.visible .topSection,
+  .hud.visible .bottomSection,
+  .hud.hidden .topSection,
+  .hud.hidden .bottomSection {
+    animation: none;
+  }
+  
+  .hud.visible {
+    animation: none;
+  }
+  
+  .hud.hidden {
+    animation: none;
   }
 }
