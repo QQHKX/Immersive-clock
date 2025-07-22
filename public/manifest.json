@@ -1,0 +1,23 @@
+{
+  "name": "沉浸式时钟",
+  "short_name": "时钟",
+  "description": "沉浸式时钟是一款简洁美观的全屏数字时钟、倒计时和秒表工具",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["utilities", "productivity", "tools"],
+  "lang": "zh-CN"
+}

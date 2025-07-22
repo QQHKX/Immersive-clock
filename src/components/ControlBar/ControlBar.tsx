@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Play, Pause, RotateCcw, Maximize, Minimize } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useFullscreen } from '../../hooks/useFullscreen';
+import { trackEvent } from '../../utils/clarity';
 import styles from './ControlBar.module.css';
 
 /**
@@ -11,7 +12,15 @@ import styles from './ControlBar.module.css';
 export function ControlBar() {
   const { mode, countdown, stopwatch } = useAppState();
   const dispatch = useAppDispatch();
-  const [isFullscreen, toggleFullscreen] = useFullscreen();
+  const [isFullscreen, toggleFullscreenOriginal] = useFullscreen();
+  
+  /**
+   * 包装全屏切换函数，添加事件跟踪
+   */
+  const toggleFullscreen = useCallback(() => {
+    trackEvent('fullscreen_toggled', { to_state: isFullscreen ? 'exit' : 'enter' });
+    toggleFullscreenOriginal();
+  }, [isFullscreen, toggleFullscreenOriginal]);
 
   /**
    * 处理倒计时开始/暂停
@@ -19,10 +28,13 @@ export function ControlBar() {
   const handleCountdownToggle = useCallback(() => {
     if (countdown.currentTime === 0) {
       // 如果倒计时为0，打开设置模态框
+      trackEvent('countdown_setup_opened');
       dispatch({ type: 'OPEN_MODAL' });
     } else if (countdown.isActive) {
+      trackEvent('countdown_paused', { remaining_time: countdown.currentTime });
       dispatch({ type: 'PAUSE_COUNTDOWN' });
     } else {
+      trackEvent('countdown_started', { remaining_time: countdown.currentTime });
       dispatch({ type: 'START_COUNTDOWN' });
     }
   }, [countdown.currentTime, countdown.isActive, dispatch]);
@@ -31,26 +43,30 @@ export function ControlBar() {
    * 处理倒计时重置
    */
   const handleCountdownReset = useCallback(() => {
+    trackEvent('countdown_reset', { initial_time: countdown.initialTime });
     dispatch({ type: 'RESET_COUNTDOWN' });
-  }, [dispatch]);
+  }, [dispatch, countdown.initialTime]);
 
   /**
    * 处理秒表开始/暂停
    */
   const handleStopwatchToggle = useCallback(() => {
     if (stopwatch.isActive) {
+      trackEvent('stopwatch_paused', { elapsed_time: stopwatch.elapsedTime });
       dispatch({ type: 'PAUSE_STOPWATCH' });
     } else {
+      trackEvent('stopwatch_started', { elapsed_time: stopwatch.elapsedTime });
       dispatch({ type: 'START_STOPWATCH' });
     }
-  }, [stopwatch.isActive, dispatch]);
+  }, [stopwatch.isActive, stopwatch.elapsedTime, dispatch]);
 
   /**
    * 处理秒表重置
    */
   const handleStopwatchReset = useCallback(() => {
+    trackEvent('stopwatch_reset', { elapsed_time: stopwatch.elapsedTime });
     dispatch({ type: 'RESET_STOPWATCH' });
-  }, [dispatch]);
+  }, [dispatch, stopwatch.elapsedTime]);
 
   /**
    * 渲染倒计时控制按钮

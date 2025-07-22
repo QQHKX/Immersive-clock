@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { AppState, AppAction, AppMode } from '../types';
+import { trackEvent } from '../utils/clarity';
 
 /**
  * 应用初始状态
@@ -181,9 +182,40 @@ interface AppContextProviderProps {
 export function AppContextProvider({ children }: AppContextProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
+  // 跟踪重要状态变化
+  useEffect(() => {
+    // 跟踪倒计时完成事件
+    if (state.mode === 'countdown' && state.countdown.currentTime === 0 && !state.countdown.isActive) {
+      trackEvent('countdown_completed', { initialTime: state.countdown.initialTime });
+    }
+  }, [state.mode, state.countdown.currentTime, state.countdown.isActive, state.countdown.initialTime]);
+
+  // 包装dispatch函数以跟踪动作
+  const trackedDispatch: React.Dispatch<AppAction> = (action) => {
+    // 跟踪特定类型的动作
+    switch (action.type) {
+      case 'SET_MODE':
+        trackEvent('mode_selected', { mode: action.payload });
+        break;
+      case 'START_COUNTDOWN':
+        trackEvent('countdown_started', { initialTime: state.countdown.initialTime });
+        break;
+      case 'START_STOPWATCH':
+        trackEvent('stopwatch_started');
+        break;
+      case 'RESET_COUNTDOWN':
+      case 'RESET_STOPWATCH':
+        trackEvent(`${state.mode}_reset`);
+        break;
+    }
+    
+    // 调用原始dispatch
+    dispatch(action);
+  };
+
   return (
     <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
+      <AppDispatchContext.Provider value={trackedDispatch}>
         {children}
       </AppDispatchContext.Provider>
     </AppStateContext.Provider>
