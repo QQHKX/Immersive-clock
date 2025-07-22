@@ -14,7 +14,7 @@
 .hud.visible {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .hud.hidden {
@@ -42,7 +42,7 @@
   align-items: flex-start;
   pointer-events: auto;
   position: absolute;
-  top: 15%;
+  top: 25%;
   left: 0;
   right: 0;
 }

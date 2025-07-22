@@ -26,13 +26,13 @@ export function Countdown() {
   useTimer(handleTick, countdown.isActive, 1000);
 
   /**
-   * 点击时间显示区域打开设置模态框
+   * 双击时间显示区域打开设置模态框
    */
-  const handleTimeClick = useCallback(() => {
-    if (!countdown.isActive) {
+  const handleTimeDoubleClick = useCallback(() => {
+    if (!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0) {
       dispatch({ type: 'OPEN_MODAL' });
     }
-  }, [countdown.isActive, dispatch]);
+  }, [countdown.isActive, countdown.currentTime, countdown.initialTime, dispatch]);
 
   // 监听倒计时结束
   useEffect(() => {
@@ -54,12 +54,12 @@ export function Countdown() {
         } ${
           isFinished ? styles.finished : ''
         } ${
-          !countdown.isActive && countdown.currentTime === 0 ? styles.clickable : ''
+          !countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? styles.clickable : ''
         }`}
-        onClick={handleTimeClick}
-        role={!countdown.isActive && countdown.currentTime === 0 ? 'button' : undefined}
-        tabIndex={!countdown.isActive && countdown.currentTime === 0 ? 0 : undefined}
-        aria-label={!countdown.isActive && countdown.currentTime === 0 ? '点击设置倒计时时间' : undefined}
+        onDoubleClick={handleTimeDoubleClick}
+        role={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? 'button' : undefined}
+        tabIndex={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? 0 : undefined}
+        aria-label={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? '双击设置倒计时时间' : undefined}
       >
         {countdown.currentTime === 0 && countdown.initialTime === 0 ? (
           <span className={styles.placeholder}>00:00:00</span>

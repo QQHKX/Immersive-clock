@@ -34,15 +34,12 @@
 }
 
 .time.clickable:focus {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 8px;
+  outline: none;
   opacity: 1;
 }
 
 .placeholder {
-  color: var(--secondary-color);
-  font-size: 0.7em;
-  opacity: 0.6;
+  opacity: var(--placeholder-opacity);
 }
 
 .time.warning {
