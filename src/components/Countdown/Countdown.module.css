@@ -57,7 +57,7 @@
   .time.clickable {
     opacity: 0.8;
   }
-  
+
   .time.clickable:active {
     opacity: 1;
     transform: scale(1.05);
