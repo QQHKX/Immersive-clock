@@ -1,0 +1,144 @@
+/* Stopwatch Component Styles */
+
+.stopwatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.time {
+  font-family: var(--font-main);
+  font-size: clamp(5rem, 15vw, 10rem);
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+  margin-bottom: var(--spacing-md);
+  text-shadow: none;
+  transition: all var(--transition-normal);
+  user-select: none;
+}
+
+.time.running {
+  color: var(--primary-color);
+  text-shadow: none;
+  animation: none;
+}
+
+.placeholder {
+  color: var(--secondary-color);
+  opacity: 0.6;
+}
+
+.status {
+  font-family: var(--font-ui);
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  font-weight: 400;
+  color: var(--accent-color);
+  margin-top: var(--spacing-sm);
+  opacity: 0.8;
+  animation: fade-in-up 0.3s ease-out;
+}
+
+.milestone {
+  font-family: var(--font-ui);
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 500;
+  color: var(--accent-color);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(3, 218, 198, 0.1);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(3, 218, 198, 0.3);
+  animation: milestone-appear 0.8s ease-out;
+}
+
+/* Animations */
+@keyframes running-glow {
+  from {
+    text-shadow: none;
+    transform: scale(1);
+  }
+
+  to {
+    text-shadow: none;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+}
+
+@keyframes milestone-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .time {
+    font-size: clamp(4rem, 18vw, 8rem);
+  }
+
+  .status {
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
+  }
+
+  .milestone {
+    font-size: clamp(1rem, 4vw, 1.5rem);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+}
+
+@media (max-height: 600px) {
+  .time {
+    font-size: clamp(3rem, 12vh, 5rem);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .status {
+    font-size: clamp(0.8rem, 3vh, 1rem);
+  }
+
+  .milestone {
+    font-size: clamp(0.9rem, 3vh, 1.2rem);
+    margin-top: var(--spacing-sm);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .time.running {
+    color: var(--primary-color);
+    text-shadow: none;
+    animation: none;
+  }
+
+  .milestone {
+    background: var(--hud-background);
+    border-color: var(--accent-color);
+  }
+}

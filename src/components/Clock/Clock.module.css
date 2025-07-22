@@ -1,0 +1,54 @@
+/* Clock Component Styles */
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.time {
+  font-family: var(--font-main);
+  font-size: clamp(5rem, 15vw, 10rem);
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+  margin-bottom: var(--spacing-md);
+  text-shadow: none;
+  transition: all var(--transition-normal);
+}
+
+.date {
+  font-family: var(--font-ui);
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  font-weight: 400;
+  color: var(--secondary-color);
+  opacity: 0.8;
+  transition: all var(--transition-normal);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .time {
+    font-size: clamp(4rem, 18vw, 8rem);
+  }
+
+  .date {
+    font-size: clamp(0.9rem, 3vw, 1.3rem);
+  }
+}
+
+@media (max-height: 600px) {
+  .time {
+    font-size: clamp(3rem, 12vh, 5rem);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .date {
+    font-size: clamp(0.8rem, 2.5vh, 1rem);
+  }
+}
+
+/* Animation for time updates removed for minimal design */

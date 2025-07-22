@@ -1,0 +1,42 @@
+/* CSS Custom Properties for Immersive Clock */
+:root {
+  /* Colors */
+  --background-color: #121212;
+  --text-color: #E0E0E0;
+  --primary-color: #FFFFFF;
+  --secondary-color: #BBBBBB;
+  --accent-color: #03DAC6;
+  --warning-color: #CF6679;
+  --hud-background: rgba(40, 40, 40, 0.9);
+
+  /* Fonts */
+  --font-main: 'Roboto Mono', monospace;
+  --font-ui: 'Inter', sans-serif;
+
+  /* Sizes */
+  --clock-font-size: clamp(4rem, 12vw, 8rem);
+  --timer-font-size: clamp(3rem, 10vw, 6rem);
+  --button-font-size: 1rem;
+  --modal-font-size: 1.2rem;
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Z-index */
+  --z-hud: 100;
+  --z-modal: 200;
+}

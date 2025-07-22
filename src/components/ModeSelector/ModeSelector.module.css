@@ -1,0 +1,91 @@
+/* ModeSelector Component Styles - Minimal Design */
+
+.modeSelector {
+  display: flex;
+  gap: 2rem;
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.modeButton::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--primary-color);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.modeButton:hover {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateY(-1px);
+}
+
+.modeButton:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+.modeButton.active {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.modeButton.active::after {
+  width: 80%;
+}
+
+.modeButton.active:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modeSelector {
+    gap: 1rem;
+  }
+
+  .modeButton {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modeButton {
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .icon {
+    width: 16px;
+    height: 16px;
+  }
+}

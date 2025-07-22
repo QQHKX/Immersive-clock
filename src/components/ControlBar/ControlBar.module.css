@@ -1,0 +1,111 @@
+/* ControlBar Component Styles - Minimal Design */
+
+.controlBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.modeControls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.globalControls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.controlButton:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.controlButton:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+.controlButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.controlButton:disabled:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.controlButton.primary {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.controlButton.primary:hover {
+  color: #ffffff;
+}
+
+.controlButton.primary:disabled {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .controlBar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .modeControls,
+  .globalControls {
+    justify-content: center;
+  }
+
+  .controlButton {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .controlButton {
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .icon {
+    width: 14px;
+    height: 14px;
+  }
+}
