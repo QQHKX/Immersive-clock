@@ -1,0 +1,62 @@
+# 缓存控制策略配置文件
+# 用于设置不同类型静态资源的缓存时间
+
+# 字体文件缓存30天 (2592000秒)
+/fonts/*
+  Cache-Control: public, max-age=2592000, immutable
+  
+# 图片文件缓存1天 (86400秒)
+/images/*
+  Cache-Control: public, max-age=86400
+  
+/*.png
+  Cache-Control: public, max-age=86400
+  
+/*.jpg
+  Cache-Control: public, max-age=86400
+  
+/*.jpeg
+  Cache-Control: public, max-age=86400
+  
+/*.gif
+  Cache-Control: public, max-age=86400
+  
+/*.svg
+  Cache-Control: public, max-age=86400
+  
+/*.webp
+  Cache-Control: public, max-age=86400
+  
+/*.ico
+  Cache-Control: public, max-age=86400
+
+# 音频文件缓存2天 (172800秒)
+/audio/*
+  Cache-Control: public, max-age=172800
+  
+/*.mp3
+  Cache-Control: public, max-age=172800
+  
+/*.wav
+  Cache-Control: public, max-age=172800
+  
+/*.ogg
+  Cache-Control: public, max-age=172800
+  
+/*.m4a
+  Cache-Control: public, max-age=172800
+
+# CSS和JS文件缓存1年 (31536000秒)
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+  
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML文件不缓存
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  
+# Manifest文件缓存1天
+/manifest.json
+  Cache-Control: public, max-age=86400

@@ -1,0 +1,70 @@
+# Vercel部署忽略文件
+# 指定哪些文件和目录不应该被上传到Vercel
+
+# 开发依赖
+node_modules
+.npm
+.yarn
+yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 开发工具
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+
+# 日志文件
+logs
+*.log
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 测试覆盖率
+coverage
+.nyc_output
+
+# 构建输出（Vercel会自动处理）
+dist
+build
+
+# TypeScript编译缓存
+*.tsbuildinfo
+
+# 缓存目录
+.cache
+.parcel-cache
+.vite
+
+# 文档和说明文件（可选，根据需要调整）
+README.md
+LICENSE
+
+# Git相关
+.git
+.gitignore
+
+# 本地配置文件
+.htaccess
+_headers
