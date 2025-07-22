@@ -31,10 +31,9 @@ export function Countdown() {
    * 打开设置模态框
    */
   const openModal = useCallback(() => {
-    if (!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0) {
-      dispatch({ type: 'OPEN_MODAL' });
-    }
-  }, [countdown.isActive, countdown.currentTime, countdown.initialTime, dispatch]);
+    // 允许在任何时候打开设置模态框
+    dispatch({ type: 'OPEN_MODAL' });
+  }, [dispatch]);
 
   /**
    * 双击时间显示区域打开设置模态框（鼠标事件）
@@ -109,18 +108,16 @@ export function Countdown() {
           isWarning ? styles.warning : ''
         } ${
           isFinished ? styles.finished : ''
-        } ${
-          !countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? styles.clickable : ''
-        }`}
+        } ${styles.clickable}`}
         onDoubleClick={handleTimeDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onKeyDown={handleKeyDown}
-        role={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? 'button' : undefined}
-        tabIndex={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? 0 : undefined}
-        aria-label={!countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? '双击或双触设置倒计时时间' : undefined}
+        role="button"
+        tabIndex={0}
+        aria-label="双击或双触设置倒计时时间"
         style={{
-          touchAction: !countdown.isActive && countdown.currentTime === 0 && countdown.initialTime === 0 ? 'manipulation' : 'auto'
+          touchAction: 'manipulation'
         }}
       >
         {countdown.currentTime === 0 && countdown.initialTime === 0 ? (
