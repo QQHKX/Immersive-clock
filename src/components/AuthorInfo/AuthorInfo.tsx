@@ -8,8 +8,7 @@ import styles from './AuthorInfo.module.css';
 export function AuthorInfo() {
   return (
     <div className={styles.authorInfo}>
-      <div className={styles.version}>v0.0.0</div>
-      <div className={styles.author}>Made with ❤️ by Developer</div>
+      <div className={styles.version}>v2.0 by <a href="https://qqhkx.com" target="_blank" rel="noopener noreferrer" className={styles.link}>qqhkx</a></div>
     </div>
   );
 }
