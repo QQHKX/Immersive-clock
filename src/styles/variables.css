@@ -8,6 +8,8 @@
   --accent-color: #03DAC6;
   --warning-color: #CF6679;
   --hud-background: rgba(40, 40, 40, 0.9);
+  --placeholder-color: #BBBBBB;
+  --placeholder-opacity: 0.6;
 
   /* Fonts */
   --font-main: 'Roboto Mono', monospace;

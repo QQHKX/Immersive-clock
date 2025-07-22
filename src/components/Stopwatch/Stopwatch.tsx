@@ -36,7 +36,7 @@ export function Stopwatch() {
         aria-live="polite"
       >
         {stopwatch.elapsedTime === 0 ? (
-          <span className={styles.placeholder}>00:00</span>
+          <span className={styles.placeholder}>00:00:00</span>
         ) : (
           timeString
         )}

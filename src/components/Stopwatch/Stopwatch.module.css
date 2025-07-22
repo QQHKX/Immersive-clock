@@ -27,10 +27,7 @@
   animation: none;
 }
 
-.placeholder {
-  color: var(--secondary-color);
-  opacity: 0.6;
-}
+.placeholder {}
 
 .status {
   font-family: var(--font-ui);
