@@ -6,7 +6,7 @@
 
 ## 在线体验
 
-🌐 [立即体验](https://immersive-clock.vercel.app) - 部署在 Vercel 上的在线版本
+🌐 [立即体验](https://clock.qqhkx.com/) - 在线网页
 
 ## 功能特点
 
@@ -58,9 +58,7 @@
 - **React Feather** - 轻量级图标库
 - **Microsoft Clarity** - 用户行为分析
 
-### 部署平台
-- **Vercel** - 现代化的前端部署平台
-- 支持自动部署和全球 CDN
+
 
 ## 安装与运行
 
