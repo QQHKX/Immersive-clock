@@ -81,6 +81,24 @@ input:focus-visible {
   border: 0;
 }
 
+/* Hide Scrollbars But Keep Functionality */
+/* For Webkit browsers (Chrome, Safari, etc.) */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* For IE and Edge */
+* {
+  -ms-overflow-style: none;
+}
+
 /* Animation Keyframes */
 @keyframes pulse {
 
