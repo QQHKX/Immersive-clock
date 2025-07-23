@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { versionCachePlugin } from './src/utils/versionCache'
 
 /**
  * Vite 配置文件
  * 包含开发服务器、构建优化和缓存策略配置
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), versionCachePlugin()],
   server: {
     port: 3000,
     open: true,
