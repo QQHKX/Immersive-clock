@@ -6,7 +6,7 @@ import { Stopwatch } from '../../components/Stopwatch/Stopwatch';
 import { HUD } from '../../components/HUD/HUD';
 import { CountdownModal } from '../../components/CountdownModal/CountdownModal';
 import { AuthorInfo } from '../../components/AuthorInfo/AuthorInfo';
-import { trackEvent } from '../../utils/clarity';
+
 import styles from './ClockPage.module.css';
 
 /**
@@ -21,13 +21,7 @@ export function ClockPage() {
   
   // 跟踪模式变化
   useEffect(() => {
-    if (prevModeRef.current !== mode) {
-      trackEvent('mode_changed', { 
-        previous_mode: prevModeRef.current,
-        current_mode: mode 
-      });
-      prevModeRef.current = mode;
-    }
+    prevModeRef.current = mode;
   }, [mode]);
 
   /**
@@ -40,8 +34,7 @@ export function ClockPage() {
       return;
     }
 
-    // 跟踪用户点击事件
-    trackEvent('page_clicked', { mode });
+
 
     // 显示HUD
     dispatch({ type: 'SHOW_HUD' });

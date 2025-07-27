@@ -32,7 +32,7 @@
 - **资源缓存**：字体缓存30天，图片缓存1天，音频缓存2天，CSS/JS文件长期缓存
 - **代码分割**：按需加载，减少初始包大小
 - **资源压缩**：Gzip/Brotli 压缩，移除生产环境调试代码
-- **Microsoft Clarity**：集成用户行为分析，优化用户体验
+
 
 ### 无障碍支持
 - 键盘导航
@@ -57,7 +57,6 @@
 
 ### 依赖库
 - **React Feather** - 轻量级图标库
-- **Microsoft Clarity** - 用户行为分析
 
 
 
@@ -164,7 +163,7 @@ yarn preview
 │   ├── types/               # 类型定义
 │   │   └── index.ts         # 类型声明
 │   ├── utils/               # 工具函数
-│   │   ├── clarity.ts       # Microsoft Clarity 配置
+
 │   │   ├── formatTime.ts    # 时间格式化
 │   │   └── versionCache.ts  # 版本号缓存控制插件
 │   ├── App.tsx              # 应用入口组件
@@ -221,7 +220,6 @@ yarn preview
    - 资源压缩和优化
 
 3. **第三方服务**：
-   - Microsoft Clarity 脚本延迟加载
    - Google Fonts 优化加载
 
 ### SEO 优化
@@ -275,7 +273,6 @@ yarn preview
 ### v2.0.0
 - 🚀 添加 Vercel 部署支持
 - ⚡ 性能优化：缓存策略、代码分割
-- 📊 集成 Microsoft Clarity 用户分析
 - 🎨 UI/UX 改进和响应式优化
 - 🔧 构建配置优化
 - 📱 PWA 支持增强

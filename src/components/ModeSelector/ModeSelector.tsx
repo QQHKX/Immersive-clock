@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { Clock, Watch } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { AppMode } from '../../types';
-import { trackEvent } from '../../utils/clarity';
+
 import styles from './ModeSelector.module.css';
 
 /**
@@ -19,7 +19,6 @@ export function ModeSelector() {
    */
   const handleModeChange = useCallback((newMode: AppMode) => {
     if (newMode !== mode) {
-      trackEvent('mode_changed_ui', { from_mode: mode, to_mode: newMode });
       dispatch({ type: 'SET_MODE', payload: newMode });
     }
   }, [mode, dispatch]);

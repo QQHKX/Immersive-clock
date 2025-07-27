@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, Minus, X } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { timeToSeconds } from '../../utils/formatTime';
-import { trackEvent } from '../../utils/clarity';
+
 import styles from './CountdownModal.module.css';
 
 /**
@@ -39,12 +39,6 @@ export function CountdownModal() {
   const handleConfirm = useCallback(() => {
     const totalSeconds = timeToSeconds(hours, minutes, seconds);
     if (totalSeconds > 0) {
-      trackEvent('countdown_time_set', { 
-        hours, 
-        minutes, 
-        seconds, 
-        total_seconds: totalSeconds 
-      });
       dispatch({ type: 'SET_COUNTDOWN', payload: totalSeconds });
       handleClose();
     }
@@ -56,11 +50,6 @@ export function CountdownModal() {
   const handlePreset = useCallback((presetMinutes: number) => {
     const presetHours = Math.floor(presetMinutes / 60);
     const remainingMinutes = presetMinutes % 60;
-    trackEvent('countdown_preset_selected', { 
-      preset_minutes: presetMinutes,
-      hours: presetHours,
-      minutes: remainingMinutes
-    });
     setHours(presetHours);
     setMinutes(remainingMinutes);
     setSeconds(0);
