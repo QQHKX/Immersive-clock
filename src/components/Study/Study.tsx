@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
 import { formatClock } from '../../utils/formatTime';
-import { Plus, Edit3, Trash2, Check, X, Settings } from 'react-feather';
+import { Edit3, Trash2, X, Settings, Check } from 'react-feather';
 import styles from './Study.module.css';
 
 /**
@@ -70,8 +70,8 @@ export function Study() {
 
   /**
    * 科目选项
-   */
-  const subjects = ['语文', '数学', '英语', '物理', '化学', '生物', '政治', '历史', '地理'];
+   */// 预设科目 - 按照语数外物化生的顺序
+  const subjects = ['语文', '数学', '英语', '物理', '化学', '生物'];
 
   /**
    * 处理添加作业
@@ -141,12 +141,7 @@ export function Study() {
     dispatch({ type: 'DELETE_HOMEWORK', payload: id });
   }, [dispatch]);
 
-  /**
-   * 处理切换作业完成状态
-   */
-  const handleToggleHomework = useCallback((id: string) => {
-    dispatch({ type: 'TOGGLE_HOMEWORK', payload: id });
-  }, [dispatch]);
+
 
   /**
    * 处理保存目标年份
@@ -164,7 +159,6 @@ export function Study() {
     weekday: 'long'
   });
   const daysToGaokao = calculateDaysToGaokao();
-  const completedCount = study.homeworks.filter(hw => hw.completed).length;
   const totalCount = study.homeworks.length;
 
   return (
@@ -194,99 +188,92 @@ export function Study() {
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>今日作业</h2>
           <div className={styles.progress}>
-            已完成 {completedCount}/{totalCount}
+            共 {totalCount} 项作业
           </div>
-          <button 
-            className={styles.addButton}
-            onClick={() => setShowAddHomework(true)}
-            title="添加作业"
-          >
-            <Plus size={20} />
-          </button>
         </div>
 
-        <div className={styles.homeworkList}>
-          {study.homeworks.map((homework) => (
-            <div 
-              key={homework.id} 
-              className={`${styles.homeworkItem} ${homework.completed ? styles.completed : ''}`}
-            >
-              {editingHomework === homework.id ? (
-                <div className={styles.editForm}>
-                  <select
-                    value={editHomework.subject}
-                    onChange={(e) => setEditHomework(prev => ({ ...prev, subject: e.target.value }))}
-                    className={styles.subjectSelect}
-                  >
-                    <option value="">选择科目</option>
-                    {subjects.map(subject => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={editHomework.content}
-                    onChange={(e) => setEditHomework(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="作业内容"
-                    className={styles.contentInput}
-                  />
-                  <input
-                    type="number"
-                    value={editHomework.estimatedTime}
-                    onChange={(e) => setEditHomework(prev => ({ ...prev, estimatedTime: parseInt(e.target.value) || 0 }))}
-                    placeholder="预估时间(分钟)"
-                    className={styles.timeInput}
-                    min="1"
-                  />
-                  <div className={styles.editActions}>
-                    <button onClick={handleSaveEdit} className={styles.saveButton}>
-                      <Check size={16} />
-                    </button>
-                    <button onClick={handleCancelEdit} className={styles.cancelButton}>
-                      <X size={16} />
-                    </button>
-                  </div>
+        <div className={styles.homeworkGrid}>
+          {subjects.map((subject) => {
+            const subjectHomeworks = study.homeworks.filter(hw => hw.subject === subject);
+            
+            return (
+              <div 
+                key={subject} 
+                className={styles.homeworkCard}
+                onClick={() => {
+                  setNewHomework(prev => ({ ...prev, subject }));
+                  setShowAddHomework(true);
+                }}
+                title={`点击添加${subject}作业`}
+              >
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.subjectTitle}>{subject}</h3>
                 </div>
-              ) : (
-                <>
-                  <div className={styles.homeworkContent}>
-                    <div className={styles.subjectTag}>{homework.subject}</div>
-                    <div className={styles.content}>{homework.content}</div>
-                    <div className={styles.estimatedTime}>{homework.estimatedTime}分钟</div>
-                  </div>
-                  <div className={styles.homeworkActions}>
-                    <button 
-                      onClick={() => handleToggleHomework(homework.id)}
-                      className={`${styles.toggleButton} ${homework.completed ? styles.completed : ''}`}
-                      title={homework.completed ? '标记为未完成' : '标记为已完成'}
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleEditHomework(homework.id)}
-                      className={styles.editButton}
-                      title="编辑作业"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteHomework(homework.id)}
-                      className={styles.deleteButton}
-                      title="删除作业"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-          
-          {study.homeworks.length === 0 && (
-            <div className={styles.emptyState}>
-              还没有添加作业，点击右上角的 + 号开始添加吧！
-            </div>
-          )}
+                
+                <div className={styles.cardContent}>
+                  {subjectHomeworks.length === 0 ? (
+                    <div className={styles.emptyHomework}>
+                      暂无作业
+                    </div>
+                  ) : (
+                    <div className={styles.homeworkList}>
+                      {subjectHomeworks.map((homework) => (
+                        <div 
+                          key={homework.id} 
+                          className={styles.homeworkItem}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditHomework(homework.id);
+                          }}
+                          title="点击编辑作业"
+                        >
+                          {editingHomework === homework.id ? (
+                            <div className={styles.editForm}>
+                              <textarea
+                                value={editHomework.content}
+                                onChange={(e) => setEditHomework(prev => ({ ...prev, content: e.target.value }))}
+                                placeholder="作业内容"
+                                className={styles.contentTextarea}
+                                rows={3}
+                              />
+                              <input
+                                type="number"
+                                value={editHomework.estimatedTime}
+                                onChange={(e) => setEditHomework(prev => ({ ...prev, estimatedTime: parseInt(e.target.value) || 0 }))}
+                                placeholder="预估时间(分钟)"
+                                className={styles.timeInput}
+                                min="1"
+                              />
+                              <div className={styles.editActions}>
+                                <button onClick={handleSaveEdit} className={styles.saveButton}>
+                                  <Check size={14} />
+                                </button>
+                                <button onClick={handleCancelEdit} className={styles.cancelButton}>
+                                  <X size={14} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteHomework(homework.id)}
+                                  className={styles.deleteButton}
+                                  title="删除作业"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={styles.homeworkContent}>
+                              <div className={styles.content}>{homework.content}</div>
+                              <div className={styles.estimatedTime}>{homework.estimatedTime}分钟</div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -301,22 +288,16 @@ export function Study() {
               </button>
             </div>
             <div className={styles.modalBody}>
-              <select
-                value={newHomework.subject}
-                onChange={(e) => setNewHomework(prev => ({ ...prev, subject: e.target.value }))}
-                className={styles.subjectSelect}
-              >
-                <option value="">选择科目</option>
-                {subjects.map(subject => (
-                  <option key={subject} value={subject}>{subject}</option>
-                ))}
-              </select>
-              <input
-                type="text"
+              <div className={styles.selectedSubject}>
+                <span className={styles.subjectLabel}>科目：</span>
+                <span className={styles.subjectName}>{newHomework.subject}</span>
+              </div>
+              <textarea
                 value={newHomework.content}
                 onChange={(e) => setNewHomework(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="作业内容"
-                className={styles.contentInput}
+                placeholder="作业内容（支持多行输入）"
+                className={styles.contentTextarea}
+                rows={4}
               />
               <input
                 type="number"
