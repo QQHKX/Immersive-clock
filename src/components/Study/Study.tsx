@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
 import { formatClock } from '../../utils/formatTime';
-import { Edit3, Trash2, X, Settings, Check } from 'react-feather';
+import { Edit3, Trash2, X, Check } from 'react-feather';
 import styles from './Study.module.css';
 
 /**
@@ -243,15 +243,13 @@ export function Study() {
         </div>
         <div className={styles.gaokaoInfo}>
           <div className={styles.gaokaoCountdown}>
-            距离{study.targetYear}年高考还有 <span className={styles.days}>{daysToGaokao}</span> 天
+            距离{study.targetYear}年高考还有 <span 
+              className={styles.days}
+              onClick={() => setShowSettings(true)}
+              title="点击设置目标年份"
+              style={{ cursor: 'pointer' }}
+            >{daysToGaokao}</span> 天
           </div>
-          <button 
-            className={styles.settingsButton}
-            onClick={() => setShowSettings(true)}
-            title="设置目标年份"
-          >
-            <Settings size={16} />
-          </button>
         </div>
       </div>
 
