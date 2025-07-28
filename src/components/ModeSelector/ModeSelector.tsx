@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Clock, Watch } from 'react-feather';
+import { Clock, Watch, BookOpen } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { AppMode } from '../../types';
 
@@ -7,7 +7,7 @@ import styles from './ModeSelector.module.css';
 
 /**
  * 模式选择器组件
- * 提供时钟、倒计时、秒表三种模式的切换
+ * 提供时钟、倒计时、秒表、晚自习四种模式的切换
  */
 export function ModeSelector() {
   const { mode } = useAppState();
@@ -41,6 +41,12 @@ export function ModeSelector() {
       label: '计时',
       icon: Watch,
       description: '计时器功能'
+    },
+    {
+      key: 'study' as AppMode,
+      label: '晚自习',
+      icon: BookOpen,
+      description: '晚自习模式'
     }
   ];
 

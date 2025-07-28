@@ -3,6 +3,7 @@ import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { Clock } from '../../components/Clock/Clock';
 import { Countdown } from '../../components/Countdown/Countdown';
 import { Stopwatch } from '../../components/Stopwatch/Stopwatch';
+import { Study } from '../../components/Study/Study';
 import { HUD } from '../../components/HUD/HUD';
 import { CountdownModal } from '../../components/CountdownModal/CountdownModal';
 import { AuthorInfo } from '../../components/AuthorInfo/AuthorInfo';
@@ -78,6 +79,8 @@ export function ClockPage() {
         return <Countdown />;
       case 'stopwatch':
         return <Stopwatch />;
+      case 'study':
+        return <Study />;
       default:
         return <Clock />;
     }

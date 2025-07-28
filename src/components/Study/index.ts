@@ -1,0 +1,1 @@
+export { Study } from './Study';

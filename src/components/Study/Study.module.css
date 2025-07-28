@@ -1,0 +1,551 @@
+/* Study Component Styles - Minimal Design */
+
+.study {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 2rem;
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  position: relative;
+}
+
+/* 顶部信息栏 - 固定定位到页面角落 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 2rem;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.timeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.currentTime {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--primary-color);
+  letter-spacing: 0.05em;
+}
+
+.currentDate {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.gaokaoInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+}
+
+.gaokaoCountdown {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: right;
+}
+
+.days {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin: 0 0.25rem;
+}
+
+.settingsButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settingsButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 作业管理区域 */
+.homeworkSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 6rem auto 0;
+  width: 100%;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.progress {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.addButton {
+  background: var(--primary-color);
+  border: none;
+  color: var(--bg-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.addButton:hover {
+  background: var(--accent-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(3, 218, 198, 0.3);
+}
+
+/* 作业列表 */
+.homeworkList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.homeworkList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.homeworkList::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.homeworkList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.homeworkList::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.homeworkItem {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+}
+
+.homeworkItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.homeworkItem.completed {
+  opacity: 0.6;
+  background: rgba(3, 218, 198, 0.1);
+  border-color: rgba(3, 218, 198, 0.3);
+}
+
+.homeworkContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.subjectTag {
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  min-width: fit-content;
+}
+
+.content {
+  flex: 1;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.estimatedTime {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: fit-content;
+}
+
+.homeworkActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.toggleButton,
+.editButton,
+.deleteButton,
+.saveButton,
+.cancelButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggleButton:hover {
+  background: rgba(3, 218, 198, 0.2);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.toggleButton.completed {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--bg-color);
+}
+
+.editButton:hover {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.deleteButton:hover {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.saveButton:hover {
+  background: rgba(40, 167, 69, 0.2);
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.cancelButton:hover {
+  background: rgba(108, 117, 125, 0.2);
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+/* 编辑表单 */
+.editForm {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.editActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* 空状态 */
+.emptyState {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  padding: 2rem;
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+}
+
+/* 模态框样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  backdrop-filter: blur(5px);
+  animation: modal-fade-in 0.3s ease-out;
+}
+
+.modalContent {
+  background: var(--hud-background);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modal-slide-in 0.3s ease-out;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.3s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.subjectSelect,
+.contentInput,
+.timeInput,
+.yearInput {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem;
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.subjectSelect:focus,
+.contentInput:focus,
+.timeInput:focus,
+.yearInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.subjectSelect option {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.confirmButton {
+  background: var(--primary-color);
+  border: none;
+  color: var(--bg-color);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+.confirmButton:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 动画 */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .study {
+    padding: 1.5rem;
+  }
+  
+  .currentTime {
+    font-size: 2rem;
+  }
+  
+  .gaokaoCountdown {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .study {
+    padding: 1rem;
+  }
+  
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .gaokaoInfo {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  
+  .currentTime {
+    font-size: 1.8rem;
+  }
+  
+  .sectionHeader {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .homeworkContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .editForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .modalContent {
+    width: 95%;
+    padding: 1rem;
+  }
+  
+  .modalActions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .study {
+    padding: 0.75rem;
+  }
+  
+  .currentTime {
+    font-size: 1.5rem;
+  }
+  
+  .days {
+    font-size: 1.2rem;
+  }
+  
+  .homeworkItem {
+    padding: 0.75rem;
+  }
+  
+  .homeworkActions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modalContent,
+  .addButton:hover,
+  .confirmButton:hover {
+    animation: none;
+    transform: none;
+  }
+}
