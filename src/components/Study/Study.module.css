@@ -19,7 +19,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 2rem;
+  padding: 1.5rem 1rem;
   z-index: 1000;
   pointer-events: none;
 }
@@ -56,6 +56,9 @@
   font-size: 1.2rem;
   color: rgba(255, 255, 255, 0.9);
   text-align: right;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .days {
@@ -89,10 +92,15 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-top: 12rem;
-  padding: 0 2rem 2rem;
+  margin-top: 10rem;
+  padding: 0 1rem 2rem;
   width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
   box-sizing: border-box;
+  height: calc(100vh - 12rem);
+  overflow: hidden;
 }
 
 .sectionHeader {
@@ -103,11 +111,30 @@
   gap: 1rem;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.swipeHint {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: none;
+}
+
 .sectionTitle {
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--text-color);
   margin: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .progress {
@@ -117,6 +144,9 @@
   padding: 0.5rem 1rem;
   border-radius: var(--border-radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .addButton {
@@ -147,6 +177,7 @@
   flex: 1;
   overflow-y: auto;
   padding-right: 0.5rem;
+  min-height: 0;
 }
 
 @media (min-width: 1400px) {
@@ -163,7 +194,38 @@
 
 @media (max-width: 768px) {
   .homeworkGrid {
+    display: grid;
     grid-template-columns: 1fr;
+    gap: 1rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+
+  .homeworkGrid::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .homeworkGrid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+
+  .homeworkGrid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+
+  .homeworkGrid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .homeworkCard {
+    scroll-snap-align: start;
   }
 }
 
@@ -172,7 +234,7 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
+  padding: 0.8rem;
   display: flex;
   flex-direction: column;
   min-height: 200px;
@@ -194,7 +256,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -203,6 +265,9 @@
   font-weight: 600;
   color: var(--primary-color);
   margin: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 
@@ -224,6 +289,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* 作业列表 */
@@ -256,7 +324,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--border-radius-sm);
-  padding: 0.5rem;
+  padding: 0.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -284,7 +352,10 @@
   color: var(--text-color);
   line-height: 1.4;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
+  hyphens: auto;
 }
 
 .estimatedTime {
@@ -435,6 +506,10 @@
 .contentTextarea {
   min-height: 80px;
   line-height: 1.4;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  resize: vertical;
 }
 
 .subjectSelect:focus,
@@ -468,6 +543,9 @@
   background: rgba(3, 218, 198, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: var(--border-radius-sm);
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .subjectSelect option {
@@ -523,6 +601,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -533,9 +612,22 @@
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.8;
   }
 }
 
@@ -544,11 +636,11 @@
   .study {
     padding: 1.5rem;
   }
-  
+
   .currentTime {
     font-size: 2rem;
   }
-  
+
   .gaokaoCountdown {
     font-size: 1.1rem;
   }
@@ -556,45 +648,65 @@
 
 @media (max-width: 768px) {
   .study {
-    padding: 1rem;
+    padding: 0;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+    padding: 1rem 0.5rem;
   }
-  
+
   .gaokaoInfo {
     align-self: stretch;
     justify-content: space-between;
   }
-  
+
   .currentTime {
     font-size: 1.8rem;
   }
-  
+
+  .homeworkSection {
+    height: calc(100vh - 12rem);
+    margin-top: 10rem;
+    padding: 0 0.5rem 1rem;
+    max-width: none;
+  }
+
   .sectionHeader {
     flex-wrap: wrap;
     gap: 0.5rem;
+    flex-shrink: 0;
   }
-  
+
+  .headerRight {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .swipeHint {
+    display: block;
+    animation: pulse 2s infinite;
+  }
+
   .homeworkContent {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
   }
-  
+
   .editForm {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .modalContent {
     width: 95%;
     padding: 1rem;
   }
-  
+
   .modalActions {
     flex-direction: column;
   }
@@ -604,22 +716,23 @@
   .study {
     padding: 0.75rem;
   }
-  
+
   .currentTime {
     font-size: 1.5rem;
   }
-  
+
   .days {
     font-size: 1.2rem;
   }
-  
+
   .homeworkItem {
-    padding: 0.5rem;
+    padding: 0.25rem;
   }
 }
 
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
+
   .modal,
   .modalContent,
   .addButton:hover,

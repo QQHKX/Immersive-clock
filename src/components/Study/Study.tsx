@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
 import { formatClock } from '../../utils/formatTime';
@@ -27,6 +27,12 @@ export function Study() {
     estimatedTime: 30
   });
   const [targetYear, setTargetYear] = useState(study.targetYear);
+  
+  // 触摸滑动相关状态
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   /**
    * 更新当前时间
@@ -139,7 +145,73 @@ export function Study() {
    */
   const handleDeleteHomework = useCallback((id: string) => {
     dispatch({ type: 'DELETE_HOMEWORK', payload: id });
-  }, [dispatch]);
+    // 如果删除的是正在编辑的作业，退出编辑状态
+    if (editingHomework === id) {
+      setEditingHomework(null);
+    }
+  }, [dispatch, editingHomework]);
+
+  /**
+   * 处理触摸开始
+   */
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientY);
+  }, []);
+
+  /**
+   * 处理触摸移动
+   */
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStart) return;
+    
+    const currentTouch = e.targetTouches[0].clientY;
+    setTouchEnd(currentTouch);
+    
+    // 阻止默认滚动行为，让我们自己处理滑动
+    const distance = Math.abs(touchStart - currentTouch);
+    if (distance > 10) {
+      e.preventDefault();
+    }
+  }, [touchStart]);
+
+  /**
+   * 处理触摸结束 - 实现上下滑动功能
+   */
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd || !gridRef.current) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+    
+    const distance = touchStart - touchEnd;
+    const isUpSwipe = distance > 50;
+    const isDownSwipe = distance < -50;
+    
+    if (isUpSwipe || isDownSwipe) {
+      const cardHeight = 220; // 估算的卡片高度
+      const gap = 24; // 1.5rem = 24px
+      const scrollAmount = cardHeight + gap;
+      
+      if (isUpSwipe) {
+        // 向上滑动，显示下一组
+        const maxScroll = gridRef.current.scrollHeight - gridRef.current.clientHeight;
+        const newPosition = Math.min(scrollPosition + scrollAmount, maxScroll);
+        setScrollPosition(newPosition);
+        gridRef.current.scrollTo({ top: newPosition, behavior: 'smooth' });
+      } else if (isDownSwipe) {
+        // 向下滑动，显示上一组
+        const newPosition = Math.max(scrollPosition - scrollAmount, 0);
+        setScrollPosition(newPosition);
+        gridRef.current.scrollTo({ top: newPosition, behavior: 'smooth' });
+      }
+    }
+    
+    // 重置触摸状态
+    setTouchStart(null);
+    setTouchEnd(null);
+  }, [touchStart, touchEnd, scrollPosition]);
 
 
 
@@ -187,12 +259,21 @@ export function Study() {
       <div className={styles.homeworkSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>今日作业</h2>
-          <div className={styles.progress}>
-            共 {totalCount} 项作业
+          <div className={styles.headerRight}>
+            <div className={styles.progress}>
+              共 {totalCount} 项作业
+            </div>
+            <div className={styles.swipeHint}>↑ 滑动浏览 ↓</div>
           </div>
         </div>
 
-        <div className={styles.homeworkGrid}>
+        <div 
+          className={styles.homeworkGrid}
+          ref={gridRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           {subjects.map((subject) => {
             const subjectHomeworks = study.homeworks.filter(hw => hw.subject === subject);
             
@@ -223,7 +304,10 @@ export function Study() {
                           className={styles.homeworkItem}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditHomework(homework.id);
+                            // 如果当前不在编辑状态，则进入编辑状态
+                            if (editingHomework !== homework.id) {
+                              handleEditHomework(homework.id);
+                            }
                           }}
                           title="点击编辑作业"
                         >
@@ -232,6 +316,11 @@ export function Study() {
                               <textarea
                                 value={editHomework.content}
                                 onChange={(e) => setEditHomework(prev => ({ ...prev, content: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.stopPropagation();
+                                  }
+                                }}
                                 placeholder="作业内容"
                                 className={styles.contentTextarea}
                                 rows={3}
@@ -295,6 +384,11 @@ export function Study() {
               <textarea
                 value={newHomework.content}
                 onChange={(e) => setNewHomework(prev => ({ ...prev, content: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.stopPropagation();
+                  }
+                }}
                 placeholder="作业内容（支持多行输入）"
                 className={styles.contentTextarea}
                 rows={4}
