@@ -116,7 +116,10 @@ export function Study() {
           <div className={styles.gaokaoCountdown}>
             距离{study.targetYear}年高考还有 <span 
               className={styles.days}
-              onClick={() => setShowSettings(true)}
+              onClick={(e) => {
+                e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
+                setShowSettings(true);
+              }}
               title="点击设置目标年份"
               style={{ cursor: 'pointer' }}
             >{daysToGaokao}</span> 天

@@ -287,7 +287,9 @@ const NoiseMonitor: React.FC = () => {
    * 处理点击事件
    * 支持重试和校准功能
    */
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
+    
     if (isCalibrating) {
       return; // 校准中不响应点击
     }

@@ -148,7 +148,8 @@ const StudyStatus: React.FC<StudyStatusProps> = ({ onSettingsClick }) => {
   /**
    * 处理点击状态文本（打开设置）
    */
-  const handleStatusClick = useCallback(() => {
+  const handleStatusClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
     if (onSettingsClick) {
       onSettingsClick();
     }
