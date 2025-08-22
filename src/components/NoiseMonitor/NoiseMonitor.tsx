@@ -12,6 +12,9 @@ const REFERENCE_LEVEL = 0.00002; // 20 微帕，标准参考声压级
 const MIN_DECIBELS = -90; // 最小分贝值
 const MAX_DECIBELS = -10; // 最大分贝值
 
+// localStorage 键名
+const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
+
 /**
  * 实时噪音状态监测组件
  * 功能：通过麦克风监测环境音量并显示状态
@@ -20,7 +23,11 @@ const NoiseMonitor: React.FC = () => {
   const [noiseStatus, setNoiseStatus] = useState<NoiseStatus>('initializing');
   const [currentVolume, setCurrentVolume] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
-  const [baselineNoise, setBaselineNoise] = useState<number>(0); // 基准噪音水平
+  const [baselineNoise, setBaselineNoise] = useState<number>(() => {
+    // 从 localStorage 读取保存的基准噪音值
+    const saved = localStorage.getItem(BASELINE_NOISE_KEY);
+    return saved ? parseFloat(saved) : 0;
+  }); // 基准噪音水平
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false); // 校准状态
   
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -131,11 +138,23 @@ const NoiseMonitor: React.FC = () => {
     if (samples.length > 0) {
       const averageBaseline = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
       setBaselineNoise(averageBaseline);
-      console.log(`噪音基准校准完成: ${averageBaseline.toFixed(1)}dB`);
+      // 保存到 localStorage，永不过期
+      localStorage.setItem(BASELINE_NOISE_KEY, averageBaseline.toString());
+      console.log(`噪音基准校准完成: ${averageBaseline.toFixed(1)}dB，已保存到本地存储`);
     }
     
     setIsCalibrating(false);
   }, [isCalibrating]);
+
+  /**
+   * 清除校准数据
+   * 重置基准噪音值并清除本地存储
+   */
+  const clearCalibration = useCallback(() => {
+    setBaselineNoise(0);
+    localStorage.removeItem(BASELINE_NOISE_KEY);
+    console.log('校准数据已清除');
+  }, []);
 
   /**
    * 初始化音频监测
@@ -281,11 +300,14 @@ const NoiseMonitor: React.FC = () => {
         initializeAudioMonitoring();
       }, 100);
     } else if (noiseStatus === 'quiet' || noiseStatus === 'noisy') {
-      // 在正常工作状态下，长按可以校准
-      // 这里简化为直接校准
-      calibrateBaseline();
+      // 在正常工作状态下点击校准，如果已有基准数据则清除
+      if (baselineNoise > 0) {
+        clearCalibration();
+      } else {
+        calibrateBaseline();
+      }
     }
-  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring, calibrateBaseline]);
+  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring, calibrateBaseline, baselineNoise, clearCalibration]);
 
   // 组件挂载时初始化音频监测
   useEffect(() => {
@@ -310,7 +332,7 @@ const NoiseMonitor: React.FC = () => {
           isCalibrating ? '正在校准基准噪音水平...' :
           noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
           noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-            `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击校准` :
+            `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击${baselineNoise > 0 ? '清除校准' : '校准'}` :
             `当前音量: ${currentVolume.toFixed(1)}dB`
         }
       >

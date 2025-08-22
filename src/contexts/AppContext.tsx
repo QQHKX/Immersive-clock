@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState, HomeworkItem } from '../types';
+import { AppState, AppAction, AppMode, StudyState } from '../types';
 
 
 /**
