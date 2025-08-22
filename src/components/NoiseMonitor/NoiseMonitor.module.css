@@ -4,6 +4,12 @@
   text-align: left;
 }
 
+.statusContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .statusText {
   font-family: var(--font-ui);
   font-size: 1.2rem;
@@ -81,6 +87,106 @@
 
   50% {
     opacity: 1;
+  }
+}
+
+/* 呼吸灯效果 */
+.breathingLight {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 安静状态呼吸灯 */
+.breathingLight.quiet {
+  background-color: #2ed573;
+  animation: breatheQuiet 4s ease-in-out infinite;
+}
+
+/* 吵闹状态呼吸灯 */
+.breathingLight.noisy {
+  background-color: #ff4757;
+  animation: breatheNoisy 2.5s ease-in-out infinite;
+}
+
+/* 错误状态呼吸灯 */
+.breathingLight.error {
+  background-color: #ff6b6b;
+  animation: breatheError 3s ease-in-out infinite;
+}
+
+/* 初始化状态呼吸灯 */
+.breathingLight.initializing {
+  background-color: rgba(255, 255, 255, 0.6);
+  animation: breatheInitializing 3.5s ease-in-out infinite;
+}
+
+/* 校准状态呼吸灯 */
+.breathingLight.calibrating {
+  background-color: #ffa502;
+  animation: breatheCalibrating 2s ease-in-out infinite;
+}
+
+/* 安静状态呼吸动画 */
+@keyframes breatheQuiet {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* 吵闹状态呼吸动画 */
+@keyframes breatheNoisy {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.3);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px rgba(255, 71, 87, 0);
+  }
+}
+
+/* 错误状态呼吸动画 */
+@keyframes breatheError {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+}
+
+/* 初始化状态呼吸动画 */
+@keyframes breatheInitializing {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* 校准状态呼吸动画 */
+@keyframes breatheCalibrating {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
   }
 }
 

@@ -35,6 +35,8 @@ const NoiseMonitor: React.FC = () => {
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const statusChangeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingStatusRef = useRef<NoiseStatus | null>(null);
 
   /**
    * 计算音量分贝值
@@ -75,6 +77,43 @@ const NoiseMonitor: React.FC = () => {
   }, [baselineNoise]);
 
   /**
+   * 延迟设置噪音状态，避免频繁切换
+   */
+  const setNoiseStatusWithDelay = useCallback((newStatus: 'quiet' | 'noisy') => {
+    // 如果新状态与当前状态相同，清除待处理的状态变更
+    if (newStatus === noiseStatus) {
+      if (statusChangeTimerRef.current) {
+        clearTimeout(statusChangeTimerRef.current);
+        statusChangeTimerRef.current = null;
+      }
+      pendingStatusRef.current = null;
+      return;
+    }
+
+    // 如果已有待处理的状态变更且与新状态相同，直接返回
+    if (pendingStatusRef.current === newStatus) {
+      return;
+    }
+
+    // 清除之前的定时器
+    if (statusChangeTimerRef.current) {
+      clearTimeout(statusChangeTimerRef.current);
+    }
+
+    // 设置新的待处理状态
+    pendingStatusRef.current = newStatus;
+
+    // 1秒后执行状态变更
+    statusChangeTimerRef.current = setTimeout(() => {
+      if (pendingStatusRef.current === newStatus) {
+        setNoiseStatus(newStatus);
+        pendingStatusRef.current = null;
+        statusChangeTimerRef.current = null;
+      }
+    }, 1000);
+  }, [noiseStatus]);
+
+  /**
    * 分析音频数据
    * 使用时域数据获取更准确的音量测量
    */
@@ -88,16 +127,16 @@ const NoiseMonitor: React.FC = () => {
     const volume = calculateVolume(dataArray);
     setCurrentVolume(volume);
     
-    // 根据音量设置状态
+    // 根据音量设置状态（带延迟防抖）
     if (volume > NOISE_THRESHOLD) {
-      setNoiseStatus('noisy');
+      setNoiseStatusWithDelay('noisy');
     } else {
-      setNoiseStatus('quiet');
+      setNoiseStatusWithDelay('quiet');
     }
 
     // 继续下一帧分析
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
-  }, [calculateVolume]);
+  }, [calculateVolume, setNoiseStatusWithDelay]);
 
   /**
    * 校准基准噪音水平
@@ -216,6 +255,13 @@ const NoiseMonitor: React.FC = () => {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
+
+    // 清除状态变更定时器
+    if (statusChangeTimerRef.current) {
+      clearTimeout(statusChangeTimerRef.current);
+      statusChangeTimerRef.current = null;
+    }
+    pendingStatusRef.current = null;
 
     // 断开音频连接
     if (microphoneRef.current) {
@@ -339,18 +385,21 @@ const NoiseMonitor: React.FC = () => {
 
   return (
     <div className={styles.noiseMonitor}>
-      <div 
-        className={`${styles.statusText} ${getStatusClassName()}`}
-        onClick={handleClick}
-        title={
-          isCalibrating ? '正在校准基准噪音水平...' :
-          noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
-          noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-            `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击${baselineNoise > 0 ? '清除校准' : '校准'}` :
-            `当前音量: ${currentVolume.toFixed(1)}dB`
-        }
-      >
-        {getStatusText()}
+      <div className={styles.statusContainer}>
+        <div className={`${styles.breathingLight} ${getStatusClassName()}`}></div>
+        <div 
+          className={`${styles.statusText} ${getStatusClassName()}`}
+          onClick={handleClick}
+          title={
+            isCalibrating ? '正在校准基准噪音水平...' :
+            noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
+            noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
+              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击${baselineNoise > 0 ? '清除校准' : '校准'}` :
+              `当前音量: ${currentVolume.toFixed(1)}dB`
+          }
+        >
+          {getStatusText()}
+        </div>
       </div>
       {process.env.NODE_ENV === 'development' && (
         <div className={styles.debugInfo}>

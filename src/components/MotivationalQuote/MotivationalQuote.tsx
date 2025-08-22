@@ -52,7 +52,7 @@ export function MotivationalQuote() {
         }
         setIsTyping(false);
       }
-    }, 80); // 每80ms显示一个字符
+    }, 120); // 每120ms显示一个字符
   }, []);
 
   /**

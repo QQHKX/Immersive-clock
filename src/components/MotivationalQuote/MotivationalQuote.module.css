@@ -42,8 +42,8 @@
 .cursor {
   display: inline-block;
   font-weight: 400;
-  color: var(--accent-color);
-  animation: blink 1s infinite;
+  color: white;
+  animation: blink 1.2s infinite;
   margin-left: 2px;
 }
 
