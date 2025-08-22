@@ -3,6 +3,12 @@ import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
 import { formatClock } from '../../utils/formatTime';
 import { X } from 'react-feather';
+
+import StudyStatus from '../StudyStatus';
+import ScheduleSettings from '../ScheduleSettings';
+import NoiseMonitor from '../NoiseMonitor';
+import { MotivationalQuote } from '../MotivationalQuote';
+import { StudyPeriod } from '../StudyStatus';
 import styles from './Study.module.css';
 
 /**
@@ -14,6 +20,7 @@ export function Study() {
   const dispatch = useAppDispatch();
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [showSettings, setShowSettings] = useState(false);
+  const [showScheduleSettings, setShowScheduleSettings] = useState(false);
   const [targetYear, setTargetYear] = useState(study.targetYear);
 
   /**
@@ -68,6 +75,22 @@ export function Study() {
     setShowSettings(false);
   }, [targetYear, dispatch]);
 
+  /**
+   * 处理课程表保存
+   */
+  const handleScheduleSave = useCallback((schedule: StudyPeriod[]) => {
+    // 课程表已经在ScheduleSettings组件中保存到localStorage
+    // 这里可以添加额外的处理逻辑
+    setShowScheduleSettings(false);
+  }, []);
+
+  /**
+   * 处理打开课程表设置
+   */
+  const handleOpenScheduleSettings = useCallback(() => {
+    setShowScheduleSettings(true);
+  }, []);
+
   const timeString = formatClock(currentTime);
   const dateString = currentTime.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -79,11 +102,15 @@ export function Study() {
 
   return (
     <div className={styles.study}>
+      {/* 智能晚自习状态管理 */}
+      <StudyStatus onSettingsClick={handleOpenScheduleSettings} />
+      
       {/* 顶部信息栏 */}
       <div className={styles.header}>
         <div className={styles.timeInfo}>
           <div className={styles.currentTime}>{timeString}</div>
           <div className={styles.currentDate}>{dateString}</div>
+          <NoiseMonitor />
         </div>
         <div className={styles.gaokaoInfo}>
           <div className={styles.gaokaoCountdown}>
@@ -94,9 +121,11 @@ export function Study() {
               style={{ cursor: 'pointer' }}
             >{daysToGaokao}</span> 天
           </div>
+          {/* 励志金句模块 */}
+          <MotivationalQuote />
         </div>
       </div>
-
+      
       {/* 设置目标年份模态框 */}
       {showSettings && (
         <div className={styles.modal} onClick={() => setShowSettings(false)}>
@@ -128,6 +157,13 @@ export function Study() {
           </div>
         </div>
       )}
+
+      {/* 课程表设置模态框 */}
+      <ScheduleSettings
+        isOpen={showScheduleSettings}
+        onClose={() => setShowScheduleSettings(false)}
+        onSave={handleScheduleSave}
+      />
     </div>
   );
 }

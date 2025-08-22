@@ -1,0 +1,97 @@
+/* 智能晚自习状态管理组件样式 */
+.studyStatus {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.statusText {
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  user-select: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.statusText:hover {
+  opacity: 0.8;
+}
+
+.progressContainer {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+/* 进度条发光效果 */
+.progressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .statusText {
+    font-size: 1rem;
+  }
+
+  .progressContainer {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statusText {
+    font-size: 0.95rem;
+  }
+
+  .progressContainer {
+    max-width: 200px;
+  }
+
+  .progressBar {
+    height: 3px;
+  }
+}

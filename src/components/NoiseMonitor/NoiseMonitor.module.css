@@ -1,0 +1,144 @@
+/* 实时噪音状态监测组件样式 */
+.noiseMonitor {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.statusText {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  user-select: none;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+}
+
+/* 安静状态 */
+.statusText.quiet {
+  color: var(--text-color);
+  cursor: default;
+}
+
+/* 吵闹状态 */
+.statusText.noisy {
+  color: #ff4757;
+  animation: pulse 1.5s ease-in-out infinite;
+  cursor: default;
+}
+
+/* 错误状态 */
+.statusText.error {
+  color: #ff6b6b;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.statusText.error:hover {
+  opacity: 1;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+/* 初始化状态 */
+.statusText.initializing {
+  color: rgba(255, 255, 255, 0.6);
+  cursor: default;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+
+/* 校准状态 */
+.statusText.calibrating {
+  color: #ffa502;
+  cursor: default;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* 脉冲动画（吵闹状态） */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+/* 淡入淡出动画（初始化状态） */
+@keyframes fadeInOut {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 调试信息（仅开发环境显示） */
+.debugInfo {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .statusText {
+    font-size: 0.9rem;
+  }
+
+  .debugInfo {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .statusText {
+    font-size: 0.85rem;
+  }
+
+  .debugInfo {
+    font-size: 0.65rem;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .statusText.noisy {
+    color: #ff0000;
+    font-weight: 600;
+  }
+
+  .statusText.error {
+    color: #ff0000;
+    font-weight: 600;
+  }
+}
+
+/* 减少动画模式支持 */
+@media (prefers-reduced-motion: reduce) {
+  .statusText.noisy {
+    animation: none;
+  }
+
+  .statusText.initializing {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .statusText {
+    transition: none;
+  }
+}

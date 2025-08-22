@@ -1,0 +1,106 @@
+/* MotivationalQuote Component Styles */
+
+.motivationalQuote {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.5rem 0;
+  margin-top: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.motivationalQuote:hover {
+  transform: translateY(-2px);
+}
+
+.quoteText {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: right;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  max-width: 300px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  transition: color var(--transition-fast);
+}
+
+.motivationalQuote:hover .quoteText {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.typing {
+  position: relative;
+}
+
+.cursor {
+  display: inline-block;
+  font-weight: 400;
+  color: var(--accent-color);
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .motivationalQuote {
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .quoteText {
+    font-size: 1rem;
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .motivationalQuote {
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .quoteText {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}
+
+/* 减少动画效果（用户偏好） */
+@media (prefers-reduced-motion: reduce) {
+  .motivationalQuote {
+    transition: none;
+  }
+
+  .motivationalQuote:hover {
+    transform: none;
+  }
+
+  .cursor {
+    animation: none;
+    opacity: 1;
+  }
+
+  .quoteText {
+    transition: none;
+  }
+}
