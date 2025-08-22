@@ -29,7 +29,7 @@
 
 .progressContainer {
   width: 100%;
-  max-width: 600px;
+  max-width: calc(100vw - 700px);
   margin: 0 auto;
 }
 
@@ -85,7 +85,7 @@
   }
 
   .progressContainer {
-    max-width: 400px;
+    max-width: calc(100vw - 300px);
   }
 }
 
@@ -95,7 +95,7 @@
   }
 
   .progressContainer {
-    max-width: 250px;
+    max-width: calc(100vw - 180px);
   }
 
   .progressBar {
