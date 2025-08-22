@@ -2,7 +2,7 @@
   "name": "沉浸式时钟",
   "short_name": "时钟",
   "description": "沉浸式时钟是一款简洁美观的全屏数字时钟、倒计时和秒表工具",
-  "version": "2.2.1",
+  "version": "2.4.9",
   "start_url": "/",
   "display": "fullscreen",
   "background_color": "#000000",
