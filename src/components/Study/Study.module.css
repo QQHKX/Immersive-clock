@@ -33,14 +33,14 @@
 
 .currentTime {
   font-family: var(--font-mono);
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: 300;
   color: var(--primary-color);
   letter-spacing: 0.05em;
 }
 
 .currentDate {
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
 }
@@ -54,7 +54,7 @@
 }
 
 .gaokaoCountdown {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: rgba(255, 255, 255, 0.9);
   text-align: right;
   word-wrap: break-word;
@@ -63,7 +63,7 @@
 }
 
 .days {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 600;
   color: var(--accent-color);
   margin: 0 0.25rem;

@@ -323,6 +323,18 @@ const NoiseMonitor: React.FC = () => {
     return cleanup;
   }, [initializeAudioMonitoring, cleanup]);
 
+  // 自动校准：当音频监测初始化完成且没有保存的校准数据时自动开始校准
+  useEffect(() => {
+    // 只有在音频监测正常工作且没有基准数据时才自动校准
+    if ((noiseStatus === 'quiet' || noiseStatus === 'noisy') && baselineNoise === 0 && !isCalibrating) {
+      console.log('检测到首次使用，自动开始校准...');
+      // 延迟1秒开始校准，让用户看到状态变化
+      setTimeout(() => {
+        calibrateBaseline();
+      }, 1000);
+    }
+  }, [noiseStatus, baselineNoise, isCalibrating, calibrateBaseline]);
+
   return (
     <div className={styles.noiseMonitor}>
       <div 

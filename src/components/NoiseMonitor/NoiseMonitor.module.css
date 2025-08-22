@@ -1,12 +1,12 @@
 /* 实时噪音状态监测组件样式 */
 .noiseMonitor {
   margin-top: 0.75rem;
-  text-align: center;
+  text-align: left;
 }
 
 .statusText {
   font-family: var(--font-ui);
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.5;
   font-weight: 500;
   letter-spacing: 0.5px;

@@ -1,7 +1,14 @@
 /* 智能晚自习状态管理组件样式 */
 .studyStatus {
-  margin-bottom: 1.5rem;
+  position: fixed;
+  top: 0.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
   text-align: center;
+  padding: 0.5rem 2rem;
+  width: 90%;
+  max-width: 1200px;
 }
 
 .statusText {
@@ -22,7 +29,7 @@
 
 .progressContainer {
   width: 100%;
-  max-width: 300px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -78,7 +85,7 @@
   }
 
   .progressContainer {
-    max-width: 250px;
+    max-width: 400px;
   }
 }
 
@@ -88,7 +95,7 @@
   }
 
   .progressContainer {
-    max-width: 200px;
+    max-width: 250px;
   }
 
   .progressBar {
