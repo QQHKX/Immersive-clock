@@ -70,382 +70,52 @@
 
 
 
-/* 作业管理区域 */
-.homeworkSection {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  margin-top: 10rem;
-  padding: 0 1rem 3rem;
-  width: 100%;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
-  box-sizing: border-box;
-  height: calc(100vh - 14rem);
-  overflow: hidden;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-}
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.swipeHint {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: none;
-}
-
-.sectionTitle {
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: var(--text-color);
-  margin: 0;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-.progress {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-.addButton {
-  background: var(--primary-color);
-  border: none;
-  color: var(--bg-color);
-  padding: 0.75rem;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.addButton:hover {
-  background: var(--accent-color);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(3, 218, 198, 0.3);
-}
-
-/* 作业网格布局 */
-.homeworkGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  min-height: 0;
-}
-
-@media (min-width: 1400px) {
-  .homeworkGrid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-
-@media (max-width: 1200px) {
-  .homeworkGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .homeworkGrid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding-right: 0.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-  }
-
-  .homeworkGrid::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .homeworkGrid::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-  }
-
-  .homeworkGrid::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-  }
-
-  .homeworkGrid::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-  }
-
-  .homeworkCard {
-    scroll-snap-align: start;
-  }
-}
-
-/* 作业卡片 */
-.homeworkCard {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-lg);
-  padding: 0.8rem;
-  display: flex;
-  flex-direction: column;
-  min-height: 200px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.homeworkCard:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-}
 
 
 
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.subjectTitle {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  margin: 0;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-
-
-.cardContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.emptyHomework {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-  padding: 2rem 1rem;
-  border: 2px dashed rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-md);
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-/* 作业列表 */
-.homeworkList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.homeworkList::-webkit-scrollbar {
-  width: 6px;
-}
-
-.homeworkList::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-
-.homeworkList::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-}
-
-.homeworkList::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.homeworkItem {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--border-radius-sm);
-  padding: 0.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.homeworkItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
-}
-
-
-
-.homeworkContent {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.content {
-  font-size: 0.9rem;
-  color: var(--text-color);
-  line-height: 1.4;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  hyphens: auto;
-}
-
-.estimatedTime {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
-  align-self: flex-end;
-}
-
-.saveButton,
-.cancelButton,
-.deleteButton {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.6);
-  padding: 0.4rem;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-}
-
-.deleteButton:hover {
-  background: rgba(220, 53, 69, 0.2);
-  border-color: #dc3545;
-  color: #dc3545;
-}
-
-.saveButton:hover {
-  background: rgba(40, 167, 69, 0.2);
-  border-color: #28a745;
-  color: #28a745;
-}
-
-.cancelButton:hover {
-  background: rgba(108, 117, 125, 0.2);
-  border-color: #6c757d;
-  color: #6c757d;
-}
-
-/* 编辑表单 */
-.editForm {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-}
-
-.editActions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-/* 空状态 */
-.emptyState {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-style: italic;
-  padding: 2rem;
-  border: 2px dashed rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-md);
-}
-
-/* 模态框样式 */
+/* 模态框 */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal);
+  z-index: 1000;
   backdrop-filter: blur(5px);
-  animation: modal-fade-in 0.3s ease-out;
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .modalContent {
-  background: var(--hud-background);
+  background: var(--bg-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 1.5rem;
-  max-width: 500px;
   width: 90%;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modal-slide-in 0.3s ease-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 }
 
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modalHeader h3 {
   margin: 0;
-  color: var(--primary-color);
   font-size: 1.2rem;
   font-weight: 500;
+  color: var(--text-color);
 }
 
 .closeButton {
@@ -453,8 +123,11 @@
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: var(--border-radius-sm);
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   transition: all 0.3s ease;
 }
 
@@ -464,16 +137,61 @@
 }
 
 .modalBody {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
-.subjectSelect,
-.contentInput,
-.contentTextarea,
-.timeInput,
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.confirmButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirmButton {
+  background: var(--primary-color);
+  border: none;
+  color: var(--bg-color);
+}
+
+.confirmButton:hover {
+  background: var(--accent-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(3, 218, 198, 0.3);
+}
+
+.confirmButton:disabled {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cancelButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-color);
+}
+
 .yearInput {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -483,100 +201,14 @@
   font-family: var(--font-ui);
   font-size: 1rem;
   transition: all 0.3s ease;
-  resize: vertical;
+  width: 100%;
 }
 
-.contentTextarea {
-  min-height: 80px;
-  line-height: 1.4;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  resize: vertical;
-}
-
-.subjectSelect:focus,
-.contentInput:focus,
-.contentTextarea:focus,
-.timeInput:focus,
 .yearInput:focus {
   outline: none;
   border-color: var(--primary-color);
   background: rgba(255, 255, 255, 0.08);
-}
-
-.selectedSubject {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(3, 218, 198, 0.1);
-  border: 1px solid rgba(3, 218, 198, 0.3);
-  border-radius: var(--border-radius-sm);
-}
-
-.subjectLabel {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.subjectName {
-  font-weight: 600;
-  color: var(--primary-color);
-  background: rgba(3, 218, 198, 0.2);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--border-radius-sm);
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-.subjectSelect option {
-  background: var(--bg-color);
-  color: var(--text-color);
-}
-
-.modalActions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.confirmButton {
-  background: var(--primary-color);
-  border: none;
-  color: var(--bg-color);
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
-}
-
-.confirmButton:hover:not(:disabled) {
-  background: var(--accent-color);
-  transform: translateY(-1px);
-}
-
-.confirmButton:disabled {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.4);
-  cursor: not-allowed;
-}
-
-.cancelButton {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.cancelButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.2);
 }
 
 /* 动画 */

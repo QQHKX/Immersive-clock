@@ -8,29 +8,17 @@ import { AppState, AppAction, AppMode, StudyState, HomeworkItem } from '../types
 function loadStudyState(): StudyState {
   try {
     const savedTargetYear = localStorage.getItem('study-target-year');
-    const savedHomeworks = localStorage.getItem('study-homeworks');
     
     const currentYear = new Date().getFullYear();
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : currentYear + 1;
     
-    let homeworks: HomeworkItem[] = [];
-    if (savedHomeworks) {
-      const parsed = JSON.parse(savedHomeworks);
-      homeworks = parsed.map((hw: any) => ({
-        ...hw,
-        createdAt: new Date(hw.createdAt)
-      }));
-    }
-    
     return {
-      targetYear,
-      homeworks
+      targetYear
     };
   } catch (error) {
     console.warn('Failed to load study state from localStorage:', error);
     return {
-      targetYear: new Date().getFullYear() + 1,
-      homeworks: []
+      targetYear: new Date().getFullYear() + 1
     };
   }
 }
@@ -199,70 +187,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         study: newStudyState,
       };
 
-    case 'ADD_HOMEWORK': {
-      const newHomework: HomeworkItem = {
-        ...action.payload,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        createdAt: new Date()
-      };
-      const updatedHomeworks = [...state.study.homeworks, newHomework];
-      // 保存到本地存储
-      localStorage.setItem('study-homeworks', JSON.stringify(updatedHomeworks));
-      return {
-        ...state,
-        study: {
-          ...state.study,
-          homeworks: updatedHomeworks
-        }
-      };
-    }
 
-    case 'UPDATE_HOMEWORK': {
-      const updatedHomeworks = state.study.homeworks.map(hw =>
-        hw.id === action.payload.id
-          ? { ...hw, ...action.payload.updates }
-          : hw
-      );
-      // 保存到本地存储
-      localStorage.setItem('study-homeworks', JSON.stringify(updatedHomeworks));
-      return {
-        ...state,
-        study: {
-          ...state.study,
-          homeworks: updatedHomeworks
-        }
-      };
-    }
-
-    case 'DELETE_HOMEWORK': {
-      const updatedHomeworks = state.study.homeworks.filter(hw => hw.id !== action.payload);
-      // 保存到本地存储
-      localStorage.setItem('study-homeworks', JSON.stringify(updatedHomeworks));
-      return {
-        ...state,
-        study: {
-          ...state.study,
-          homeworks: updatedHomeworks
-        }
-      };
-    }
-
-    case 'TOGGLE_HOMEWORK': {
-      const updatedHomeworks = state.study.homeworks.map(hw =>
-        hw.id === action.payload
-          ? { ...hw, completed: !hw.completed }
-          : hw
-      );
-      // 保存到本地存储
-      localStorage.setItem('study-homeworks', JSON.stringify(updatedHomeworks));
-      return {
-        ...state,
-        study: {
-          ...state.study,
-          homeworks: updatedHomeworks
-        }
-      };
-    }
 
     default:
       return state;

@@ -9,7 +9,7 @@ import { versionCachePlugin } from './src/utils/versionCache'
 export default defineConfig({
   plugins: [react(), versionCachePlugin()],
   server: {
-    port: 3000,
+    port: 3005,
     open: true,
     // 开发服务器缓存配置
     headers: {

@@ -29,23 +29,7 @@ export interface StopwatchState {
   isActive: boolean;
 }
 
-/**
- * 作业项接口
- */
-export interface HomeworkItem {
-  /** 作业ID */
-  id: string;
-  /** 科目 */
-  subject: string;
-  /** 作业内容 */
-  content: string;
-  /** 预估完成时间（分钟） */
-  estimatedTime: number;
-  /** 是否完成 */
-  completed: boolean;
-  /** 创建时间 */
-  createdAt: Date;
-}
+
 
 /**
  * 晚自习状态接口
@@ -53,8 +37,6 @@ export interface HomeworkItem {
 export interface StudyState {
   /** 目标高考年份 */
   targetYear: number;
-  /** 当日作业列表 */
-  homeworks: HomeworkItem[];
 }
 
 /**
@@ -93,9 +75,5 @@ export type AppAction =
   | { type: 'RESET_STOPWATCH' }
   | { type: 'TICK_STOPWATCH' }
   | { type: 'SET_TARGET_YEAR'; payload: number }
-  | { type: 'ADD_HOMEWORK'; payload: Omit<HomeworkItem, 'id' | 'createdAt'> }
-  | { type: 'UPDATE_HOMEWORK'; payload: { id: string; updates: Partial<HomeworkItem> } }
-  | { type: 'DELETE_HOMEWORK'; payload: string }
-  | { type: 'TOGGLE_HOMEWORK'; payload: string }
   | { type: 'OPEN_MODAL' }
   | { type: 'CLOSE_MODAL' };
