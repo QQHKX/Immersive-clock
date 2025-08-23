@@ -88,8 +88,52 @@
     </style>
   </head>
   <body>
+    <!-- 缓存检测脚本 -->
+    <script>
+      /**
+       * 检测资源是否已缓存
+       * 如果已缓存则隐藏加载动画
+       */
+      (function() {
+        // 检查是否为重复访问（通过sessionStorage）
+        const isRevisit = sessionStorage.getItem('app-loaded');
+        
+        // 检查关键资源是否已缓存
+        function checkResourceCache() {
+          return new Promise((resolve) => {
+            const testImage = new Image();
+            const startTime = performance.now();
+            
+            testImage.onload = function() {
+              const loadTime = performance.now() - startTime;
+              // 如果加载时间小于50ms，认为资源已缓存
+              resolve(loadTime < 50);
+            };
+            
+            testImage.onerror = function() {
+              resolve(false);
+            };
+            
+            // 测试favicon是否已缓存
+            testImage.src = '/favicon.svg?' + Math.random();
+          });
+        }
+        
+        // 如果是重复访问或资源已缓存，则隐藏加载动画
+        if (isRevisit) {
+          document.documentElement.style.setProperty('--loading-display', 'none');
+        } else {
+          checkResourceCache().then(function(isCached) {
+            if (isCached) {
+              document.documentElement.style.setProperty('--loading-display', 'none');
+            }
+          });
+        }
+      })();
+    </script>
+    
     <!-- 加载动画 -->
-    <div id="loading-screen">
+    <div id="loading-screen" style="display: var(--loading-display, flex);">
       <div class="loading-spinner"></div>
       <div class="loading-text">沉浸式时钟加载中...</div>
     </div>
