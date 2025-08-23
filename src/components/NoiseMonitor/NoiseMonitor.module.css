@@ -55,7 +55,8 @@
 /* 校准状态 */
 .statusText.calibrating {
   color: #ffa502;
-  cursor: not-allowed; /* 校准中不可点击 */
+  cursor: not-allowed;
+  /* 校准中不可点击 */
   animation: pulse 1s ease-in-out infinite;
 }
 
@@ -137,10 +138,13 @@
 
 /* 安静状态呼吸动画 */
 @keyframes breatheQuiet {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.1);
@@ -149,11 +153,14 @@
 
 /* 吵闹状态呼吸动画 */
 @keyframes breatheNoisy {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.6;
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.3);
   }
+
   50% {
     opacity: 0.9;
     transform: scale(1.15);
@@ -163,10 +170,13 @@
 
 /* 错误状态呼吸动画 */
 @keyframes breatheError {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.75;
     transform: scale(1.05);
@@ -175,10 +185,13 @@
 
 /* 初始化状态呼吸动画 */
 @keyframes breatheInitializing {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(0.9);
   }
+
   50% {
     opacity: 0.6;
     transform: scale(1.05);
@@ -187,10 +200,13 @@
 
 /* 校准状态呼吸动画 */
 @keyframes breatheCalibrating {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.1);
@@ -210,21 +226,25 @@
 @media (max-width: 768px) {
   .noiseMonitor {
     position: relative;
-    z-index: 1001; /* 确保在其他元素之上 */
+    z-index: 1001;
+    /* 确保在其他元素之上 */
   }
 
   .statusContainer {
-    min-height: 44px; /* 增加最小点击区域 */
+    min-height: 44px;
+    /* 增加最小点击区域 */
     align-items: center;
   }
 
   .statusText {
     font-size: 0.9rem;
-    padding: 0.5rem 0.75rem; /* 增加点击区域 */
+    padding: 0.5rem 0.75rem;
+    /* 增加点击区域 */
     min-height: 32px;
     display: flex;
     align-items: center;
-    cursor: pointer; /* 确保显示可点击状态 */
+    cursor: pointer;
+    /* 确保显示可点击状态 */
   }
 
   .debugInfo {
@@ -235,30 +255,37 @@
 @media (max-width: 480px) {
   .noiseMonitor {
     position: relative;
-    z-index: 1002; /* 更高的层级 */
+    z-index: 1002;
+    /* 更高的层级 */
     margin-top: 0.5rem;
   }
 
   .statusContainer {
-    min-height: 48px; /* 更大的点击区域 */
+    min-height: 48px;
+    /* 更大的点击区域 */
     gap: 0.75rem;
   }
 
   .statusText {
     font-size: 0.85rem;
-    padding: 0.75rem 1rem; /* 更大的点击区域 */
+    padding: 0.75rem 1rem;
+    /* 更大的点击区域 */
     min-height: 36px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3); /* 添加背景以提高可见性 */
+    background: rgba(0, 0, 0, 0.3);
+    /* 添加背景以提高可见性 */
     backdrop-filter: blur(10px);
     cursor: pointer;
   }
 
   .breathingLight {
     width: 12px;
-    height: 12px; /* 增大呼吸灯以便点击 */
-    padding: 8px; /* 增加点击区域 */
-    margin: -8px; /* 抵消padding的视觉影响 */
+    height: 12px;
+    /* 增大呼吸灯以便点击 */
+    padding: 8px;
+    /* 增加点击区域 */
+    margin: -8px;
+    /* 抵消padding的视觉影响 */
   }
 
   .debugInfo {
