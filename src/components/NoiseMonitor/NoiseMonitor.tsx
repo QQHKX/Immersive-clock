@@ -153,11 +153,10 @@ const NoiseMonitor: React.FC = () => {
    * 在安静环境下运行3秒，计算平均噪音水平作为基准
    */
   const calibrateBaseline = useCallback(async () => {
-    if (!analyserRef.current || isCalibrating || !hasPermission) {
+    if (!analyserRef.current || isCalibrating) {
       console.log('校准条件不满足：', {
         hasAnalyser: !!analyserRef.current,
-        isCalibrating,
-        hasPermission
+        isCalibrating
       });
       return;
     }
@@ -378,12 +377,8 @@ const NoiseMonitor: React.FC = () => {
         initializeAudioMonitoring();
       }, 100);
     } else if (noiseStatus === 'quiet' || noiseStatus === 'noisy') {
-      // 在正常工作状态下点击校准，如果已有基准数据则清除
-      if (baselineNoise > 0) {
-        clearCalibration();
-      } else {
-        calibrateBaseline();
-      }
+      // 在正常工作状态下点击开始校准
+      calibrateBaseline();
     }
   }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring, calibrateBaseline, baselineNoise, clearCalibration]);
 
@@ -430,15 +425,24 @@ const NoiseMonitor: React.FC = () => {
   return (
     <div className={styles.noiseMonitor}>
       <div className={styles.statusContainer}>
-        <div className={`${styles.breathingLight} ${getStatusClassName()}`}></div>
         <div 
-          className={`${styles.statusText} ${getStatusClassName()}`}
+          className={`${styles.breathingLight} ${getStatusClassName()}`}
           onClick={handleClick}
           title={
             isCalibrating ? '正在校准基准噪音水平...' :
             noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
             noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击${baselineNoise > 0 ? '清除校准' : '校准'}` :
+              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击校准` :
+              `当前音量: ${currentVolume.toFixed(1)}dB`
+          }
+        ></div>
+        <div 
+          className={`${styles.statusText} ${getStatusClassName()}`}
+          title={
+            isCalibrating ? '正在校准基准噪音水平...' :
+            noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
+            noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
+              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击呼吸灯校准` :
               `当前音量: ${currentVolume.toFixed(1)}dB`
           }
         >
