@@ -14,13 +14,13 @@ export function App() {
 
   /**
    * 设置进入动画
-   * 在组件首次挂载时触发
+   * 在组件首次挂载时触发，使用优化的动画避免布局重排
    */
   useEffect(() => {
     // 直接触发进入动画
     setShowEnterAnimation(true);
     
-    // 动画完成后隐藏
+    // 动画完成后隐藏，清理will-change属性以优化性能
     const timer = setTimeout(() => {
       setShowEnterAnimation(false);
     }, 1000); // 1秒动画时长

@@ -53,18 +53,20 @@
 /* 进入动画样式 */
 .enterAnimation {
   animation: appEnter 1s ease-out forwards;
+  /* 创建新的层叠上下文，避免影响其他元素 */
+  will-change: opacity;
+  /* 确保动画在合成层中进行 */
+  transform: translateZ(0);
 }
 
-/* 进入动画关键帧 */
+/* 进入动画关键帧 - 仅使用opacity避免布局重排 */
 @keyframes appEnter {
   0% {
     opacity: 0;
-    transform: scale(0.95) translateY(20px);
   }
 
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }
 
