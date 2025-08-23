@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no" />
     <title>沉浸式时钟 - 全屏数字时钟、倒计时和秒表工具</title>
     <meta name="description" content="沉浸式时钟是一款简洁美观的全屏数字时钟、倒计时和秒表工具，支持全屏显示、多种模式切换，为您提供专注的时间管理体验。" />
     <meta name="keywords" content="沉浸式时钟,全屏时钟,数字时钟,倒计时,秒表,时间管理,全屏显示" />
@@ -85,6 +85,28 @@
         0%, 100% { opacity: 0.6; }
         50% { opacity: 1; }
       }
+      
+      /* Edge移动端兼容性修复 */
+      @supports (-ms-ime-align: auto) {
+        #loading-screen {
+          height: 100vh !important;
+          height: calc(var(--vh, 1vh) * 100) !important;
+        }
+      }
+      
+      /* 移动端Edge浏览器特殊处理 */
+      @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+        #loading-screen {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          min-height: 100vh !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -96,8 +118,43 @@
     
     <div id="root"></div>
     
-    <!-- 缓存检测脚本 -->
+    <!-- 移动端兼容性脚本 -->
     <script>
+      /**
+       * 修复移动端100vh问题和Edge兼容性
+       */
+      (function() {
+        // 设置真实的视口高度
+        function setRealViewportHeight() {
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        // 初始设置
+        setRealViewportHeight();
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', setRealViewportHeight);
+        window.addEventListener('orientationchange', function() {
+          setTimeout(setRealViewportHeight, 100);
+        });
+        
+        // Edge移动端特殊处理
+        const isEdgeMobile = /Edge\/\d+/.test(navigator.userAgent) && /Mobile|Tablet/.test(navigator.userAgent);
+        if (isEdgeMobile) {
+          document.documentElement.classList.add('edge-mobile');
+          
+          // 强制重新计算布局
+          setTimeout(function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+              loadingScreen.style.transform = 'translateZ(0)';
+              loadingScreen.style.backfaceVisibility = 'hidden';
+            }
+          }, 50);
+        }
+      })();
+      
       /**
        * 检测资源是否已缓存
        * 如果已缓存则隐藏加载动画

@@ -40,11 +40,23 @@ body {
 
 #root {
   height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   width: 100vw;
   display: flex;
   flex-direction: column;
   /* 防止双击缩放 */
   touch-action: manipulation;
+}
+
+/* Edge移动端特殊处理 */
+.edge-mobile #root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Button Reset */

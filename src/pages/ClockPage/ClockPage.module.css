@@ -2,6 +2,7 @@
 
 .clockPage {
   height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   width: 100vw;
   background: var(--background-color);
   color: var(--text-color);
@@ -67,7 +68,28 @@
 /* Ensure the page takes full viewport */
 .clockPage {
   min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
   min-width: 100vw;
+}
+
+/* Edge移动端特殊处理 */
+:global(.edge-mobile) .clockPage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* 禁用动画以避免布局问题 */
+  animation: none;
+}
+
+:global(.edge-mobile) .timeDisplay {
+  /* 禁用动画以避免布局问题 */
+  animation: none;
+  opacity: 1;
+  transform: none;
 }
 
 /* Text selection prevention is now handled in the main .clockPage rule above */
