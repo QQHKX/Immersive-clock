@@ -88,6 +88,14 @@
     </style>
   </head>
   <body>
+    <!-- 加载动画 -->
+    <div id="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">沉浸式时钟加载中...</div>
+    </div>
+    
+    <div id="root"></div>
+    
     <!-- 缓存检测脚本 -->
     <script>
       /**
@@ -97,8 +105,23 @@
       (function() {
         // 检查是否为重复访问（通过sessionStorage）
         const isRevisit = sessionStorage.getItem('app-loaded');
+        const loadingScreen = document.getElementById('loading-screen');
         
-        // 检查关键资源是否已缓存
+        console.log('缓存检测: isRevisit =', isRevisit);
+        
+        /**
+         * 隐藏加载动画
+         */
+        function hideLoadingScreen() {
+          if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+            console.log('缓存检测: 加载动画已隐藏');
+          }
+        }
+        
+        /**
+         * 检查关键资源是否已缓存
+         */
         function checkResourceCache() {
           return new Promise((resolve) => {
             const testImage = new Image();
@@ -106,39 +129,36 @@
             
             testImage.onload = function() {
               const loadTime = performance.now() - startTime;
-              // 如果加载时间小于50ms，认为资源已缓存
-              resolve(loadTime < 50);
+              console.log('缓存检测: 资源加载时间 =', loadTime + 'ms');
+              // 如果加载时间小于30ms，认为资源已缓存
+              resolve(loadTime < 30);
             };
             
             testImage.onerror = function() {
+              console.log('缓存检测: 资源加载失败');
               resolve(false);
             };
             
             // 测试favicon是否已缓存
-            testImage.src = '/favicon.svg?' + Math.random();
+            testImage.src = '/favicon.svg';
           });
         }
         
-        // 如果是重复访问或资源已缓存，则隐藏加载动画
+        // 如果是重复访问，直接隐藏加载动画
         if (isRevisit) {
-          document.documentElement.style.setProperty('--loading-display', 'none');
+          hideLoadingScreen();
         } else {
+          // 检查资源缓存状态
           checkResourceCache().then(function(isCached) {
+            console.log('缓存检测: 资源已缓存 =', isCached);
             if (isCached) {
-              document.documentElement.style.setProperty('--loading-display', 'none');
+              hideLoadingScreen();
             }
           });
         }
       })();
     </script>
     
-    <!-- 加载动画 -->
-    <div id="loading-screen" style="display: var(--loading-display, flex);">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">沉浸式时钟加载中...</div>
-    </div>
-    
-    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="application/ld+json">
     {
