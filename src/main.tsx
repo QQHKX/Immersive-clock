@@ -24,7 +24,7 @@ root.render(
 );
 
 /**
- * 隐藏加载动画并标记应用已加载
+ * 隐藏加载动画
  * 在React应用渲染完成后执行
  */
 setTimeout(() => {
@@ -33,8 +33,6 @@ setTimeout(() => {
     // 确保DOM完全渲染后再隐藏加载动画
     requestAnimationFrame(() => {
       loadingScreen.remove();
-      // 标记应用已加载，用于下次访问时的缓存检测
-      sessionStorage.setItem('app-loaded', 'true');
     });
   }
 }, 200);
