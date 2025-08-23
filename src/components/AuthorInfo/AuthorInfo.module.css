@@ -14,6 +14,13 @@
   z-index: 10;
   pointer-events: auto;
   transition: all 0.3s ease;
+  /* 作者信息进入动画 */
+  opacity: 0;
+  transform: translateX(20px) translateY(10px);
+  animation: authorInfoEnter 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.2s forwards;
+  /* 性能优化 */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .version {
@@ -63,6 +70,20 @@
 
   .authorInfo:hover {
     color: #ffffff;
+  }
+}
+
+/* 动画关键帧定义 */
+@keyframes authorInfoEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(20px) translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+    will-change: auto;
   }
 }
 

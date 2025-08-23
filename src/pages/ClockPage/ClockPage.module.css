@@ -19,6 +19,8 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  /* 页面进入动画 */
+  animation: pageEnter 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .clockPage:focus {
@@ -33,6 +35,14 @@
   padding: var(--spacing-lg);
   position: relative;
   z-index: 1;
+  /* 时钟显示区域动画 */
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  animation: timeDisplayEnter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+  /* 性能优化 */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 /* Responsive adjustments */
@@ -99,6 +109,37 @@
 
   .clockPage::before {
     display: none;
+  }
+}
+
+/* 动画关键帧定义 */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes timeDisplayEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+
+  60% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    will-change: auto;
   }
 }
 

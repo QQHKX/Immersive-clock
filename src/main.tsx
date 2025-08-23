@@ -22,3 +22,17 @@ root.render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+/**
+ * 隐藏加载动画
+ * 在React应用渲染完成后执行
+ */
+setTimeout(() => {
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    // 确保DOM完全渲染后再隐藏加载动画
+    requestAnimationFrame(() => {
+      loadingScreen.remove();
+    });
+  }
+}, 200);

@@ -27,8 +27,73 @@
     <!-- 百度站点验证 -->
     <meta name="baidu-site-verification" content="codeva-DN108xBGRS">
 
+    <style>
+      /* 加载动画样式 - 使用高特异性避免CSS冲突 */
+      #loading-screen {
+         position: fixed !important;
+         top: 0 !important;
+         left: 0 !important;
+         width: 100% !important;
+         height: 100% !important;
+         background: #151515 !important;
+         display: flex !important;
+         flex-direction: column !important;
+         justify-content: center !important;
+         align-items: center !important;
+         z-index: 99999 !important;
+         opacity: 1 !important;
+         margin: 0 !important;
+         padding: 0 !important;
+         box-sizing: border-box !important;
+         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+       }
+      
+      #loading-screen .loading-spinner {
+        width: 50px !important;
+        height: 50px !important;
+        border: 3px solid rgba(255, 255, 255, 0.1) !important;
+        border-top: 3px solid #ffffff !important;
+        border-radius: 50% !important;
+        animation: loading-spin 1s linear infinite !important;
+        margin: 0 0 20px 0 !important;
+        padding: 0 !important;
+        transform-origin: center !important;
+        will-change: transform !important;
+        box-sizing: border-box !important;
+        display: block !important;
+      }
+      
+      #loading-screen .loading-text {
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.5px !important;
+        animation: loading-pulse 2s ease-in-out infinite !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        display: block !important;
+      }
+      
+      @keyframes loading-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes loading-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <!-- 加载动画 -->
+    <div id="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">沉浸式时钟加载中...</div>
+    </div>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="application/ld+json">
