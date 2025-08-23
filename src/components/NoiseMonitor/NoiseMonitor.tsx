@@ -37,6 +37,16 @@ const NoiseMonitor: React.FC = () => {
   const animationFrameRef = useRef<number | null>(null);
   const statusChangeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingStatusRef = useRef<NoiseStatus | null>(null);
+  const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
+  const initializationCountRef = useRef<number>(0); // 初始化计数器
+  
+  // 检测是否为移动设备
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  /**
+   * 移动设备特殊处理：延长稳定时间
+   */
+  const getMobileDelay = () => isMobileDevice ? 3000 : 2000;
 
   /**
    * 计算音量分贝值
@@ -143,8 +153,16 @@ const NoiseMonitor: React.FC = () => {
    * 在安静环境下运行3秒，计算平均噪音水平作为基准
    */
   const calibrateBaseline = useCallback(async () => {
-    if (!analyserRef.current || isCalibrating) return;
+    if (!analyserRef.current || isCalibrating || !hasPermission) {
+      console.log('校准条件不满足：', {
+        hasAnalyser: !!analyserRef.current,
+        isCalibrating,
+        hasPermission
+      });
+      return;
+    }
     
+    console.log('开始校准基准噪音水平...');
     setIsCalibrating(true);
     const samples: number[] = [];
     const sampleDuration = 3000; // 3秒
@@ -199,6 +217,14 @@ const NoiseMonitor: React.FC = () => {
    * 初始化音频监测
    */
   const initializeAudioMonitoring = useCallback(async () => {
+    // 防止重复初始化
+    if (initializationCountRef.current > 0) {
+      console.log('音频监测已在初始化中，跳过重复初始化');
+      return;
+    }
+    
+    initializationCountRef.current += 1;
+    
     try {
       // 请求麦克风权限
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -262,6 +288,10 @@ const NoiseMonitor: React.FC = () => {
       statusChangeTimerRef.current = null;
     }
     pendingStatusRef.current = null;
+
+    // 重置自动校准和初始化状态
+    autoCalibrationTriggeredRef.current = false;
+    initializationCountRef.current = 0;
 
     // 断开音频连接
     if (microphoneRef.current) {
@@ -373,15 +403,29 @@ const NoiseMonitor: React.FC = () => {
 
   // 自动校准：当音频监测初始化完成且没有保存的校准数据时自动开始校准
   useEffect(() => {
-    // 只有在音频监测正常工作且没有基准数据时才自动校准
-    if ((noiseStatus === 'quiet' || noiseStatus === 'noisy') && baselineNoise === 0 && !isCalibrating) {
-      console.log('检测到首次使用，自动开始校准...');
-      // 延迟1秒开始校准，让用户看到状态变化
-      setTimeout(() => {
-        calibrateBaseline();
-      }, 1000);
+    // 更严格的条件检查，防止重复触发
+    if (
+      (noiseStatus === 'quiet' || noiseStatus === 'noisy') && 
+      baselineNoise === 0 && 
+      !isCalibrating && 
+      !autoCalibrationTriggeredRef.current && 
+      hasPermission && 
+      analyserRef.current && 
+      initializationCountRef.current <= 1 // 限制初始化次数
+    ) {
+      console.log('检测到首次使用，自动开始校准...', { isMobileDevice });
+       autoCalibrationTriggeredRef.current = true; // 标记已触发自动校准
+       
+       // 根据设备类型调整延迟时间
+        const delay = getMobileDelay();
+        setTimeout(() => {
+          if (!isCalibrating && baselineNoise === 0) {
+            console.log('延迟校准开始，设备类型：', isMobileDevice ? '移动设备' : '桌面设备');
+            calibrateBaseline();
+          }
+        }, delay);
     }
-  }, [noiseStatus, baselineNoise, isCalibrating, calibrateBaseline]);
+  }, [noiseStatus, baselineNoise, isCalibrating, hasPermission, calibrateBaseline]);
 
   return (
     <div className={styles.noiseMonitor}>
