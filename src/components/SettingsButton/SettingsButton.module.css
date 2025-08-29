@@ -1,16 +1,16 @@
 /* 设置按钮样式 */
 .settingsButton {
   position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
+  bottom: 1rem;
+  left: 1rem;
   z-index: 999;
 
-  /* 按钮样式 */
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* 按钮样式 - 去除边框和背景 */
+  background: transparent;
+  border: none;
   border-radius: 50%;
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
 
   /* 内容居中 */
   display: flex;
@@ -24,24 +24,18 @@
   /* 过渡动画 */
   transition: all 0.3s ease;
 
-  /* 毛玻璃效果 */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-
-  /* 阴影 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* 去除阴影和毛玻璃效果 */
+  box-shadow: none;
 }
 
 .settingsButton:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: transparent;
+  transform: scale(1.1);
+  opacity: 0.8;
 }
 
 .settingsButton:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(0.95);
 }
 
 /* 显示/隐藏状态 */
@@ -55,22 +49,31 @@
   pointer-events: none;
 }
 
+/* 透明度状态 */
+.normal {
+  opacity: 0.6;
+}
+
+.faded {
+  opacity: 0.2;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .settingsButton {
-    bottom: 1rem;
-    left: 1rem;
-    width: 44px;
-    height: 44px;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 28px;
+    height: 28px;
   }
 }
 
 @media (max-width: 480px) {
   .settingsButton {
-    bottom: 0.75rem;
-    left: 0.75rem;
-    width: 40px;
-    height: 40px;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    width: 24px;
+    height: 24px;
   }
 }
 
@@ -92,12 +95,10 @@
 /* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .settingsButton {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--text-color);
   }
 
   .settingsButton:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: transparent;
   }
 }
