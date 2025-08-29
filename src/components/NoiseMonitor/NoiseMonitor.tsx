@@ -5,7 +5,7 @@ import styles from './NoiseMonitor.module.css';
 type NoiseStatus = 'quiet' | 'noisy' | 'error' | 'permission-denied' | 'initializing';
 
 // 噪音阈值（分贝）
-const NOISE_THRESHOLD = 45; // 调整为更合理的阈值
+const NOISE_THRESHOLD = 40; // 调整为更合理的阈值
 
 // 分贝计算相关常量
 const REFERENCE_LEVEL = 0.00002; // 20 微帕，标准参考声压级
