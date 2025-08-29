@@ -34,14 +34,14 @@ type StudyStatusType = {
 };
 
 interface StudyStatusProps {
-  onSettingsClick?: () => void;
+  // 移除onSettingsClick，设置功能已整合到统一设置面板
 }
 
 /**
  * 智能晚自习状态管理组件
  * 功能：显示当前晚自习状态和进度条
  */
-const StudyStatus: React.FC<StudyStatusProps> = ({ onSettingsClick }) => {
+const StudyStatus: React.FC<StudyStatusProps> = () => {
   const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
   const [currentStatus, setCurrentStatus] = useState<StudyStatusType>({
     isInClass: false,
@@ -146,14 +146,13 @@ const StudyStatus: React.FC<StudyStatusProps> = ({ onSettingsClick }) => {
   }, []);
 
   /**
-   * 处理点击状态文本（打开设置）
+   * 处理点击状态文本
+   * 设置功能已移至统一设置面板，此处仅保留点击交互
    */
   const handleStatusClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
-    if (onSettingsClick) {
-      onSettingsClick();
-    }
-  }, [onSettingsClick]);
+    // 设置功能已整合到统一设置面板中
+  }, []);
 
   // 组件初始化时加载课程表
   useEffect(() => {

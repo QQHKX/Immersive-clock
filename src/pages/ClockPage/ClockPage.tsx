@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { Clock } from '../../components/Clock/Clock';
 import { Countdown } from '../../components/Countdown/Countdown';
@@ -7,6 +7,8 @@ import { Study } from '../../components/Study/Study';
 import { HUD } from '../../components/HUD/HUD';
 import { CountdownModal } from '../../components/CountdownModal/CountdownModal';
 import { AuthorInfo } from '../../components/AuthorInfo/AuthorInfo';
+import { SettingsButton } from '../../components/SettingsButton';
+import { SettingsPanel } from '../../components/SettingsPanel';
 
 import styles from './ClockPage.module.css';
 
@@ -19,6 +21,7 @@ export function ClockPage() {
   const dispatch = useAppDispatch();
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevModeRef = useRef(mode);
+  const [showSettings, setShowSettings] = useState(false);
   
   // 跟踪模式变化
   useEffect(() => {
@@ -69,6 +72,20 @@ export function ClockPage() {
   }, [handlePageClick, isModalOpen]);
 
   /**
+   * 处理设置按钮点击
+   */
+  const handleSettingsClick = useCallback(() => {
+    setShowSettings(true);
+  }, []);
+
+  /**
+   * 处理设置面板关闭
+   */
+  const handleSettingsClose = useCallback(() => {
+    setShowSettings(false);
+  }, []);
+
+  /**
    * 渲染当前模式的时钟组件
    */
   const renderTimeDisplay = () => {
@@ -102,6 +119,20 @@ export function ClockPage() {
       <HUD />
       
       <AuthorInfo />
+      
+      {/* 设置按钮 - 只在晚自习模式下显示 */}
+      {mode === 'study' && (
+        <SettingsButton 
+          onClick={handleSettingsClick}
+          isVisible={!isModalOpen && !showSettings}
+        />
+      )}
+      
+      {/* 设置面板 */}
+      <SettingsPanel 
+        isOpen={showSettings}
+        onClose={handleSettingsClose}
+      />
       
       {isModalOpen && <CountdownModal />}
     </div>

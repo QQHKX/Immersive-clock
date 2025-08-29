@@ -1,0 +1,103 @@
+/* 设置按钮样式 */
+.settingsButton {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 999;
+
+  /* 按钮样式 */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+
+  /* 内容居中 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 颜色和字体 */
+  color: var(--text-color);
+  cursor: pointer;
+
+  /* 过渡动画 */
+  transition: all 0.3s ease;
+
+  /* 毛玻璃效果 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  /* 阴影 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.settingsButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.settingsButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 显示/隐藏状态 */
+.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settingsButton {
+    bottom: 1rem;
+    left: 1rem;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settingsButton {
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .settingsButton {
+    transition: none;
+  }
+
+  .settingsButton:hover {
+    transform: none;
+  }
+
+  .settingsButton:active {
+    transform: none;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .settingsButton {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .settingsButton:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+}
