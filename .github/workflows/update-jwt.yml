@@ -29,7 +29,14 @@ jobs:
         cd scripts
         echo '${{ secrets.JWT_CONFIG }}' > jwt-config.json
         echo '${{ secrets.PRIVATE_KEY }}' > ed25519-private.pem
+        echo "生成JWT token..."
         node generate-jwt.cjs
+        echo "检查JWT token文件是否生成..."
+        if [ ! -f qweather-jwt-token.txt ]; then
+          echo "错误：JWT token文件未生成"
+          exit 1
+        fi
+        echo "JWT token生成成功：$(cat qweather-jwt-token.txt | head -c 50)..."
         
     - name: Update environment file
       run: |
