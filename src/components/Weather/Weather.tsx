@@ -8,19 +8,19 @@ const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST;
 
 // 检查环境变量配置并输出详细提示
 if (!QWEATHER_API_KEY || QWEATHER_API_KEY === 'YOUR_JWT_TOKEN_HERE') {
-  console.warn('⚠️ 和风天气API配置缺失');
-  console.warn('📋 请按以下步骤配置天气功能:');
-  console.warn('1. 访问 https://dev.qweather.com/ 注册账号');
-  console.warn('2. 创建应用并获取API密钥');
-  console.warn('3. 在 .env 文件中设置 REACT_APP_QWEATHER_API_KEY');
-  console.warn('4. 当前将使用模拟天气数据');
+  console.info('🌤️ 天气组件使用模拟数据模式');
+  console.info('📋 如需真实天气数据，请按以下步骤配置:');
+  console.info('1. 访问 https://dev.qweather.com/ 注册账号');
+  console.info('2. 创建应用并获取API密钥');
+  console.info('3. 在 .env 文件中设置 REACT_APP_QWEATHER_API_KEY');
+  console.info('4. 配置完成后将自动获取实时天气数据');
 }
 
 if (!QWEATHER_BASE_URL) {
-  console.warn('⚠️ 和风天气API主机地址未配置');
-  console.warn('📋 请在 .env 文件中设置 REACT_APP_QWEATHER_HOST');
-  console.warn('   免费版: https://devapi.qweather.com');
-  console.warn('   付费版: https://api.qweather.com');
+  console.info('📡 和风天气API主机地址未配置');
+  console.info('📋 请在 .env 文件中设置 REACT_APP_QWEATHER_HOST');
+  console.info('   免费版: https://devapi.qweather.com');
+  console.info('   付费版: https://api.qweather.com');
 }
 
 
@@ -147,6 +147,7 @@ const Weather: React.FC = () => {
       
     } catch (error) {
       console.error('获取天气数据失败:', error);
+      console.warn('🌤️ API调用失败，使用模拟天气数据');
       
       // API调用失败时返回模拟数据
       return {
@@ -290,9 +291,28 @@ const Weather: React.FC = () => {
       const weather = await fetchWeatherData(location);
       
       setWeatherData(weather);
+      
+      // 如果使用的是模拟数据，不设置错误状态
+      if (!QWEATHER_API_KEY || !QWEATHER_BASE_URL) {
+        console.info('✅ 天气组件已加载（使用模拟数据）');
+      } else {
+        console.info('✅ 天气数据获取成功');
+      }
     } catch (error) {
       console.error('天气初始化失败:', error);
-      setError(error instanceof Error ? error.message : '未知错误');
+      
+      // 如果API配置不完整，使用模拟数据而不是显示错误
+      if (!QWEATHER_API_KEY || !QWEATHER_BASE_URL) {
+        console.warn('🌤️ 使用模拟天气数据');
+        setWeatherData({
+          temperature: '22',
+          icon: '100',
+          text: '晴',
+          location: '默认位置'
+        });
+      } else {
+        setError(error instanceof Error ? error.message : '未知错误');
+      }
     } finally {
       setLoading(false);
     }
