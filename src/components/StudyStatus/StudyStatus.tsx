@@ -103,7 +103,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
       const currentEndMinutes = currentPeriodEnd.getHours() * 60 + currentPeriodEnd.getMinutes();
       const nextStartMinutes = nextPeriodStart.getHours() * 60 + nextPeriodStart.getMinutes();
 
-      if (currentTime > currentEndMinutes && currentTime < nextStartMinutes) {
+      if (currentTime > currentEndMinutes && currentTime <= nextStartMinutes) {
         const totalBreakDuration = nextStartMinutes - currentEndMinutes;
         const breakElapsed = currentTime - currentEndMinutes;
         const progress = Math.min(100, Math.max(0, (breakElapsed / totalBreakDuration) * 100));

@@ -23,11 +23,11 @@
 
 /* 分割线 */
 .divider {
-  width: 1px;
+  width: 2px;
   height: 16px;
   background: var(--text-color);
   opacity: 0.3;
-  margin: 0;
+  margin: 0 0.25rem;
 }
 
 /* 天气描述文字 */
