@@ -228,6 +228,85 @@ src/
 
 **QQHKX** - [个人网站](https://qqhkx.com) | [GitHub](https://github.com/QQHKX)
 
+## 🔧 故障排除
+
+### JWT验证工具
+
+在遇到问题时，可以使用内置的JWT验证工具来诊断问题：
+
+```bash
+# 方法1：使用批处理脚本（推荐）
+cd scripts
+verify-jwt.bat
+
+# 方法2：使用Node.js命令
+cd scripts
+node verify-jwt.js
+
+# 方法3：验证指定的JWT token
+node verify-jwt.js "your-jwt-token-here"
+```
+
+验证工具会检查：
+- ✅ JWT格式是否正确
+- ✅ Header和Payload内容是否符合规范
+- ✅ Token是否已过期
+- ✅ 实际API调用是否成功
+
+### API功能测试工具
+
+使用完整的API测试脚本来验证所有天气API功能：
+
+```bash
+# 方法1：使用批处理脚本（推荐）
+cd scripts
+api-test.bat
+
+# 方法2：使用Node.js命令
+cd scripts
+node api-test.js
+```
+
+API测试工具会测试：
+- 🌍 地理位置查询API
+- 🌤️ 实时天气API
+- 📅 3天天气预报API
+- 📊 7天天气预报API
+- 💨 空气质量API
+- 📈 完整的测试报告和成功率统计
+
+测试结果会显示每个API的调用状态、响应数据预览和详细的错误信息（如有）。
+
+### 常见问题
+
+1. **JWT生成失败**
+   - 检查Node.js是否正确安装
+   - 确认Ed25519密钥文件存在且格式正确
+   - 验证配置文件中的凭据ID和项目ID
+
+2. **API调用失败**
+   - 使用 `verify-jwt.bat` 验证JWT token
+   - 确认JWT token未过期（最长24小时）
+   - 检查网络连接
+   - 验证和风天气控制台中的公钥配置
+
+3. **权限错误**
+   - 确保私钥文件有正确的读取权限
+   - 检查项目目录的访问权限
+
+4. **环境变量配置**
+   - 复制 `.env.local.example` 为 `.env.local`
+   - 确保 `REACT_APP_QWEATHER_API_KEY` 设置为完整的JWT token
+   - 检查 `REACT_APP_QWEATHER_HOST` 是否正确：
+     - 免费版用户：`https://devapi.qweather.com`
+     - 付费版用户：`https://api.qweather.com`
+     - 注意：不要包含 `/v7` 路径，程序会自动添加
+
+5. **API请求格式验证**
+   - 确保请求URL格式为：`https://host/v7/weather/now?location=经度,纬度`
+   - 认证头格式：`Authorization: Bearer your-jwt-token`
+   - API响应使用Gzip压缩，浏览器会自动处理
+
 ## 🙏 致谢
 
 感谢所有为这个项目做出贡献的开发者和用户！

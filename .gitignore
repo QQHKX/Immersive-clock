@@ -21,6 +21,14 @@ lerna-debug.log*
 .env.production.local
 *.local
 
+# 和风天气JWT认证相关文件
+# Ed25519密钥文件（敏感信息，不应提交到版本控制）
+*.pem
+# JWT token文件
+qweather-jwt-token.txt
+# 实际的JWT配置文件
+jwt-config.json
+
 # 编辑器目录和文件
 .vscode/*
 !.vscode/extensions.json

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './Weather.module.css';
 
+// 天气组件配置
 // 和风天气API配置
-// 注意：请在环境变量中配置您的API密钥和host
-const QWEATHER_API_KEY = process.env.REACT_APP_QWEATHER_API_KEY || ''; // 从环境变量读取API密钥
-const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST || 'https://devapi.qweather.com/v7'; // 从环境变量读取host，默认使用开发版API
+const QWEATHER_API_KEY = process.env.REACT_APP_QWEATHER_API_KEY;
+const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST;
 
 
 
@@ -70,14 +70,13 @@ const Weather: React.FC = () => {
   }, []);
 
   /**
-   * 调用和风天气API获取天气数据
+   * 获取天气数据（和风天气API）
    */
   const fetchWeatherData = useCallback(async (location: LocationData): Promise<WeatherData> => {
     const { latitude, longitude } = location;
     
-    // 如果没有API密钥，直接返回模拟数据
-    if (!QWEATHER_API_KEY) {
-      console.warn('未配置和风天气API密钥，使用模拟数据');
+    if (!QWEATHER_API_KEY || !QWEATHER_BASE_URL) {
+      console.warn('和风天气API密钥未配置，使用模拟数据');
       return {
         temperature: '22',
         icon: '100',
@@ -85,49 +84,53 @@ const Weather: React.FC = () => {
         location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
       };
     }
-    
-    const url = `${QWEATHER_BASE_URL}/weather/now?location=${longitude},${latitude}&key=${QWEATHER_API_KEY}`;
-    
+
     try {
-      const response = await fetch(url);
+      // 构建API请求URL（根据官方文档格式）
+      // URL格式：https://host/v7/weather/now?location=longitude,latitude
+      // 注意：和风天气API使用JWT认证，JWT token通过Authorization头传递
+      const apiUrl = `${QWEATHER_BASE_URL}/v7/weather/now?location=${longitude},${latitude}`;
       
-      if (!response.ok) {
-        // 如果API请求失败，返回模拟数据
-        if (response.status === 403) {
-          console.warn('和风天气API密钥无效或已过期 (403)，使用模拟数据');
-        } else {
-          console.warn(`天气API请求失败: ${response.status}，使用模拟数据`);
+      // 发送API请求
+      // JWT格式包含Header、Payload和Signature三部分，使用Ed25519算法签名
+      // 根据官方文档，API响应使用Gzip压缩，但浏览器会自动处理
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Authorization': `Bearer ${QWEATHER_API_KEY}`
         }
-        return {
-          temperature: '22',
-          icon: '100',
-          text: '晴',
-          location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
-        };
+      });
+
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       
+      // 检查API响应状态
       if (data.code !== '200') {
-        console.warn(`天气API返回错误: ${data.code}，使用模拟数据`);
-        return {
-          temperature: '22',
-          icon: '100',
-          text: '晴',
-          location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
-        };
+        throw new Error(`和风天气API错误: ${data.code}`);
       }
-      
-      const weather = data.now;
+
+      // 解析天气数据
+      const weatherInfo = data.now;
+      if (!weatherInfo) {
+        throw new Error('天气数据格式错误');
+      }
+
       return {
-        temperature: weather.temp,
-        icon: weather.icon,
-        text: weather.text,
+        temperature: weatherInfo.temp || '0',
+        icon: weatherInfo.icon || '100',
+        text: weatherInfo.text || '未知',
         location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
       };
+      
     } catch (error) {
-      console.warn('获取天气数据失败，使用模拟数据:', error);
-      // 返回模拟数据而不是抛出错误
+      console.error('获取天气数据失败:', error);
+      
+      // API调用失败时返回模拟数据
       return {
         temperature: '22',
         icon: '100',

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { versionCachePlugin } from './src/utils/versionCache'
 
@@ -6,13 +6,17 @@ import { versionCachePlugin } from './src/utils/versionCache'
  * Vite 配置文件
  * 包含开发服务器、构建优化和缓存策略配置
  */
-export default defineConfig({
-  plugins: [react(), versionCachePlugin()],
-  define: {
-    // 确保环境变量在客户端可用
-    'process.env.REACT_APP_QWEATHER_API_KEY': JSON.stringify(process.env.REACT_APP_QWEATHER_API_KEY),
-    'process.env.REACT_APP_QWEATHER_HOST': JSON.stringify(process.env.REACT_APP_QWEATHER_HOST)
-  },
+export default defineConfig(({ command, mode }) => {
+  // 显式加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
+    plugins: [react(), versionCachePlugin()],
+    define: {
+      // 确保环境变量在客户端可用
+      'process.env.REACT_APP_QWEATHER_API_KEY': JSON.stringify(env.REACT_APP_QWEATHER_API_KEY),
+      'process.env.REACT_APP_QWEATHER_HOST': JSON.stringify(env.REACT_APP_QWEATHER_HOST)
+    },
   server: {
     port: 3005,
     open: true,
@@ -60,5 +64,6 @@ export default defineConfig({
         drop_debugger: process.env.NODE_ENV === 'production'
       }
     }
+  }
   }
 })

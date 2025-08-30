@@ -1,0 +1,12 @@
+{
+  "credentialId": "YOUR_CREDENTIAL_ID",
+  "projectId": "YOUR_PROJECT_ID",
+  "privateKeyPath": "./ed25519-private.pem",
+  "expirationTime": 3600,
+  "_comments": {
+    "credentialId": "从和风天气控制台-项目管理-凭据中获取的凭据ID",
+    "projectId": "从和风天气控制台-项目管理中获取的项目ID",
+    "privateKeyPath": "Ed25519私钥文件的路径，相对于脚本目录",
+    "expirationTime": "JWT有效期（秒），最长86400秒（24小时）"
+  }
+}
