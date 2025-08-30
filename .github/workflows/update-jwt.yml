@@ -33,7 +33,9 @@ jobs:
         
     - name: Update environment file
       run: |
-        NEW_TOKEN=$(cat scripts/qweather-jwt-token.txt)
+        cd scripts
+        NEW_TOKEN=$(cat qweather-jwt-token.txt)
+        cd ..
         sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env.local
         
     - name: Commit and push changes
