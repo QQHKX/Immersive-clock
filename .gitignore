@@ -41,6 +41,9 @@ coverage
 .temp
 .vercel
 
+# Trae AI 配置文件夹
+.trae
+
 # 其他
 .env
 .env.production
