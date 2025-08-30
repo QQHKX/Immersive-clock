@@ -20,7 +20,7 @@ const DEFAULT_SCHEDULE: StudyPeriod[] = [
   {
     id: '2',
     startTime: '20:30',
-    endTime: '22:00',
+    endTime: '22:20',
     name: '第2节晚自习'
   }
 ];
