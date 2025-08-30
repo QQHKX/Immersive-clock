@@ -92,9 +92,15 @@ const Weather: React.FC = () => {
   const fetchWeatherData = useCallback(async (location: LocationData): Promise<WeatherData> => {
     const { latitude, longitude } = location;
     
-    if (!QWEATHER_API_KEY || !QWEATHER_BASE_URL) {
-      console.warn('🌤️ 和风天气API配置不完整，使用模拟数据');
-      console.warn('💡 提示: 配置真实API密钥后可获取实时天气数据');
+    // 运行时检查环境变量配置
+    if (!QWEATHER_API_KEY || QWEATHER_API_KEY === 'YOUR_JWT_TOKEN_HERE' || !QWEATHER_BASE_URL) {
+      console.info('🌤️ 天气组件运行在模拟数据模式');
+      console.info('📋 当前环境变量状态:');
+      console.info(`   REACT_APP_QWEATHER_API_KEY: ${QWEATHER_API_KEY ? '已设置' : '未设置'}`);
+      console.info(`   REACT_APP_QWEATHER_HOST: ${QWEATHER_BASE_URL ? '已设置' : '未设置'}`);
+      console.info('💡 如需真实天气数据，请配置和风天气API密钥');
+      console.info('📖 配置指南: https://dev.qweather.com/');
+      
       return {
         temperature: '22',
         icon: '100',
