@@ -28,6 +28,8 @@ lerna-debug.log*
 qweather-jwt-token.txt
 # 实际的JWT配置文件
 jwt-config.json
+# Vercel环境变量配置文档（包含敏感信息）
+docs/vercel-env-setup.md
 
 # 编辑器目录和文件
 .vscode/*
