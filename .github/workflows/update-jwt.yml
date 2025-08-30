@@ -9,6 +9,9 @@ on:
 jobs:
   update-jwt:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许写入仓库内容
+      actions: read    # 允许读取 actions
     
     steps:
     - name: Checkout code
