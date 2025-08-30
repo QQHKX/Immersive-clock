@@ -11,20 +11,29 @@
   max-width: 1200px;
 }
 
+/* 状态行容器 */
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .statusText {
   font-family: var(--font-ui);
   font-size: 1.1rem;
   color: var(--text-color);
-  margin-bottom: 0.75rem;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
   user-select: none;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 
-.statusText:hover {
-  opacity: 0.8;
+/* 天气容器 */
+.weatherContainer {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
 }
 
 .progressContainer {
@@ -84,6 +93,10 @@
     font-size: 1rem;
   }
 
+  .weatherContainer {
+    font-size: 1rem;
+  }
+
   .progressContainer {
     max-width: calc(100vw - 150px);
   }
@@ -95,7 +108,16 @@
 }
 
 @media (max-width: 480px) {
+  .statusRow {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
   .statusText {
+    font-size: 0.95rem;
+  }
+
+  .weatherContainer {
     font-size: 0.95rem;
   }
 

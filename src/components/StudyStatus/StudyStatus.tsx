@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Weather } from '../Weather';
 import styles from './StudyStatus.module.css';
 
 // 课程时间段接口
@@ -145,14 +146,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     setSchedule(DEFAULT_SCHEDULE);
   }, []);
 
-  /**
-   * 处理点击状态文本
-   * 设置功能已移至统一设置面板，此处仅保留点击交互
-   */
-  const handleStatusClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
-    // 设置功能已整合到统一设置面板中
-  }, []);
+
 
   // 组件初始化时加载课程表
   useEffect(() => {
@@ -176,12 +170,13 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
 
   return (
     <div className={styles.studyStatus}>
-      <div 
-        className={styles.statusText}
-        onClick={handleStatusClick}
-        title="点击设置课程表"
-      >
-        {currentStatus.statusText}
+      <div className={styles.statusRow}>
+        <div className={styles.statusText}>
+          {currentStatus.statusText}
+        </div>
+        <div className={styles.weatherContainer}>
+          <Weather />
+        </div>
       </div>
       <div className={styles.progressContainer}>
         <div className={styles.progressBar}>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Trash2, Save, Volume2, VolumeX } from 'react-feather';
+import { Plus, Trash2, Save, Volume2, VolumeX, RefreshCw } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
 import { Modal } from '../Modal';
@@ -161,6 +161,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   }, []);
   
   /**
+   * 刷新天气数据
+   */
+  const handleRefreshWeather = useCallback(() => {
+    // 触发天气组件刷新
+    const weatherRefreshEvent = new CustomEvent('weatherRefresh');
+    window.dispatchEvent(weatherRefreshEvent);
+    alert('天气数据已刷新');
+  }, []);
+  
+  /**
    * 清除噪音校准
    */
   const handleClearNoiseBaseline = useCallback(() => {
@@ -298,6 +308,25 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           min={new Date().getFullYear()}
           max={new Date().getFullYear() + 10}
         />
+      </FormSection>
+      
+      {/* 天气设置 */}
+      <FormSection title="天气设置">
+        <div className={styles.weatherInfo}>
+          <p className={styles.infoText}>
+            手动刷新天气数据以获取最新的天气信息。
+          </p>
+        </div>
+        
+        <FormButtonGroup align="left">
+          <FormButton
+            variant="secondary"
+            onClick={handleRefreshWeather}
+            icon={<RefreshCw size={16} />}
+          >
+            刷新天气
+          </FormButton>
+        </FormButtonGroup>
       </FormSection>
           
       {/* 噪音校准设置 */}

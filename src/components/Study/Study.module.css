@@ -9,7 +9,7 @@
   overflow: hidden;
 }
 
-/* 进度条下方左侧 - 噪音监测 */
+/* 进度条下方左侧 - 天气和噪音监测 */
 .topLeft {
   position: absolute;
   top: 50px;
@@ -17,6 +17,10 @@
   margin: 0;
   z-index: 10;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
 /* 进度条下方右侧 - 高考倒计时和励志金句 */
