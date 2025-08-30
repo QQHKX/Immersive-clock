@@ -2,8 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styles from './Weather.module.css';
 
 // 和风天气API配置
-const QWEATHER_API_KEY = '822d74f851d148efab9ac68a4a74cbd8';
-const QWEATHER_BASE_URL = 'https://api.qweather.com/v7'; // 使用免费版API
+// 注意：请在环境变量中配置您的API密钥和host
+const QWEATHER_API_KEY = process.env.REACT_APP_QWEATHER_API_KEY || ''; // 从环境变量读取API密钥
+const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST || 'https://devapi.qweather.com/v7'; // 从环境变量读取host，默认使用开发版API
+
+// 调试：输出环境变量值
+console.log('环境变量调试:', {
+  REACT_APP_QWEATHER_API_KEY: process.env.REACT_APP_QWEATHER_API_KEY,
+  REACT_APP_QWEATHER_HOST: process.env.REACT_APP_QWEATHER_HOST,
+  QWEATHER_API_KEY,
+  QWEATHER_BASE_URL
+});
 
 // 天气数据接口
 export interface WeatherData {
@@ -71,6 +80,18 @@ const Weather: React.FC = () => {
    */
   const fetchWeatherData = useCallback(async (location: LocationData): Promise<WeatherData> => {
     const { latitude, longitude } = location;
+    
+    // 如果没有API密钥，直接返回模拟数据
+    if (!QWEATHER_API_KEY) {
+      console.warn('未配置和风天气API密钥，使用模拟数据');
+      return {
+        temperature: '22',
+        icon: '100',
+        text: '晴',
+        location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
+      };
+    }
+    
     const url = `${QWEATHER_BASE_URL}/weather/now?location=${longitude},${latitude}&key=${QWEATHER_API_KEY}`;
     
     try {
@@ -78,7 +99,11 @@ const Weather: React.FC = () => {
       
       if (!response.ok) {
         // 如果API请求失败，返回模拟数据
-        console.warn(`天气API请求失败: ${response.status}，使用模拟数据`);
+        if (response.status === 403) {
+          console.warn('和风天气API密钥无效或已过期 (403)，使用模拟数据');
+        } else {
+          console.warn(`天气API请求失败: ${response.status}，使用模拟数据`);
+        }
         return {
           temperature: '22',
           icon: '100',

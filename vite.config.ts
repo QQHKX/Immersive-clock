@@ -8,6 +8,11 @@ import { versionCachePlugin } from './src/utils/versionCache'
  */
 export default defineConfig({
   plugins: [react(), versionCachePlugin()],
+  define: {
+    // 确保环境变量在客户端可用
+    'process.env.REACT_APP_QWEATHER_API_KEY': JSON.stringify(process.env.REACT_APP_QWEATHER_API_KEY),
+    'process.env.REACT_APP_QWEATHER_HOST': JSON.stringify(process.env.REACT_APP_QWEATHER_HOST)
+  },
   server: {
     port: 3005,
     open: true,

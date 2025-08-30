@@ -51,6 +51,12 @@ cd immersive-clock
 # 安装依赖
 npm install
 
+# 配置天气API（可选）
+# 复制环境变量示例文件
+cp .env.example .env.local
+# 编辑 .env.local 文件，添加您的和风天气API密钥
+# REACT_APP_QWEATHER_API_KEY=your_api_key_here
+
 # 开发模式运行
 npm run dev
 
@@ -60,6 +66,23 @@ npm run build
 # 预览构建结果
 npm run preview
 ```
+
+### 🌤️ 天气功能配置
+
+应用集成了和风天气API来显示实时天气信息。如需启用天气功能：
+
+1. 访问 [和风天气开发平台](https://dev.qweather.com/) 注册账号
+2. 创建应用并获取免费API密钥
+3. 复制 `.env.example` 为 `.env.local`
+4. 在 `.env.local` 中配置您的API密钥和可选的自定义host：
+   ```
+   REACT_APP_QWEATHER_API_KEY=your_api_key_here
+   
+   # 可选：自定义API host地址
+   # REACT_APP_QWEATHER_HOST=https://your-custom-host.com/v7
+   ```
+
+**注意**：如果不配置API密钥，应用会自动使用模拟天气数据，不影响其他功能的正常使用。如果不配置自定义host，将默认使用开发版API。
 
 ## 🛠️ 技术栈
 
