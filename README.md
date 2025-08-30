@@ -2,7 +2,7 @@
 
 一个现代化的全屏时钟应用，提供多种时间管理模式，具有优雅的界面设计和丰富的功能特性。
 
-[![Version](https://img.shields.io/badge/version-3.3.2-blue.svg)](https://github.com/QQHKX/immersive-clock)
+[![Version](https://img.shields.io/badge/version-3.3.3-blue.svg)](https://github.com/QQHKX/immersive-clock)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
@@ -160,7 +160,13 @@ src/
 
 ## 🔄 更新日志
 
-### v3.3.2 (最新)
+### v3.3.3 (最新)
+- 🎨 优化天气组件样式，调整文字大小和分割线样式
+- 🐛 修复晚自习模式下课间进度条不准确的问题
+- 🔧 改进组件响应式设计和用户体验
+- ✨ 完善UI细节和视觉效果
+
+### v3.3.2
 - ✨ 新增统一设置面板，整合所有配置选项
 - 🎨 重构模态框和表单组件，提供一致的设计系统
 - 🔧 添加噪音校准功能，支持环境适应
