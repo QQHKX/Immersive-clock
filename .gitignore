@@ -15,9 +15,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # 本地环境文件
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
 
 # 和风天气JWT认证相关文件
 # Ed25519密钥文件（敏感信息，不应提交到版本控制）
