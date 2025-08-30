@@ -6,13 +6,7 @@ import styles from './Weather.module.css';
 const QWEATHER_API_KEY = process.env.REACT_APP_QWEATHER_API_KEY || ''; // 从环境变量读取API密钥
 const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST || 'https://devapi.qweather.com/v7'; // 从环境变量读取host，默认使用开发版API
 
-// 调试：输出环境变量值
-console.log('环境变量调试:', {
-  REACT_APP_QWEATHER_API_KEY: process.env.REACT_APP_QWEATHER_API_KEY,
-  REACT_APP_QWEATHER_HOST: process.env.REACT_APP_QWEATHER_HOST,
-  QWEATHER_API_KEY,
-  QWEATHER_BASE_URL
-});
+
 
 // 天气数据接口
 export interface WeatherData {
