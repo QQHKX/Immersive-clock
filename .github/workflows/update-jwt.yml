@@ -1,0 +1,54 @@
+name: Update JWT Token
+
+on:
+  schedule:
+    # 每12小时运行一次
+    - cron: '0 */12 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-jwt:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        cd scripts
+        npm install
+        
+    - name: Generate new JWT
+      run: |
+        cd scripts
+        echo '${{ secrets.JWT_CONFIG }}' > jwt-config.json
+        echo '${{ secrets.PRIVATE_KEY }}' > ed25519-private.pem
+        node generate-jwt.cjs
+        
+    - name: Update environment file
+      run: |
+        NEW_TOKEN=$(cat scripts/qweather-jwt-token.txt)
+        sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env.local
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .env.local
+        git commit -m "Auto-update JWT token [$(date +'%Y-%m-%d %H:%M:%S')]" || exit 0
+        git push
+        
+    - name: Trigger Vercel deployment
+      run: |
+        curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        
+    - name: Notify success
+      run: |
+        echo "JWT token updated successfully at $(date)"
+        echo "New token expires in 24 hours"
