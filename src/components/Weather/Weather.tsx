@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styles from './Weather.module.css';
 
 // 高德地图天气API配置
-const AMAP_API_KEY = '3b0e54901cc67a554c3574a1daa47f64';
+const AMAP_API_KEY = import.meta.env.VITE_AMAP_API_KEY || '3b0e54901cc67a554c3574a1daa47f64';
 const AMAP_BASE_URL = 'https://restapi.amap.com/v3';
 
 // 天气数据接口
@@ -94,10 +94,10 @@ const Weather: React.FC = () => {
 
       const weather = weatherData.lives[0];
       return {
-        temperature: weather.temperature,
-        text: weather.weather,
-        location: weather.city,
-        icon: mapWeatherToIcon(weather.weather),
+        temperature: weather.temperature || '22',
+        text: weather.weather || '晴',
+        location: weather.city || '未知',
+        icon: mapWeatherToIcon(weather.weather || '晴'),
       };
     } catch (error) {
       console.warn('获取天气数据失败，使用模拟数据:', error);
@@ -111,24 +111,42 @@ const Weather: React.FC = () => {
   }, []);
 
   /**
+   * 判断当前是否为夜间时间
+   * 夜间时间定义为：18:00 - 06:00
+   */
+  const isNightTime = (): boolean => {
+    const now = new Date();
+    const hour = now.getHours();
+    return hour >= 18 || hour < 6;
+  };
+
+  /**
    * 将天气文本映射到图标代码
+   * 根据时间自动选择白天或夜间图标
    */
   const mapWeatherToIcon = (weatherText: string): string => {
-    if (!weatherText) return '01d'; // 如果天气文本为空，返回默认图标
-    if (weatherText.includes('晴')) return '01d';
-    if (weatherText.includes('云') || weatherText.includes('阴')) return '02d';
-    if (weatherText.includes('雨')) return '09d';
-    if (weatherText.includes('雪')) return '13d';
-    if (weatherText.includes('雾') || weatherText.includes('霾')) return '50d';
-    if (weatherText.includes('雷')) return '11d';
-    return '01d'; // 默认晴天
+    // 检查参数是否有效
+    if (!weatherText || typeof weatherText !== 'string') {
+      return isNightTime() ? '01n' : '01d'; // 默认晴天
+    }
+    
+    const suffix = isNightTime() ? 'n' : 'd';
+    
+    if (weatherText.includes('晴')) return `01${suffix}`;
+    if (weatherText.includes('阴')) return `04${suffix}`;
+    if (weatherText.includes('多云')) return `03${suffix}`;
+    if (weatherText.includes('云')) return `02${suffix}`;
+    if (weatherText.includes('雨')) return `09${suffix}`;
+    if (weatherText.includes('雪')) return `13${suffix}`;
+    if (weatherText.includes('雾') || weatherText.includes('霾')) return `50${suffix}`;
+    if (weatherText.includes('雷')) return `11${suffix}`;
+    return `01${suffix}`; // 默认晴天
   };
 
   /**
    * 获取天气描述的单字简化版本
    */
   const getSimplifiedWeatherText = useCallback((text: string): string => {
-    if (!text) return '晴'; // 如果文本为空，返回默认值
     const weatherMap: { [key: string]: string } = {
       '晴': '晴',
       '多云': '云',
