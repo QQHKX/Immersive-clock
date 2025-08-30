@@ -6,6 +6,23 @@ import styles from './Weather.module.css';
 const QWEATHER_API_KEY = process.env.REACT_APP_QWEATHER_API_KEY;
 const QWEATHER_BASE_URL = process.env.REACT_APP_QWEATHER_HOST;
 
+// 检查环境变量配置并输出详细提示
+if (!QWEATHER_API_KEY || QWEATHER_API_KEY === 'YOUR_JWT_TOKEN_HERE') {
+  console.warn('⚠️ 和风天气API配置缺失');
+  console.warn('📋 请按以下步骤配置天气功能:');
+  console.warn('1. 访问 https://dev.qweather.com/ 注册账号');
+  console.warn('2. 创建应用并获取API密钥');
+  console.warn('3. 在 .env 文件中设置 REACT_APP_QWEATHER_API_KEY');
+  console.warn('4. 当前将使用模拟天气数据');
+}
+
+if (!QWEATHER_BASE_URL) {
+  console.warn('⚠️ 和风天气API主机地址未配置');
+  console.warn('📋 请在 .env 文件中设置 REACT_APP_QWEATHER_HOST');
+  console.warn('   免费版: https://devapi.qweather.com');
+  console.warn('   付费版: https://api.qweather.com');
+}
+
 
 
 // 天气数据接口
@@ -76,7 +93,8 @@ const Weather: React.FC = () => {
     const { latitude, longitude } = location;
     
     if (!QWEATHER_API_KEY || !QWEATHER_BASE_URL) {
-      console.warn('和风天气API密钥未配置，使用模拟数据');
+      console.warn('🌤️ 和风天气API配置不完整，使用模拟数据');
+      console.warn('💡 提示: 配置真实API密钥后可获取实时天气数据');
       return {
         temperature: '22',
         icon: '100',
