@@ -57,7 +57,14 @@ jobs:
         
     - name: Trigger Vercel deployment
       run: |
-        curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        if [ -n "${{ secrets.VERCEL_DEPLOY_HOOK }}" ]; then
+          echo "触发 Vercel 部署..."
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          echo "Vercel 部署触发成功"
+        else
+          echo "警告：VERCEL_DEPLOY_HOOK secret 未配置，跳过自动部署"
+          echo "请在 GitHub 仓库设置中配置 VERCEL_DEPLOY_HOOK secret"
+        fi
         
     - name: Notify success
       run: |
