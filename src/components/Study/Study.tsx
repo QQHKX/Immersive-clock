@@ -77,22 +77,26 @@ export function Study() {
       {/* 智能晚自习状态管理 */}
       <StudyStatus />
       
-      {/* 顶部信息栏 */}
-      <div className={styles.header}>
-        <div className={styles.timeInfo}>
-          <div className={styles.currentTime}>{timeString}</div>
-          <div className={styles.currentDate}>{dateString}</div>
-          <NoiseMonitor />
+      {/* 左上角 - 噪音监测 */}
+      <div className={styles.topLeft}>
+        <NoiseMonitor />
+      </div>
+      
+      {/* 右上角 - 高考倒计时和励志金句 */}
+      <div className={styles.topRight}>
+        <div className={styles.gaokaoCountdown}>
+          距离{study.targetYear}年高考仅 <span className={styles.days}>{daysToGaokao}</span> 天
         </div>
-        <div className={styles.gaokaoInfo}>
-          <div className={styles.gaokaoCountdown}>
-            距离{study.targetYear}年高考还有 <span className={styles.days}>{daysToGaokao}</span> 天
-          </div>
-          {/* 励志金句模块 */}
+        <div className={styles.quoteSection}>
           <MotivationalQuote />
         </div>
       </div>
-
+      
+      {/* 中央 - 时间显示 */}
+      <div className={styles.centerTime}>
+        <div className={styles.currentTime}>{timeString}</div>
+        <div className={styles.currentDate}>{dateString}</div>
+      </div>
     </div>
   );
 }

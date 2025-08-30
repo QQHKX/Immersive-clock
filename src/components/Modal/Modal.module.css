@@ -1,0 +1,171 @@
+/* 统一模态框基础样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal, 1000);
+  backdrop-filter: blur(4px);
+  animation: modal-fade-in 0.3s ease-out;
+}
+
+.modalContent {
+  background: var(--hud-background, rgba(20, 20, 20, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius, 8px);
+  padding: 0;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modal-slide-in 0.3s ease-out;
+}
+
+/* 不同尺寸的模态框 */
+.sm {
+  max-width: 400px;
+}
+
+.md {
+  max-width: 600px;
+}
+
+.lg {
+  max-width: 700px;
+}
+
+.xl {
+  max-width: 900px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg, 1.5rem);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modalTitle {
+  margin: 0;
+  color: var(--text-color, #ffffff);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-color, #ffffff);
+  cursor: pointer;
+  padding: var(--spacing-xs, 0.5rem);
+  border-radius: var(--border-radius-sm, 4px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--accent-color, #00d4ff);
+  outline-offset: 2px;
+}
+
+.modalBody {
+  padding: var(--spacing-lg, 1.5rem);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* 动画效果 */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .modalContent {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modalHeader,
+  .modalBody {
+    padding: var(--spacing-md, 1rem);
+  }
+
+  .modalTitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    width: 98%;
+  }
+
+  .modalHeader,
+  .modalBody {
+    padding: var(--spacing-sm, 0.75rem);
+  }
+
+  .modalTitle {
+    font-size: 1rem;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modalContent {
+    animation: none;
+  }
+
+  .closeButton {
+    transition: none;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .modalContent {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .modalHeader {
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* 打印模式隐藏 */
+@media print {
+  .modal {
+    display: none;
+  }
+}

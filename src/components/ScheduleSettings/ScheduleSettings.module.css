@@ -1,68 +1,4 @@
-/* 课程表配置组件样式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.modalContent {
-  background: rgba(20, 20, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius);
-  padding: 0;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.modalHeader h3 {
-  margin: 0;
-  color: var(--text-color);
-  font-family: var(--font-ui);
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.modalBody {
-  padding: 1.5rem;
-  max-height: 50vh;
-  overflow-y: auto;
-}
+/* 课程表配置组件特定样式 */
 
 .scheduleList {
   margin-bottom: 1.5rem;
@@ -106,53 +42,12 @@
   gap: 0.5rem;
 }
 
-.nameInput {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-sm);
-  padding: 0.5rem 0.75rem;
-  color: var(--text-color);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.nameInput:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.2);
-}
+/* 输入框样式已移至FormComponents */
 
 .timeInputs {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.timeInput {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-sm);
-  padding: 0.5rem 0.75rem;
-  color: var(--text-color);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  flex: 1;
-}
-
-.timeInput:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.2);
-}
-
-.timeInput.invalid {
-  border-color: #ff4757;
-  background: rgba(255, 71, 87, 0.1);
 }
 
 .timeSeparator {
@@ -161,126 +56,10 @@
   opacity: 0.7;
 }
 
-.deleteButton {
-  background: none;
-  border: 1px solid rgba(255, 71, 87, 0.3);
-  color: #ff4757;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+/* 按钮样式已移至FormComponents */
 
-.deleteButton:hover {
-  background: rgba(255, 71, 87, 0.1);
-  border-color: #ff4757;
-}
-
-.addButton {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-  cursor: pointer;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-}
-
-.addButton:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.modalActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.resetButton {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-}
-
-.resetButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-}
-
-.actionButtons {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.cancelButton {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-}
-
-.cancelButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-}
-
-.saveButton {
-  background: var(--button-primary-color);
-  border: 1px solid var(--button-primary-color);
-  color: white;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.3s ease;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.saveButton:hover {
-  background: #02a085;
-  border-color: #02a085;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(3, 218, 198, 0.3);
-}
-
-/* 响应式设计 */
+/* 响应式设计 - 保留必要的布局调整 */
 @media (max-width: 768px) {
-  .modalContent {
-    width: 95%;
-    max-height: 90vh;
-  }
-
   .periodItem {
     flex-direction: column;
     align-items: stretch;
@@ -296,11 +75,6 @@
     align-self: flex-start;
   }
 
-  .deleteButton {
-    order: 2;
-    align-self: flex-end;
-  }
-
   .timeInputs {
     flex-direction: column;
     gap: 0.5rem;
@@ -308,36 +82,5 @@
 
   .timeSeparator {
     display: none;
-  }
-
-  .modalActions {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .resetButton {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-  }
-
-  .actionButtons {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .cancelButton,
-  .saveButton {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    min-height: 44px;
-  }
-
-  .addButton {
-    padding: 1rem;
-    font-size: 1rem;
-    min-height: 44px;
   }
 }

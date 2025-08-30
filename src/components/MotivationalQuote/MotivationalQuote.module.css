@@ -2,7 +2,7 @@
 
 .motivationalQuote {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   padding: 0.25rem 0;
   margin-top: 0.25rem;
@@ -21,7 +21,7 @@
   font-size: 0.95rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.75);
-  text-align: right;
+  text-align: left;
   line-height: 1.5;
   letter-spacing: 0.02em;
   max-width: 300px;

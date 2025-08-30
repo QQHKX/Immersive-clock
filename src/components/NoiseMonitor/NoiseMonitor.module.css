@@ -7,19 +7,19 @@
 .statusContainer {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
 }
 
 .statusText {
   font-family: var(--font-ui);
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   line-height: 1.5;
   font-weight: 500;
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
   user-select: none;
   display: inline-block;
-  padding: 0.25rem 0.5rem;
+  padding: 0.4rem 0.7rem;
   border-radius: var(--border-radius-sm);
 }
 
@@ -90,8 +90,8 @@
 
 /* 呼吸灯效果 */
 .breathingLight {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
   transition: transform 0.2s ease;
@@ -231,24 +231,30 @@
   }
 
   .statusContainer {
-    min-height: 44px;
+    min-height: 48px;
     /* 增加最小点击区域 */
     align-items: center;
+    gap: 0.6rem;
   }
 
   .statusText {
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 1.3rem;
+    padding: 0.7rem 0.9rem;
     /* 增加点击区域 */
-    min-height: 32px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     cursor: pointer;
     /* 确保显示可点击状态 */
   }
 
+  .breathingLight {
+    width: 12px;
+    height: 12px;
+  }
+
   .debugInfo {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -261,16 +267,16 @@
   }
 
   .statusContainer {
-    min-height: 48px;
+    min-height: 52px;
     /* 更大的点击区域 */
-    gap: 0.75rem;
+    gap: 0.8rem;
   }
 
   .statusText {
-    font-size: 0.85rem;
-    padding: 0.75rem 1rem;
+    font-size: 1.2rem;
+    padding: 0.9rem 1.2rem;
     /* 更大的点击区域 */
-    min-height: 36px;
+    min-height: 44px;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.3);
     /* 添加背景以提高可见性 */
@@ -279,8 +285,8 @@
   }
 
   .breathingLight {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     /* 增大呼吸灯以便点击 */
     padding: 8px;
     /* 增加点击区域 */
@@ -289,7 +295,44 @@
   }
 
   .debugInfo {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* 竖屏显示优化 */
+@media (orientation: portrait) and (max-width: 768px) {
+  .noiseMonitor {
+    margin-top: 0.8rem;
+  }
+
+  .statusContainer {
+    min-height: 50px;
+    gap: 0.7rem;
+  }
+
+  .statusText {
+    font-size: 1.4rem;
+    padding: 0.8rem 1rem;
+    min-height: 42px;
+    font-weight: 500;
+  }
+
+  .breathingLight {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 480px) {
+  .statusText {
+    font-size: 1.3rem;
+    padding: 0.9rem 1.1rem;
+    min-height: 46px;
+  }
+
+  .breathingLight {
+    width: 17px;
+    height: 17px;
   }
 }
 

@@ -1,66 +1,4 @@
-/* CountdownModal Component Styles */
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  backdrop-filter: blur(5px);
-  animation: modal-fade-in 0.3s ease-out;
-}
-
-.modalContent {
-  background: var(--hud-background);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: var(--spacing-xl);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modal-slide-in 0.3s ease-out;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.title {
-  font-family: var(--font-ui);
-  font-size: var(--modal-font-size);
-  font-weight: 600;
-  color: var(--primary-color);
-  margin: 0;
-}
-
-.closeButton {
-  background: transparent;
-  border: none;
-  color: var(--secondary-color);
-  cursor: pointer;
-  padding: var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
-  transition: all var(--transition-fast);
-}
-
-.closeButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-color);
-}
-
-.closeButton:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
-}
+/* CountdownModal 特定样式 */
 
 .timeInputs {
   display: flex;
@@ -95,36 +33,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.adjustButton {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-sm);
-  color: var(--secondary-color);
-  cursor: pointer;
-  padding: var(--spacing-xs);
-  transition: all var(--transition-fast);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.adjustButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-}
-
-.adjustButton:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
-}
-
-.adjustButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
+/* 时间调整按钮样式已移至FormComponents */
 
 .timeValue {
   font-family: var(--font-main);
@@ -140,132 +49,11 @@
   margin-bottom: var(--spacing-xl);
 }
 
-.presetsLabel {
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--secondary-color);
-  margin-bottom: var(--spacing-sm);
-  text-align: center;
-}
+/* 预设按钮和操作按钮样式已移至FormComponents */
+/* 模态框动画和响应式样式已移至统一的Modal组件 */
 
-.presetButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  justify-content: center;
-}
-
-.presetButton {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-md);
-  color: var(--secondary-color);
-  cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all var(--transition-fast);
-}
-
-.presetButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-}
-
-.presetButton:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
-}
-
-.actions {
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
-}
-
-.cancelButton,
-.confirmButton {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  font-family: var(--font-ui);
-  font-size: var(--button-font-size);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  min-width: 80px;
-}
-
-.cancelButton {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--secondary-color);
-}
-
-.cancelButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--text-color);
-}
-
-.confirmButton {
-  background: var(--accent-color);
-  border: 1px solid var(--accent-color);
-  color: var(--background-color);
-  font-weight: 600;
-}
-
-.confirmButton:hover:not(.disabled) {
-  background: var(--accent-color);
-  box-shadow: 0 2px 15px rgba(3, 218, 198, 0.3);
-  transform: translateY(-1px);
-}
-
-.confirmButton.disabled {
-  background: rgba(3, 218, 198, 0.3);
-  border-color: rgba(3, 218, 198, 0.3);
-  color: rgba(18, 18, 18, 0.6);
-  cursor: not-allowed;
-  transform: none;
-}
-
-.cancelButton:focus-visible,
-.confirmButton:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
-}
-
-/* Animations */
-@keyframes modal-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modal-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Responsive adjustments */
+/* CountdownModal 特定的响应式调整 */
 @media (max-width: 768px) {
-  .modalContent {
-    padding: var(--spacing-lg);
-    width: 95%;
-  }
 
   .timeInputs {
     gap: var(--spacing-md);
@@ -283,10 +71,6 @@
 }
 
 @media (max-width: 480px) {
-  .modalContent {
-    padding: var(--spacing-md);
-  }
-
   .timeInputs {
     gap: var(--spacing-sm);
   }
@@ -322,11 +106,6 @@
 }
 
 @media (max-height: 600px) {
-  .modalContent {
-    padding: var(--spacing-md);
-    max-height: 95vh;
-  }
-
   .timeInputs {
     margin-bottom: var(--spacing-md);
   }

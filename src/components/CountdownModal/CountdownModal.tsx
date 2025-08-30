@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Minus, X } from 'react-feather';
+import { Plus, Minus } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { timeToSeconds } from '../../utils/formatTime';
+import { Modal } from '../Modal';
+import { FormSection, FormButton, FormButtonGroup } from '../FormComponents';
 
 import styles from './CountdownModal.module.css';
 
@@ -106,52 +108,38 @@ export function CountdownModal() {
   ];
 
   return (
-    <div 
-      className={styles.modal}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
+    <Modal
+      isOpen={isModalOpen}
+      onClose={handleClose}
+      title="设置倒计时"
+      maxWidth="md"
     >
-      <div className={styles.modalContent}>
-        <div className={styles.header}>
-          <h2 id="modal-title" className={styles.title}>
-            设置倒计时
-          </h2>
-          <button
-            className={styles.closeButton}
-            onClick={handleClose}
-            aria-label="关闭"
-            title="关闭"
-          >
-            <X size={24} aria-hidden="true" />
-          </button>
-        </div>
 
+      <FormSection title="时间设置">
         <div className={styles.timeInputs}>
           {/* 小时 */}
           <div className={styles.timeInput}>
             <label className={styles.label}>小时</label>
             <div className={styles.inputGroup}>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('hours', -1)}
                 disabled={hours === 0}
+                icon={<Minus size={16} />}
                 aria-label="减少小时"
-              >
-                <Minus size={16} aria-hidden="true" />
-              </button>
+              />
               <div className={styles.timeValue}>
                 {hours.toString().padStart(2, '0')}
               </div>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('hours', 1)}
                 disabled={hours === 23}
+                icon={<Plus size={16} />}
                 aria-label="增加小时"
-              >
-                <Plus size={16} aria-hidden="true" />
-              </button>
+              />
             </div>
           </div>
 
@@ -159,25 +147,25 @@ export function CountdownModal() {
           <div className={styles.timeInput}>
             <label className={styles.label}>分钟</label>
             <div className={styles.inputGroup}>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('minutes', -1)}
                 disabled={minutes === 0}
+                icon={<Minus size={16} />}
                 aria-label="减少分钟"
-              >
-                <Minus size={16} aria-hidden="true" />
-              </button>
+              />
               <div className={styles.timeValue}>
                 {minutes.toString().padStart(2, '0')}
               </div>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('minutes', 1)}
                 disabled={minutes === 59}
+                icon={<Plus size={16} />}
                 aria-label="增加分钟"
-              >
-                <Plus size={16} aria-hidden="true" />
-              </button>
+              />
             </div>
           </div>
 
@@ -185,63 +173,60 @@ export function CountdownModal() {
           <div className={styles.timeInput}>
             <label className={styles.label}>秒</label>
             <div className={styles.inputGroup}>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('seconds', -1)}
                 disabled={seconds === 0}
+                icon={<Minus size={16} />}
                 aria-label="减少秒"
-              >
-                <Minus size={16} aria-hidden="true" />
-              </button>
+              />
               <div className={styles.timeValue}>
                 {seconds.toString().padStart(2, '0')}
               </div>
-              <button
-                className={styles.adjustButton}
+              <FormButton
+                variant="secondary"
+                size="sm"
                 onClick={() => adjustTime('seconds', 1)}
                 disabled={seconds === 59}
+                icon={<Plus size={16} />}
                 aria-label="增加秒"
-              >
-                <Plus size={16} aria-hidden="true" />
-              </button>
+              />
             </div>
           </div>
         </div>
+      </FormSection>
 
-        <div className={styles.presets}>
-          <div className={styles.presetsLabel}>快速设置：</div>
-          <div className={styles.presetButtons}>
-            {presets.map(({ label, minutes: presetMinutes }) => (
-              <button
-                key={presetMinutes}
-                className={styles.presetButton}
-                onClick={() => handlePreset(presetMinutes)}
-                title={`设置为${label}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <FormSection title="快速设置">
+        <FormButtonGroup>
+          {presets.map(({ label, minutes: presetMinutes }) => (
+            <FormButton
+              key={presetMinutes}
+              variant="secondary"
+              onClick={() => handlePreset(presetMinutes)}
+              title={`设置为${label}`}
+            >
+              {label}
+            </FormButton>
+          ))}
+        </FormButtonGroup>
+      </FormSection>
 
-        <div className={styles.actions}>
-          <button
-            className={styles.cancelButton}
-            onClick={handleClose}
-          >
-            取消
-          </button>
-          <button
-            className={`${styles.confirmButton} ${
-              !isValid ? styles.disabled : ''
-            }`}
-            onClick={handleConfirm}
-            disabled={!isValid}
-          >
-            确认
-          </button>
-        </div>
-      </div>
-    </div>
+      <FormButtonGroup align="right">
+        <FormButton
+          variant="secondary"
+          onClick={handleClose}
+        >
+          取消
+        </FormButton>
+        <FormButton
+          variant="primary"
+          onClick={handleConfirm}
+          disabled={!isValid}
+        >
+          确认
+        </FormButton>
+      </FormButtonGroup>
+    </Modal>
   );
 }

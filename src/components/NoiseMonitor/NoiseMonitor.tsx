@@ -360,7 +360,7 @@ const NoiseMonitor: React.FC = () => {
 
   /**
    * 处理点击事件
-   * 支持重试和校准功能
+   * 仅支持重试功能，不再支持校准
    */
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
@@ -376,11 +376,9 @@ const NoiseMonitor: React.FC = () => {
       setTimeout(() => {
         initializeAudioMonitoring();
       }, 100);
-    } else if (noiseStatus === 'quiet' || noiseStatus === 'noisy') {
-      // 在正常工作状态下点击开始校准
-      calibrateBaseline();
     }
-  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring, calibrateBaseline, baselineNoise, clearCalibration]);
+    // 移除了点击校准功能
+  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring]);
 
   // 组件挂载时初始化音频监测
   useEffect(() => {
@@ -432,7 +430,7 @@ const NoiseMonitor: React.FC = () => {
             isCalibrating ? '正在校准基准噪音水平...' :
             noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
             noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击校准` :
+              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''}` :
               `当前音量: ${currentVolume.toFixed(1)}dB`
           }
         ></div>
@@ -442,7 +440,7 @@ const NoiseMonitor: React.FC = () => {
             isCalibrating ? '正在校准基准噪音水平...' :
             noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
             noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''} | 点击呼吸灯校准` :
+              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''}` :
               `当前音量: ${currentVolume.toFixed(1)}dB`
           }
         >

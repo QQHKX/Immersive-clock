@@ -1,0 +1,320 @@
+/* 统一表单组件样式 */
+
+/* 表单区域 */
+.section {
+  margin-bottom: var(--spacing-xl, 2rem);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--spacing-md, 1rem) 0;
+  color: var(--text-color, #ffffff);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* 输入组件 */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs, 0.5rem);
+}
+
+.label {
+  color: var(--text-color, #ffffff);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: var(--spacing-sm, 0.75rem);
+  color: var(--text-color, #ffffff);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color, #00d4ff);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input.error {
+  border-color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+/* 输入变体 */
+.input.time {
+  font-family: var(--font-mono, 'Fira Code', 'Monaco', 'Consolas', monospace);
+  width: 80px;
+  text-align: center;
+}
+
+.input.number {
+  width: 120px;
+  text-align: center;
+}
+
+.errorText {
+  color: #dc3545;
+  font-size: 0.85rem;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+}
+
+/* 按钮组件 */
+.button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-sm, 4px);
+  color: var(--text-color, #ffffff);
+  cursor: pointer;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs, 0.5rem);
+  position: relative;
+  overflow: hidden;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent-color, #00d4ff);
+  outline-offset: 2px;
+}
+
+/* 按钮变体 */
+.button.primary {
+  background: var(--primary-color, #00d4ff);
+  border-color: var(--primary-color, #00d4ff);
+  color: var(--bg-primary, #000000);
+}
+
+.button.primary:hover:not(:disabled) {
+  background: var(--accent-color, #0099cc);
+  border-color: var(--accent-color, #0099cc);
+}
+
+.button.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.button.danger {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+.button.danger:hover:not(:disabled) {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+.button.success {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.button.success:hover:not(:disabled) {
+  background: #218838;
+  border-color: #218838;
+}
+
+/* 按钮尺寸 */
+.button.sm {
+  padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);
+  font-size: 0.85rem;
+}
+
+.button.md {
+  padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
+  font-size: 0.9rem;
+}
+
+.button.lg {
+  padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+  font-size: 1rem;
+}
+
+.buttonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 加载动画 */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 按钮组 */
+.buttonGroup {
+  display: flex;
+  gap: var(--spacing-sm, 0.75rem);
+  flex-wrap: wrap;
+}
+
+.buttonGroup.left {
+  justify-content: flex-start;
+}
+
+.buttonGroup.center {
+  justify-content: center;
+}
+
+.buttonGroup.right {
+  justify-content: flex-end;
+}
+
+/* 表单行 */
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.row.gap-sm {
+  gap: var(--spacing-xs, 0.5rem);
+}
+
+.row.gap-md {
+  gap: var(--spacing-sm, 0.75rem);
+}
+
+.row.gap-lg {
+  gap: var(--spacing-md, 1rem);
+}
+
+.row.align-start {
+  align-items: flex-start;
+}
+
+.row.align-center {
+  align-items: center;
+}
+
+.row.align-end {
+  align-items: flex-end;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .buttonGroup {
+    flex-direction: column;
+  }
+
+  .buttonGroup.left,
+  .buttonGroup.center,
+  .buttonGroup.right {
+    justify-content: stretch;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input.time,
+  .input.number {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionTitle {
+    font-size: 1rem;
+  }
+
+  .input {
+    padding: var(--spacing-xs, 0.5rem);
+  }
+
+  .button.sm {
+    padding: var(--spacing-xs, 0.5rem);
+    font-size: 0.8rem;
+  }
+
+  .button.md {
+    padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);
+    font-size: 0.85rem;
+  }
+
+  .button.lg {
+    padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
+    font-size: 0.9rem;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+
+  .button:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .input {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .button {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}

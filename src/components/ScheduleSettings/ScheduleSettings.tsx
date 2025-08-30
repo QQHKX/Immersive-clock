@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { X, Plus, Trash2, Save } from 'react-feather';
+import { Plus, Trash2, Save } from 'react-feather';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
+import { Modal } from '../Modal';
+import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from '../FormComponents';
 import styles from './ScheduleSettings.module.css';
 
 interface ScheduleSettingsProps {
@@ -155,77 +157,86 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modal} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>课程表设置</h3>
-          <button onClick={onClose} className={styles.closeButton}>
-            <X size={20} />
-          </button>
-        </div>
-        
-        <div className={styles.modalBody}>
-          <div className={styles.scheduleList}>
-            {schedule.map((period, index) => (
-              <div key={period.id} className={styles.periodItem}>
-                <div className={styles.periodNumber}>{index + 1}</div>
-                <div className={styles.periodInputs}>
-                  <input
-                    type="text"
-                    value={period.name}
-                    onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)}
-                    className={styles.nameInput}
-                    placeholder="课程名称"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="课程表设置"
+      maxWidth="lg"
+    >
+      <FormSection title="课程时间表">
+        <div className={styles.scheduleList}>
+          {schedule.map((period, index) => (
+            <div key={period.id} className={styles.periodItem}>
+              <div className={styles.periodNumber}>{index + 1}</div>
+              <div className={styles.periodInputs}>
+                <FormInput
+                  type="text"
+                  value={period.name}
+                  onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)}
+                  placeholder="课程名称"
+                />
+                <FormRow gap="sm">
+                  <FormInput
+                    type="time"
+                    value={period.startTime}
+                    onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)}
+                    variant={!isValidTime(period.startTime) ? 'default' : 'time'}
                   />
-                  <div className={styles.timeInputs}>
-                    <input
-                      type="time"
-                      value={period.startTime}
-                      onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)}
-                      className={`${styles.timeInput} ${!isValidTime(period.startTime) ? styles.invalid : ''}`}
-                    />
-                    <span className={styles.timeSeparator}>-</span>
-                    <input
-                      type="time"
-                      value={period.endTime}
-                      onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)}
-                      className={`${styles.timeInput} ${!isValidTime(period.endTime) ? styles.invalid : ''}`}
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeletePeriod(period.id)}
-                  className={styles.deleteButton}
-                  title="删除时间段"
-                >
-                  <Trash2 size={16} />
-                </button>
+                  <span className={styles.timeSeparator}>-</span>
+                  <FormInput
+                    type="time"
+                    value={period.endTime}
+                    onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)}
+                    variant={!isValidTime(period.endTime) ? 'default' : 'time'}
+                  />
+                </FormRow>
               </div>
-            ))}
-          </div>
+              <FormButton
+                variant="danger"
+                size="sm"
+                onClick={() => handleDeletePeriod(period.id)}
+                icon={<Trash2 size={16} />}
+                title="删除时间段"
+              />
+            </div>
+          ))}
+        </div>
           
-          <button onClick={handleAddPeriod} className={styles.addButton}>
-            <Plus size={16} />
+        <FormButtonGroup align="center">
+          <FormButton
+            variant="primary"
+            onClick={handleAddPeriod}
+            icon={<Plus size={16} />}
+          >
             添加时间段
-          </button>
-        </div>
-        
-        <div className={styles.modalActions}>
-          <button onClick={handleReset} className={styles.resetButton}>
-            重置默认
-          </button>
-          <div className={styles.actionButtons}>
-            <button onClick={onClose} className={styles.cancelButton}>
-              取消
-            </button>
-            <button onClick={handleSave} className={styles.saveButton}>
-              <Save size={16} />
-              保存
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          </FormButton>
+        </FormButtonGroup>
+      </FormSection>
+      
+      <FormButtonGroup align="left">
+        <FormButton
+          variant="secondary"
+          onClick={handleReset}
+        >
+          重置默认
+        </FormButton>
+        <FormButtonGroup>
+          <FormButton
+            variant="secondary"
+            onClick={onClose}
+          >
+            取消
+          </FormButton>
+          <FormButton
+            variant="primary"
+            onClick={handleSave}
+            icon={<Save size={16} />}
+          >
+            保存
+          </FormButton>
+        </FormButtonGroup>
+      </FormButtonGroup>
+    </Modal>
   );
 };
 

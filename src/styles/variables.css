@@ -23,11 +23,11 @@
   --modal-font-size: 1.2rem;
 
   /* Spacing */
-  --spacing-xs: 0.5rem;
-  --spacing-sm: 1rem;
-  --spacing-md: 1.5rem;
-  --spacing-lg: 2rem;
-  --spacing-xl: 3rem;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.25rem;
+  --spacing-md: 0.5rem;
+  --spacing-lg: 0.5rem;
+  --spacing-xl: 0.75rem;
 
   /* Border Radius */
   --border-radius-sm: 4px;
