@@ -50,7 +50,23 @@ jobs:
         if [ ! -f .env ]; then
           cp .env.example .env
         fi
-        sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env
+        # 使用更安全的方法替换JWT token，避免特殊字符问题
+        # 先备份原文件
+        cp .env .env.backup
+        # 使用awk替换，更安全地处理特殊字符
+        awk -v new_token="$NEW_TOKEN" '
+        /^REACT_APP_QWEATHER_API_KEY=/ { print "REACT_APP_QWEATHER_API_KEY=" new_token; next }
+        { print }
+        ' .env.backup > .env
+        # 验证替换是否成功
+        if grep -q "REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN" .env; then
+          echo "JWT token successfully updated in .env file"
+          rm .env.backup
+        else
+          echo "Failed to update JWT token, restoring backup"
+          mv .env.backup .env
+          exit 1
+        fi
         
     - name: Commit and push changes
       run: |
