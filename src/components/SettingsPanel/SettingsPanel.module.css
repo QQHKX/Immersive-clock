@@ -86,7 +86,7 @@
   .editForm {
     gap: 0.75rem;
   }
-  
+
   .editActions {
     flex-direction: column;
   }
@@ -180,7 +180,7 @@
   background: #ffffff !important;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.2),
     0 0 0 2px rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
@@ -190,7 +190,7 @@
 .noiseSlider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
   background: #f8f9fa;
-  box-shadow: 
+  box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.3),
     0 0 0 3px rgba(255, 255, 255, 0.2);
 }
@@ -207,7 +207,7 @@
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.2),
     0 0 0 2px rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
@@ -216,7 +216,7 @@
 .noiseSlider::-moz-range-thumb:hover {
   transform: scale(1.15);
   background: #f8f9fa;
-  box-shadow: 
+  box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.3),
     0 0 0 3px rgba(255, 255, 255, 0.2);
 }
