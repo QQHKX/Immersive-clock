@@ -65,6 +65,15 @@ LICENSE
 .git
 .gitignore
 
+# 敏感配置文件
+*.pem
+jwt-config.json
+qweather-jwt-token.txt
+*.local
+
+# Trae AI 配置文件夹
+.trae
+
 # 本地配置文件
 .htaccess
 _headers
