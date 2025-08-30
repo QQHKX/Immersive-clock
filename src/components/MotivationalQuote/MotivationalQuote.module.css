@@ -5,7 +5,7 @@
   justify-content: flex-start;
   align-items: center;
   padding: 0.25rem 0;
-  margin-top: 0.25rem;
+  margin-top: 0;
   cursor: pointer;
   transition: all var(--transition-fast);
   user-select: none;
@@ -21,7 +21,7 @@
   font-size: 0.95rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.75);
-  text-align: left;
+  text-align: left !important;
   line-height: 1.5;
   letter-spacing: 0.02em;
   max-width: 300px;
@@ -64,11 +64,11 @@
 @media (max-width: 768px) {
   .motivationalQuote {
     padding: 0.5rem 0.75rem;
-    margin-top: 0.25rem;
+    margin-top: 0;
   }
 
   .quoteText {
-    font-size: 1rem;
+    font-size: 0.9rem;
     max-width: 90%;
   }
 }
@@ -76,12 +76,25 @@
 @media (max-width: 480px) {
   .motivationalQuote {
     padding: 0.25rem 0.5rem;
-    margin-top: 0.2rem;
+    margin-top: 0;
   }
 
   .quoteText {
-    font-size: 0.9rem;
-    line-height: 1.5;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}
+
+/* 竖屏模式优化 */
+@media (orientation: portrait) {
+  .motivationalQuote {
+    margin-top: 0;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .quoteText {
+    font-size: 0.85rem;
+    line-height: 1.4;
   }
 }
 

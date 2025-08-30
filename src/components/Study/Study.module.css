@@ -34,7 +34,7 @@
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   color: var(--text-primary);
   font-weight: 500;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0;
 }
 
 .days {
@@ -48,7 +48,7 @@
   font-size: clamp(0.9rem, 2vw, 1.1rem);
   color: var(--text-secondary);
   line-height: 1.4;
-  text-align: left;
+  text-align: left !important;
 }
 
 /* 中央 - 时间显示 */
@@ -142,7 +142,7 @@
 
   .gaokaoCountdown {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
-    margin-bottom: 0.8rem;
+    margin-bottom: 0;
   }
 
   .quoteSection {
@@ -185,7 +185,7 @@
 
   .gaokaoCountdown {
     font-size: clamp(1rem, 2.5vw, 1.4rem);
-    margin-bottom: 0.6rem;
+    margin-bottom: 0;
   }
 
   .quoteSection {
@@ -203,13 +203,13 @@
 @media (orientation: portrait) and (max-width: 768px) {
   .gaokaoCountdown {
     font-size: clamp(1.2rem, 3.2vw, 1.8rem);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
   }
 
   .quoteSection {
     max-width: 280px;
-    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
-    line-height: 1.6;
+    font-size: clamp(0.8rem, 1.8vw, 1rem);
+    line-height: 1.5;
   }
 
   .days {
@@ -220,10 +220,11 @@
 @media (orientation: portrait) and (max-width: 480px) {
   .gaokaoCountdown {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+    margin-bottom: 0;
   }
 
   .quoteSection {
     max-width: 240px;
-    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    font-size: clamp(0.75rem, 1.6vw, 0.9rem);
   }
 }
