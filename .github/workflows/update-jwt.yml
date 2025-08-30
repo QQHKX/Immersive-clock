@@ -49,11 +49,24 @@ jobs:
         fi
         sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env.local
         
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .env.local
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update JWT token - $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
+          echo "JWT token updated and pushed to repository"
+        fi
+        
     - name: Verify JWT token update
       run: |
         echo "JWT token has been updated in .env.local"
-        echo "Note: .env.local is not committed to version control for security reasons"
-        echo "The updated token will be available for the next deployment"
+        echo "The updated token has been committed to the repository"
+        echo "Vercel will read the updated token on next deployment"
         
     - name: Trigger Vercel deployment
       run: |
