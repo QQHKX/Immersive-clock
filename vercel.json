@@ -4,17 +4,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
-  "crons": [
-    {
-      "path": "/api/update-jwt",
-      "schedule": "0 */12 * * *"
-    }
-  ],
-  "functions": {
-    "api/update-jwt.js": {
-      "maxDuration": 30
-    }
-  },
+
   "rewrites": [
     {
       "source": "/(.*)",

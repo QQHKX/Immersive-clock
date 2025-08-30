@@ -1,85 +1,14 @@
 # JWT Token 自动更新机制
 
-本文档说明了和风天气 JWT Token 在 Vercel 平台上的自动更新实现方案。
+本文档说明了和风天气 JWT Token 的自动更新实现方案。
 
 ## 📋 概述
 
-由于和风天气 API 的 JWT Token 最大有效期只有 24 小时，我们实现了两套自动更新机制：
+由于和风天气 API 的 JWT Token 最大有效期只有 24 小时，我们使用 GitHub Actions 实现自动更新机制：
 
-1. **主要方案**：Vercel Serverless Functions + Cron Jobs
-2. **备选方案**：GitHub Actions + Deploy Hooks
+**主要方案**：GitHub Actions + Deploy Hooks
 
-## 🚀 方案一：Vercel Serverless Functions（推荐）
-
-### 架构说明
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Vercel Cron   │───▶│  Serverless API  │───▶│  新 JWT Token   │
-│   (每12小时)    │    │  /api/update-jwt │    │   自动生成      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌──────────────────┐
-                       │  触发重新部署    │
-                       │  (Deploy Hook)   │
-                       └──────────────────┘
-```
-
-### 核心文件
-
-#### 1. `/api/update-jwt.js`
-- **功能**：Vercel Serverless Function，负责生成新的 JWT Token
-- **触发方式**：Vercel Cron Jobs 每 12 小时自动调用
-- **安全验证**：需要 Bearer Token 授权
-- **错误处理**：完整的错误日志和状态返回
-
-#### 2. `vercel.json` 配置
-```json
-{
-  "crons": [
-    {
-      "path": "/api/update-jwt",
-      "schedule": "0 */12 * * *"
-    }
-  ],
-  "functions": {
-    "api/update-jwt.js": {
-      "maxDuration": 30
-    }
-  },
-  "env": {
-    "QWEATHER_CREDENTIAL_ID": "@qweather-credential-id",
-    "QWEATHER_PROJECT_ID": "@qweather-project-id",
-    "QWEATHER_PRIVATE_KEY": "@qweather-private-key",
-    "UPDATE_JWT_SECRET": "@update-jwt-secret",
-    "VERCEL_DEPLOY_HOOK": "@vercel-deploy-hook"
-  }
-}
-```
-
-### 环境变量配置
-
-在 Vercel Dashboard 中设置以下环境变量：
-
-| 变量名 | 说明 | 示例值 |
-|--------|------|--------|
-| `QWEATHER_CREDENTIAL_ID` | 和风天气凭据ID | `KD5BDCT2TU` |
-| `QWEATHER_PROJECT_ID` | 和风天气项目ID | `26TPP7P49B` |
-| `QWEATHER_PRIVATE_KEY` | Ed25519私钥内容 | `-----BEGIN PRIVATE KEY-----\n...` |
-| `UPDATE_JWT_SECRET` | API访问密钥 | `your-secret-key-here` |
-| `VERCEL_DEPLOY_HOOK` | 部署钩子URL | `https://api.vercel.com/v1/integrations/deploy/...` |
-
-### 工作流程
-
-1. **定时触发**：Vercel Cron 每 12 小时执行一次
-2. **安全验证**：检查 Bearer Token 授权
-3. **读取配置**：从环境变量获取和风天气配置
-4. **生成Token**：使用 Ed25519 算法生成新的 JWT Token
-5. **触发部署**：调用 Deploy Hook 重新部署应用
-6. **日志记录**：记录成功/失败状态和详细信息
-
-## 🔄 方案二：GitHub Actions（备选）
+## 🚀 GitHub Actions 自动更新方案
 
 ### 架构说明
 
@@ -113,90 +42,86 @@
 
 ## 🛠️ 部署步骤
 
-### 1. 配置 Vercel 环境变量
+### 1. 配置 GitHub Secrets
 
-```bash
-# 在 Vercel Dashboard 中添加环境变量
-QWEATHER_CREDENTIAL_ID=KD5BDCT2TU
-QWEATHER_PROJECT_ID=26TPP7P49B
-QWEATHER_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
-[您的私钥内容]
------END PRIVATE KEY-----"
-UPDATE_JWT_SECRET=your-secret-key-here
-VERCEL_DEPLOY_HOOK=https://api.vercel.com/v1/integrations/deploy/[hook-id]
-```
+在 GitHub 仓库中设置以下 Secrets：
+
+1. 进入 GitHub 仓库 → Settings → Secrets and variables → Actions
+2. 添加以下 Repository secrets：
+
+| Secret名 | 说明 | 示例值 |
+|----------|------|--------|
+| `JWT_CONFIG` | JWT配置JSON | `{"credentialId":"KD5BDCT2TU","projectId":"26TPP7P49B"}` |
+| `PRIVATE_KEY` | 完整私钥内容 | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----` |
+| `VERCEL_DEPLOY_HOOK` | Vercel部署钩子 | `https://api.vercel.com/v1/integrations/deploy/...` |
 
 ### 2. 获取 Vercel Deploy Hook
 
 1. 进入 Vercel Dashboard
 2. 选择项目 → Settings → Git
 3. 创建 Deploy Hook
-4. 复制 Hook URL
+4. 复制 Hook URL 并添加到 GitHub Secrets
 
-### 3. 测试 API 端点
+### 3. 手动触发测试
 
-```bash
-# 手动测试 Serverless Function
-curl -X POST https://your-app.vercel.app/api/update-jwt \
-  -H "Authorization: Bearer your-secret-key-here" \
-  -H "Content-Type: application/json"
-```
+1. 进入 GitHub 仓库 → Actions
+2. 选择 "Update JWT Token" 工作流
+3. 点击 "Run workflow" 进行手动测试
 
-### 4. 验证 Cron Jobs
+### 4. 验证自动执行
 
-- 在 Vercel Dashboard → Functions → Crons 中查看执行状态
-- 检查函数日志确认执行成功
+- 检查 GitHub Actions 的执行日志
+- 确认 .env.local 文件已更新
+- 验证 Vercel 重新部署成功
 
 ## 📊 监控和维护
 
 ### 日志监控
 
-1. **Vercel 函数日志**：
-   - 访问 Vercel Dashboard → Functions
-   - 查看 `/api/update-jwt` 的执行日志
-
-2. **GitHub Actions 日志**：
-   - 访问 GitHub 仓库 → Actions
-   - 查看 "Update JWT Token" 工作流状态
+**GitHub Actions 日志**：
+- 访问 GitHub 仓库 → Actions
+- 查看 "Update JWT Token" 工作流状态
+- 检查每个步骤的执行日志
 
 ### 故障排除
 
 #### 常见问题
 
-1. **401 Unauthorized**
-   - 检查 `UPDATE_JWT_SECRET` 环境变量
-   - 确认 Authorization Header 格式正确
+1. **GitHub Secrets 配置错误**
+   - 检查 `JWT_CONFIG`、`PRIVATE_KEY`、`VERCEL_DEPLOY_HOOK` 是否正确设置
+   - 确认私钥格式包含完整的头尾标识
 
-2. **500 Missing configuration**
-   - 检查所有必需的环境变量是否设置
-   - 验证私钥格式是否正确
-
-3. **JWT 生成失败**
+2. **JWT 生成失败**
    - 检查私钥内容和格式
    - 确认凭据ID和项目ID正确
+   - 验证 JWT_CONFIG JSON 格式
 
-4. **部署钩子失败**
+3. **部署钩子失败**
    - 验证 Deploy Hook URL 是否有效
    - 检查网络连接和权限
 
+4. **文件提交失败**
+   - 检查 GitHub Actions 是否有仓库写入权限
+   - 确认 .env.local 文件路径正确
+
 ### 维护建议
 
-1. **定期检查**：每周检查一次自动更新状态
+1. **定期检查**：每周检查一次 GitHub Actions 执行状态
 2. **备份机制**：保持手动更新脚本作为备份
-3. **监控告警**：设置 Token 过期告警（可选）
-4. **安全审计**：定期更换 API 访问密钥
+3. **监控告警**：设置 GitHub Actions 失败通知
+4. **安全审计**：定期更换 GitHub Secrets
 
 ## 🔒 安全注意事项
 
 1. **私钥保护**：
-   - 私钥仅存储在 Vercel 环境变量中
+   - 私钥仅存储在 GitHub Secrets 中
    - 不要在代码中硬编码私钥
    - 定期轮换私钥（建议每季度）
 
-2. **API 安全**：
-   - 使用强密码作为 `UPDATE_JWT_SECRET`
-   - 限制 API 访问来源（如果需要）
-   - 监控异常访问模式
+2. **仓库安全**：
+   - 限制仓库访问权限
+   - 定期审查 GitHub Actions 权限
+   - 监控异常提交活动
 
 3. **权限控制**：
    - 最小权限原则设置环境变量
