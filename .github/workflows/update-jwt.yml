@@ -36,6 +36,10 @@ jobs:
         cd scripts
         NEW_TOKEN=$(cat qweather-jwt-token.txt)
         cd ..
+        # 如果.env.local不存在，从.env.example创建
+        if [ ! -f .env.local ]; then
+          cp .env.example .env.local
+        fi
         sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env.local
         
     - name: Commit and push changes
