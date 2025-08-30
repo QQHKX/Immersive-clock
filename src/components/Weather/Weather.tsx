@@ -194,7 +194,6 @@ const Weather: React.FC = () => {
       const weather = await fetchWeatherData(location);
       
       setWeatherData(weather);
-      console.info('✅ 天气数据获取成功');
     } catch (error) {
       console.error('天气初始化失败:', error);
       setError(error instanceof Error ? error.message : '未知错误');
@@ -224,6 +223,8 @@ const Weather: React.FC = () => {
       window.removeEventListener('weatherRefresh', handleWeatherRefresh);
     };
   }, [initializeWeather]);
+
+
 
   // 加载状态
   if (loading) {
