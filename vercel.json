@@ -97,7 +97,9 @@
     "QWEATHER_PROJECT_ID": "@qweather-project-id",
     "QWEATHER_PRIVATE_KEY": "@qweather-private-key",
     "UPDATE_JWT_SECRET": "@update-jwt-secret",
-    "VERCEL_DEPLOY_HOOK": "@vercel-deploy-hook"
+    "VERCEL_DEPLOY_HOOK": "@vercel-deploy-hook",
+    "REACT_APP_QWEATHER_API_KEY": "@react-app-qweather-api-key",
+    "REACT_APP_QWEATHER_HOST": "@react-app-qweather-host"
   },
   "trailingSlash": false
 }
