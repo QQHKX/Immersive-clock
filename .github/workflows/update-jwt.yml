@@ -43,17 +43,17 @@ jobs:
         cd scripts
         NEW_TOKEN=$(cat qweather-jwt-token.txt)
         cd ..
-        # 如果.env.local不存在，从.env.example创建
-        if [ ! -f .env.local ]; then
-          cp .env.example .env.local
+        # 如果.env不存在，从.env.example创建
+        if [ ! -f .env ]; then
+          cp .env.example .env
         fi
-        sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env.local
+        sed -i "s/REACT_APP_QWEATHER_API_KEY=.*/REACT_APP_QWEATHER_API_KEY=$NEW_TOKEN/" .env
         
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add .env.local
+        git add .env
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
@@ -64,7 +64,7 @@ jobs:
         
     - name: Verify JWT token update
       run: |
-        echo "JWT token has been updated in .env.local"
+        echo "JWT token has been updated in .env"
         echo "The updated token has been committed to the repository"
         echo "Vercel will read the updated token on next deployment"
         

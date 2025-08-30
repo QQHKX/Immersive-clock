@@ -19,7 +19,6 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
-*.local
 
 # 和风天气JWT认证相关文件
 # Ed25519密钥文件（敏感信息，不应提交到版本控制）
@@ -55,7 +54,6 @@ coverage
 .trae
 
 # 其他
-.env
 .env.production
 .env.development
 .env.test
