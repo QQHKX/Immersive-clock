@@ -92,13 +92,10 @@
       ]
     }
   ],
-<<<<<<< HEAD
 
   "env": {
     "VITE_AMAP_API_KEY": "@vite_amap_api_key"
   },
 
-=======
->>>>>>> e6161450b4c21e1d85d1ef1ac275929ed8c8ecf6
   "trailingSlash": false
 }
