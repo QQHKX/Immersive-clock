@@ -88,24 +88,34 @@ const Weather: React.FC = () => {
       const weatherResponse = await fetch(weatherUrl);
       const weatherData = await weatherResponse.json();
 
+      // 检查是否为不支持的地区（如台湾等）
       if (weatherData.status !== '1' || !weatherData.lives || weatherData.lives.length === 0) {
         throw new Error('获取天气信息失败');
       }
 
       const weather = weatherData.lives[0];
+      
+      // 检查返回的天气数据是否完整
+      if (!weather.temperature || !weather.weather || weather.temperature === '' || weather.weather === '') {
+        const locationName = regeoData.regeocode?.addressComponent?.province || '未知地区';
+        console.warn(`检测到不支持的地区：${locationName}，高德地图API不提供该地区的天气数据，已切换到成都默认天气`);
+        throw new Error(`不支持的地区：${locationName}`);
+      }
+
       return {
-        temperature: weather.temperature || '22',
-        text: weather.weather || '晴',
+        temperature: weather.temperature,
+        text: weather.weather,
         location: weather.city || '未知',
-        icon: mapWeatherToIcon(weather.weather || '晴'),
+        icon: mapWeatherToIcon(weather.weather),
       };
     } catch (error) {
-      console.warn('获取天气数据失败，使用模拟数据:', error);
+      console.warn('获取天气数据失败，使用成都默认数据:', error);
+      // 使用成都的默认天气数据
       return {
         temperature: '22',
         text: '晴',
         location: '成都',
-        icon: '01d',
+        icon: mapWeatherToIcon('晴'),
       };
     }
   }, []);
