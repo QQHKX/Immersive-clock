@@ -29,6 +29,10 @@
   word-break: break-word;
   overflow-wrap: break-word;
   transition: color var(--transition-fast);
+  white-space: pre-wrap;
+  /* 移除 pre-wrap，按需求单行展示 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .motivationalQuote:hover .quoteText {
