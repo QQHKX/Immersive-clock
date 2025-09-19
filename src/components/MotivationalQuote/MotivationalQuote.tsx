@@ -168,7 +168,7 @@ export function MotivationalQuote() {
     void updateQuote();
     const interval = setInterval(() => {
       void updateQuote();
-    }, 10 * 60 * 1000);
+    }, 2 * 60 * 1000); // 将更新间隔改为 2 分钟
     return () => clearInterval(interval);
   }, [updateQuote]);
 
