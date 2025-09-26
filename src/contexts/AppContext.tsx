@@ -1,5 +1,29 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState } from '../types';
+import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig } from '../types';
+
+/**
+ * 从本地存储加载金句渠道配置
+ */
+function loadQuoteChannelState(): QuoteChannelState {
+  try {
+    const savedChannels = localStorage.getItem('quote-channels');
+    if (savedChannels) {
+      const parsed = JSON.parse(savedChannels);
+      return {
+        channels: parsed.channels || [],
+        lastUpdated: parsed.lastUpdated || Date.now()
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load quote channels from localStorage:', error);
+  }
+  
+  // 返回默认配置，从文件中加载
+  return {
+    channels: [],
+    lastUpdated: Date.now()
+  };
+}
 
 
 /**
@@ -39,6 +63,7 @@ const initialState: AppState = {
     isActive: false,
   },
   study: loadStudyState(),
+  quoteChannels: loadQuoteChannelState(),
   isModalOpen: false,
 };
 
@@ -185,6 +210,66 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: newStudyState,
+      };
+
+    case 'UPDATE_QUOTE_CHANNELS':
+      const newQuoteChannelState = {
+        channels: action.payload,
+        lastUpdated: Date.now()
+      };
+      // 保存到本地存储
+      localStorage.setItem('quote-channels', JSON.stringify(newQuoteChannelState));
+      return {
+        ...state,
+        quoteChannels: newQuoteChannelState,
+      };
+
+    case 'TOGGLE_QUOTE_CHANNEL':
+      const updatedChannels = state.quoteChannels.channels.map(channel =>
+        channel.id === action.payload
+          ? { ...channel, enabled: !channel.enabled }
+          : channel
+      );
+      const toggledChannelState = {
+        channels: updatedChannels,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem('quote-channels', JSON.stringify(toggledChannelState));
+      return {
+        ...state,
+        quoteChannels: toggledChannelState,
+      };
+
+    case 'UPDATE_QUOTE_CHANNEL_WEIGHT':
+      const weightUpdatedChannels = state.quoteChannels.channels.map(channel =>
+        channel.id === action.payload.id
+          ? { ...channel, weight: action.payload.weight }
+          : channel
+      );
+      const weightUpdatedState = {
+        channels: weightUpdatedChannels,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem('quote-channels', JSON.stringify(weightUpdatedState));
+      return {
+        ...state,
+        quoteChannels: weightUpdatedState,
+      };
+
+    case 'UPDATE_QUOTE_CHANNEL_CATEGORIES':
+      const categoriesUpdatedChannels = state.quoteChannels.channels.map(channel =>
+        channel.id === action.payload.id
+          ? { ...channel, hitokotoCategories: action.payload.categories }
+          : channel
+      );
+      const categoriesUpdatedState = {
+        channels: categoriesUpdatedChannels,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem('quote-channels', JSON.stringify(categoriesUpdatedState));
+      return {
+        ...state,
+        quoteChannels: categoriesUpdatedState,
       };
 
 

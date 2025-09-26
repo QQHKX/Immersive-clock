@@ -3,6 +3,7 @@ import { Plus, Trash2, Save, Volume2, VolumeX, RefreshCw } from 'react-feather';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
 import { Modal } from '../Modal';
+import { QuoteChannelManager } from '../QuoteChannelManager';
 import { 
   FormSection, 
   FormInput, 
@@ -298,169 +299,189 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       title="设置" 
       maxWidth="lg"
     >
-      {/* 目标年份设置 */}
-      <FormSection title="目标高考年份">
-        <FormInput
-          type="number"
-          value={targetYear.toString()}
-          onChange={(e) => setTargetYear(parseInt(e.target.value) || new Date().getFullYear())}
-          variant="number"
-          min={new Date().getFullYear()}
-          max={new Date().getFullYear() + 10}
-        />
-      </FormSection>
-      
-      {/* 天气设置 */}
-      <FormSection title="天气设置">
-        <div className={styles.weatherInfo}>
-          <p className={styles.infoText}>
-            手动刷新天气数据以获取最新的天气信息。
-          </p>
-        </div>
-        
-        <FormButtonGroup align="left">
-          <FormButton
-            variant="secondary"
-            onClick={handleRefreshWeather}
-            icon={<RefreshCw size={16} />}
-          >
-            刷新天气
-          </FormButton>
-        </FormButtonGroup>
-      </FormSection>
+      <div className={styles.settingsContainer}>
+        {/* 基础设置区域 */}
+        <div className={styles.settingsGroup}>
+          <h3 className={styles.groupTitle}>基础设置</h3>
           
-      {/* 噪音校准设置 */}
-      <FormSection title="噪音校准设置">
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>
-            当前校准值: {noiseBaseline > 0 ? `${noiseBaseline.toFixed(1)}dB` : '未校准'}
-          </p>
-          <p className={styles.helpText}>
-            噪音校准用于适应不同环境的基准音量。校准后，噪音监测将更准确地判断当前环境是否安静。
-          </p>
-        </div>
-        
-        <div className={styles.sliderContainer}>
-          <div className={styles.sliderHeader}>
-            <span className={styles.sliderLabel}>调节校准值</span>
-            <span className={styles.sliderValue}>{sliderValue.toFixed(1)}dB</span>
-          </div>
-          <input
-            type="range"
-            min={20}
-            max={100}
-            step={0.1}
-            value={sliderValue}
-            onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
-            className={styles.noiseSlider}
-          />
-          <div className={styles.sliderRange}>
-            <span>20dB</span>
-            <span>100dB</span>
-          </div>
-        </div>
-        
-        <FormButtonGroup align="left">
-          <FormButton
-            variant="secondary"
-            onClick={handleRecalibrate}
-            icon={<Volume2 size={16} />}
-          >
-            重新校准
-          </FormButton>
-          <FormButton
-            variant="danger"
-            onClick={handleClearNoiseBaseline}
-            disabled={noiseBaseline === 0}
-            icon={<VolumeX size={16} />}
-          >
-            清除校准
-          </FormButton>
-        </FormButtonGroup>
-      </FormSection>
-      
-      {/* 课程表设置 */}
-      <FormSection title="课程表设置">
-        <FormButtonGroup align="right" className={styles.sectionActions}>
-          <FormButton 
-            variant="secondary" 
-            onClick={handleResetSchedule}
-          >
-            重置
-          </FormButton>
-          <FormButton 
-            variant="primary" 
-            onClick={handleAddPeriod}
-            icon={<Plus size={16} />}
-          >
-            添加
-          </FormButton>
-        </FormButtonGroup>
-            
-        <div className={styles.scheduleList}>
-          {schedule.map((period) => (
-            <div key={period.id} className={styles.periodItem}>
-              {editingId === period.id ? (
-                <div className={styles.editForm}>
-                  <FormInput
-                    type="text"
-                    value={period.name}
-                    onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)}
-                    placeholder="课程名称"
-                  />
-                  <FormRow gap="sm">
-                    <FormInput
-                      type="time"
-                      value={period.startTime}
-                      onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)}
-                      variant="time"
-                    />
-                    <span className={styles.timeSeparator}>-</span>
-                    <FormInput
-                      type="time"
-                      value={period.endTime}
-                      onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)}
-                      variant="time"
-                    />
-                  </FormRow>
-                  <FormButtonGroup align="right">
-                    <FormButton
-                      variant="success"
-                      onClick={() => setEditingId(null)}
-                      icon={<Save size={14} />}
-                      size="sm"
-                    />
-                    <FormButton
-                      variant="danger"
-                      onClick={() => handleDeletePeriod(period.id)}
-                      icon={<Trash2 size={14} />}
-                      size="sm"
-                    />
-                  </FormButtonGroup>
-                </div>
-              ) : (
-                <div className={styles.periodDisplay} onClick={() => setEditingId(period.id)}>
-                  <div className={styles.periodInfo}>
-                    <span className={styles.periodName}>{period.name}</span>
-                    <span className={styles.periodTime}>
-                      {period.startTime} - {period.endTime}
-                    </span>
-                  </div>
-                  <FormButton
-                    variant="danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePeriod(period.id);
-                    }}
-                    icon={<Trash2 size={14} />}
-                    size="sm"
-                  />
-                </div>
-              )}
+          {/* 目标年份设置 */}
+          <FormSection title="目标高考年份">
+            <FormInput
+              type="number"
+              value={targetYear.toString()}
+              onChange={(e) => setTargetYear(parseInt(e.target.value) || new Date().getFullYear())}
+              variant="number"
+              min={new Date().getFullYear()}
+              max={new Date().getFullYear() + 10}
+            />
+          </FormSection>
+          
+          {/* 天气设置 */}
+          <FormSection title="天气设置">
+            <div className={styles.weatherInfo}>
+              <p className={styles.infoText}>
+                手动刷新天气数据以获取最新的天气信息。
+              </p>
             </div>
-          ))}
+            
+            <FormButtonGroup align="left">
+              <FormButton
+                variant="secondary"
+                onClick={handleRefreshWeather}
+                icon={<RefreshCw size={16} />}
+              >
+                刷新天气
+              </FormButton>
+            </FormButtonGroup>
+          </FormSection>
         </div>
-      </FormSection>
+
+        {/* 学习功能区域 */}
+        <div className={styles.settingsGroup}>
+          <h3 className={styles.groupTitle}>学习功能</h3>
+          
+          {/* 噪音校准设置 */}
+          <FormSection title="噪音校准设置">
+            <div className={styles.noiseCalibrationInfo}>
+              <p className={styles.infoText}>
+                当前校准值: {noiseBaseline > 0 ? `${noiseBaseline.toFixed(1)}dB` : '未校准'}
+              </p>
+              <p className={styles.helpText}>
+                噪音校准用于适应不同环境的基准音量。校准后，噪音监测将更准确地判断当前环境是否安静。
+              </p>
+            </div>
+            
+            <div className={styles.sliderContainer}>
+              <div className={styles.sliderHeader}>
+                <span className={styles.sliderLabel}>调节校准值</span>
+                <span className={styles.sliderValue}>{sliderValue.toFixed(1)}dB</span>
+              </div>
+              <input
+                type="range"
+                min={20}
+                max={100}
+                step={0.1}
+                value={sliderValue}
+                onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
+                className={styles.noiseSlider}
+              />
+              <div className={styles.sliderRange}>
+                <span>20dB</span>
+                <span>100dB</span>
+              </div>
+            </div>
+            
+            <FormButtonGroup align="left">
+              <FormButton
+                variant="secondary"
+                onClick={handleRecalibrate}
+                icon={<Volume2 size={16} />}
+              >
+                重新校准
+              </FormButton>
+              <FormButton
+                variant="danger"
+                onClick={handleClearNoiseBaseline}
+                disabled={noiseBaseline === 0}
+                icon={<VolumeX size={16} />}
+              >
+                清除校准
+              </FormButton>
+            </FormButtonGroup>
+          </FormSection>
+          
+          {/* 课程表设置 */}
+          <FormSection title="课程表设置">
+            <FormButtonGroup align="right" className={styles.sectionActions}>
+              <FormButton 
+                variant="secondary" 
+                onClick={handleResetSchedule}
+              >
+                重置
+              </FormButton>
+              <FormButton 
+                variant="primary" 
+                onClick={handleAddPeriod}
+                icon={<Plus size={16} />}
+              >
+                添加
+              </FormButton>
+            </FormButtonGroup>
+                
+            <div className={styles.scheduleList}>
+              {schedule.map((period) => (
+                <div key={period.id} className={styles.periodItem}>
+                  {editingId === period.id ? (
+                    <div className={styles.editForm}>
+                      <FormInput
+                        type="text"
+                        value={period.name}
+                        onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)}
+                        placeholder="课程名称"
+                      />
+                      <FormRow gap="sm">
+                        <FormInput
+                          type="time"
+                          value={period.startTime}
+                          onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)}
+                          variant="time"
+                        />
+                        <span className={styles.timeSeparator}>-</span>
+                        <FormInput
+                          type="time"
+                          value={period.endTime}
+                          onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)}
+                          variant="time"
+                        />
+                      </FormRow>
+                      <FormButtonGroup align="right">
+                        <FormButton
+                          variant="success"
+                          onClick={() => setEditingId(null)}
+                          icon={<Save size={14} />}
+                          size="sm"
+                        />
+                        <FormButton
+                          variant="danger"
+                          onClick={() => handleDeletePeriod(period.id)}
+                          icon={<Trash2 size={14} />}
+                          size="sm"
+                        />
+                      </FormButtonGroup>
+                    </div>
+                  ) : (
+                    <div className={styles.periodDisplay} onClick={() => setEditingId(period.id)}>
+                      <div className={styles.periodInfo}>
+                        <span className={styles.periodName}>{period.name}</span>
+                        <span className={styles.periodTime}>
+                          {period.startTime} - {period.endTime}
+                        </span>
+                      </div>
+                      <FormButton
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePeriod(period.id);
+                        }}
+                        icon={<Trash2 size={14} />}
+                        size="sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </FormSection>
+        </div>
+
+        {/* 内容管理区域 */}
+        <div className={styles.settingsGroup}>
+          <h3 className={styles.groupTitle}>内容管理</h3>
+          
+          {/* 金句渠道管理 */}
+          <QuoteChannelManager />
+        </div>
+      </div>
         
       <FormButtonGroup align="right">
         <FormButton variant="secondary" onClick={onClose}>

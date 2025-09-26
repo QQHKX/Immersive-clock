@@ -1,5 +1,8 @@
 {
-  "weight": 40,
+  "id": "university-mottos",
+  "name": "大学校训",
+  "weight": 20,
+  "enabled": true,
   "onlineFetch": false,
   "quotes": [
     "爱国、进步、民主、科学。——北京大学",

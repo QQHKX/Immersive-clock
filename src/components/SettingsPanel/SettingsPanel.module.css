@@ -1,7 +1,52 @@
 /* SettingsPanel 特定样式 - 模态框样式已移至统一的Modal组件 */
 
+/* 设置容器和分组布局 */
+.settingsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settingsGroup {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.settingsGroup:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.groupTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-ui);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.groupTitle::before {
+  content: '';
+  width: 4px;
+  height: 1.2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
 .section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .sectionTitle {

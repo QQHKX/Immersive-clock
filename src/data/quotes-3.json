@@ -1,6 +1,16 @@
 {
-  "weight": 10,
+  "id": "hitokoto-api",
+  "name": "在线金句",
+  "weight": 30,
+  "enabled": true,
   "onlineFetch": true,
   "apiEndpoint": "https://v1.hitokoto.cn/",
+  "hitokotoCategories": [
+    "a",
+    "d",
+    "h",
+    "i",
+    "k"
+  ],
   "quotes": []
 }

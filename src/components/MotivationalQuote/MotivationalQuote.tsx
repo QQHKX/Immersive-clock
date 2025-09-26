@@ -1,63 +1,60 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// 移除旧的静态引入：import quotes from '../../data/quotes.json';
+import { useAppState } from '../../contexts/AppContext';
+import { QuoteSourceConfig, HitokotoResponse, HitokotoCategory } from '../../types';
 import styles from './MotivationalQuote.module.css';
 
 /**
- * 数据源配置类型
- */
-type QuoteSourceConfig = {
-  weight: number; // 权重值 1-99
-  onlineFetch: boolean; // 是否线上拉取
-  apiEndpoint?: string; // API 地址（如适用）
-  quotes?: string[]; // 本地语录
-};
-
-/**
- * 一言 API 返回数据类型（核心字段）
- */
-type HitokotoResponse = {
-  hitokoto: string;
-  type?: string;
-  from?: string;
-  from_who?: string | null;
-};
-
-/**
  * 励志金句组件
+ * - 支持多渠道加权随机选择
+ * - 支持一言API多分类选择
  * - 修复句子更新时的闪现问题，确保动画从空串开始逐字符显示
- * - 支持多来源（本地/线上）按权重随机
  * - 集成一言 API 展示格式：文本 ——来源（单行）
  */
 export function MotivationalQuote() {
+  const { quoteChannels } = useAppState();
   const [currentQuote, setCurrentQuote] = useState(''); // 完整显示用
   const [displayText, setDisplayText] = useState(''); // 打字动画显示用
   const [isTyping, setIsTyping] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 通过 Vite 的 import.meta.glob 收集所有 quotes-*.json 源
-  const sourcesRef = useRef<QuoteSourceConfig[] | null>(null);
-  if (sourcesRef.current === null) {
+  // 通过 Vite 的 import.meta.glob 收集所有 quotes-*.json 源作为备用
+  const fallbackSourcesRef = useRef<QuoteSourceConfig[] | null>(null);
+  if (fallbackSourcesRef.current === null) {
     const modules = import.meta.glob('../../data/quotes-*.json', { eager: true });
     const parsed: QuoteSourceConfig[] = Object.values(modules).map((mod: any) => mod.default ?? mod) as QuoteSourceConfig[];
     // 过滤非法配置，权重与来源字段校验
-    sourcesRef.current = parsed.filter((s) => s && typeof s.weight === 'number' && s.weight > 0);
+    fallbackSourcesRef.current = parsed.filter((s) => s && typeof s.weight === 'number' && s.weight > 0);
   }
+
+  /**
+   * 获取当前可用的渠道列表
+   * 优先使用全局状态中的配置，如果没有则使用备用配置
+   */
+  const getAvailableChannels = useCallback((): QuoteSourceConfig[] => {
+    if (quoteChannels?.channels?.length > 0) {
+      return quoteChannels.channels.filter(channel => channel.enabled && channel.weight > 0);
+    }
+    // 回退到文件配置
+    return fallbackSourcesRef.current?.filter(s => s.weight > 0) || [];
+  }, [quoteChannels]);
 
   /**
    * 根据权重随机挑选数据源
    */
   const pickWeightedSource = useCallback((): QuoteSourceConfig | null => {
-    const sources = sourcesRef.current ?? [];
+    const sources = getAvailableChannels();
     if (!sources.length) return null;
+    
     const total = sources.reduce((sum, s) => sum + (s.weight || 0), 0);
     if (total <= 0) return null;
+    
     let r = Math.random() * total;
     for (const s of sources) {
       r -= s.weight || 0;
       if (r <= 0) return s;
     }
     return sources[sources.length - 1];
-  }, []);
+  }, [getAvailableChannels]);
 
   /**
    * 从本地源随机取一句
@@ -70,28 +67,52 @@ export function MotivationalQuote() {
   }, []);
 
   /**
+   * 构建一言API请求URL，支持多分类选择
+   */
+  const buildHitokotoUrl = useCallback((source: QuoteSourceConfig): string => {
+    let url = source.apiEndpoint || 'https://v1.hitokoto.cn/';
+    
+    // 添加分类参数
+    if (source.hitokotoCategories && source.hitokotoCategories.length > 0) {
+      const params = new URLSearchParams();
+      source.hitokotoCategories.forEach(category => {
+        params.append('c', category);
+      });
+      url += '?' + params.toString();
+    }
+    
+    return url;
+  }, []);
+
+  /**
    * 获取线上一言（或其他 API）并格式化
    * 展示格式（单行）：
    *   文本 ——来源（如果有）
    */
   const fetchOnlineQuote = useCallback(async (source: QuoteSourceConfig): Promise<string | null> => {
-    const endpoint = (source.apiEndpoint || '').trim();
-    if (!endpoint) return null;
     try {
-      const res = await fetch(endpoint, { cache: 'no-store' });
+      const url = buildHitokotoUrl(source);
+      const res = await fetch(url, { 
+        cache: 'no-store',
+        signal: AbortSignal.timeout(5000) // 5秒超时
+      });
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
       const data = (await res.json()) as HitokotoResponse;
       const text = (data?.hitokoto || '').trim();
       if (!text) return null;
+      
       const from = (data?.from || '').trim();
       let final = text;
       if (from) final = `${text} ——${from}`;
+      
       return final;
     } catch (e) {
-      console.warn('[MotivationalQuote] 在线语录获取失败，将回退到本地源：', e);
+      console.warn(`[MotivationalQuote] 在线语录获取失败 (${source.name})，将回退到本地源：`, e);
       return null;
     }
-  }, []);
+  }, [buildHitokotoUrl]);
 
   /**
    * 打字机动画效果
@@ -99,11 +120,13 @@ export function MotivationalQuote() {
    */
   const typewriterEffect = useCallback((text: string) => {
     if (!text) return;
+    
     // 清理之前的定时器
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    
     // 重置显示状态
     setDisplayText('');
     setIsTyping(true);
@@ -129,13 +152,14 @@ export function MotivationalQuote() {
   const updateQuote = useCallback(async () => {
     const source = pickWeightedSource();
     if (!source) {
-      const fallback = '努力拼搏，成就梦想！';
+      const fallback = '保持热爱，奔赴山海。\n——系统提示';
       setCurrentQuote(fallback);
       typewriterEffect(fallback);
       return;
     }
 
     let text: string | null = null;
+    
     if (source.onlineFetch) {
       text = await fetchOnlineQuote(source);
       if (!text) {
@@ -148,7 +172,7 @@ export function MotivationalQuote() {
 
     // 兜底
     if (!text) {
-      text = '努力拼搏，成就梦想！';
+      text = '保持热爱，奔赴山海。\n——系统提示';
     }
 
     // 先记录完整文本，再启动动画。渲染时会根据 isTyping 决定显示 displayText，避免闪现
@@ -168,7 +192,7 @@ export function MotivationalQuote() {
     void updateQuote();
     const interval = setInterval(() => {
       void updateQuote();
-    }, 2 * 60 * 1000); // 将更新间隔改为 2 分钟
+    }, 10 * 60 * 1000); // 10分钟更新间隔
     return () => clearInterval(interval);
   }, [updateQuote]);
 
