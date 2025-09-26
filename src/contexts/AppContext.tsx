@@ -64,6 +64,12 @@ const initialState: AppState = {
   },
   study: loadStudyState(),
   quoteChannels: loadQuoteChannelState(),
+  announcement: {
+    isVisible: false,
+    activeTab: 'announcement',
+    dontShowAgain: false,
+    lastShownTime: 0
+  },
   isModalOpen: false,
 };
 

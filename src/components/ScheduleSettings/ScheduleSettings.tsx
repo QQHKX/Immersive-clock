@@ -162,6 +162,31 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
       onClose={onClose}
       title="课程表设置"
       maxWidth="lg"
+      footer={
+        <FormButtonGroup align="left">
+          <FormButton
+            variant="secondary"
+            onClick={handleReset}
+          >
+            重置默认
+          </FormButton>
+          <FormButtonGroup>
+            <FormButton
+              variant="secondary"
+              onClick={onClose}
+            >
+              取消
+            </FormButton>
+            <FormButton
+              variant="primary"
+              onClick={handleSave}
+              icon={<Save size={16} />}
+            >
+              保存
+            </FormButton>
+          </FormButtonGroup>
+        </FormButtonGroup>
+      }
     >
       <FormSection title="课程时间表">
         <div className={styles.scheduleList}>
@@ -212,30 +237,6 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
           </FormButton>
         </FormButtonGroup>
       </FormSection>
-      
-      <FormButtonGroup align="left">
-        <FormButton
-          variant="secondary"
-          onClick={handleReset}
-        >
-          重置默认
-        </FormButton>
-        <FormButtonGroup>
-          <FormButton
-            variant="secondary"
-            onClick={onClose}
-          >
-            取消
-          </FormButton>
-          <FormButton
-            variant="primary"
-            onClick={handleSave}
-            icon={<Save size={16} />}
-          >
-            保存
-          </FormButton>
-        </FormButtonGroup>
-      </FormButtonGroup>
     </Modal>
   );
 };

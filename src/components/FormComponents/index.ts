@@ -3,7 +3,10 @@ export {
   FormInput,
   FormButton,
   FormButtonGroup,
-  FormRow
+  FormRow,
+  FormSelect,
+  FormCheckbox,
+  FormRadio
 } from './FormComponents';
 
 export type {
@@ -11,5 +14,8 @@ export type {
   FormInputProps,
   FormButtonProps,
   FormButtonGroupProps,
-  FormRowProps
+  FormRowProps,
+  FormSelectProps,
+  FormCheckboxProps,
+  FormRadioProps
 } from './FormComponents';

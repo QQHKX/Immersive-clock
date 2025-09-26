@@ -298,6 +298,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       onClose={onClose} 
       title="设置" 
       maxWidth="lg"
+      footer={
+        <FormButtonGroup align="right">
+          <FormButton variant="secondary" onClick={onClose}>
+            取消
+          </FormButton>
+          <FormButton variant="primary" onClick={handleSaveAll}>
+            保存
+          </FormButton>
+        </FormButtonGroup>
+      }
     >
       <div className={styles.settingsContainer}>
         {/* 基础设置区域 */}
@@ -482,15 +492,6 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <QuoteChannelManager />
         </div>
       </div>
-        
-      <FormButtonGroup align="right">
-        <FormButton variant="secondary" onClick={onClose}>
-          取消
-        </FormButton>
-        <FormButton variant="primary" onClick={handleSaveAll}>
-          保存
-        </FormButton>
-      </FormButtonGroup>
     </Modal>
   );
 }

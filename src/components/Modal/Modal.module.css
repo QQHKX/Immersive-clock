@@ -24,6 +24,8 @@
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: modal-slide-in 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 不同尺寸的模态框 */
@@ -49,6 +51,7 @@
   align-items: center;
   padding: var(--spacing-lg, 1.5rem);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .modalTitle {
@@ -85,6 +88,14 @@
   padding: var(--spacing-lg, 1.5rem);
   max-height: 60vh;
   overflow-y: auto;
+  flex: 1;
+}
+
+.modalFooter {
+  padding: var(--spacing-lg, 1.5rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  flex-shrink: 0;
 }
 
 /* 动画效果 */
@@ -118,7 +129,8 @@
   }
 
   .modalHeader,
-  .modalBody {
+  .modalBody,
+  .modalFooter {
     padding: var(--spacing-md, 1rem);
   }
 
@@ -133,7 +145,8 @@
   }
 
   .modalHeader,
-  .modalBody {
+  .modalBody,
+  .modalFooter {
     padding: var(--spacing-sm, 0.75rem);
   }
 

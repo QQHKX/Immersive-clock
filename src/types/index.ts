@@ -1,4 +1,63 @@
 /**
+ * 公告选项卡类型
+ */
+export type AnnouncementTab = 'announcement' | 'changelog';
+
+/**
+ * 公告选项卡配置接口
+ */
+export interface AnnouncementTabConfig {
+  /** 选项卡标识 */
+  key: AnnouncementTab;
+  /** 显示标题 */
+  title: string;
+  /** 对应的Markdown文件名 */
+  filename: string;
+  /** 图标（可选） */
+  icon?: string;
+}
+
+/**
+ * 公告组件状态接口
+ */
+export interface AnnouncementState {
+  /** 是否显示公告弹窗 */
+  isVisible: boolean;
+  /** 当前激活的选项卡 */
+  activeTab: AnnouncementTab;
+  /** 是否勾选"一周内不再显示" */
+  dontShowAgain: boolean;
+  /** 上次显示时间戳 */
+  lastShownTime: number;
+}
+
+/**
+ * 公告组件Props接口
+ */
+export interface AnnouncementModalProps {
+  /** 是否显示弹窗 */
+  isOpen: boolean;
+  /** 关闭弹窗回调 */
+  onClose: () => void;
+  /** 初始激活的选项卡 */
+  initialTab?: AnnouncementTab;
+}
+
+/**
+ * Markdown文档接口
+ */
+export interface MarkdownDocument {
+  /** 文档内容 */
+  content: string;
+  /** 加载状态 */
+  loading: boolean;
+  /** 错误信息 */
+  error?: string;
+  /** 文件名 */
+  filename: string;
+}
+
+/**
  * 应用模式类型
  * clock: 时钟模式
  * countdown: 倒计时模式
@@ -151,6 +210,8 @@ export interface AppState {
   study: StudyState;
   /** 金句渠道管理状态 */
   quoteChannels: QuoteChannelState;
+  /** 公告组件状态 */
+  announcement: AnnouncementState;
   /** 模态框是否打开 */
   isModalOpen: boolean;
 }
@@ -177,5 +238,9 @@ export type AppAction =
   | { type: 'TOGGLE_QUOTE_CHANNEL'; payload: string }
   | { type: 'UPDATE_QUOTE_CHANNEL_WEIGHT'; payload: { id: string; weight: number } }
   | { type: 'UPDATE_QUOTE_CHANNEL_CATEGORIES'; payload: { id: string; categories: HitokotoCategory[] } }
+  | { type: 'SHOW_ANNOUNCEMENT' }
+  | { type: 'HIDE_ANNOUNCEMENT' }
+  | { type: 'SET_ANNOUNCEMENT_TAB'; payload: AnnouncementTab }
+  | { type: 'SET_ANNOUNCEMENT_DONT_SHOW_AGAIN'; payload: boolean }
   | { type: 'OPEN_MODAL' }
   | { type: 'CLOSE_MODAL' };

@@ -12,12 +12,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "marked": "^16.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-feather": "^2.0.10",
     "react-router-dom": "^6.8.1"
   },
   "devDependencies": {
+    "@types/marked": "^5.0.2",
     "@types/node": "^24.1.0",
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",

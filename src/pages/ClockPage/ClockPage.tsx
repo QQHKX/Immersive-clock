@@ -9,6 +9,7 @@ import { CountdownModal } from '../../components/CountdownModal/CountdownModal';
 import { AuthorInfo } from '../../components/AuthorInfo/AuthorInfo';
 import { SettingsButton } from '../../components/SettingsButton';
 import { SettingsPanel } from '../../components/SettingsPanel';
+import AnnouncementModal from '../../components/AnnouncementModal';
 
 import styles from './ClockPage.module.css';
 
@@ -22,6 +23,7 @@ export function ClockPage() {
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevModeRef = useRef(mode);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
   
   // 跟踪模式变化
   useEffect(() => {
@@ -86,6 +88,20 @@ export function ClockPage() {
   }, []);
 
   /**
+   * 处理版本号点击，显示公告弹窗
+   */
+  const handleVersionClick = useCallback(() => {
+    setShowAnnouncement(true);
+  }, []);
+
+  /**
+   * 处理公告弹窗关闭
+   */
+  const handleAnnouncementClose = useCallback(() => {
+    setShowAnnouncement(false);
+  }, []);
+
+  /**
    * 渲染当前模式的时钟组件
    */
   const renderTimeDisplay = () => {
@@ -118,7 +134,7 @@ export function ClockPage() {
       
       <HUD />
       
-      <AuthorInfo />
+      <AuthorInfo onVersionClick={handleVersionClick} />
       
       {/* 设置按钮 - 只在晚自习模式下显示 */}
       {mode === 'study' && (
@@ -135,6 +151,13 @@ export function ClockPage() {
       />
       
       {isModalOpen && <CountdownModal />}
+      
+      {/* 公告弹窗 */}
+      <AnnouncementModal
+        isOpen={showAnnouncement}
+        onClose={handleAnnouncementClose}
+        initialTab="announcement"
+      />
     </div>
   );
 }

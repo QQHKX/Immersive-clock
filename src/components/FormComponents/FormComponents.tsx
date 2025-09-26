@@ -50,6 +50,143 @@ export function FormInput({
   );
 }
 
+// 选择器组件
+export interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  error?: string;
+  options: Array<{ value: string; label: string; disabled?: boolean }>;
+}
+
+/**
+ * 统一的选择器组件
+ * 提供一致的下拉选择样式
+ */
+export function FormSelect({ 
+  label, 
+  error, 
+  options, 
+  className = '', 
+  ...props 
+}: FormSelectProps) {
+  const selectClass = `${styles.select} ${className} ${error ? styles.error : ''}`;
+  
+  return (
+    <div className={styles.inputGroup}>
+      {label && <label className={styles.label}>{label}</label>}
+      <div className={styles.selectWrapper}>
+        <select className={selectClass} {...props}>
+          {options.map((option) => (
+            <option 
+              key={option.value} 
+              value={option.value} 
+              disabled={option.disabled}
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className={styles.selectArrow}>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      {error && <span className={styles.errorText}>{error}</span>}
+    </div>
+  );
+}
+
+// 复选框组件
+export interface FormCheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  label: string;
+  error?: string;
+}
+
+/**
+ * 统一的复选框组件
+ * 提供自定义样式的复选框
+ */
+export function FormCheckbox({ 
+  label, 
+  error, 
+  className = '', 
+  ...props 
+}: FormCheckboxProps) {
+  return (
+    <div className={`${styles.checkboxGroup} ${className}`}>
+      <label className={styles.checkboxLabel}>
+        <input 
+          type="checkbox" 
+          className={styles.checkboxInput} 
+          {...props} 
+        />
+        <span className={styles.checkboxCustom}>
+          <svg className={styles.checkboxIcon} width="12" height="10" viewBox="0 0 12 10" fill="none">
+            <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+        <span className={styles.checkboxText}>{label}</span>
+      </label>
+      {error && <span className={styles.errorText}>{error}</span>}
+    </div>
+  );
+}
+
+// 单选框组件
+export interface FormRadioOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface FormRadioProps {
+  name: string;
+  label?: string;
+  options: FormRadioOption[];
+  value?: string;
+  onChange?: (value: string) => void;
+  error?: string;
+  className?: string;
+}
+
+/**
+ * 统一的单选框组件
+ * 提供自定义样式的单选框组
+ */
+export function FormRadio({ 
+  name, 
+  label, 
+  options, 
+  value, 
+  onChange, 
+  error, 
+  className = '' 
+}: FormRadioProps) {
+  return (
+    <div className={`${styles.radioGroup} ${className}`}>
+      {label && <label className={styles.label}>{label}</label>}
+      <div className={styles.radioOptions}>
+        {options.map((option) => (
+          <label key={option.value} className={styles.radioLabel}>
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={value === option.value}
+              onChange={(e) => onChange?.(e.target.value)}
+              disabled={option.disabled}
+              className={styles.radioInput}
+            />
+            <span className={styles.radioCustom}></span>
+            <span className={styles.radioText}>{option.label}</span>
+          </label>
+        ))}
+      </div>
+      {error && <span className={styles.errorText}>{error}</span>}
+    </div>
+  );
+}
+
 // 按钮组件
 export interface FormButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success';

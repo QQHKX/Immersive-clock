@@ -113,6 +113,23 @@ export function CountdownModal() {
       onClose={handleClose}
       title="设置倒计时"
       maxWidth="md"
+      footer={
+        <FormButtonGroup align="right">
+          <FormButton
+            variant="secondary"
+            onClick={handleClose}
+          >
+            取消
+          </FormButton>
+          <FormButton
+            variant="primary"
+            onClick={handleConfirm}
+            disabled={!isValid}
+          >
+            确认
+          </FormButton>
+        </FormButtonGroup>
+      }
     >
 
       <FormSection title="时间设置">
@@ -211,22 +228,6 @@ export function CountdownModal() {
           ))}
         </FormButtonGroup>
       </FormSection>
-
-      <FormButtonGroup align="right">
-        <FormButton
-          variant="secondary"
-          onClick={handleClose}
-        >
-          取消
-        </FormButton>
-        <FormButton
-          variant="primary"
-          onClick={handleConfirm}
-          disabled={!isValid}
-        >
-          确认
-        </FormButton>
-      </FormButtonGroup>
     </Modal>
   );
 }

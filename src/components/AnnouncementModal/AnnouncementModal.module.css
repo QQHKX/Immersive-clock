@@ -1,0 +1,382 @@
+/* 公告弹窗组件样式 */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+}
+
+/* 选项卡导航 */
+.tabNav {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: var(--spacing-lg);
+}
+
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+}
+
+.tabButton:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tabButton.active {
+  color: var(--text-primary);
+  border-bottom-color: #667eea;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tabIcon {
+  font-size: var(--font-size-lg);
+}
+
+.tabTitle {
+  font-family: var(--font-ui);
+}
+
+/* 内容区域 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.loadingSpinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--error-color);
+  text-align: center;
+}
+
+/* Markdown内容 */
+.markdownContent {
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4,
+.markdownContent h5,
+.markdownContent h6 {
+  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.markdownContent h1 {
+  font-size: var(--font-size-xl);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: var(--spacing-sm);
+}
+
+.markdownContent h2 {
+  font-size: var(--font-size-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: var(--spacing-xs);
+}
+
+.markdownContent h3 {
+  font-size: var(--font-size-md);
+}
+
+.markdownContent p {
+  margin: var(--spacing-md) 0;
+  line-height: 1.7;
+}
+
+.markdownContent ul,
+.markdownContent ol {
+  margin: var(--spacing-md) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.markdownContent li {
+  margin: var(--spacing-xs) 0;
+  line-height: 1.6;
+}
+
+.markdownContent blockquote {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  border-left: 4px solid #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+  font-style: italic;
+}
+
+.markdownContent code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: #f8f8f2;
+}
+
+.markdownContent pre {
+  background: rgba(0, 0, 0, 0.2);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.markdownContent pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+}
+
+.markdownContent a {
+  color: #667eea;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.markdownContent a:hover {
+  border-bottom-color: #667eea;
+}
+
+.markdownContent strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.markdownContent em {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.markdownContent hr {
+  margin: var(--spacing-xl) 0;
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 底部操作区 */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.checkboxText {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    min-height: 400px;
+  }
+  
+  .tabNav {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+  
+  .tabButton {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  
+  .content {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  .markdownContent h1 {
+    font-size: var(--font-size-lg);
+  }
+  
+  .markdownContent h2 {
+    font-size: var(--font-size-md);
+  }
+  
+  .markdownContent h3 {
+    font-size: var(--font-size-sm);
+  }
+  
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+  
+  .checkboxContainer {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    min-height: 350px;
+  }
+  
+  .tabButton {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    min-width: 100px;
+  }
+  
+  .tabIcon {
+    font-size: var(--font-size-md);
+  }
+  
+  .content {
+    padding: var(--spacing-xs);
+  }
+  
+  .markdownContent {
+    font-size: var(--font-size-xs);
+  }
+  
+  .markdownContent h1 {
+    font-size: var(--font-size-md);
+  }
+  
+  .markdownContent h2 {
+    font-size: var(--font-size-sm);
+  }
+  
+  .markdownContent h3 {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .tabButton {
+    border: 1px solid transparent;
+  }
+  
+  .tabButton:hover,
+  .tabButton.active {
+    border-color: currentColor;
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .content {
+    border-color: currentColor;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .markdownContent a {
+    color: #8fa4ff;
+    text-decoration: underline;
+  }
+  
+  .markdownContent code {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .markdownContent pre {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+  }
+  
+  .markdownContent blockquote {
+    border-left-color: #8fa4ff;
+    background: rgba(143, 164, 255, 0.15);
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .tabButton {
+    transition: none;
+  }
+  
+  .loadingSpinner {
+    animation: none;
+  }
+  
+  .markdownContent a {
+    transition: none;
+  }
+}

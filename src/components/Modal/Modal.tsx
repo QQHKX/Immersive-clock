@@ -10,6 +10,7 @@ export interface ModalProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   className?: string;
+  footer?: React.ReactNode;
 }
 
 /**
@@ -23,7 +24,8 @@ export function Modal({
   children,
   maxWidth = 'md',
   showCloseButton = true,
-  className = ''
+  className = '',
+  footer
 }: ModalProps) {
   /**
    * 处理背景点击关闭
@@ -85,6 +87,12 @@ export function Modal({
         <div className={styles.modalBody}>
           {children}
         </div>
+        
+        {footer && (
+          <div className={styles.modalFooter}>
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
