@@ -79,8 +79,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 错误状态 */
@@ -96,9 +101,9 @@
 
 /* Markdown内容 */
 .markdownContent {
-  line-height: 1.6;
+  line-height: 1;
   color: var(--text-primary);
-  font-size: var(--font-size-sm); /* 调整基础文字大小 */
+  font-size: var(--font-size-sm);
 }
 
 .markdownContent h1,
@@ -107,43 +112,55 @@
 .markdownContent h4,
 .markdownContent h5,
 .markdownContent h6 {
-  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+  margin: var(--spacing-md) 0 var(--spacing-sm) 0;
   color: var(--text-primary);
   font-family: var(--font-ui);
 }
 
 .markdownContent h1 {
-  font-size: var(--font-size-lg); /* 从xl调整为lg */
+  font-size: 2.5rem;
+  /* 增大 h1 字体，提高层级区分度 */
+  font-weight: 700;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: var(--spacing-sm);
 }
 
 .markdownContent h2 {
-  font-size: var(--font-size-md); /* 从lg调整为md */
+  font-size: 1.5rem;
+  font-weight: 600;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding-bottom: var(--spacing-xs);
 }
 
 .markdownContent h3 {
-  font-size: var(--font-size-sm); /* 从md调整为sm */
+  font-size: 1.0rem;
+  /* h3 字体大小，与正文有明显区别 */
+  font-weight: 600;
 }
 
 .markdownContent p {
-  margin: var(--spacing-md) 0;
-  line-height: 1.6; /* 从1.7调整为1.6，更紧凑 */
-  font-size: var(--font-size-sm); /* 明确设置段落字体大小 */
+  margin: var(--spacing-xs) 0;
+  /* 从spacing-md调整为spacing-xs，减少段落间距 */
+  line-height: 1.4;
+  /* 进一步减少段落内行间距 */
+  font-size: var(--font-size-sm);
+  /* 明确设置段落字体大小 */
 }
 
 .markdownContent ul,
 .markdownContent ol {
-  margin: var(--spacing-md) 0;
+  margin: var(--spacing-xs) 0;
+  /* 减少列表上下间距 */
   padding-left: var(--spacing-lg);
 }
 
 .markdownContent li {
   margin: var(--spacing-xs) 0;
-  line-height: 1.5; /* 从1.6调整为1.5，更紧凑 */
-  font-size: var(--font-size-sm); /* 明确设置列表项字体大小 */
+  /* 减少列表项间距 */
+  line-height: 1.4;
+  /* 减少列表项行间距 */
+  font-size: var(--font-size-sm);
+  /* 明确设置列表项字体大小 */
 }
 
 .markdownContent blockquote {
@@ -253,12 +270,12 @@
   .container {
     min-height: 400px;
   }
-  
+
   .tabNav {
     flex-wrap: wrap;
     gap: var(--spacing-xs);
   }
-  
+
   .tabButton {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-sm);
@@ -266,30 +283,30 @@
     min-width: 120px;
     justify-content: center;
   }
-  
+
   .content {
     padding: var(--spacing-sm);
     font-size: var(--font-size-sm);
   }
-  
+
   .markdownContent h1 {
     font-size: var(--font-size-lg);
   }
-  
+
   .markdownContent h2 {
     font-size: var(--font-size-md);
   }
-  
+
   .markdownContent h3 {
     font-size: var(--font-size-sm);
   }
-  
+
   .footer {
     flex-direction: column;
     align-items: stretch;
     gap: var(--spacing-sm);
   }
-  
+
   .checkboxContainer {
     justify-content: center;
   }
@@ -299,33 +316,33 @@
   .container {
     min-height: 350px;
   }
-  
+
   .tabButton {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-size-xs);
     min-width: 100px;
   }
-  
+
   .tabIcon {
     font-size: var(--font-size-md);
   }
-  
+
   .content {
     padding: var(--spacing-xs);
   }
-  
+
   .markdownContent {
     font-size: var(--font-size-xs);
   }
-  
+
   .markdownContent h1 {
     font-size: var(--font-size-md);
   }
-  
+
   .markdownContent h2 {
     font-size: var(--font-size-sm);
   }
-  
+
   .markdownContent h3 {
     font-size: var(--font-size-xs);
   }
@@ -336,33 +353,33 @@
   .tabButton {
     border: 1px solid transparent;
   }
-  
+
   .tabButton:hover,
   .tabButton.active {
     border-color: currentColor;
     background: rgba(255, 255, 255, 0.15);
   }
-  
+
   .content {
     border-color: currentColor;
     background: rgba(255, 255, 255, 0.05);
   }
-  
+
   .markdownContent a {
     color: #8fa4ff;
     text-decoration: underline;
   }
-  
+
   .markdownContent code {
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .markdownContent pre {
     border-color: rgba(255, 255, 255, 0.3);
     background: rgba(0, 0, 0, 0.4);
   }
-  
+
   .markdownContent blockquote {
     border-left-color: #8fa4ff;
     background: rgba(143, 164, 255, 0.15);
@@ -374,11 +391,11 @@
   .tabButton {
     transition: none;
   }
-  
+
   .loadingSpinner {
     animation: none;
   }
-  
+
   .markdownContent a {
     transition: none;
   }
