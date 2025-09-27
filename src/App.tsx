@@ -31,10 +31,10 @@ export function App() {
     // 检查是否需要显示公告
     const checkAnnouncement = () => {
       if (shouldShowAnnouncement()) {
-        // 延迟显示公告，等待进入动画完成和应用稳定
+        // 延迟显示公告，等待进入动画完成
         setTimeout(() => {
           setShowAnnouncement(true);
-        }, 2000); // 增加延迟时间，确保应用完全稳定
+        }, 1200); // 在进入动画完成后200ms显示
       }
     };
 

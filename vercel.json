@@ -6,6 +6,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/docs/(.*)",
+      "destination": "/docs/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -92,5 +96,9 @@
       ]
     }
   ],
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {},
+  "env": {
+    "VERCEL_WEB_ANALYTICS_DISABLE": "1"
+  }
 }

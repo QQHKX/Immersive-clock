@@ -1,8 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { versionCachePlugin } from './src/utils/versionCache'
-import fs from 'fs'
-import path from 'path'
 
 /**
  * Vite 配置文件
@@ -10,12 +8,6 @@ import path from 'path'
  */
 export default defineConfig({
   plugins: [react(), versionCachePlugin()],
-  define: {
-    // 在构建时注入版本号
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(
-      JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf-8')).version
-    )
-  },
   server: {
     port: 3005,
     open: true,
