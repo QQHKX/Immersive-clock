@@ -97,7 +97,6 @@
     }
   ],
   "trailingSlash": false,
-  "functions": {},
   "env": {
     "VERCEL_WEB_ANALYTICS_DISABLE": "1"
   }
