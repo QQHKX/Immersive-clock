@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Trash2, Save } from 'react-feather';
+import { PlusIcon, TrashIcon, SaveIcon } from '../Icons';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
 import { Modal } from '../Modal';
 import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from '../FormComponents';
@@ -180,7 +180,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
             <FormButton
               variant="primary"
               onClick={handleSave}
-              icon={<Save size={16} />}
+              icon={<SaveIcon size={16} />}
             >
               保存
             </FormButton>
@@ -220,7 +220,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
                 variant="danger"
                 size="sm"
                 onClick={() => handleDeletePeriod(period.id)}
-                icon={<Trash2 size={16} />}
+                icon={<TrashIcon size={16} />}
                 title="删除时间段"
               />
             </div>
@@ -231,7 +231,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
           <FormButton
             variant="primary"
             onClick={handleAddPeriod}
-            icon={<Plus size={16} />}
+            icon={<PlusIcon size={16} />}
           >
             添加时间段
           </FormButton>

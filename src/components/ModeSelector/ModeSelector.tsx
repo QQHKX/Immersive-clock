@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Clock, Watch, BookOpen } from 'react-feather';
+import { ClockIcon, CountdownIcon, WatchIcon, StudyIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { AppMode } from '../../types';
 
@@ -27,25 +27,25 @@ export function ModeSelector() {
     {
       key: 'clock' as AppMode,
       label: '时钟',
-      icon: Clock,
+      icon: ClockIcon,
       description: '显示当前时间'
     },
     {
       key: 'countdown' as AppMode,
       label: '倒计时',
-      icon: Clock,
+      icon: CountdownIcon,
       description: '设置倒计时'
     },
     {
       key: 'stopwatch' as AppMode,
       label: '计时',
-      icon: Watch,
+      icon: WatchIcon,
       description: '计时器功能'
     },
     {
       key: 'study' as AppMode,
       label: '晚自习',
-      icon: BookOpen,
+      icon: StudyIcon,
       description: '晚自习模式'
     }
   ];
@@ -68,7 +68,7 @@ export function ModeSelector() {
           <Icon 
             className={styles.icon} 
             size={20}
-            aria-hidden="true"
+            aria-hidden={true}
           />
           <span className={styles.label}>{label}</span>
         </button>

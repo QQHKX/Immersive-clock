@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Trash2, Save, Volume2, VolumeX, RefreshCw } from 'react-feather';
+import { PlusIcon, TrashIcon, SaveIcon, VolumeIcon, VolumeMuteIcon, RefreshIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
 import { Modal } from '../Modal';
@@ -338,7 +338,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               <FormButton
                 variant="secondary"
                 onClick={handleRefreshWeather}
-                icon={<RefreshCw size={16} />}
+                icon={<RefreshIcon size={16} />}
               >
                 刷新天气
               </FormButton>
@@ -385,7 +385,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               <FormButton
                 variant="secondary"
                 onClick={handleRecalibrate}
-                icon={<Volume2 size={16} />}
+                icon={<VolumeIcon size={16} />}
               >
                 重新校准
               </FormButton>
@@ -393,7 +393,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 variant="danger"
                 onClick={handleClearNoiseBaseline}
                 disabled={noiseBaseline === 0}
-                icon={<VolumeX size={16} />}
+                icon={<VolumeMuteIcon size={16} />}
               >
                 清除校准
               </FormButton>
@@ -412,7 +412,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               <FormButton 
                 variant="primary" 
                 onClick={handleAddPeriod}
-                icon={<Plus size={16} />}
+                icon={<PlusIcon size={16} />}
               >
                 添加
               </FormButton>
@@ -448,13 +448,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         <FormButton
                           variant="success"
                           onClick={() => setEditingId(null)}
-                          icon={<Save size={14} />}
+                          icon={<SaveIcon size={14} />}
                           size="sm"
                         />
                         <FormButton
                           variant="danger"
                           onClick={() => handleDeletePeriod(period.id)}
-                          icon={<Trash2 size={14} />}
+                          icon={<TrashIcon size={14} />}
                           size="sm"
                         />
                       </FormButtonGroup>
@@ -473,7 +473,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                           e.stopPropagation();
                           handleDeletePeriod(period.id);
                         }}
-                        icon={<Trash2 size={14} />}
+                        icon={<TrashIcon size={14} />}
                         size="sm"
                       />
                     </div>

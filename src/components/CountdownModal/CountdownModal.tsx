@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, Minus } from 'react-feather';
+import { PlusIcon, MinusIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { timeToSeconds } from '../../utils/formatTime';
 import { Modal } from '../Modal';
@@ -143,7 +143,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('hours', -1)}
                 disabled={hours === 0}
-                icon={<Minus size={16} />}
+                icon={<MinusIcon size={16} />}
                 aria-label="减少小时"
               />
               <div className={styles.timeValue}>
@@ -154,7 +154,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('hours', 1)}
                 disabled={hours === 23}
-                icon={<Plus size={16} />}
+                icon={<PlusIcon size={16} />}
                 aria-label="增加小时"
               />
             </div>
@@ -169,7 +169,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('minutes', -1)}
                 disabled={minutes === 0}
-                icon={<Minus size={16} />}
+                icon={<MinusIcon size={16} />}
                 aria-label="减少分钟"
               />
               <div className={styles.timeValue}>
@@ -180,7 +180,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('minutes', 1)}
                 disabled={minutes === 59}
-                icon={<Plus size={16} />}
+                icon={<PlusIcon size={16} />}
                 aria-label="增加分钟"
               />
             </div>
@@ -195,7 +195,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('seconds', -1)}
                 disabled={seconds === 0}
-                icon={<Minus size={16} />}
+                icon={<MinusIcon size={16} />}
                 aria-label="减少秒"
               />
               <div className={styles.timeValue}>
@@ -206,7 +206,7 @@ export function CountdownModal() {
                 size="sm"
                 onClick={() => adjustTime('seconds', 1)}
                 disabled={seconds === 59}
-                icon={<Plus size={16} />}
+                icon={<PlusIcon size={16} />}
                 aria-label="增加秒"
               />
             </div>

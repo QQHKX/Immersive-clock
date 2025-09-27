@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'react-feather';
+import { CloseIcon } from '../Icons';
 import styles from './Modal.module.css';
 
 export interface ModalProps {
@@ -79,7 +79,7 @@ export function Modal({
               className={styles.closeButton}
               aria-label="关闭模态框"
             >
-              <X size={20} />
+              <CloseIcon size={20} />
             </button>
           )}
         </div>

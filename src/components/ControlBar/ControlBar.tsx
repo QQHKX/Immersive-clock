@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Play, Pause, RotateCcw, Maximize, Minimize } from 'react-feather';
+import { PlayIcon, PauseIcon, ResetIcon, MaximizeIcon, MinimizeIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useFullscreen } from '../../hooks/useFullscreen';
 
@@ -77,12 +77,12 @@ export function ControlBar() {
         >
           {canStart ? (
             isRunning ? (
-              <Pause className={styles.icon} size={18} aria-hidden="true" />
+              <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
             ) : (
-              <Play className={styles.icon} size={18} aria-hidden="true" />
+              <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
             )
           ) : (
-            <Play className={styles.icon} size={18} aria-hidden="true" />
+            <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
           <span className={styles.label}>
             {canStart ? (isRunning ? '暂停' : '开始') : '设置'}
@@ -96,7 +96,7 @@ export function ControlBar() {
           aria-label="重置倒计时"
           title="重置倒计时"
         >
-          <RotateCcw className={styles.icon} size={18} aria-hidden="true" />
+          <ResetIcon className={styles.icon} size={18} aria-hidden={true} />
           <span className={styles.label}>重置</span>
         </button>
       </>
@@ -118,9 +118,9 @@ export function ControlBar() {
           title={isRunning ? '暂停秒表' : '开始秒表'}
         >
           {isRunning ? (
-            <Pause className={styles.icon} size={18} aria-hidden="true" />
+            <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
           ) : (
-            <Play className={styles.icon} size={18} aria-hidden="true" />
+            <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
           <span className={styles.label}>
             {isRunning ? '暂停' : '开始'}
@@ -134,7 +134,7 @@ export function ControlBar() {
           aria-label="重置秒表"
           title="重置秒表"
         >
-          <RotateCcw className={styles.icon} size={18} aria-hidden="true" />
+          <ResetIcon className={styles.icon} size={18} aria-hidden={true} />
           <span className={styles.label}>重置</span>
         </button>
       </>
@@ -157,9 +157,9 @@ export function ControlBar() {
           title={isFullscreen ? '退出全屏' : '进入全屏'}
         >
           {isFullscreen ? (
-            <Minimize className={styles.icon} size={18} aria-hidden="true" />
+            <MinimizeIcon className={styles.icon} size={18} aria-hidden={true} />
           ) : (
-            <Maximize className={styles.icon} size={18} aria-hidden="true" />
+            <MaximizeIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
           <span className={styles.label}>
             {isFullscreen ? '退出全屏' : '全屏'}

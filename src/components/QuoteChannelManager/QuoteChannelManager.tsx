@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, Settings, RefreshCw } from 'react-feather';
+import { ToggleOffIcon, ToggleOnIcon, SettingsIcon, RefreshIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { QuoteSourceConfig, HitokotoCategory, HITOKOTO_CATEGORY_LIST } from '../../types';
 import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from '../FormComponents';
@@ -163,7 +163,7 @@ export function QuoteChannelManager() {
     return (
       <FormSection title="金句渠道管理">
         <div className={styles.loading}>
-          <RefreshCw className={styles.loadingIcon} />
+          <RefreshIcon className={styles.loadingIcon} />
           <span>加载渠道配置中...</span>
         </div>
       </FormSection>
@@ -182,7 +182,7 @@ export function QuoteChannelManager() {
         <FormButton
           variant="secondary"
           onClick={handleRefreshChannels}
-          icon={<RefreshCw size={16} />}
+          icon={<RefreshIcon size={16} />}
         >
           刷新配置
         </FormButton>
@@ -219,9 +219,9 @@ export function QuoteChannelManager() {
                   title={channel.enabled ? '点击禁用' : '点击启用'}
                 >
                   {channel.enabled ? (
-                    <ToggleRight className={styles.toggleIconEnabled} />
+                    <ToggleOnIcon className={styles.toggleIconEnabled} />
                   ) : (
-                    <ToggleLeft className={styles.toggleIconDisabled} />
+                    <ToggleOffIcon className={styles.toggleIconDisabled} />
                   )}
                 </button>
                 
@@ -231,7 +231,7 @@ export function QuoteChannelManager() {
                     onClick={() => handleToggleExpanded(channel.id)}
                     title="分类设置"
                   >
-                    <Settings size={16} />
+                    <SettingsIcon size={16} />
                   </button>
                 )}
               </div>
@@ -274,7 +274,7 @@ export function QuoteChannelManager() {
           <FormButton
             variant="primary"
             onClick={handleRefreshChannels}
-            icon={<RefreshCw size={16} />}
+            icon={<RefreshIcon size={16} />}
           >
             重新加载
           </FormButton>

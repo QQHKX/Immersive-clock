@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, FileText } from 'react-feather';
 import { marked } from 'marked';
 import Modal from '../Modal/Modal';
 import { FormButton, FormButtonGroup } from '../FormComponents/FormComponents';

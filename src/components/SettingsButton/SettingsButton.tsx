@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings } from 'react-feather';
+import { SettingsIcon } from '../Icons';
 import styles from './SettingsButton.module.css';
 
 interface SettingsButtonProps {
@@ -86,7 +86,7 @@ export function SettingsButton({ onClick, isVisible = true }: SettingsButtonProp
       aria-label="打开设置"
       title="设置"
     >
-      <Settings size={16} />
+      <SettingsIcon size={16} />
     </button>
   );
 }
