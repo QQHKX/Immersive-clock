@@ -1,7 +1,7 @@
 {
   "id": "university-mottos",
   "name": "大学校训",
-  "weight": 20,
+  "weight": 40,
   "enabled": true,
   "onlineFetch": false,
   "quotes": [

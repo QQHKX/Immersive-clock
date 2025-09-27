@@ -153,18 +153,21 @@
   /* 隐藏默认的数字输入框箭头 */
   -webkit-appearance: none;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* 隐藏 Chrome/Safari 的数字输入框箭头 */
 .weightInput::-webkit-outer-spin-button,
 .weightInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
 /* 隐藏 Firefox 的数字输入框箭头 */
 .weightInput[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .toggleButton {

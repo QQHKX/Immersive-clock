@@ -1,7 +1,7 @@
 {
   "id": "local-inspirational",
   "name": "本地励志语录",
-  "weight": 50,
+  "weight": 40,
   "enabled": true,
   "onlineFetch": false,
   "quotes": [
