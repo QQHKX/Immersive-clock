@@ -98,6 +98,7 @@
 .markdownContent {
   line-height: 1.6;
   color: var(--text-primary);
+  font-size: var(--font-size-sm); /* 调整基础文字大小 */
 }
 
 .markdownContent h1,
@@ -112,24 +113,25 @@
 }
 
 .markdownContent h1 {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg); /* 从xl调整为lg */
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: var(--spacing-sm);
 }
 
 .markdownContent h2 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md); /* 从lg调整为md */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding-bottom: var(--spacing-xs);
 }
 
 .markdownContent h3 {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm); /* 从md调整为sm */
 }
 
 .markdownContent p {
   margin: var(--spacing-md) 0;
-  line-height: 1.7;
+  line-height: 1.6; /* 从1.7调整为1.6，更紧凑 */
+  font-size: var(--font-size-sm); /* 明确设置段落字体大小 */
 }
 
 .markdownContent ul,
@@ -140,7 +142,8 @@
 
 .markdownContent li {
   margin: var(--spacing-xs) 0;
-  line-height: 1.6;
+  line-height: 1.5; /* 从1.6调整为1.5，更紧凑 */
+  font-size: var(--font-size-sm); /* 明确设置列表项字体大小 */
 }
 
 .markdownContent blockquote {

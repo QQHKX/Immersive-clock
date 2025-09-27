@@ -92,9 +92,19 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 /* 选择器组件 */
@@ -210,12 +220,12 @@
   transform: scale(1.05);
 }
 
-.checkboxInput:checked + .checkboxCustom {
+.checkboxInput:checked+.checkboxCustom {
   background: var(--accent-color, #03DAC6);
   border-color: var(--accent-color, #03DAC6);
 }
 
-.checkboxInput:focus + .checkboxCustom {
+.checkboxInput:focus+.checkboxCustom {
   border-color: var(--accent-color, #03DAC6);
 }
 
@@ -227,11 +237,11 @@
   color: var(--background-color, #121212);
 }
 
-.checkboxInput:checked + .checkboxCustom .checkboxIcon {
+.checkboxInput:checked+.checkboxCustom .checkboxIcon {
   opacity: 1;
 }
 
-.checkboxInput:disabled + .checkboxCustom {
+.checkboxInput:disabled+.checkboxCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -320,20 +330,20 @@
   transform: scale(1.05);
 }
 
-.radioInput:checked + .radioCustom {
+.radioInput:checked+.radioCustom {
   background: var(--accent-color, #03DAC6);
   border-color: var(--accent-color, #03DAC6);
 }
 
-.radioInput:checked + .radioCustom::after {
+.radioInput:checked+.radioCustom::after {
   opacity: 1;
 }
 
-.radioInput:focus + .radioCustom {
+.radioInput:focus+.radioCustom {
   border-color: var(--accent-color, #03DAC6);
 }
 
-.radioInput:disabled + .radioCustom {
+.radioInput:disabled+.radioCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -381,6 +391,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 0.9;
     transform: translateY(0);
@@ -531,7 +542,7 @@
 }
 
 /* 按钮组内的按钮间距优化 */
-.buttonGroup .button + .button {
+.buttonGroup .button+.button {
   margin-left: 0;
 }
 

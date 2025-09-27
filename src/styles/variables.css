@@ -22,6 +22,13 @@
   --button-font-size: 1rem;
   --modal-font-size: 1.2rem;
 
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-md: 0.95rem;
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.25rem;
+
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.25rem;
