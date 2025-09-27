@@ -19,12 +19,45 @@ export function MotivationalQuote() {
 
   // 通过 Vite 的 import.meta.glob 收集所有 quotes-*.json 源作为备用
   const fallbackSourcesRef = useRef<QuoteSourceConfig[] | null>(null);
-  if (fallbackSourcesRef.current === null) {
-    const modules = import.meta.glob('../../data/quotes-*.json', { eager: true });
-    const parsed: QuoteSourceConfig[] = Object.values(modules).map((mod: any) => mod.default ?? mod) as QuoteSourceConfig[];
-    // 过滤非法配置，权重与来源字段校验
-    fallbackSourcesRef.current = parsed.filter((s) => s && typeof s.weight === 'number' && s.weight > 0);
-  }
+  const [fallbackSourcesLoaded, setFallbackSourcesLoaded] = useState(false);
+
+  /**
+   * 动态加载备用数据源
+   */
+  const loadFallbackSources = useCallback(async () => {
+    if (fallbackSourcesRef.current !== null) return;
+    
+    try {
+      const modules = import.meta.glob('../../data/quotes-*.json');
+      const loadedSources: QuoteSourceConfig[] = [];
+      
+      for (const [path, loader] of Object.entries(modules)) {
+        try {
+          const module = await loader() as { default: QuoteSourceConfig };
+          const config = module.default;
+          
+          // 过滤非法配置，权重与来源字段校验
+          if (config && typeof config.weight === 'number' && config.weight > 0) {
+            loadedSources.push(config);
+          }
+        } catch (error) {
+          console.warn(`Failed to load fallback quote file ${path}:`, error);
+        }
+      }
+      
+      fallbackSourcesRef.current = loadedSources;
+      setFallbackSourcesLoaded(true);
+    } catch (error) {
+      console.warn('Failed to load fallback quote sources:', error);
+      fallbackSourcesRef.current = [];
+      setFallbackSourcesLoaded(true);
+    }
+  }, []);
+
+  // 在组件挂载时加载备用数据源
+  useEffect(() => {
+    loadFallbackSources();
+  }, [loadFallbackSources]);
 
   /**
    * 获取当前可用的渠道列表
@@ -34,9 +67,12 @@ export function MotivationalQuote() {
     if (quoteChannels?.channels?.length > 0) {
       return quoteChannels.channels.filter(channel => channel.enabled && channel.weight > 0);
     }
-    // 回退到文件配置
-    return fallbackSourcesRef.current?.filter(s => s.weight > 0) || [];
-  }, [quoteChannels]);
+    // 回退到文件配置（仅在备用数据源加载完成后）
+    if (fallbackSourcesLoaded && fallbackSourcesRef.current) {
+      return fallbackSourcesRef.current.filter(s => s.weight > 0);
+    }
+    return [];
+  }, [quoteChannels, fallbackSourcesLoaded]);
 
   /**
    * 根据权重随机挑选数据源
