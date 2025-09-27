@@ -2,9 +2,9 @@ import React from 'react';
 import { IconProps } from './index';
 
 /**
- * 手表图标组件
+ * 秒表图标组件
  * 用于秒表模式
- * 引用 public/icons/ui/watch.svg 文件
+ * 引用 public/icons/ui/stopwatch.svg 文件
  */
 export const WatchIcon: React.FC<IconProps> = ({
   size = 24,
@@ -28,8 +28,8 @@ export const WatchIcon: React.FC<IconProps> = ({
 
   return (
     <img
-      src="/icons/ui/watch.svg"
-      alt={title || "手表"}
+      src="/icons/ui/stopwatch.svg"
+      alt={title || "秒表"}
       className={className}
       style={iconStyle}
       onClick={onClick}
