@@ -121,9 +121,10 @@
   align-items: center;
   gap: var(--spacing-xs);
   background: rgba(255, 255, 255, 0.05);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 6px var(--spacing-sm);
   border-radius: var(--border-radius-md);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 36px;
 }
 
 .weightLabel {
@@ -131,15 +132,39 @@
   color: var(--text-secondary);
   white-space: nowrap;
   font-weight: 500;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .weightInput {
-  width: 60px !important;
-  min-width: 60px;
+  width: 50px !important;
+  min-width: 50px;
+  max-width: 50px;
+  height: 32px !important;
+  padding: 4px 6px !important;
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   text-align: center;
   font-weight: 600;
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+  border-radius: 6px !important;
+  
+  /* 隐藏默认的数字输入框箭头 */
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+/* 隐藏 Chrome/Safari 的数字输入框箭头 */
+.weightInput::-webkit-outer-spin-button,
+.weightInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 隐藏 Firefox 的数字输入框箭头 */
+.weightInput[type=number] {
+  -moz-appearance: textfield;
 }
 
 .toggleButton {
