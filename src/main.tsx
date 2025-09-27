@@ -32,7 +32,11 @@ setTimeout(() => {
   if (loadingScreen) {
     // 确保DOM完全渲染后再隐藏加载动画
     requestAnimationFrame(() => {
-      loadingScreen.remove();
+      loadingScreen.style.opacity = '0';
+      loadingScreen.style.transition = 'opacity 0.3s ease-out';
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 300);
     });
   }
-}, 200);
+}, 500); // 增加延迟时间，确保应用完全加载

@@ -17,7 +17,8 @@ interface AnnouncementStorageData {
  */
 const getCurrentVersion = (): string => {
   // 从package.json或环境变量获取版本号
-  return import.meta.env.VITE_APP_VERSION || '3.3.6';
+  // 在生产环境中，版本号会通过构建过程注入
+  return import.meta.env.VITE_APP_VERSION || '3.5.1';
 };
 
 /**
@@ -37,6 +38,8 @@ export const shouldShowAnnouncement = (): boolean => {
 
     // 如果版本号不同，重新显示公告
     if (data.version !== currentVersion) {
+      // 清除旧版本的存储数据，避免版本冲突
+      localStorage.removeItem(STORAGE_KEY);
       return true;
     }
 
@@ -48,6 +51,12 @@ export const shouldShowAnnouncement = (): boolean => {
     return true; // 隐藏期已过，应该显示
   } catch (error) {
     console.error('Error checking announcement visibility:', error);
+    // 出错时清除可能损坏的存储数据
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (clearError) {
+      console.error('Error clearing corrupted storage:', clearError);
+    }
     return true; // 出错时默认显示
   }
 };
