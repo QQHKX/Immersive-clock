@@ -97,13 +97,43 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     }));
 
     try {
-      // 从docs目录加载Markdown文件
-      const response = await fetch(`/docs/${tabConfig.filename}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load ${tabConfig.filename}: ${response.status}`);
+      // 尝试多个可能的路径来加载Markdown文件
+      const possiblePaths = [
+        `/docs/${tabConfig.filename}`,
+        `./docs/${tabConfig.filename}`,
+        `/public/docs/${tabConfig.filename}`,
+        `/${tabConfig.filename}`
+      ];
+
+      let content = '';
+      let loadSuccess = false;
+
+      for (const path of possiblePaths) {
+        try {
+          const response = await fetch(path, {
+            cache: 'no-cache', // 避免缓存问题
+            headers: {
+              'Accept': 'text/plain, text/markdown, */*'
+            }
+          });
+          
+          if (response.ok) {
+            content = await response.text();
+            if (content.trim()) { // 确保内容不为空
+              loadSuccess = true;
+              break;
+            }
+          }
+        } catch (pathError) {
+          console.warn(`尝试路径 ${path} 失败:`, pathError);
+          continue;
+        }
+      }
+
+      if (!loadSuccess) {
+        throw new Error(`所有路径都无法加载 ${tabConfig.filename}`);
       }
       
-      const content = await response.text();
       setDocuments(prev => ({
         ...prev,
         [tab]: { content, loading: false, filename: tabConfig.filename }
@@ -111,10 +141,16 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     } catch (error) {
       console.error(`Error loading ${tabConfig.filename}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // 提供默认内容而不是空内容
+      const defaultContent = tab === 'announcement' 
+        ? '# 系统公告\n\n感谢您使用沉浸式时钟！\n\n由于网络问题，暂时无法加载最新公告内容。请稍后重试或访问项目主页获取最新信息。'
+        : '# 更新日志\n\n暂时无法加载更新日志内容，请稍后重试。';
+      
       setDocuments(prev => ({
         ...prev,
         [tab]: {
-          content: '',
+          content: defaultContent,
           loading: false,
           filename: tabConfig.filename,
           error: `加载${tabConfig.title}失败: ${errorMessage}`
@@ -149,7 +185,12 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   // 组件挂载时加载初始选项卡的文档
   useEffect(() => {
     if (isOpen) {
-      loadDocument(activeTab);
+      // 添加延迟确保组件完全挂载后再加载文档
+      const timer = setTimeout(() => {
+        loadDocument(activeTab);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, activeTab]);
 
@@ -209,20 +250,24 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             </div>
           ) : currentDocument.error ? (
             <div className={styles.error}>
-              <p>加载失败：{currentDocument.error}</p>
+              <p>⚠️ {currentDocument.error}</p>
+              <p>已显示默认内容，您可以：</p>
               <FormButton
                 onClick={() => loadDocument(activeTab)}
                 variant="secondary"
                 size="sm"
               >
-                重试
+                重新加载
               </FormButton>
             </div>
-          ) : (
+          ) : null}
+          
+          {/* 始终显示内容，即使有错误也显示默认内容 */}
+          {currentDocument.content && (
             <div 
               className={styles.markdownContent}
               dangerouslySetInnerHTML={{ 
-                __html: currentDocument.content ? renderMarkdown(currentDocument.content) : '' 
+                __html: renderMarkdown(currentDocument.content)
               }}
             />
           )}
