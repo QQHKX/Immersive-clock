@@ -187,6 +187,72 @@ export function FormRadio({
   );
 }
 
+// 滑动条组件
+export interface FormSliderProps {
+  label?: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (value: number) => void;
+  formatValue?: (value: number) => string;
+  showRange?: boolean;
+  rangeLabels?: [string, string];
+  error?: string;
+  className?: string;
+}
+
+/**
+ * 统一的滑动条组件
+ * 提供一致的滑动条样式和交互
+ */
+export function FormSlider({ 
+  label, 
+  value, 
+  min, 
+  max, 
+  step = 1, 
+  onChange, 
+  formatValue, 
+  showRange = true, 
+  rangeLabels,
+  error, 
+  className = ''
+}: FormSliderProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(parseFloat(e.target.value));
+  };
+
+  const displayValue = formatValue ? formatValue(value) : value.toString();
+
+  return (
+    <div className={`${styles.sliderGroup} ${className}`}>
+      {label && (
+        <div className={styles.sliderHeader}>
+          <label className={styles.sliderLabel}>{label}</label>
+          <span className={styles.sliderValue}>{displayValue}</span>
+        </div>
+      )}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={handleChange}
+        className={styles.slider}
+      />
+      {showRange && (
+        <div className={styles.sliderRange}>
+          <span>{rangeLabels ? rangeLabels[0] : (formatValue ? formatValue(min) : min)}</span>
+          <span>{rangeLabels ? rangeLabels[1] : (formatValue ? formatValue(max) : max)}</span>
+        </div>
+      )}
+      {error && <span className={styles.errorText}>{error}</span>}
+    </div>
+  );
+}
+
 // 按钮组件
 export interface FormButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success';

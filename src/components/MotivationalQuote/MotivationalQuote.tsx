@@ -9,13 +9,15 @@ import styles from './MotivationalQuote.module.css';
  * - 支持一言API多分类选择
  * - 修复句子更新时的闪现问题，确保动画从空串开始逐字符显示
  * - 集成一言 API 展示格式：文本 ——来源（单行）
+ * - 支持自定义自动刷新间隔
  */
 export function MotivationalQuote() {
-  const { quoteChannels } = useAppState();
+  const { quoteChannels, quoteSettings } = useAppState();
   const [currentQuote, setCurrentQuote] = useState(''); // 完整显示用
   const [displayText, setDisplayText] = useState(''); // 打字动画显示用
   const [isTyping, setIsTyping] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 通过 Vite 的 import.meta.glob 收集所有 quotes-*.json 源作为备用
   const fallbackSourcesRef = useRef<QuoteSourceConfig[] | null>(null);
@@ -226,17 +228,34 @@ export function MotivationalQuote() {
   /** 初始化与轮训更新 */
   useEffect(() => {
     void updateQuote();
-    const interval = setInterval(() => {
-      void updateQuote();
-    }, 10 * 60 * 1000); // 10分钟更新间隔
-    return () => clearInterval(interval);
-  }, [updateQuote]);
+    
+    // 清理之前的自动刷新定时器
+    if (autoRefreshTimerRef.current) {
+      clearInterval(autoRefreshTimerRef.current);
+    }
+    
+    // 如果自动刷新间隔大于等于1800秒，则不设置自动刷新（手动刷新模式）
+    if (quoteSettings.autoRefreshInterval < 1800) {
+      autoRefreshTimerRef.current = setInterval(() => {
+        void updateQuote();
+      }, quoteSettings.autoRefreshInterval * 1000);
+    }
+    
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [updateQuote, quoteSettings.autoRefreshInterval]);
 
   // 组件卸载时清理定时器
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
       }
     };
   }, []);

@@ -9,7 +9,8 @@ import {
   FormInput, 
   FormButton, 
   FormButtonGroup, 
-  FormRow 
+  FormRow,
+  FormSlider 
 } from '../FormComponents';
 import styles from './SettingsPanel.module.css';
 
@@ -26,7 +27,7 @@ interface SettingsPanelProps {
  * 提供目标年份设置和课程表管理功能
  */
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
-  const { study } = useAppState();
+  const { study, quoteSettings } = useAppState();
   const dispatch = useAppDispatch();
   
   const [targetYear, setTargetYear] = useState(study.targetYear);
@@ -40,6 +41,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     const saved = localStorage.getItem(BASELINE_NOISE_KEY);
     return saved ? parseFloat(saved) : 50; // 默认50dB
   });
+  const [quoteRefreshInterval, setQuoteRefreshInterval] = useState<number>(quoteSettings.autoRefreshInterval);
   
   /**
    * 加载课程表数据
@@ -121,6 +123,33 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     setSchedule(newSchedule);
   }, [schedule]);
   
+  /**
+   * 处理金句刷新间隔变化
+   */
+  const handleQuoteRefreshIntervalChange = useCallback((value: number) => {
+    setQuoteRefreshInterval(value);
+    dispatch({ type: 'SET_QUOTE_AUTO_REFRESH_INTERVAL', payload: value });
+  }, [dispatch]);
+
+  /**
+   * 格式化刷新间隔显示文本
+   */
+  const formatRefreshIntervalText = useCallback((seconds: number): string => {
+    if (seconds === 0) {
+      return '手动刷新';
+    } else if (seconds < 60) {
+      return `${seconds}秒`;
+    } else {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      if (remainingSeconds === 0) {
+        return `${minutes}分钟`;
+      } else {
+        return `${minutes}分${remainingSeconds}秒`;
+      }
+    }
+  }, []);
+
   /**
    * 保存所有设置
    */
@@ -281,6 +310,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   useEffect(() => {
     if (isOpen) {
       setTargetYear(study.targetYear);
+      setQuoteRefreshInterval(quoteSettings.autoRefreshInterval);
       loadSchedule();
       // 重新读取噪音校准值
       const saved = localStorage.getItem(BASELINE_NOISE_KEY);
@@ -288,7 +318,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setNoiseBaseline(savedValue);
       setSliderValue(savedValue > 0 ? savedValue : 50);
     }
-  }, [isOpen, study.targetYear, loadSchedule]);
+  }, [isOpen, study.targetYear, quoteSettings.autoRefreshInterval, loadSchedule]);
   
   if (!isOpen) return null;
   
@@ -361,25 +391,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               </p>
             </div>
             
-            <div className={styles.sliderContainer}>
-              <div className={styles.sliderHeader}>
-                <span className={styles.sliderLabel}>调节校准值</span>
-                <span className={styles.sliderValue}>{sliderValue.toFixed(1)}dB</span>
-              </div>
-              <input
-                type="range"
-                min={20}
-                max={100}
-                step={0.1}
-                value={sliderValue}
-                onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
-                className={styles.noiseSlider}
-              />
-              <div className={styles.sliderRange}>
-                <span>20dB</span>
-                <span>100dB</span>
-              </div>
-            </div>
+            <FormSlider
+              label="调节校准值"
+              value={sliderValue}
+              min={20}
+              max={100}
+              step={0.1}
+              onChange={handleSliderChange}
+              formatValue={(value) => `${value.toFixed(1)}dB`}
+              showRange={true}
+              rangeLabels={['20dB', '100dB']}
+            />
             
             <FormButtonGroup align="left">
               <FormButton
@@ -487,6 +509,30 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         {/* 内容管理区域 */}
         <div className={styles.settingsGroup}>
           <h3 className={styles.groupTitle}>内容管理</h3>
+          
+          {/* 金句自动刷新设置 */}
+          <FormSection title="金句自动刷新">
+            <div className={styles.quoteRefreshInfo}>
+              <p className={styles.infoText}>
+                当前设置: {formatRefreshIntervalText(quoteRefreshInterval)}
+              </p>
+              <p className={styles.helpText}>
+                调节金句的自动刷新频率，左端为最短间隔30秒，右端为关闭自动刷新。
+              </p>
+            </div>
+            
+            <FormSlider
+              label="刷新频率"
+              value={quoteRefreshInterval}
+              min={30}
+              max={1800}
+              step={30}
+              onChange={handleQuoteRefreshIntervalChange}
+              formatValue={formatRefreshIntervalText}
+              showRange={true}
+              rangeLabels={['30秒', '手动刷新']}
+            />
+          </FormSection>
           
           {/* 金句渠道管理 */}
           <QuoteChannelManager />

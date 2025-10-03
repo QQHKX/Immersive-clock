@@ -1,5 +1,26 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig } from '../types';
+import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState } from '../types';
+
+/**
+ * 从本地存储加载金句设置状态
+ */
+function loadQuoteSettingsState(): QuoteSettingsState {
+  try {
+    const savedInterval = localStorage.getItem('quote-auto-refresh-interval');
+    if (savedInterval) {
+      const interval = parseInt(savedInterval, 10);
+      return {
+        autoRefreshInterval: isNaN(interval) ? 600 : interval // 默认10分钟
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load quote settings from localStorage:', error);
+  }
+  
+  return {
+    autoRefreshInterval: 600 // 默认10分钟
+  };
+}
 
 /**
  * 从本地存储加载金句渠道配置
@@ -64,6 +85,7 @@ const initialState: AppState = {
   },
   study: loadStudyState(),
   quoteChannels: loadQuoteChannelState(),
+  quoteSettings: loadQuoteSettingsState(),
   announcement: {
     isVisible: false,
     activeTab: 'announcement',
@@ -278,7 +300,17 @@ function appReducer(state: AppState, action: AppAction): AppState {
         quoteChannels: categoriesUpdatedState,
       };
 
-
+    case 'SET_QUOTE_AUTO_REFRESH_INTERVAL':
+      const newQuoteSettings = {
+        ...state.quoteSettings,
+        autoRefreshInterval: action.payload
+      };
+      // 保存到本地存储
+      localStorage.setItem('quote-auto-refresh-interval', action.payload.toString());
+      return {
+        ...state,
+        quoteSettings: newQuoteSettings,
+      };
 
     default:
       return state;

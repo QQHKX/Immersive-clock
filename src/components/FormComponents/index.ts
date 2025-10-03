@@ -6,7 +6,8 @@ export {
   FormRow,
   FormSelect,
   FormCheckbox,
-  FormRadio
+  FormRadio,
+  FormSlider
 } from './FormComponents';
 
 export type {
@@ -17,5 +18,6 @@ export type {
   FormRowProps,
   FormSelectProps,
   FormCheckboxProps,
-  FormRadioProps
+  FormRadioProps,
+  FormSliderProps
 } from './FormComponents';

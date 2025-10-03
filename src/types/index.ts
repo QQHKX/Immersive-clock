@@ -174,6 +174,14 @@ export interface HitokotoResponse {
 }
 
 /**
+ * 金句设置状态
+ */
+export interface QuoteSettingsState {
+  /** 自动刷新间隔（秒），0表示关闭自动刷新 */
+  autoRefreshInterval: number;
+}
+
+/**
  * 应用全局状态接口
  */
 export interface AppState {
@@ -189,6 +197,8 @@ export interface AppState {
   study: StudyState;
   /** 金句渠道管理状态 */
   quoteChannels: QuoteChannelState;
+  /** 金句设置状态 */
+  quoteSettings: QuoteSettingsState;
   /** 公告组件状态 */
   announcement: AnnouncementState;
   /** 模态框是否打开 */
@@ -217,6 +227,7 @@ export type AppAction =
   | { type: 'TOGGLE_QUOTE_CHANNEL'; payload: string }
   | { type: 'UPDATE_QUOTE_CHANNEL_WEIGHT'; payload: { id: string; weight: number } }
   | { type: 'UPDATE_QUOTE_CHANNEL_CATEGORIES'; payload: { id: string; categories: HitokotoCategory[] } }
+  | { type: 'SET_QUOTE_AUTO_REFRESH_INTERVAL'; payload: number }
   | { type: 'SHOW_ANNOUNCEMENT' }
   | { type: 'HIDE_ANNOUNCEMENT' }
   | { type: 'SET_ANNOUNCEMENT_TAB'; payload: AnnouncementTab }
