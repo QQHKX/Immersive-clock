@@ -1,5 +1,18 @@
 # 📝 更新日志
 
+## 🚀 v3.6.0
+
+### ✨ 新增
+- 支持 PWA 离线功能：启用 Service Worker 自动更新，导航回退覆盖所有同源路径。
+
+### 🔧 优化
+- 统一缓存机制：由 `vercel.json` 配置 `Cache-Control`，为 `.webmanifest` 与 `.json` 设置 24 小时缓存。
+- 简化版本参数：仅对 `manifest.webmanifest` 与 `favicon.svg` 注入 `?v=<version>`，JS/CSS 依赖构建哈希。
+- Workbox 预缓存稳定：通过 `ignoreURLParametersMatching: [/^v$/]` 忽略 `v` 参数，避免命中失效。
+- 移除 HTML 的 `meta http-equiv` 缓存标签，避免与服务端头冲突。
+
+---
+
 ## 🎯 v3.5.2
 
 ### ✨ 新功能
