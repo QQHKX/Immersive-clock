@@ -100,50 +100,29 @@ export interface StudyState {
 
 /**
  * 一言分类类型
- * 根据一言API官方文档定义的分类
+ * 只保留文学、哲学、诗词、抖机灵四个分类
  */
-export type HitokotoCategory = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l';
+export type HitokotoCategory = 'd' | 'i' | 'k' | 'l';
 
 /**
  * 一言分类映射
  */
 export const HITOKOTO_CATEGORIES: Record<HitokotoCategory, string> = {
-  a: '动画',
-  b: '漫画', 
-  c: '游戏',
   d: '文学',
-  e: '原创',
-  f: '来自网络',
-  g: '其他',
-  h: '影视',
   i: '诗词',
-  j: '网易云',
   k: '哲学',
   l: '抖机灵'
 };
 
 /**
  * 一言分类数组（用于遍历）
- * 按照逻辑分组排序：娱乐类 -> 文化类 -> 网络类 -> 其他类
+ * 按照文化内涵排序：文学 -> 诗词 -> 哲学 -> 抖机灵
  */
 export const HITOKOTO_CATEGORY_LIST: Array<{ key: HitokotoCategory; name: string }> = [
-  // 娱乐文化类
-  { key: 'a', name: '动画' },
-  { key: 'b', name: '漫画' },
-  { key: 'c', name: '游戏' },
-  { key: 'h', name: '影视' },
-  { key: 'j', name: '网易云' },
-  // 文学哲学类
   { key: 'd', name: '文学' },
   { key: 'i', name: '诗词' },
   { key: 'k', name: '哲学' },
-  // 创作类
-  { key: 'e', name: '原创' },
-  { key: 'l', name: '抖机灵' },
-  // 网络来源类
-  { key: 'f', name: '来自网络' },
-  // 其他类（放在最后）
-  { key: 'g', name: '其他' }
+  { key: 'l', name: '抖机灵' }
 ];
 
 /**
