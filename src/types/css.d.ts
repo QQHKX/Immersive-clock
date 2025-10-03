@@ -6,6 +6,7 @@ declare module '*.module.css' {
 // Vite 环境变量类型定义
 interface ImportMetaEnv {
   readonly VITE_AMAP_API_KEY: string;
+  readonly VITE_APP_VERSION: string;
   // 可以在这里添加更多环境变量
 }
 

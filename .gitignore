@@ -23,6 +23,7 @@ lerna-debug.log*
 
 # 编辑器目录和文件
 .vscode/*
+.trae/*
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea

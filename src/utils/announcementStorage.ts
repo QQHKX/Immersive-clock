@@ -16,8 +16,8 @@ interface AnnouncementStorageData {
  * @returns string - 版本号
  */
 const getCurrentVersion = (): string => {
-  // 从package.json或环境变量获取版本号
-  return import.meta.env.VITE_APP_VERSION || '3.3.6';
+  // 统一从环境变量获取版本号（vite.config 注入）
+  return import.meta.env.VITE_APP_VERSION;
 };
 
 /**

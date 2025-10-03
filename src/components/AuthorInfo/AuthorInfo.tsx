@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './AuthorInfo.module.css';
-import packageJson from '../../../package.json';
+// 版本来自环境变量（vite.config 注入）
+const appVersion = import.meta.env.VITE_APP_VERSION;
 
 interface AuthorInfoProps {
   /** 版本号点击回调函数 */
@@ -31,7 +32,7 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
           onClick={handleVersionClick}
           title="点击查看公告"
         >
-          v{packageJson.version}
+          v{appVersion}
         </span>
         {' by '}
         <a 
