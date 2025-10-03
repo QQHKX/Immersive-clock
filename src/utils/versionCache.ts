@@ -1,7 +1,7 @@
 /**
  * 版本缓存控制插件
- * 根据package.json中的版本号生成缓存破坏参数
- * 当版本号更新时，强制重新加载所有资源
+ * 根据 package.json / 环境变量版本号生成查询参数
+ * 当版本更新时，确保关键资源（manifest、webmanifest、favicon）刷新
  */
 import { Plugin } from 'vite';
 import fs from 'fs';
@@ -35,12 +35,8 @@ export function versionCachePlugin(): Plugin {
       }
     },
     transformIndexHtml(html) {
-      // 为所有JS和CSS文件添加版本号查询参数
+      // JS/CSS 使用构建产物哈希进行缓存刷新；仅为关键文件添加版本参数
       return html
-        .replace(
-          /(src|href)=("|')([^"']*\.(js|css))("|')/g,
-          `$1=$2$3?v=${version}$5`
-        )
         // 为manifest.json添加版本号
         .replace(
           /(href=("|')[^"']*manifest\.json)("|')/g,

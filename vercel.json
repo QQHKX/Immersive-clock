@@ -94,6 +94,15 @@
           "value": "0"
         }
       ]
+    },
+    {
+      "source": "/(.+)\\.(webmanifest|json)(\\?v=.*)?$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
     }
   ],
   "trailingSlash": false,

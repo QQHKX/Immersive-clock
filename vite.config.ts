@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,woff}'],
         navigateFallback: '/index.html',
+        // 扩大离线导航覆盖范围，匹配所有同源路径
+        navigateFallbackAllowlist: [/^\/.*$/],
         // 忽略版本缓存插件添加的 v 查询参数，避免预缓存匹配失效
         ignoreURLParametersMatching: [/^v$/],
         runtimeCaching: [
