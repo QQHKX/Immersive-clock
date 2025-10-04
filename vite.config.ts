@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => {
         navigateFallback: '/index.html',
         // 扩大离线导航覆盖范围，匹配所有同源路径
         navigateFallbackAllowlist: [/^\/.*$/],
+        // 防止静态文件（如 sitemap.xml、robots.txt 等）被导航回退到 SPA
+        navigateFallbackDenylist: [/\.(xml|txt|webmanifest|json|ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|eot|ttf|otf)$/],
         // 忽略版本缓存插件添加的 v 查询参数，避免预缓存匹配失效
         ignoreURLParametersMatching: [/^v$/],
         runtimeCaching: [
