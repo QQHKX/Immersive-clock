@@ -851,3 +851,55 @@
     border-color: rgba(255, 255, 255, 0.5);
   }
 }
+
+/* 桌面端紧凑覆盖：在大屏上减少内外间距以提高信息密度 */
+@media (min-width: 1024px) {
+  .section {
+    padding: 0.75rem;
+    margin-bottom: var(--spacing-lg, 0.5rem);
+  }
+
+  .sectionTitle {
+    margin: 0 0 0.75rem 0;
+    padding-bottom: 0.375rem;
+  }
+
+  .inputGroup {
+    margin-bottom: var(--spacing-sm, 0.5rem);
+  }
+
+  .label {
+    margin-bottom: 0.375rem;
+  }
+
+  .input {
+    padding: 0.625rem;
+    font-size: 0.9rem;
+  }
+
+  .select {
+    padding: 0.625rem 2rem 0.625rem 0.625rem;
+    font-size: 0.9rem;
+  }
+
+  .sliderHeader {
+    margin-bottom: 0.5rem;
+  }
+
+  .sliderRange {
+    margin-top: 0.25rem;
+    font-size: 0.775rem;
+  }
+
+  .row {
+    padding: 0.375rem;
+  }
+
+  .radioOptions {
+    gap: 0.5rem;
+  }
+
+  .radioLabel {
+    gap: 0.5rem;
+  }
+}
