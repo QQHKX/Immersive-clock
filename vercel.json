@@ -10,7 +10,7 @@
       "destination": "/docs/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|mp3|wav|ogg|m4a|json|webmanifest|xml|txt)).*)",
       "destination": "/index.html"
     }
   ],
