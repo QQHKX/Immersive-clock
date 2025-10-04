@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './Tabs.module.css';
+import { LightButton } from '../LightControls/LightControls';
 
 export interface TabItem {
   key: string;
@@ -53,9 +54,8 @@ export const Tabs: React.FC<TabsProps> = ({
         ].filter(Boolean).join(' ');
 
         return (
-          <button
+          <LightButton
             key={item.key}
-            type="button"
             role="tab"
             id={item.key}
             aria-selected={isActive}
@@ -63,10 +63,11 @@ export const Tabs: React.FC<TabsProps> = ({
             className={btnClass}
             disabled={item.disabled}
             onClick={() => !item.disabled && onChange(item.key)}
+            active={isActive}
           >
             {item.icon && <span className={styles.tabIcon}>{item.icon}</span>}
             <span>{item.label}</span>
-          </button>
+          </LightButton>
         );
       })}
     </div>

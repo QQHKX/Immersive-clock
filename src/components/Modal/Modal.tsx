@@ -1,4 +1,5 @@
 import React from 'react';
+import { FormButton } from '../FormComponents';
 import { CloseIcon } from '../Icons';
 import styles from './Modal.module.css';
 
@@ -74,13 +75,14 @@ export function Modal({
             {title}
           </h3>
           {showCloseButton && (
-            <button 
-              onClick={onClose} 
+            <FormButton
+              onClick={onClose}
               className={styles.closeButton}
               aria-label="关闭模态框"
-            >
-              <CloseIcon size={20} />
-            </button>
+              variant="secondary"
+              size="sm"
+              icon={<CloseIcon size={20} />}
+            />
           )}
         </div>
         

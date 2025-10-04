@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { PlayIcon, PauseIcon, ResetIcon, MaximizeIcon, MinimizeIcon } from '../Icons';
+import { FormButton } from '../FormComponents';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useFullscreen } from '../../hooks/useFullscreen';
 
@@ -69,13 +70,14 @@ export function ControlBar() {
     
     return (
       <>
-        <button
+        <FormButton
           className={`${styles.controlButton} ${styles.primary}`}
           onClick={handleCountdownToggle}
           aria-label={canStart ? (isRunning ? '暂停倒计时' : '开始倒计时') : '设置倒计时'}
           title={canStart ? (isRunning ? '暂停倒计时' : '开始倒计时') : '设置倒计时'}
-        >
-          {canStart ? (
+          variant="ghost"
+          size="sm"
+          icon={canStart ? (
             isRunning ? (
               <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
             ) : (
@@ -84,21 +86,22 @@ export function ControlBar() {
           ) : (
             <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
-          <span className={styles.label}>
-            {canStart ? (isRunning ? '暂停' : '开始') : '设置'}
-          </span>
-        </button>
+        >
+          {canStart ? (isRunning ? '暂停' : '开始') : '设置'}
+        </FormButton>
         
-        <button
+        <FormButton
           className={styles.controlButton}
           onClick={handleCountdownReset}
           disabled={countdown.currentTime === countdown.initialTime && !isRunning}
           aria-label="重置倒计时"
           title="重置倒计时"
+          variant="ghost"
+          size="sm"
+          icon={<ResetIcon className={styles.icon} size={18} aria-hidden={true} />}
         >
-          <ResetIcon className={styles.icon} size={18} aria-hidden={true} />
-          <span className={styles.label}>重置</span>
-        </button>
+          重置
+        </FormButton>
       </>
     );
   };
@@ -111,32 +114,34 @@ export function ControlBar() {
     
     return (
       <>
-        <button
+        <FormButton
           className={`${styles.controlButton} ${styles.primary}`}
           onClick={handleStopwatchToggle}
           aria-label={isRunning ? '暂停秒表' : '开始秒表'}
           title={isRunning ? '暂停秒表' : '开始秒表'}
-        >
-          {isRunning ? (
+          variant="ghost"
+          size="sm"
+          icon={isRunning ? (
             <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
           ) : (
             <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
-          <span className={styles.label}>
-            {isRunning ? '暂停' : '开始'}
-          </span>
-        </button>
+        >
+          {isRunning ? '暂停' : '开始'}
+        </FormButton>
         
-        <button
+        <FormButton
           className={styles.controlButton}
           onClick={handleStopwatchReset}
           disabled={stopwatch.elapsedTime === 0 && !isRunning}
           aria-label="重置秒表"
           title="重置秒表"
+          variant="ghost"
+          size="sm"
+          icon={<ResetIcon className={styles.icon} size={18} aria-hidden={true} />}
         >
-          <ResetIcon className={styles.icon} size={18} aria-hidden={true} />
-          <span className={styles.label}>重置</span>
-        </button>
+          重置
+        </FormButton>
       </>
     );
   };
@@ -150,21 +155,21 @@ export function ControlBar() {
       </div>
       
       <div className={styles.globalControls}>
-        <button
+        <FormButton
           className={styles.controlButton}
           onClick={toggleFullscreen}
           aria-label={isFullscreen ? '退出全屏' : '进入全屏'}
           title={isFullscreen ? '退出全屏' : '进入全屏'}
-        >
-          {isFullscreen ? (
+          variant="ghost"
+          size="sm"
+          icon={isFullscreen ? (
             <MinimizeIcon className={styles.icon} size={18} aria-hidden={true} />
           ) : (
             <MaximizeIcon className={styles.icon} size={18} aria-hidden={true} />
           )}
-          <span className={styles.label}>
-            {isFullscreen ? '退出全屏' : '全屏'}
-          </span>
-        </button>
+        >
+          {isFullscreen ? '退出全屏' : '全屏'}
+        </FormButton>
       </div>
     </div>
   );

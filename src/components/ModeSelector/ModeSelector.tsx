@@ -4,6 +4,7 @@ import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { AppMode } from '../../types';
 
 import styles from './ModeSelector.module.css';
+import { LightButton } from '../LightControls/LightControls';
 
 /**
  * 模式选择器组件
@@ -53,17 +54,16 @@ export function ModeSelector() {
   return (
     <div className={styles.modeSelector} role="tablist" aria-label="选择时钟模式">
       {modes.map(({ key, label, icon: Icon, description }) => (
-        <button
+        <LightButton
           key={key}
-          className={`${styles.modeButton} ${
-            mode === key ? styles.active : ''
-          }`}
+          className={`${styles.modeButton} ${mode === key ? styles.active : ''}`}
           onClick={() => handleModeChange(key)}
           role="tab"
           aria-selected={mode === key}
           aria-controls={`${key}-panel`}
           aria-label={`${label} - ${description}`}
           title={description}
+          active={mode === key}
         >
           <Icon 
             className={styles.icon} 
@@ -71,7 +71,7 @@ export function ModeSelector() {
             aria-hidden={true}
           />
           <span className={styles.label}>{label}</span>
-        </button>
+        </LightButton>
       ))}
     </div>
   );

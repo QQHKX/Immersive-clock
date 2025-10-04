@@ -663,6 +663,23 @@
   border-color: rgba(76, 175, 80, 0.9);
 }
 
+/* 透明（ghost）按钮：无背景、无边框，适用于底部工具条 */
+.button.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.button.ghost:hover {
+  background: transparent;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.button.ghost:disabled {
+  background: transparent;
+  border-color: transparent;
+}
+
 /* 按钮尺寸 */
 .button.sm {
   padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);

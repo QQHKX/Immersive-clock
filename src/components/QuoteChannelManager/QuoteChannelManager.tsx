@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { ToggleOffIcon, ToggleOnIcon, SettingsIcon, RefreshIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { QuoteSourceConfig, HitokotoCategory, HITOKOTO_CATEGORY_LIST } from '../../types';
-import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from '../FormComponents';
+import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow, FormCheckbox } from '../FormComponents';
 import styles from './QuoteChannelManager.module.css';
 
 /**
@@ -213,26 +213,30 @@ export function QuoteChannelManager() {
                   />
                 </div>
                 
-                <button
+                <FormButton
                   className={styles.toggleButton}
                   onClick={() => handleToggleChannel(channel.id)}
+                  variant="secondary"
+                  size="sm"
+                  aria-label={channel.enabled ? '点击禁用' : '点击启用'}
                   title={channel.enabled ? '点击禁用' : '点击启用'}
-                >
-                  {channel.enabled ? (
+                  icon={channel.enabled ? (
                     <ToggleOnIcon className={styles.toggleIconEnabled} />
                   ) : (
                     <ToggleOffIcon className={styles.toggleIconDisabled} />
                   )}
-                </button>
+                />
                 
                 {channel.onlineFetch && channel.hitokotoCategories && (
-                  <button
+                  <FormButton
                     className={styles.settingsButton}
                     onClick={() => handleToggleExpanded(channel.id)}
+                    variant="secondary"
+                    size="sm"
                     title="分类设置"
-                  >
-                    <SettingsIcon size={16} />
-                  </button>
+                    aria-label="分类设置"
+                    icon={<SettingsIcon size={16} />}
+                  />
                 )}
               </div>
             </div>
@@ -243,17 +247,13 @@ export function QuoteChannelManager() {
                 <h5 className={styles.categoryTitle}>一言分类选择</h5>
                 <div className={styles.categoryGrid}>
                   {HITOKOTO_CATEGORY_LIST.map(category => (
-                    <label key={category.key} className={styles.categoryItem}>
-                      <input
-                        type="checkbox"
-                        checked={channel.hitokotoCategories!.includes(category.key)}
-                        onChange={() => handleToggleCategory(channel.id, category.key)}
-                        className={styles.categoryCheckbox}
-                      />
-                      <span className={styles.categoryLabel}>
-                        {category.name}
-                      </span>
-                    </label>
+                    <FormCheckbox
+                      key={category.key}
+                      label={category.name}
+                      checked={channel.hitokotoCategories!.includes(category.key)}
+                      onChange={() => handleToggleCategory(channel.id, category.key)}
+                      className={styles.categoryItem}
+                    />
                   ))}
                 </div>
                 <div className={styles.categoryInfo}>

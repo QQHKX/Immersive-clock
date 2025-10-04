@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { marked } from 'marked';
 import Modal from '../Modal/Modal';
-import { FormButton, FormButtonGroup } from '../FormComponents/FormComponents';
+import { FormButton, FormButtonGroup, FormCheckbox } from '../FormComponents/FormComponents';
 import { AnnouncementModalProps, AnnouncementTab, AnnouncementTabConfig, MarkdownDocument } from '../../types';
 import { setDontShowForWeek } from '../../utils/announcementStorage';
 import styles from './AnnouncementModal.module.css';
@@ -166,17 +166,13 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       footer={
         <div className={styles.footer}>
           <div className={styles.checkboxContainer}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={dontShowAgain}
-                onChange={(e) => setDontShowAgain(e.target.checked)}
-                className={styles.checkbox}
-              />
-              <span className={styles.checkboxText}>一周内不再显示</span>
-            </label>
+            <FormCheckbox
+              label="一周内不再显示"
+              checked={dontShowAgain}
+              onChange={(e) => setDontShowAgain(e.target.checked)}
+            />
           </div>
-          
+
           <FormButtonGroup>
             <FormButton onClick={handleClose} variant="primary">
               确定
