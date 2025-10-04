@@ -2,5 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /node_modules/
 Disallow: /src/
+Disallow: /dist/
+Disallow: /build/
 
+# 指定站点地图位置
 Sitemap: https://clock.qqhkx.com/sitemap.xml

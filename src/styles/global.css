@@ -93,6 +93,21 @@ input:focus-visible {
   border: 0;
 }
 
+/* 性能优化：图片默认懒加载与优化解码 */
+img {
+  content-visibility: auto;
+}
+
+img[loading="lazy"] {
+  filter: blur(0);
+}
+
+/* 避免过度动画影响性能 */
+[data-reduce-motion="true"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
 /* Hide Scrollbars But Keep Functionality */
 /* For Webkit browsers (Chrome, Safari, etc.) */
 ::-webkit-scrollbar {

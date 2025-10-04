@@ -24,14 +24,24 @@
     <meta name="twitter:title" content="沉浸式时钟 - 全屏专注时钟⏰｜自习模式·倒计时·秒表 | 教室多媒体大屏" />
     <meta name="twitter:description" content="沉浸式时钟是一款简洁美观的全屏数字时钟、倒计时和秒表工具，支持全屏显示、多种模式切换，为您提供专注的时间管理体验。" />
     <meta name="twitter:image" content="https://clock.qqhkx.com/og-image.png" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://clock.qqhkx.com/" />
     <link rel="alternate" hreflang="zh-CN" href="https://clock.qqhkx.com/" />
     <link rel="alternate" hreflang="x-default" href="https://clock.qqhkx.com/" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- 百度站点验证 -->
     <meta name="baidu-site-verification" content="codeva-DN108xBGRS">
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:updated_time" content="2025-10-04T00:00:00+00:00" />
 
     <script type="application/ld+json">
     {
@@ -45,6 +55,20 @@
         "name": "QQHKX",
         "url": "https://qqhkx.com"
       }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://clock.qqhkx.com/"
+        }
+      ]
     }
     </script>
 
@@ -109,13 +133,21 @@
     </style>
   </head>
   <body>
+    <header class="sr-only">
+      <h1>沉浸式时钟 - 全屏专注时钟⏰｜自习模式·倒计时·秒表</h1>
+      <p>沉浸式时钟提供全屏数字时钟、倒计时与秒表功能，适配教室、会议与学习场景，支持移动端与桌面端。</p>
+    </header>
+    <noscript>
+      本站需要浏览器启用 JavaScript 才能运行核心功能。您仍可访问
+      <a href="/sitemap.html">网站地图</a>了解主要页面与说明。
+    </noscript>
     <!-- 加载动画 -->
     <div id="loading-screen">
       <div class="loading-spinner"></div>
       <div class="loading-text">沉浸式时钟加载中...</div>
     </div>
     
-    <div id="root"></div>
+    <div id="root" role="main"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="application/ld+json">
     {
