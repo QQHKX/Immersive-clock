@@ -10,7 +10,8 @@ import {
   FormButton, 
   FormButtonGroup, 
   FormRow,
-  FormSlider 
+  FormSlider,
+  FormSegmented 
 } from '../FormComponents';
 import styles from './SettingsPanel.module.css';
 
@@ -161,7 +162,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       return;
     }
     
-    // 保存目标年份
+    // 保存目标年份（仅在高考模式下生效，但统一持久化）
     dispatch({ type: 'SET_TARGET_YEAR', payload: targetYear });
     
     // 保存课程表
@@ -344,16 +345,54 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         <div className={styles.settingsGroup}>
           <h3 className={styles.groupTitle}>基础设置</h3>
           
-          {/* 目标年份设置 */}
-          <FormSection title="目标高考年份">
-            <FormInput
-              type="number"
-              value={targetYear.toString()}
-              onChange={(e) => setTargetYear(parseInt(e.target.value) || new Date().getFullYear())}
-              variant="number"
-              min={new Date().getFullYear()}
-              max={new Date().getFullYear() + 10}
+          {/* 倒计时设置 */}
+          <FormSection title="倒计时设置">
+            <p className={styles.helpText}>
+              选择倒计时类型。高考模式默认使用最近一年高考日期；自定义模式可设置事件名称与日期。
+            </p>
+            <FormSegmented
+              label="倒计时类型"
+              value={(study.countdownType ?? 'gaokao')}
+              options={[
+                { label: '高考倒计时', value: 'gaokao' },
+                { label: '自定义事件', value: 'custom' },
+              ]}
+              onChange={(value) => {
+                dispatch({ type: 'SET_COUNTDOWN_TYPE', payload: value as 'gaokao' | 'custom' });
+              }}
             />
+
+            {(study.countdownType ?? 'gaokao') === 'gaokao' ? (
+              <FormInput
+                label="目标高考年份"
+                type="number"
+                value={targetYear.toString()}
+                onChange={(e) => setTargetYear(parseInt(e.target.value) || new Date().getFullYear())}
+                variant="number"
+                min={new Date().getFullYear()}
+                max={new Date().getFullYear() + 10}
+              />
+            ) : (
+              <>
+                <FormInput
+                  label="事件名称"
+                  type="text"
+                  value={study.customName ?? ''}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_CUSTOM_COUNTDOWN', payload: { name: e.target.value, date: study.customDate ?? '' } });
+                  }}
+                  placeholder="例如：期末考试"
+                />
+                <FormInput
+                  label="事件日期"
+                  type="date"
+                  value={study.customDate ?? ''}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_CUSTOM_COUNTDOWN', payload: { name: study.customName ?? '', date: e.target.value } });
+                  }}
+                />
+              </>
+            )}
           </FormSection>
           
           {/* 天气设置 */}

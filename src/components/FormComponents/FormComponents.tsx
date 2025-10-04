@@ -187,6 +187,57 @@ export function FormRadio({
   );
 }
 
+// 分段选择组件（Segmented Control）
+export interface FormSegmentedOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface FormSegmentedProps {
+  label?: string;
+  value: string;
+  options: FormSegmentedOption[];
+  onChange?: (value: string) => void;
+  className?: string;
+}
+
+/**
+ * 统一的分段选择组件
+ * 以胶囊式按钮呈现单选选项，适配项目整体样式
+ */
+export function FormSegmented({
+  label,
+  value,
+  options,
+  onChange,
+  className = ''
+}: FormSegmentedProps) {
+  return (
+    <div className={`${styles.segmentedGroup} ${className}`}>
+      {label && <label className={styles.label}>{label}</label>}
+      <div className={styles.segmented} role="radiogroup" aria-label={label}>
+        {options.map((option) => {
+          const active = value === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.segmentedOption} ${active ? styles.segmentedOptionActive : ''}`}
+              aria-pressed={active}
+              aria-disabled={option.disabled ? 'true' : undefined}
+              onClick={() => !option.disabled && onChange?.(option.value)}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // 滑动条组件
 export interface FormSliderProps {
   label?: string;

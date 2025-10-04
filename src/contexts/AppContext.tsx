@@ -52,18 +52,35 @@ function loadQuoteChannelState(): QuoteChannelState {
  */
 function loadStudyState(): StudyState {
   try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const thisYearGaokao = new Date(currentYear, 5, 7); // 月份从0开始，6月为5
+    const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
+
     const savedTargetYear = localStorage.getItem('study-target-year');
-    
-    const currentYear = new Date().getFullYear();
-    const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : currentYear + 1;
-    
+    const savedCountdownType = localStorage.getItem('countdown-type') as 'gaokao' | 'custom' | null;
+    const savedCustomName = localStorage.getItem('custom-countdown-name');
+    const savedCustomDate = localStorage.getItem('custom-countdown-date');
+
+    const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
+
     return {
-      targetYear
+      targetYear,
+      countdownType: savedCountdownType ?? 'gaokao',
+      customName: savedCustomName ?? '',
+      customDate: savedCustomDate ?? ''
     };
   } catch (error) {
     console.warn('Failed to load study state from localStorage:', error);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const thisYearGaokao = new Date(currentYear, 5, 7);
+    const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
     return {
-      targetYear: new Date().getFullYear() + 1
+      targetYear: nearestGaokaoYear,
+      countdownType: 'gaokao',
+      customName: '',
+      customDate: ''
     };
   }
 }
@@ -238,6 +255,30 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: newStudyState,
+      };
+
+    case 'SET_COUNTDOWN_TYPE':
+      const typeUpdatedStudy = {
+        ...state.study,
+        countdownType: action.payload
+      };
+      localStorage.setItem('countdown-type', action.payload);
+      return {
+        ...state,
+        study: typeUpdatedStudy,
+      };
+
+    case 'SET_CUSTOM_COUNTDOWN':
+      const customUpdatedStudy = {
+        ...state.study,
+        customName: action.payload.name,
+        customDate: action.payload.date
+      };
+      localStorage.setItem('custom-countdown-name', action.payload.name);
+      localStorage.setItem('custom-countdown-date', action.payload.date);
+      return {
+        ...state,
+        study: customUpdatedStudy,
       };
 
     case 'UPDATE_QUOTE_CHANNELS':

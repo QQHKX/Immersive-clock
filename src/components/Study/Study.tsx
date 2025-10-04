@@ -33,29 +33,40 @@ export function Study() {
   }, [updateTime]);
 
   /**
-   * 计算距离高考的天数
+   * 计算距离高考的天数（基于最近的目标年份）
    */
   const calculateDaysToGaokao = useCallback(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
     let gaokaoDate: Date;
-    
-    // 如果目标年份是当年，且已经过了6月7日，则计算下一年的高考
+
+    // 目标年份为当年，若已过6月7日则使用下一年
     if (study.targetYear === currentYear) {
-      const thisYearGaokao = new Date(currentYear, 5, 7); // 6月7日（月份从0开始）
-      if (now > thisYearGaokao) {
-        gaokaoDate = new Date(currentYear + 1, 5, 7);
-      } else {
-        gaokaoDate = thisYearGaokao;
-      }
+      const thisYearGaokao = new Date(currentYear, 5, 7);
+      gaokaoDate = now > thisYearGaokao ? new Date(currentYear + 1, 5, 7) : thisYearGaokao;
     } else {
       gaokaoDate = new Date(study.targetYear, 5, 7);
+      // 如果选择的目标年份已过当前日期，仍按该年6月7日计算剩余天数（可能为0）
     }
-    
+
     const diffTime = gaokaoDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return Math.max(0, diffDays);
   }, [study.targetYear]);
+
+  /**
+   * 计算距离自定义事件的天数
+   */
+  const calculateDaysToCustom = useCallback(() => {
+    const now = new Date();
+    if (!study.customDate) return 0;
+    const [y, m, d] = study.customDate.split('-').map(Number);
+    if (!y || !m || !d) return 0;
+    const eventDate = new Date(y, (m - 1), d);
+    const diffTime = eventDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, [study.customDate]);
 
 
 
@@ -71,6 +82,13 @@ export function Study() {
     weekday: 'long'
   });
   const daysToGaokao = calculateDaysToGaokao();
+  const daysToCustom = calculateDaysToCustom();
+
+  const isCustom = (study.countdownType ?? 'gaokao') === 'custom';
+  const countdownLabel = isCustom
+    ? `距离${(study.customName && study.customName.trim()) || '自定义事件'}仅`
+    : `距离${study.targetYear}年高考仅`;
+  const countdownDays = isCustom ? daysToCustom : daysToGaokao;
 
   return (
     <div className={styles.study}>
@@ -82,10 +100,10 @@ export function Study() {
         <NoiseMonitor />
       </div>
       
-      {/* 右上角 - 高考倒计时和励志金句 */}
+      {/* 右上角 - 倒计时和励志金句 */}
       <div className={styles.topRight}>
         <div className={styles.gaokaoCountdown}>
-          距离{study.targetYear}年高考仅 <span className={styles.days}>{daysToGaokao}</span> 天
+          {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
         </div>
         <div className={styles.quoteSection}>
           <MotivationalQuote />

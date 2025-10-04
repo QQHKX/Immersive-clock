@@ -96,6 +96,12 @@ export interface StopwatchState {
 export interface StudyState {
   /** 目标高考年份 */
   targetYear: number;
+  /** 倒计时类型：高考或自定义事件 */
+  countdownType?: 'gaokao' | 'custom';
+  /** 自定义事件名称（当为自定义时使用） */
+  customName?: string;
+  /** 自定义事件日期（YYYY-MM-DD） */
+  customDate?: string;
 }
 
 /**
@@ -223,6 +229,8 @@ export type AppAction =
   | { type: 'RESET_STOPWATCH' }
   | { type: 'TICK_STOPWATCH' }
   | { type: 'SET_TARGET_YEAR'; payload: number }
+  | { type: 'SET_COUNTDOWN_TYPE'; payload: 'gaokao' | 'custom' }
+  | { type: 'SET_CUSTOM_COUNTDOWN'; payload: { name: string; date: string } }
   | { type: 'UPDATE_QUOTE_CHANNELS'; payload: QuoteSourceConfig[] }
   | { type: 'TOGGLE_QUOTE_CHANNEL'; payload: string }
   | { type: 'UPDATE_QUOTE_CHANNEL_WEIGHT'; payload: { id: string; weight: number } }
