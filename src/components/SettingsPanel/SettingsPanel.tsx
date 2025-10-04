@@ -13,6 +13,7 @@ import {
   FormSlider,
   FormSegmented 
 } from '../FormComponents';
+import { Tabs } from '../Tabs/Tabs';
 import styles from './SettingsPanel.module.css';
 
 // localStorage 键名
@@ -31,6 +32,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { study, quoteSettings } = useAppState();
   const dispatch = useAppDispatch();
   
+  const [activeCategory, setActiveCategory] = useState<'basic' | 'study' | 'content'>('basic');
   const [targetYear, setTargetYear] = useState(study.targetYear);
   const [schedule, setSchedule] = useState<StudyPeriod[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -318,6 +320,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       const savedValue = saved ? parseFloat(saved) : 0;
       setNoiseBaseline(savedValue);
       setSliderValue(savedValue > 0 ? savedValue : 50);
+      // 打开时默认显示基础设置
+      setActiveCategory('basic');
     }
   }, [isOpen, study.targetYear, quoteSettings.autoRefreshInterval, loadSchedule]);
   
@@ -341,8 +345,23 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       }
     >
       <div className={styles.settingsContainer}>
+        {/* 顶部分类选项卡 */}
+        <Tabs
+          items={[
+            { key: 'basic', label: '基础设置' },
+            { key: 'study', label: '学习功能' },
+            { key: 'content', label: '内容管理' }
+          ]}
+          activeKey={activeCategory}
+          onChange={(key) => setActiveCategory(key as 'basic' | 'study' | 'content')}
+          variant="browser"
+          size="md"
+          scrollable
+        />
+
         {/* 基础设置区域 */}
-        <div className={styles.settingsGroup}>
+        {activeCategory === 'basic' && (
+        <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
           <h3 className={styles.groupTitle}>基础设置</h3>
           
           {/* 倒计时设置 */}
@@ -414,9 +433,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             </FormButtonGroup>
           </FormSection>
         </div>
+        )}
 
         {/* 学习功能区域 */}
-        <div className={styles.settingsGroup}>
+        {activeCategory === 'study' && (
+        <div className={styles.settingsGroup} id="study-panel" role="tabpanel" aria-labelledby="study">
           <h3 className={styles.groupTitle}>学习功能</h3>
           
           {/* 噪音校准设置 */}
@@ -544,9 +565,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             </div>
           </FormSection>
         </div>
+        )}
 
         {/* 内容管理区域 */}
-        <div className={styles.settingsGroup}>
+        {activeCategory === 'content' && (
+        <div className={styles.settingsGroup} id="content-panel" role="tabpanel" aria-labelledby="content">
           <h3 className={styles.groupTitle}>内容管理</h3>
           
           {/* 金句自动刷新设置 */}
@@ -576,6 +599,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {/* 金句渠道管理 */}
           <QuoteChannelManager />
         </div>
+        )}
       </div>
     </Modal>
   );

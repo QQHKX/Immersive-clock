@@ -65,14 +65,14 @@
 }
 
 .channelItem:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.04);
+  /* 移除颜色变化，仅保留轻微动效 */
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .channelItem:hover::before {
-  opacity: 1;
+  /* 禁用顶部渐变条的显隐变化，避免悬停颜色效果 */
+  opacity: 0;
 }
 
 .channelHeader {
@@ -185,8 +185,7 @@
 }
 
 .toggleButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
+  /* 移除颜色变化，仅保留缩放动效 */
   transform: scale(1.05);
 }
 
@@ -214,9 +213,7 @@
 }
 
 .settingsButton:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #667eea;
+  /* 移除颜色变化，仅保留缩放动效 */
   transform: scale(1.05);
 }
 
@@ -261,8 +258,7 @@
 }
 
 .categoryItem:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+  /* 移除颜色变化，仅保留位移动效 */
   transform: translateY(-1px);
 }
 
