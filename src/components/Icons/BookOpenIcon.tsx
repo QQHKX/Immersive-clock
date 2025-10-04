@@ -30,6 +30,8 @@ export const BookOpenIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/book-open.svg"
       alt={title || "书本"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

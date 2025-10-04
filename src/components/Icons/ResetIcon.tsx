@@ -30,6 +30,8 @@ export const ResetIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/reset.svg"
       alt={title || "重置"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

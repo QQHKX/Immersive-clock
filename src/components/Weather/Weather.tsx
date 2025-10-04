@@ -268,6 +268,8 @@ const Weather: React.FC = () => {
         <img 
           src={getWeatherIconUrl(weatherData.icon)} 
           alt={weatherData.text}
+          loading="lazy"
+          decoding="async"
           className={styles.weatherIcon}
         />
       </div>

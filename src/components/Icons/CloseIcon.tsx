@@ -30,6 +30,8 @@ export const CloseIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/close.svg"
       alt={title || "关闭"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

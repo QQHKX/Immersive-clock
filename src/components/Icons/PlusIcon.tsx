@@ -30,6 +30,8 @@ export const PlusIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/plus.svg"
       alt={title || "加号"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

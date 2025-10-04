@@ -30,6 +30,8 @@ export const VolumeIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/volume.svg"
       alt={title || "音量"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

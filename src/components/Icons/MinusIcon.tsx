@@ -30,6 +30,8 @@ export const MinusIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/minus.svg"
       alt={title || "减号"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

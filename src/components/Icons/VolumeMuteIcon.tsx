@@ -30,6 +30,8 @@ export const VolumeMuteIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/volume-mute.svg"
       alt={title || "静音"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

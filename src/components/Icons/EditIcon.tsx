@@ -30,6 +30,8 @@ export const EditIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/edit.svg"
       alt={title || "编辑"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

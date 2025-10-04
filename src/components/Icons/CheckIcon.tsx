@@ -30,6 +30,8 @@ export const CheckIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/check.svg"
       alt={title || "确认"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

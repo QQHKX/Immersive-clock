@@ -30,6 +30,8 @@ export const RefreshIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/refresh.svg"
       alt={title || "刷新"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

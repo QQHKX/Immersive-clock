@@ -30,6 +30,8 @@ export const PauseIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/pause.svg"
       alt={title || "暂停"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

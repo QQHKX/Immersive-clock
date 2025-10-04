@@ -30,6 +30,8 @@ export const MaximizeIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/maximize.svg"
       alt={title || "最大化"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

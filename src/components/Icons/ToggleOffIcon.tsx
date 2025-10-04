@@ -30,6 +30,8 @@ export const ToggleOffIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/toggle-off.svg"
       alt={title || "关闭开关"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

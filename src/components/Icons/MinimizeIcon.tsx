@@ -30,6 +30,8 @@ export const MinimizeIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/minimize.svg"
       alt={title || "最小化"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

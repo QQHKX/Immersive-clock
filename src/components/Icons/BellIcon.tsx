@@ -30,6 +30,8 @@ export const BellIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/bell.svg"
       alt={title || "通知"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

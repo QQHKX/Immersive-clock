@@ -30,6 +30,8 @@ export const SaveIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/save.svg"
       alt={title || "保存"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

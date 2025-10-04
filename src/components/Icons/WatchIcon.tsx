@@ -30,6 +30,8 @@ export const WatchIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/stopwatch.svg"
       alt={title || "秒表"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

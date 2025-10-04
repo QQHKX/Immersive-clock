@@ -30,6 +30,8 @@ export const ClockIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/clock.svg"
       alt={title || "时钟"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

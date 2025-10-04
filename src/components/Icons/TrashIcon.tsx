@@ -30,6 +30,8 @@ export const TrashIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/trash.svg"
       alt={title || "删除"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

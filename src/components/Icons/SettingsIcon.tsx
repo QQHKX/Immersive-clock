@@ -30,6 +30,8 @@ export const SettingsIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/settings.svg"
       alt={title || "设置"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

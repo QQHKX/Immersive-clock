@@ -30,6 +30,8 @@ export const PlayIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/play.svg"
       alt={title || "播放"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

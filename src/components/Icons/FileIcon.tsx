@@ -30,6 +30,8 @@ export const FileIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/file.svg"
       alt={title || "文件"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}

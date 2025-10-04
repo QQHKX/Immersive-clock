@@ -30,6 +30,8 @@ export const CountdownIcon: React.FC<IconProps> = ({
     <img
       src="/icons/ui/countdown.svg"
       alt={title || "倒计时"}
+      loading="lazy"
+      decoding="async"
       className={className}
       style={iconStyle}
       onClick={onClick}
