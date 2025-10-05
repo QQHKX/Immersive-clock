@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
 import { formatClock } from '../../utils/formatTime';
@@ -8,7 +8,9 @@ import NoiseMonitor from '../NoiseMonitor';
 import { MotivationalQuote } from '../MotivationalQuote';
 import styles from './Study.module.css';
 import NoiseReportModal, { NoiseReportPeriod } from '../NoiseReportModal/NoiseReportModal';
+import NoiseHistoryModal from '../NoiseHistoryModal/NoiseHistoryModal';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
+import { getAutoPopupSetting } from '../../utils/noiseReportSettings';
 
 /**
  * 晚自习组件
@@ -21,6 +23,10 @@ export function Study() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
   const [reportSamplesOverride, setReportSamplesOverride] = useState<{ t: number; v: number; s: 'quiet' | 'noisy' }[] | undefined>(undefined);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // 记录当前课时是否已弹出过报告，以及是否被手动关闭以避免重复弹出
+  const lastPopupPeriodIdRef = useRef<string | null>(null);
+  const dismissedPeriodIdRef = useRef<string | null>(null);
 
   /**
    * 更新当前时间
@@ -37,7 +43,7 @@ export function Study() {
     updateTime();
   }, [updateTime]);
 
-  // 自动在本节课结束前1分钟弹出统计报告
+  // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
     const scheduleRaw = localStorage.getItem('study-schedule') || localStorage.getItem('studySchedule');
     let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
@@ -66,14 +72,29 @@ export function Study() {
       const startMin = start.getHours() * 60 + start.getMinutes();
       const endMin = end.getHours() * 60 + end.getMinutes();
 
+      // 课时已结束，重置当前课时的弹出/关闭标记
+      if (nowMin >= endMin) {
+        if (lastPopupPeriodIdRef.current === p.id) {
+          lastPopupPeriodIdRef.current = null;
+        }
+        if (dismissedPeriodIdRef.current === p.id) {
+          dismissedPeriodIdRef.current = null;
+        }
+      }
+
       // 正在本节课内，并且进入结束前1分钟窗口（[end-1min, end)）
       if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
-        if (!reportOpen) {
+        // 检查是否启用自动弹出设置
+        const autoPopupEnabled = getAutoPopupSetting();
+        
+        // 若本课时已经弹出过，或被手动关闭过，或设置中禁用了自动弹出，则不再重复弹出
+        const alreadyPopped = lastPopupPeriodIdRef.current === p.id;
+        const dismissed = dismissedPeriodIdRef.current === p.id;
+        if (!alreadyPopped && !dismissed && autoPopupEnabled) {
           setReportPeriod({ id: p.id, name: p.name, start, end });
           setReportSamplesOverride(undefined);
           setReportOpen(true);
-          // 1分钟后自动关闭
-          setTimeout(() => setReportOpen(false), 60 * 1000);
+          lastPopupPeriodIdRef.current = p.id;
         }
         break;
       }
@@ -176,6 +197,23 @@ export function Study() {
     setReportOpen(true);
   }, [generateSampleDataForPeriod]);
 
+  // 手动关闭报告：记录当前课时的关闭标记，避免在窗口内重复弹出
+  const handleCloseReport = useCallback(() => {
+    if (reportPeriod) {
+      dismissedPeriodIdRef.current = reportPeriod.id;
+    }
+    setReportOpen(false);
+  }, [reportPeriod]);
+
+  // 点击状态文本时打开历史记录弹窗
+  const handleOpenHistory = useCallback(() => {
+    setHistoryOpen(true);
+  }, []);
+
+  const handleCloseHistory = useCallback(() => {
+    setHistoryOpen(false);
+  }, []);
+
   return (
     <div className={styles.study}>
       {/* 智能晚自习状态管理 */}
@@ -183,7 +221,7 @@ export function Study() {
       
       {/* 左上角 - 噪音监测 */}
       <div className={styles.topLeft}>
-        <NoiseMonitor />
+        <NoiseMonitor onStatusClick={handleOpenHistory} />
       </div>
       
       {/* 右上角 - 倒计时和励志金句 */}
@@ -223,10 +261,13 @@ export function Study() {
       {/* 统计报告弹窗 */}
       <NoiseReportModal 
         isOpen={reportOpen} 
-        onClose={() => setReportOpen(false)} 
+        onClose={handleCloseReport} 
         period={reportPeriod} 
         samplesOverride={reportSamplesOverride}
       />
+
+      {/* 历史记录弹窗 */}
+      <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
     </div>
   );
 }

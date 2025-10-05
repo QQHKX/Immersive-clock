@@ -90,6 +90,8 @@
 
 .modalBody {
   padding: var(--spacing-lg, 1.5rem);
+  /* 提升底部安全内边距，避免内容贴近弹窗底边 */
+  padding-bottom: calc(var(--spacing-lg, 1.5rem) * 2);
   max-height: 64vh;
   overflow-y: auto;
   flex: 1;
@@ -138,6 +140,11 @@
     padding: var(--spacing-md, 1rem);
   }
 
+  /* 移动端也增加更大的底部内边距 */
+  .modalBody {
+    padding-bottom: calc(var(--spacing-md, 1rem) * 2);
+  }
+
   .modalTitle {
     font-size: 1.1rem;
   }
@@ -152,6 +159,11 @@
   .modalBody,
   .modalFooter {
     padding: var(--spacing-sm, 0.75rem);
+  }
+
+  /* 小屏下进一步确保底部有足够内边距 */
+  .modalBody {
+    padding-bottom: calc(var(--spacing-sm, 0.75rem) * 2);
   }
 
   .modalTitle {

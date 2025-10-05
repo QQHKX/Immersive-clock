@@ -17,11 +17,16 @@ const MAX_DECIBELS = -10; // 最大分贝值
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
 
+interface NoiseMonitorProps {
+  // 点击状态文本时触发（安静/吵闹状态下）
+  onStatusClick?: () => void;
+}
+
 /**
  * 实时噪音状态监测组件
  * 功能：通过麦克风监测环境音量并显示状态
  */
-const NoiseMonitor: React.FC = () => {
+const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const [noiseStatus, setNoiseStatus] = useState<NoiseStatus>('initializing');
   const [currentVolume, setCurrentVolume] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
@@ -397,9 +402,12 @@ const NoiseMonitor: React.FC = () => {
       setTimeout(() => {
         initializeAudioMonitoring();
       }, 100);
+    } else if (noiseStatus === 'quiet' || noiseStatus === 'noisy') {
+      // 打开历史记录弹窗（通过父组件传入回调）
+      onStatusClick?.();
     }
-    // 移除了点击校准功能
-  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring]);
+    // 其他状态不做处理；已移除点击校准功能
+  }, [noiseStatus, isCalibrating, cleanup, initializeAudioMonitoring, onStatusClick]);
 
   // 组件挂载时初始化音频监测
   useEffect(() => {
@@ -457,6 +465,7 @@ const NoiseMonitor: React.FC = () => {
         ></div>
         <div 
           className={`${styles.statusText} ${getStatusClassName()}`}
+          onClick={handleClick}
           title={
             isCalibrating ? '正在校准基准噪音水平...' :
             noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :

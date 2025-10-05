@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import Modal from '../Modal/Modal';
 import { FormButton, FormButtonGroup } from '../FormComponents';
 import styles from './NoiseReportModal.module.css';
+import { saveNoiseReport, SavedNoiseReport } from '../../utils/noiseReportStorage';
 
 export interface NoiseReportPeriod {
   id: string;
@@ -26,6 +27,8 @@ interface NoiseReportModalProps {
 
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
 const NOISE_THRESHOLD = 55; // 校准40dB后超出15dB为吵闹
+const CHART_HEIGHT = 160;
+const CHART_PADDING = 36;
 
 export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onClose, period, samplesOverride }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -107,8 +110,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
   // 简单折线图：将时间映射到X，将分贝映射到Y
   const chart = useMemo(() => {
     const width = chartWidth;
-    const height = 160;
-    const padding = 36;
+    const height = CHART_HEIGHT;
+    const padding = CHART_PADDING;
 
     if (!period || samplesInPeriod.length === 0) {
       return { width, height, padding, path: '', points: [] as { x: number; y: number }[], xTicks: [], yTicks: [] };
@@ -163,6 +166,50 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
     return { width, height, padding, path, areaPath, points: pts, xTicks, yTicks };
   }, [samplesInPeriod, period]);
+
+  // 打开报告弹窗后自动保存当前课时的统计与图表数据
+  useEffect(() => {
+    if (!isOpen || !period || !samplesInPeriod.length) return;
+
+    // 与可视化一致，使用 EMA 平滑后的序列
+    const alpha = 0.25;
+    const smoothed: number[] = [];
+    for (let i = 0; i < samplesInPeriod.length; i++) {
+      const v = samplesInPeriod[i].v;
+      if (i === 0) smoothed[i] = v; else smoothed[i] = alpha * v + (1 - alpha) * smoothed[i - 1];
+    }
+
+    const series = samplesInPeriod.map((s, i) => ({ t: s.t, v: smoothed[i] }));
+    const savedAt = Date.now();
+
+    const report: SavedNoiseReport = {
+      id: `${period.id}-${period.start.getTime()}-${period.end.getTime()}`,
+      periodId: period.id,
+      periodName: period.name,
+      start: period.start.getTime(),
+      end: period.end.getTime(),
+      savedAt,
+      stats: {
+        avg: stats.avg,
+        max: stats.max,
+        noisyDurationMs: stats.noisyDurationMs,
+        transitions: stats.transitions,
+        durationMs: stats.durationMs,
+      },
+      chart: {
+        height: CHART_HEIGHT,
+        padding: CHART_PADDING,
+        threshold: NOISE_THRESHOLD,
+      },
+      series,
+    };
+
+    try {
+      saveNoiseReport(report);
+    } catch (e) {
+      console.warn('保存噪音报告失败:', e);
+    }
+  }, [isOpen, period, samplesInPeriod, stats]);
 
   const formatDuration = (ms: number) => {
     const sec = Math.round(ms / 1000);

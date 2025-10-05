@@ -11,13 +11,15 @@ import {
   FormButtonGroup, 
   FormRow,
   FormSlider,
-  FormSegmented 
+  FormSegmented,
+  FormCheckbox 
 } from '../FormComponents';
 import { Tabs } from '../Tabs/Tabs';
 import styles from './SettingsPanel.module.css';
 import RealTimeNoiseChart from '../NoiseSettings/RealTimeNoiseChart';
 import NoiseAlertHistory from '../NoiseSettings/NoiseAlertHistory';
 import NoiseStatsSummary from '../NoiseSettings/NoiseStatsSummary';
+import { getNoiseReportSettings, setAutoPopupSetting } from '../../utils/noiseReportSettings';
 
 // localStorage 键名
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
@@ -52,7 +54,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [weatherAddress, setWeatherAddress] = useState<string>(() => localStorage.getItem('weather.address') || '');
   const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>(() => localStorage.getItem('weather.refreshStatus') || '');
   const [weatherLastTs, setWeatherLastTs] = useState<number>(() => parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10));
-  // 已移除：开发者测试噪音报告弹窗
+  // 噪音报告自动弹出设置
+  const [autoPopupReport, setAutoPopupReport] = useState<boolean>(() => {
+    return getNoiseReportSettings().autoPopup;
+  });
   
   /**
    * 加载课程表数据
@@ -228,6 +233,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   }, []);
   
   /**
+   * 处理自动弹出报告设置变化
+   */
+  const handleAutoPopupChange = useCallback((checked: boolean) => {
+    setAutoPopupReport(checked);
+    setAutoPopupSetting(checked);
+  }, []);
+
+  /**
    * 清除噪音校准
    */
   const handleClearNoiseBaseline = useCallback(() => {
@@ -346,6 +359,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       const savedValue = saved ? parseFloat(saved) : 0;
       setNoiseBaseline(savedValue);
       setSliderValue(savedValue > 0 ? savedValue : 50);
+      // 重新读取噪音报告设置
+      setAutoPopupReport(getNoiseReportSettings().autoPopup);
       // 打开时默认显示基础设置
       setActiveCategory('basic');
     }
@@ -535,7 +550,19 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               >
                 清除校准
               </FormButton>
-          </FormButtonGroup>
+            </FormButtonGroup>
+          </FormSection>
+
+          {/* 噪音报告设置 */}
+          <FormSection title="噪音报告设置">
+            <FormCheckbox
+              label="自动弹出噪音报告"
+              checked={autoPopupReport}
+              onChange={(e) => handleAutoPopupChange(e.target.checked)}
+            />
+            <p className={styles.helpText}>
+              开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。
+            </p>
           </FormSection>
           
           {/* 噪音管理面板 */}
