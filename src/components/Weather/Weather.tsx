@@ -126,6 +126,9 @@ const Weather: React.FC = () => {
       if (result.coords) {
         localStorage.setItem('weather.coords.lat', String(result.coords.lat));
         localStorage.setItem('weather.coords.lon', String(result.coords.lon));
+        if (result.coordsSource) {
+          localStorage.setItem('weather.coords.source', result.coordsSource);
+        }
       }
       if (now) {
         if (now.obsTime) localStorage.setItem('weather.now.obsTime', now.obsTime);

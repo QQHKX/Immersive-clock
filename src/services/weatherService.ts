@@ -81,6 +81,75 @@ async function httpGetJson(url: string, headers?: Record<string, string>, timeou
   }
 }
 
+/**
+ * 通过浏览器原生 Geolocation API 获取坐标
+ * 优先策略：高精度、合理超时；失败（含拒绝授权）返回 null
+ */
+export async function getCoordsViaGeolocation(): Promise<Coords | null> {
+  if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    return null;
+  }
+  return new Promise<Coords | null>((resolve) => {
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos?.coords?.latitude;
+          const lon = pos?.coords?.longitude;
+          if (typeof lat === 'number' && typeof lon === 'number') {
+            resolve({ lat, lon });
+          } else {
+            resolve(null);
+          }
+        },
+        () => resolve(null),
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * 使用高德地图的 IP 定位获取坐标（通过返回的城市矩形取中心点）
+ * 若失败返回 null
+ */
+export async function getCoordsViaAmapIP(): Promise<Coords | null> {
+  const url = `https://restapi.amap.com/v3/ip?key=${encodeURIComponent(AMAP_KEY)}`;
+  try {
+    const data = await httpGetJson(url, {
+      'User-Agent': 'QWeatherTest/1.0',
+      'Accept-Encoding': 'gzip, deflate',
+    });
+    if (String(data?.status) !== '1') {
+      return null;
+    }
+    const rect: string | undefined = data?.rectangle;
+    // rectangle 形如："lon1,lat1;lon2,lat2"
+    if (rect && rect.includes(';')) {
+      const [p1, p2] = rect.split(';');
+      const [lon1Str, lat1Str] = p1.split(',');
+      const [lon2Str, lat2Str] = p2.split(',');
+      const lon1 = parseFloat(lon1Str);
+      const lat1 = parseFloat(lat1Str);
+      const lon2 = parseFloat(lon2Str);
+      const lat2 = parseFloat(lat2Str);
+      if ([lon1, lat1, lon2, lat2].every((v) => Number.isFinite(v))) {
+        const lon = (lon1 + lon2) / 2;
+        const lat = (lat1 + lat2) / 2;
+        return { lat, lon };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCoordsViaIP(): Promise<Coords | null> {
   const sources: Array<[string, string[]]> = [
     ['https://ipapi.co/json/', ['latitude', 'longitude']],
@@ -195,14 +264,30 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
 
 export async function buildWeatherFlow(): Promise<{
   coords: Coords | null;
+  coordsSource?: string | null;
   city?: string | null;
   locationId?: string | null;
   addressInfo?: AddressInfo | null;
   weather?: WeatherNow | null;
 }> {
-  const coords = await getCoordsViaIP();
+  // 新定位策略：优先浏览器 Geolocation，其次高德 IP，最后其他 IP 源
+  let coordsSource: string | null = null;
+  let coords: Coords | null = await getCoordsViaGeolocation();
+  if (coords) {
+    coordsSource = 'geolocation';
+  } else {
+    coords = await getCoordsViaAmapIP();
+    if (coords) {
+      coordsSource = 'amap_ip';
+    } else {
+      coords = await getCoordsViaIP();
+      if (coords) {
+        coordsSource = 'ip';
+      }
+    }
+  }
   if (!coords) {
-    return { coords: null };
+    return { coords: null, coordsSource: null };
   }
   const cityLookup = await geoCityLookup(coords.lat, coords.lon);
   let city: string | null = null;
@@ -219,5 +304,5 @@ export async function buildWeatherFlow(): Promise<{
   }
   const locationParam = locationId || `${coords.lon},${coords.lat}`;
   const weather = await fetchWeatherNow(locationParam);
-  return { coords, city, locationId, addressInfo: addrInfo, weather };
+  return { coords, coordsSource, city, locationId, addressInfo: addrInfo, weather };
 }

@@ -443,6 +443,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 const lon = localStorage.getItem('weather.coords.lon');
                 return lat && lon ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}` : '未获取';
               })()}</p>
+              <p className={styles.infoText}>定位方式：{(() => {
+                const source = localStorage.getItem('weather.coords.source');
+                if (!source) return '未获取';
+                if (source === 'geolocation') return '浏览器定位';
+                if (source === 'amap_ip') return '高德IP定位';
+                if (source === 'ip') return '公共IP定位';
+                return source;
+              })()}</p>
               <p className={styles.infoText}>街道地址：{weatherAddress || '未获取'}</p>
               <p className={styles.infoText}>时间：{localStorage.getItem('weather.now.obsTime') || '未获取'}</p>
               <p className={styles.infoText}>天气：{localStorage.getItem('weather.now.text') || '未获取'}</p>
