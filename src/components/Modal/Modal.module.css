@@ -19,8 +19,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius, 8px);
   padding: 0;
-  width: 90%;
-  max-height: 85vh;
+  width: 92%;
+  max-height: 88vh;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: modal-slide-in 0.3s ease-out;
@@ -43,6 +43,10 @@
 
 .xl {
   max-width: 900px;
+}
+
+.xxl {
+  max-width: 1100px;
 }
 
 .modalHeader {
@@ -86,7 +90,7 @@
 
 .modalBody {
   padding: var(--spacing-lg, 1.5rem);
-  max-height: 60vh;
+  max-height: 64vh;
   overflow-y: auto;
   flex: 1;
 }

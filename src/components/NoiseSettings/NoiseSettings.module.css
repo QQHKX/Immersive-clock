@@ -1,0 +1,107 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.axis {
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1;
+}
+
+.line {
+  fill: none;
+  stroke: #4cc9f0;
+  stroke-width: 2;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+
+.threshold {
+  stroke: #ff6b6b;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.empty {
+  padding: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sourceNote {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-ui);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.statItem {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.statLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.statValue {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.historyItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.historyTime {
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-ui);
+}
+
+.historyBadge {
+  color: #ff4757;
+  font-weight: 600;
+}
+
+.segmentedRow {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

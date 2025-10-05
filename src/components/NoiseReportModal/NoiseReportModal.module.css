@@ -4,12 +4,22 @@
   gap: 1rem;
 }
 
+.singleContainer {
+  padding: 0.5rem 0 0.75rem 0;
+}
+
+.chartRow {
+  width: 100%;
+}
+
 .chart {
   width: 100%;
-  max-width: 800px;
+  height: auto;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  margin: 0 auto;
+  display: block;
 }
 
 .axis {
@@ -21,6 +31,8 @@
   fill: none;
   stroke: var(--accent-color, #03DAC6);
   stroke-width: 2;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
 }
 
 .threshold {
@@ -32,6 +44,13 @@
 .empty {
   padding: 1rem;
   color: var(--secondary-color);
+}
+
+.sourceNote {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--secondary-color);
+  font-family: var(--font-ui);
 }
 
 .statsGrid {
@@ -56,6 +75,33 @@
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-color);
+}
+
+.reportText {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-color);
+  font-family: var(--font-ui);
+  text-indent: 0;
+  margin: 0.25rem 0 0.75rem 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.chart {
+  margin: 0 auto;
+  display: block;
+}
+
+.chartHint {
+  margin: 0.5rem 0 0.75rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--secondary-color);
+  font-family: var(--font-ui);
+  text-align: left;
+  width: 100%;
 }
 
 @media (max-width: 768px) {

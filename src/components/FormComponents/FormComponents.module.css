@@ -1,5 +1,17 @@
 /* 统一表单组件样式 */
 
+/* 提升表单组件的层级，确保覆盖模式切换按钮（HUD） */
+.section,
+.inputGroup,
+.checkboxGroup,
+.radioGroup,
+.segmentedGroup,
+.buttonGroup,
+.row {
+  position: relative;
+  z-index: var(--z-form, 300);
+}
+
 /* 表单区域 */
 .section {
   margin-bottom: var(--spacing-xl, 2rem);

@@ -15,6 +15,9 @@ import {
 } from '../FormComponents';
 import { Tabs } from '../Tabs/Tabs';
 import styles from './SettingsPanel.module.css';
+import RealTimeNoiseChart from '../NoiseSettings/RealTimeNoiseChart';
+import NoiseAlertHistory from '../NoiseSettings/NoiseAlertHistory';
+import NoiseStatsSummary from '../NoiseSettings/NoiseStatsSummary';
 
 // localStorage 键名
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
@@ -49,6 +52,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [weatherAddress, setWeatherAddress] = useState<string>(() => localStorage.getItem('weather.address') || '');
   const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>(() => localStorage.getItem('weather.refreshStatus') || '');
   const [weatherLastTs, setWeatherLastTs] = useState<number>(() => parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10));
+  // 已移除：开发者测试噪音报告弹窗
   
   /**
    * 加载课程表数据
@@ -234,6 +238,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       alert('噪音校准已清除');
     }
   }, []);
+
+  // 已移除：开发者测试弹窗触发逻辑
   
   /**
    * 执行噪音校准
@@ -348,23 +354,24 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   if (!isOpen) return null;
   
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      title="设置" 
-      maxWidth="lg"
-      footer={
-        <FormButtonGroup align="right">
-          <FormButton variant="secondary" onClick={onClose}>
-            取消
-          </FormButton>
-          <FormButton variant="primary" onClick={handleSaveAll}>
-            保存
-          </FormButton>
-        </FormButtonGroup>
-      }
-    >
-      <div className={styles.settingsContainer}>
+    <>
+      <Modal 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        title="设置" 
+        maxWidth="lg"
+        footer={
+          <FormButtonGroup align="right">
+            <FormButton variant="secondary" onClick={onClose}>
+              取消
+            </FormButton>
+            <FormButton variant="primary" onClick={handleSaveAll}>
+              保存
+            </FormButton>
+          </FormButtonGroup>
+        }
+      >
+        <div className={styles.settingsContainer}>
         {/* 顶部分类选项卡 */}
         <Tabs
           items={[
@@ -528,8 +535,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               >
                 清除校准
               </FormButton>
-            </FormButtonGroup>
+          </FormButtonGroup>
           </FormSection>
+          
+          {/* 噪音管理面板 */}
+          <RealTimeNoiseChart />
+          <NoiseStatsSummary />
+          <NoiseAlertHistory />
+
           
           {/* 课程表设置 */}
           <FormSection title="课程表设置">
@@ -649,7 +662,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <QuoteChannelManager />
         </div>
         )}
-      </div>
-    </Modal>
+        </div>
+      </Modal>
+      {/* 已移除：设置面板内的开发者测试噪音报告弹窗挂载 */}
+    </>
   );
 }

@@ -20,6 +20,7 @@ export function Study() {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
+  const [reportSamplesOverride, setReportSamplesOverride] = useState<{ t: number; v: number; s: 'quiet' | 'noisy' }[] | undefined>(undefined);
 
   /**
    * 更新当前时间
@@ -69,6 +70,7 @@ export function Study() {
       if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
         if (!reportOpen) {
           setReportPeriod({ id: p.id, name: p.name, start, end });
+          setReportSamplesOverride(undefined);
           setReportOpen(true);
           // 1分钟后自动关闭
           setTimeout(() => setReportOpen(false), 60 * 1000);
@@ -136,6 +138,44 @@ export function Study() {
     : `距离${study.targetYear}年高考仅`;
   const countdownDays = isCustom ? daysToCustom : daysToGaokao;
 
+  // 生成示例噪音数据（非真实数据）
+  const generateSampleDataForPeriod = useCallback((period: NoiseReportPeriod): { t: number; v: number; s: 'quiet' | 'noisy' }[] => {
+    const startTs = period.start.getTime();
+    const endTs = period.end.getTime();
+    const span = endTs - startTs;
+    // 每10秒一个点
+    const step = 10 * 1000;
+    const points: { t: number; v: number; s: 'quiet' | 'noisy' }[] = [];
+    // 基础波动使用正弦与随机噪声叠加，偶尔越过阈值55dB
+    const base = 40; // 基线
+    const amp = 12;  // 振幅
+    for (let t = startTs; t <= endTs; t += step) {
+      const ratio = (t - startTs) / span;
+      const sin = Math.sin(ratio * Math.PI * 2);
+      const noise = (Math.random() - 0.5) * 6;
+      let v = base + amp * sin + noise;
+      // 注入几段高噪期
+      if (ratio > 0.3 && ratio < 0.35) v += 20;
+      if (ratio > 0.65 && ratio < 0.7) v += 18;
+      const s: 'quiet' | 'noisy' = v > 55 ? 'noisy' : 'quiet';
+      points.push({ t, v, s });
+    }
+    return points;
+  }, []);
+
+  // 手动测试按钮：打开示例数据的报告弹窗
+  const handleOpenTestReport = useCallback(() => {
+    // 使用当前课程期或构造一个15分钟测试期
+    const now = new Date();
+    const start = new Date(now.getTime() - 15 * 60 * 1000);
+    const end = new Date(now.getTime());
+    const period: NoiseReportPeriod = { id: 'test', name: '示例数据测试', start, end };
+    setReportPeriod(period);
+    const samples = generateSampleDataForPeriod(period);
+    setReportSamplesOverride(samples);
+    setReportOpen(true);
+  }, [generateSampleDataForPeriod]);
+
   return (
     <div className={styles.study}>
       {/* 智能晚自习状态管理 */}
@@ -154,6 +194,24 @@ export function Study() {
         <div className={styles.quoteSection}>
           <MotivationalQuote />
         </div>
+        {/* 测试按钮：弹出示例数据报告 */}
+        <div style={{ marginTop: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={handleOpenTestReport}
+            aria-label="打开示例数据报告"
+            style={{
+              padding: '6px 10px',
+              fontSize: '0.9rem',
+              borderRadius: '6px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'var(--text-color)'
+            }}
+          >
+            测试报告（示例数据）
+          </button>
+        </div>
       </div>
       
       {/* 中央 - 时间显示 */}
@@ -167,6 +225,7 @@ export function Study() {
         isOpen={reportOpen} 
         onClose={() => setReportOpen(false)} 
         period={reportPeriod} 
+        samplesOverride={reportSamplesOverride}
       />
     </div>
   );
