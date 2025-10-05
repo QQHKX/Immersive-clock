@@ -14,6 +14,7 @@ const MAX_DECIBELS = -10; // 最大分贝值
 
 // localStorage 键名
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
+const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
 
 /**
  * 实时噪音状态监测组件
@@ -39,6 +40,7 @@ const NoiseMonitor: React.FC = () => {
   const pendingStatusRef = useRef<NoiseStatus | null>(null);
   const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
   const initializationCountRef = useRef<number>(0); // 初始化计数器
+  const lastPersistTsRef = useRef<number>(0); // 上次持久化采样时间戳
   
   // 检测是否为移动设备
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -79,7 +81,7 @@ const NoiseMonitor: React.FC = () => {
     // 如果有基准噪音水平，进行相对校准
     if (baselineNoise > 0) {
       // 使用更温和的校准方式，避免过度调整
-      const calibrationOffset = baselineNoise - 35; // 35dB 作为标准安静环境
+      const calibrationOffset = baselineNoise - 40; // 40dB 作为标准安静环境
       mappedDecibels = Math.max(20, mappedDecibels - calibrationOffset);
     }
     
@@ -142,6 +144,24 @@ const NoiseMonitor: React.FC = () => {
       setNoiseStatusWithDelay('noisy');
     } else {
       setNoiseStatusWithDelay('quiet');
+    }
+
+    // 每2秒持久化一次采样到 localStorage
+    const now = Date.now();
+    if (!lastPersistTsRef.current || now - lastPersistTsRef.current >= 2000) {
+      try {
+        const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
+        const list: { t: number; v: number; s: 'quiet' | 'noisy' }[] = raw ? JSON.parse(raw) : [];
+        list.push({ t: now, v: volume, s: volume > NOISE_THRESHOLD ? 'noisy' : 'quiet' });
+        // 仅保留最近24小时的数据，避免无限增长
+        const cutoff = now - 24 * 60 * 60 * 1000;
+        const trimmed = list.filter(item => item.t >= cutoff);
+        localStorage.setItem(NOISE_SAMPLE_STORAGE_KEY, JSON.stringify(trimmed));
+      } catch (e) {
+        // 忽略单次持久化错误，避免影响实时监测
+        console.warn('噪音采样持久化失败:', e);
+      }
+      lastPersistTsRef.current = now;
     }
 
     // 继续下一帧分析

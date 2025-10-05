@@ -7,6 +7,8 @@ import StudyStatus from '../StudyStatus';
 import NoiseMonitor from '../NoiseMonitor';
 import { MotivationalQuote } from '../MotivationalQuote';
 import styles from './Study.module.css';
+import NoiseReportModal, { NoiseReportPeriod } from '../NoiseReportModal/NoiseReportModal';
+import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
 
 /**
  * 晚自习组件
@@ -16,6 +18,8 @@ export function Study() {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
 
   /**
    * 更新当前时间
@@ -31,6 +35,48 @@ export function Study() {
   useEffect(() => {
     updateTime();
   }, [updateTime]);
+
+  // 自动在本节课结束前1分钟弹出统计报告
+  useEffect(() => {
+    const scheduleRaw = localStorage.getItem('study-schedule') || localStorage.getItem('studySchedule');
+    let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
+    try {
+      if (scheduleRaw) {
+        const parsed = JSON.parse(scheduleRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          schedule = parsed;
+        }
+      }
+    } catch {}
+
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    const toDate = (timeStr: string) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d;
+    };
+
+    for (const p of schedule) {
+      const start = toDate(p.startTime);
+      const end = toDate(p.endTime);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = end.getHours() * 60 + end.getMinutes();
+
+      // 正在本节课内，并且进入结束前1分钟窗口（[end-1min, end)）
+      if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
+        if (!reportOpen) {
+          setReportPeriod({ id: p.id, name: p.name, start, end });
+          setReportOpen(true);
+          // 1分钟后自动关闭
+          setTimeout(() => setReportOpen(false), 60 * 1000);
+        }
+        break;
+      }
+    }
+  }, [currentTime, reportOpen]);
 
   /**
    * 计算距离高考的天数（基于最近的目标年份）
@@ -115,6 +161,13 @@ export function Study() {
         <div className={styles.currentTime}>{timeString}</div>
         <div className={styles.currentDate}>{dateString}</div>
       </div>
+
+      {/* 统计报告弹窗 */}
+      <NoiseReportModal 
+        isOpen={reportOpen} 
+        onClose={() => setReportOpen(false)} 
+        period={reportPeriod} 
+      />
     </div>
   );
 }
