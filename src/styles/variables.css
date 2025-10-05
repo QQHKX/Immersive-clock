@@ -1,6 +1,6 @@
-/* CSS Custom Properties for Immersive Clock */
+/* 沉浸时钟的 CSS 自定义属性 */
 :root {
-  /* Colors */
+/* 颜色 */
   --background-color: #121212;
   --text-color: #E0E0E0;
   --primary-color: #FFFFFF;
@@ -12,41 +12,41 @@
   --placeholder-color: #BBBBBB;
   --placeholder-opacity: 0.6;
 
-  /* Fonts */
+/* 字体 */
   --font-main: 'Roboto Mono', monospace;
   --font-ui: 'Inter', sans-serif;
 
-  /* Sizes */
+/* 尺寸变量 */
   --clock-font-size: clamp(4rem, 12vw, 8rem);
   --timer-font-size: clamp(3rem, 10vw, 6rem);
   --button-font-size: 1rem;
   --modal-font-size: 1.2rem;
 
-  /* Font Sizes */
+/* 字号 */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
   --font-size-md: 0.95rem;
   --font-size-lg: 1.1rem;
   --font-size-xl: 1.25rem;
 
-  /* Spacing */
+/* 间距 */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.25rem;
   --spacing-md: 0.5rem;
   --spacing-lg: 0.5rem;
   --spacing-xl: 0.75rem;
 
-  /* Border Radius */
+/* 圆角 */
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
 
-  /* Transitions */
+/* 过渡 */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
 
-  /* Z-index */
+/* 层级（z-index） */
   --z-hud: 100;
   --z-modal: 200;
 }

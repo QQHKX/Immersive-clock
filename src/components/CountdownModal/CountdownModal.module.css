@@ -1,4 +1,4 @@
-/* CountdownModal 特定样式 */
+/* 倒计时模态框特定样式 */
 
 .timeInputs {
   display: flex;
@@ -33,7 +33,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 时间调整按钮样式已移至FormComponents */
+/* 时间调整按钮样式已迁移至 FormComponents */
 
 .timeValue {
   font-family: var(--font-main);
@@ -49,10 +49,10 @@
   margin-bottom: var(--spacing-xl);
 }
 
-/* 预设按钮和操作按钮样式已移至FormComponents */
-/* 模态框动画和响应式样式已移至统一的Modal组件 */
+/* 预设按钮与操作按钮样式已迁移至 FormComponents */
+/* 模态框动画与响应式样式已迁移至统一的 Modal 组件 */
 
-/* CountdownModal 特定的响应式调整 */
+/* 倒计时模态框的响应式调整 */
 @media (max-width: 768px) {
 
   .timeInputs {
@@ -115,7 +115,7 @@
   }
 }
 
-/* Reduced motion support */
+/* 降低动画模式支持 */
 @media (prefers-reduced-motion: reduce) {
   .modal {
     animation: none;

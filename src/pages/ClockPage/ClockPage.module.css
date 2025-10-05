@@ -1,4 +1,4 @@
-/* ClockPage Component Styles */
+/* 时钟页面组件样式 */
 
 .clockPage {
   height: 100vh;
@@ -35,7 +35,7 @@
   z-index: 1;
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .timeDisplay {
     padding: var(--spacing-md);
@@ -54,20 +54,20 @@
   }
 }
 
-/* Ensure the page takes full viewport */
+/* 让页面占满视口 */
 .clockPage {
   min-height: 100vh;
   min-width: 100vw;
 }
 
-/* Text selection prevention is now handled in the main .clockPage rule above */
+/* 文本选择禁用已在上方 .clockPage 主规则中处理 */
 
-/* Smooth transitions for mode changes */
+/* 模式切换的平滑过渡 */
 .timeDisplay {
   transition: all var(--transition-normal);
 }
 
-/* Background gradient for visual appeal */
+/* 背景渐变以提升视觉效果 */
 .clockPage::before {
   content: '';
   position: absolute;
@@ -83,14 +83,14 @@
   z-index: 0;
 }
 
-/* Accessibility improvements */
+/* 无障碍适配优化 */
 @media (prefers-reduced-motion: reduce) {
   .timeDisplay {
     transition: none;
   }
 }
 
-/* High contrast mode support */
+/* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .clockPage {
     background: #000000;
@@ -102,7 +102,7 @@
   }
 }
 
-/* Print styles */
+/* 打印样式 */
 @media print {
   .clockPage {
     background: white;

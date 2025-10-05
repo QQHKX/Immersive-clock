@@ -1,4 +1,4 @@
-/* Stopwatch Component Styles */
+/* 秒表组件样式 */
 
 .stopwatch {
   display: flex;
@@ -52,7 +52,7 @@
   animation: milestone-appear 0.8s ease-out;
 }
 
-/* Animations */
+/* 动画效果 */
 @keyframes running-glow {
   from {
     text-shadow: none;
@@ -94,7 +94,7 @@
   }
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .time {
     font-size: clamp(4rem, 18vw, 8rem);
@@ -126,7 +126,7 @@
   }
 }
 
-/* High contrast mode support */
+/* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .time.running {
     color: var(--primary-color);

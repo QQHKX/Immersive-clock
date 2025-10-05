@@ -99,7 +99,7 @@
   text-align: center;
 }
 
-/* Markdown内容 */
+/* Markdown 内容 */
 .markdownContent {
   line-height: 1;
   color: var(--text-primary);
@@ -119,7 +119,7 @@
 
 .markdownContent h1 {
   font-size: 2.5rem;
-  /* 增大 h1 字体，提高层级区分度 */
+/* 增大 h1 字体以提升层级区分度 */
   font-weight: 700;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: var(--spacing-sm);
@@ -134,13 +134,13 @@
 
 .markdownContent h3 {
   font-size: 1.0rem;
-  /* h3 字体大小，与正文有明显区别 */
+/* h3 字体大小与正文区分明显 */
   font-weight: 600;
 }
 
 .markdownContent p {
   margin: var(--spacing-xs) 0;
-  /* 从spacing-md调整为spacing-xs，减少段落间距 */
+/* 从 spacing-md 调整为 spacing-xs，减少段落间距 */
   line-height: 1.4;
   /* 进一步减少段落内行间距 */
   font-size: var(--font-size-sm);

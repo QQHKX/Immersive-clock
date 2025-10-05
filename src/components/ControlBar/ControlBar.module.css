@@ -1,4 +1,4 @@
-/* ControlBar Component Styles - Minimal Design */
+/* 控制栏组件样式（极简设计） */
 
 .controlBar {
   display: flex;
@@ -80,7 +80,7 @@
   font-style: italic;
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .controlBar {
     flex-direction: column;

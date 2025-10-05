@@ -1,4 +1,4 @@
-/* HUD Component Styles - Minimal Design */
+/* HUD 组件样式（极简设计） */
 
 .hud {
   position: fixed;
@@ -139,7 +139,7 @@
   }
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .hudContent {
     padding: 1.5rem;

@@ -1,4 +1,4 @@
-/* Countdown Component Styles */
+/* 倒计时组件样式 */
 
 .countdown {
   display: flex;
@@ -99,7 +99,7 @@
   animation: fade-in-up 0.3s ease-out;
 }
 
-/* Animations */
+/* 动画效果 */
 @keyframes warning-pulse {
 
   0%,
@@ -155,7 +155,7 @@
   }
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .time {
     font-size: clamp(4rem, 18vw, 8rem);

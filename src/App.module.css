@@ -1,4 +1,4 @@
-/* App Component Styles */
+/* 应用组件样式 */
 
 .app {
   width: 100%;
@@ -11,23 +11,23 @@
   position: relative;
 }
 
-/* Ensure the app takes full viewport */
+/* 让应用占满视口 */
 .app {
   display: flex;
   flex-direction: column;
 }
 
-/* Prevent scrolling on the main app */
+/* 禁止主应用区域滚动 */
 .app {
   overflow: hidden;
 }
 
-/* Smooth transitions for theme changes */
+/* 主题切换时的平滑过渡 */
 .app {
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
-/* High contrast mode support */
+/* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .app {
     background: #000000;
@@ -35,14 +35,14 @@
   }
 }
 
-/* Reduced motion support */
+/* 降低动画模式支持 */
 @media (prefers-reduced-motion: reduce) {
   .app {
     transition: none;
   }
 }
 
-/* Print styles */
+/* 打印样式 */
 @media print {
   .app {
     background: white;

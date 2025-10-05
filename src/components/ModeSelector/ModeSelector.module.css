@@ -1,4 +1,4 @@
-/* ModeSelector Component Styles - Minimal Design */
+/* 模式选择组件样式（极简设计） */
 
 .modeSelector {
   display: flex;
@@ -68,7 +68,7 @@
   white-space: nowrap;
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 1200px) {
   .modeSelector {
     gap: 2rem;

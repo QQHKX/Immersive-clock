@@ -1,8 +1,8 @@
-// QWeather & Amap integration service following hf.py structure
-// - IP-based geolocation
-// - Amap reverse geocoding, fallback to OSM
-// - QWeather GeoAPI city lookup to get Location ID
-// - QWeather Weather Now via private host with API KEY header
+// 天气服务整合（和风天气 + 高德地图）
+// - 基于 IP 的地理定位
+// - 高德地图反向地理编码，失败时回退到 OSM
+// - 使用和风 GeoAPI 城市查询以获取 Location ID
+// - 通过和风私有域（携带 API KEY 头）获取实时天气
 
 export interface Coords {
   lat: number;
@@ -41,29 +41,39 @@ export interface AddressInfo {
   error?: string;
 }
 
-// 优先读取 .env 中的 VITE_QWEATHER_API_HOST，与 hf.py 保持一致
-const QWEATHER_HOST = ((import.meta as any).env?.VITE_QWEATHER_API_HOST)
-  || ((import.meta as any).env?.VITE_QWEATHER_HOST)
-  || 'nn3yfpy58r.re.qweatherapi.com';
-const QWEATHER_API_KEY = ((import.meta as any).env?.VITE_QWEATHER_API_KEY) || '822d74f851d148efab9ac68a4a74cbd8';
-const AMAP_KEY = import.meta.env.VITE_AMAP_API_KEY || '4c6e2a1b83759e3be34dfbeecd9933a2';
+// 只使用环境变量，不再包含任何硬编码默认值
+function requireEnv(name: string, value: string | undefined): string {
+  if (!value || !String(value).trim()) {
+    throw new Error(`环境变量缺失：${name}`);
+  }
+  return String(value).trim();
+}
+
+// 支持两种命名：优先 VITE_QWEATHER_API_HOST，其次 VITE_QWEATHER_HOST
+const QWEATHER_HOST = (() => {
+  const host = ((import.meta as any).env?.VITE_QWEATHER_API_HOST) || ((import.meta as any).env?.VITE_QWEATHER_HOST);
+  return requireEnv('VITE_QWEATHER_API_HOST 或 VITE_QWEATHER_HOST', host);
+})();
+
+const QWEATHER_API_KEY = requireEnv('VITE_QWEATHER_API_KEY', (import.meta as any).env?.VITE_QWEATHER_API_KEY);
+const AMAP_KEY = requireEnv('VITE_AMAP_API_KEY', import.meta.env.VITE_AMAP_API_KEY);
 
 async function httpGetJson(url: string, headers?: Record<string, string>, timeoutMs = 10000): Promise<any> {
-  // Browser fetch automatically handles gzip/deflate; we still attempt robust decoding
+  // 浏览器 fetch 默认支持 gzip/deflate；此处仍按稳健方式处理解码
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const resp = await fetch(url, {
       headers: headers || {},
       signal: controller.signal,
-      // credentials not needed; all APIs are public
+      // 无需携带凭据：当前接口均为公开访问
     });
-    // Try JSON first
+    // 优先尝试直接解析 JSON
     const text = await resp.text();
     try {
       return JSON.parse(text);
     } catch {
-      // Fallback: attempt different decodings if needed (UTF-8 should suffice in browser)
+      // 回退策略：如有需要尝试不同解码（浏览器默认 UTF-8 已足够）
       return JSON.parse(text);
     }
   } finally {
@@ -94,7 +104,7 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
         }
       }
     } catch {
-      // try next
+      // 继续尝试下一个数据源
     }
   }
   return null;

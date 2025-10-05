@@ -12,7 +12,7 @@ export interface WeatherData {
 
 /**
  * 天气组件（重构版）
- * 完全使用和风天气 + 高德反编码逻辑，遵循 hf.py 结构
+ * 完全使用和风天气 + 高德反编码逻辑。
  */
 const Weather: React.FC = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);

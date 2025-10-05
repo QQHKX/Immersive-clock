@@ -1,7 +1,7 @@
-/* Import CSS Variables */
+/* 导入 CSS 变量 */
 @import './variables.css';
 
-/* Reset and Base Styles */
+/* 重置与基础样式 */
 *,
 *::before,
 *::after {
@@ -47,7 +47,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Button Reset */
+/* 按钮重置样式 */
 button {
   background: none;
   border: none;
@@ -64,7 +64,7 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-/* Input Reset */
+/* 输入框重置样式 */
 input {
   background: none;
   border: none;
@@ -80,7 +80,7 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-/* Utility Classes */
+/* 工具类 */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -108,25 +108,25 @@ img[loading="lazy"] {
   transition: none !important;
 }
 
-/* Hide Scrollbars But Keep Functionality */
-/* For Webkit browsers (Chrome, Safari, etc.) */
+/* 隐藏滚动条但保留功能 */
+/* 适配 Webkit 浏览器（Chrome、Safari 等） */
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
   background: transparent;
 }
 
-/* For Firefox */
+/* 适配 Firefox */
 * {
   scrollbar-width: none;
 }
 
-/* For IE and Edge */
+/* 适配 IE 与 Edge */
 * {
   -ms-overflow-style: none;
 }
 
-/* Animation Keyframes */
+/* 动画关键帧 */
 @keyframes pulse {
 
   0%,

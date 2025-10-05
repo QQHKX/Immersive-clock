@@ -1,4 +1,4 @@
-/* Clock Component Styles */
+/* 时钟组件样式 */
 
 .clock {
   display: flex;
@@ -29,7 +29,7 @@
   transition: all var(--transition-normal);
 }
 
-/* Responsive adjustments */
+/* 响应式适配 */
 @media (max-width: 768px) {
   .time {
     font-size: clamp(4rem, 18vw, 8rem);
@@ -51,4 +51,4 @@
   }
 }
 
-/* Animation for time updates removed for minimal design */
+/* 为保持极简风格，已移除时间更新动画 */
