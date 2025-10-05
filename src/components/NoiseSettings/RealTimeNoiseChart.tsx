@@ -31,17 +31,19 @@ export const RealTimeNoiseChart: React.FC = () => {
     const width = 600;
     const height = 160;
     const padding = 24;
-    if (!samples.length) {
-      return { width, height, path: '' };
-    }
-
-    // 仅显示最近5分钟的数据
+    // 固定窗口范围：最近5分钟
     const now = Date.now();
     const windowMs = 5 * 60 * 1000;
     const cutoff = now - windowMs;
+
+    if (!samples.length) {
+      return { width, height, path: '', startTs: cutoff, endTs: now };
+    }
+
+    // 仅显示最近5分钟的数据
     const recent = samples.filter(s => s.t >= cutoff);
     if (!recent.length) {
-      return { width, height, path: '' };
+      return { width, height, path: '', startTs: cutoff, endTs: now };
     }
 
     // 为了获得稳定的时间范围映射，使用固定窗口[start=cutoff, end=now]
@@ -71,7 +73,7 @@ export const RealTimeNoiseChart: React.FC = () => {
 
     const pts = recent.map((s, i) => `${mapX(s.t)},${mapY(smoothed[i])}`);
     const path = pts.map((p, i) => (i === 0 ? `M ${p}` : `L ${p}`)).join(' ');
-    return { width, height, path, startTs: minTs, endTs: maxTs } as { width: number; height: number; path: string; startTs: number; endTs: number };
+    return { width, height, path, startTs: minTs, endTs: maxTs };
   }, [samples]);
 
   return (
