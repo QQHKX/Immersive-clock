@@ -12,7 +12,7 @@
 
 <h1 align="center">
   <br/>
-  <img src="docs/demo/极简界面.jpeg" width="200" height="200" alt="Immersive Clock Banner" />
+  <img src="public\favicon.svg" width="200" height="200" alt="Immersive Clock Banner" />
   <br/>
   沉浸式时钟 ⏰
 </h1>
@@ -42,7 +42,6 @@
 适用场景：校园晚自习、专注学习、番茄钟辅助、演示与看板、日常桌面时钟等。
 
 # 🌠 界面预览（Screenshots）
-以下配图均来自 `docs/demo` 目录，展示关键界面与交互：
 
 ![](docs/demo/极简界面.jpeg)
 
@@ -52,7 +51,7 @@
 
 ![](docs/demo/晚自习功能.jpeg)
 
-![](docs/demo/公告 更新日志弹窗.jpeg)
+![](docs/demo/公告-更新日志弹窗.jpeg)
 
 # 🌟 关键特性（Key Features）
 1. **时间管理模式**
@@ -178,10 +177,6 @@ npm run preview
   <a href="https://github.com/QQHKX" target="_blank" rel="noopener noreferrer">
     <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=QQHKX&layout=compact&langs_count=8&theme=radical" alt="Top Languages" />
   </a>
-  <br/>
-  <em>以上统计由 GitHub Readme Stats 自动生成，展示作者总体贡献与语言占比。</em>
-  <br/>
-  <sub>注：若加载失败，可尝试刷新或稍后查看。</sub>
 </div>
 
 # ⭐️ Star 历史（Star History）
@@ -190,5 +185,4 @@ npm run preview
     <img src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=Date" alt="Immersive-clock Star History Chart" />
   </a>
   <br/>
-  <em>Star 走势图由 Star History 提供，反映仓库的社区关注度变化。</em>
 </div>
