@@ -17,6 +17,7 @@ html {
   touch-action: manipulation;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
+  user-select: none; /* 标准属性，确保兼容性 */
   -webkit-tap-highlight-color: transparent;
 }
 

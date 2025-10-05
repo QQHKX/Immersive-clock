@@ -27,8 +27,6 @@
   animation: none;
 }
 
-.placeholder {}
-
 .status {
   font-family: var(--font-ui);
   font-size: clamp(1rem, 2.5vw, 1.5rem);
