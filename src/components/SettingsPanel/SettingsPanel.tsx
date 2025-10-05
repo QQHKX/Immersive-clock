@@ -45,6 +45,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     return saved ? parseFloat(saved) : 50; // 默认50dB
   });
   const [quoteRefreshInterval, setQuoteRefreshInterval] = useState<number>(quoteSettings.autoRefreshInterval);
+  // 天气增强：地址、刷新状态、最后成功时间
+  const [weatherAddress, setWeatherAddress] = useState<string>(() => localStorage.getItem('weather.address') || '');
+  const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>(() => localStorage.getItem('weather.refreshStatus') || '');
+  const [weatherLastTs, setWeatherLastTs] = useState<number>(() => parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10));
   
   /**
    * 加载课程表数据
@@ -200,7 +204,23 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     // 触发天气组件刷新
     const weatherRefreshEvent = new CustomEvent('weatherRefresh');
     window.dispatchEvent(weatherRefreshEvent);
-    alert('天气数据已刷新');
+    setWeatherRefreshStatus('刷新中');
+    localStorage.setItem('weather.refreshStatus', '刷新中');
+  }, []);
+
+  // 监听天气刷新完成事件，更新展示
+  useEffect(() => {
+    const onDone = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const status = detail.status || localStorage.getItem('weather.refreshStatus') || '';
+      const address = detail.address || localStorage.getItem('weather.address') || '';
+      const ts = detail.ts || parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10);
+      setWeatherRefreshStatus(status);
+      setWeatherAddress(address);
+      if (status === '成功') setWeatherLastTs(ts);
+    };
+    window.addEventListener('weatherRefreshDone', onDone as EventListener);
+    return () => window.removeEventListener('weatherRefreshDone', onDone as EventListener);
   }, []);
   
   /**
@@ -417,9 +437,30 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {/* 天气设置 */}
           <FormSection title="天气设置">
             <div className={styles.weatherInfo}>
-              <p className={styles.infoText}>
-                手动刷新天气数据以获取最新的天气信息。
-              </p>
+              <p className={styles.infoText}>手动刷新天气数据以获取最新的天气信息。</p>
+              <p className={styles.infoText}>定位坐标：{(() => {
+                const lat = localStorage.getItem('weather.coords.lat');
+                const lon = localStorage.getItem('weather.coords.lon');
+                return lat && lon ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}` : '未获取';
+              })()}</p>
+              <p className={styles.infoText}>街道地址：{weatherAddress || '未获取'}</p>
+              <p className={styles.infoText}>时间：{localStorage.getItem('weather.now.obsTime') || '未获取'}</p>
+              <p className={styles.infoText}>天气：{localStorage.getItem('weather.now.text') || '未获取'}</p>
+              <p className={styles.infoText}>气温：{localStorage.getItem('weather.now.temp') ? `${localStorage.getItem('weather.now.temp')}°C` : '未获取'}  体感：{localStorage.getItem('weather.now.feelsLike') ? `${localStorage.getItem('weather.now.feelsLike')}°C` : '未获取'}</p>
+              <p className={styles.infoText}>风向：{localStorage.getItem('weather.now.windDir') || '未获取'}  风力：{localStorage.getItem('weather.now.windScale') || '未获取'}  风速：{localStorage.getItem('weather.now.windSpeed') ? `${localStorage.getItem('weather.now.windSpeed')} km/h` : '未获取'}</p>
+              <p className={styles.infoText}>湿度：{localStorage.getItem('weather.now.humidity') ? `${localStorage.getItem('weather.now.humidity')}%` : '未获取'}  气压：{localStorage.getItem('weather.now.pressure') ? `${localStorage.getItem('weather.now.pressure')} hPa` : '未获取'}</p>
+              <p className={styles.infoText}>降水：{localStorage.getItem('weather.now.precip') ? `${localStorage.getItem('weather.now.precip')} mm` : '未获取'}  能见度：{localStorage.getItem('weather.now.vis') ? `${localStorage.getItem('weather.now.vis')} km` : '未获取'}  云量：{localStorage.getItem('weather.now.cloud') || '未获取'}</p>
+              <p className={styles.infoText}>露点：{localStorage.getItem('weather.now.dew') || '未获取'}</p>
+              <p className={styles.infoText}>数据源：{(() => {
+                const sources = localStorage.getItem('weather.refer.sources');
+                return sources ? 'QWeather' : '未获取';
+              })()}</p>
+              <p className={styles.infoText}>许可：{(() => {
+                const license = localStorage.getItem('weather.refer.license');
+                return license ? 'QWeather Developers License' : '未获取';
+              })()}</p>
+              <p className={styles.infoText}>刷新状态：{weatherRefreshStatus || '未刷新'}</p>
+              <p className={styles.infoText}>最后成功时间：{weatherLastTs > 0 ? new Date(weatherLastTs).toLocaleString() : '未成功'}</p>
             </div>
             
             <FormButtonGroup align="left">

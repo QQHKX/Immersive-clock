@@ -7,6 +7,10 @@ declare module '*.module.css' {
 interface ImportMetaEnv {
   readonly VITE_AMAP_API_KEY: string;
   readonly VITE_APP_VERSION: string;
+  readonly VITE_QWEATHER_API_HOST?: string;
+  readonly VITE_QWEATHER_HOST?: string;
+  readonly VITE_QWEATHER_API_KEY?: string;
+  readonly VITE_QWEATHER_JWT?: string;
   // 可以在这里添加更多环境变量
 }
 
