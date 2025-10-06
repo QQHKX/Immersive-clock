@@ -1,29 +1,21 @@
-<div align="right">
-  <details>
-    <summary>🌐 Language</summary>
-    <div>
-      <div align="right">
-        <p>中文（默认）</p>
-        <p><a href="#">English (coming soon)</a></p>
-      </div>
-    </div>
-  </details>
-</div>
-
 <h1 align="center">
   <br/>
-  <img src="public\favicon.svg" width="200" height="200" alt="Immersive Clock Banner" />
+  <img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
   <br/>
-  沉浸式时钟 ⏰
+  沉浸式时钟 | Immersive Clock ⏰
 </h1>
 
 <p align="center">
-  <a href="https://qqhkx.com">官网</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a>
+  <a href="https://qqhkx.com">官网</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a> ｜ <a href="https://clock.qqhkx.com">在线体验</a>
+</p>
+
+<p align="center">
+  简体中文 ｜ <a href="./README.en-US.md">English</a>
 </p>
 
 <div align="center">
 
-[![](https://img.shields.io/badge/version-3.6.0-blue.svg)](https://github.com/QQHKX/immersive-clock)
+[![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
 [![](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
@@ -36,12 +28,33 @@
   <strong>让时间管理更优雅，让学习更专注</strong>
 </div>
 
-# 🌟 项目概述
-沉浸式时钟是基于 React + TypeScript + Vite 构建的轻量化桌面/网页时钟应用。它支持多种时间管理模式（时钟、倒计时、秒表、晚自习），并内置天气展示、噪音监测、励志金句、课程表管理、公告与更新日志弹窗等实用功能。通过 PWA 能力，应用可离线使用，并在新版本发布时自动更新缓存。
+---
 
-适用场景：校园晚自习、专注学习、番茄钟辅助、演示与看板、日常桌面时钟等。
+## 📑 目录
+- [项目概述](#项目概述)
+- [主要功能](#主要功能)
+- [安装与运行](#安装与运行)
+- [使用说明](#使用说明)
+- [配置与缓存](#配置与缓存)
+- [部署](#部署)
+- [无障碍支持](#无障碍支持)
+- [目录结构](#目录结构)
+- [常见问题](#常见问题)
+- [贡献指南](#贡献指南)
+- [许可证与作者](#许可证与作者)
+- [Star 历史](#star-历史)
 
-# 🌠 界面预览（Screenshots）
+---
+
+## 🕒 项目概述
+
+**沉浸式时钟（Immersive Clock）** 是一款基于 **React + TypeScript + Vite** 构建的轻量化桌面 / 网页时钟应用。  
+支持时钟、倒计时、秒表与晚自习模式，内置天气、噪音监测、励志金句、课程表管理、公告与更新日志弹窗等实用功能。  
+通过 PWA，可离线使用并自动更新缓存。
+
+> 适用场景：校园晚自习、专注学习、番茄钟、演示看板、桌面时钟等。
+
+# 🌠 界面预览
 
 ![](docs/demo/极简界面.jpeg)
 
@@ -53,121 +66,153 @@
 
 ![](docs/demo/公告-更新日志弹窗.jpeg)
 
-# 🌟 关键特性（Key Features）
-1. **时间管理模式**
-   - 时钟、倒计时、秒表、晚自习模式自由切换
-   - HUD 智能显示：点击或按键唤出控制层，8 秒自动隐藏
+## 💡 主要功能
 
-2. **学习辅助看板**
-   - 目标年份倒计时（如高考年度）
-   - 天气信息展示与手动刷新
-   - 噪音监测：麦克风校准与基线滑动调整
-   - 励志金句频道管理与自动刷新间隔设置
+### 🧭 时间管理模式
+- **时钟 / 倒计时 / 秒表 / 晚自习** 模式自由切换  
+- **HUD 智能控制层**：点击或按键显示，约 8 秒自动隐藏  
 
-3. **可配置与持久化**
-   - 课程表管理：添加/编辑/删除时段，本地存储持久化
-   - 公告与更新日志弹窗：读取 `public/docs/*.md`
-   - PWA 支持：离线缓存、自动更新、可安装到桌面/主屏
+### 📚 学习辅助看板
+- 天气展示与手动刷新  
+- 噪音监测：麦克风校准、基线调整、报告与历史记录  
+- 励志金句：频道管理与刷新间隔设置  
+- 目标年份倒计时（如高考倒计时）  
 
-4. **性能与体验**
-   - 代码分割与静态资源按类型缓存
-   - 独立图片/字体/音频缓存策略
-   - 细节优化与语义化可访问性
+### 🚀 性能与体验
+- 静态资源分类型缓存（图片 / 字体 / 音频） 
+- PWA 支持：离线缓存、自动更新、桌面安装   
+- 无障碍（ARIA）与快捷键支持（`Space / Enter` 唤出 HUD）  
 
-# 🚀 安装与构建（Getting Started）
-环境要求：Node.js 16+（推荐 18+），npm 8+
+---
 
-安装依赖：
+## 🧩 安装与运行
+
+要求：Node.js ≥ 16（推荐 18+），npm ≥ 8
 
 ```bash
+# 安装依赖
 npm install
-```
 
-本地开发（默认端口 `3005`，自动打开浏览器）：
-
-```bash
+# 启动开发环境（默认端口 3005）
 npm run dev
-```
 
-生产构建（输出目录：`dist`）：
-
-```bash
+# 构建生产版本
 npm run build
-```
 
-本地预览生产构建：
-
-```bash
+# 预览构建结果
 npm run preview
 ```
 
-# 📘 使用说明（Usage）
-**模式切换与 HUD**
-- 点击页面或按下 `Space/Enter` 唤出 HUD，约 8 秒自动隐藏
-- 在 HUD 内选择：时钟 / 倒计时 / 秒表 / 晚自习模式
+---
 
-**倒计时（Countdown）**
-- 双击时间显示（或触摸设备自定义双击）打开设置模态
-- 支持小时/分钟/秒设置与多个预设（10 分钟、30 分钟、1 小时等）
-- 键盘：`Enter` 确认、`Esc` 关闭；结束播放提示音（`public/ding.mp3`）
+## 📘 使用说明
 
-**秒表（Stopwatch）**
-- 启动、暂停与累计时长，简洁直观
+* **模式切换**：点击页面或按 `Space/Enter` 唤出 HUD
+* **倒计时**：双击时间进入设置，支持预设时间与提示音
+* **秒表**：启动、暂停、累计记录
+* **晚自习模式**：展示天气、噪音监测、金句与目标年份倒计时
+* **设置面板**：调整目标年份、噪音基线、金句刷新间隔、课程表
 
-**晚自习模式（Study）**
-- 左侧：天气与噪音监测（需授权麦克风）
-- 右侧：目标年份倒计时与励志金句
-- 中央：当前时间大字显示，适合投屏
+详细说明请见：
 
-**设置面板（Settings）**（晚自习模式下显示）
-- 目标年份、课程表管理、励志金句刷新间隔、噪音基线与校准、天气刷新
+* [使用说明（中文）](docs/usage.zh-CN.md)
+* [Usage Guide (English)](docs/usage.en-US.md)
+* [常见问题（中文）](docs/faq.zh-CN.md)
+* [FAQ (English)](docs/faq.en-US.md)
 
-# 🔧 配置与环境变量（Config）
-- `VITE_APP_VERSION`：可通过环境变量指定应用版本；未提供时读取 `package.json.version`
-- 开发服务器端口：`3005`（见 `vite.config.ts`）
-- PWA：由 `vite-plugin-pwa` 配置，复用 `public/manifest.json`
+---
 
-# 🗃️ 数据与缓存（Data & Cache）
-- 本地存储：
-  - `studySchedule`：课程表数据
-  - `noise-monitor-baseline`：噪音监测基线值（dB）
-- PWA 缓存策略：
-  - 图片/字体/音频采用独立 CacheFirst 策略
-  - 文档（`/docs/*.md`）采用 NetworkFirst
-  - 忽略版本参数 `v`，兼容版本缓存策略与离线导航
+## 🔧 配置与缓存
 
-# ♿ 无障碍与快捷键（Accessibility）
-- `Space/Enter`：显示 HUD 控制层
-- 倒计时模态：`Enter` 确认、`Esc` 关闭
-- 触摸设备：支持自定义双击识别打开倒计时设置
-- 主界面提供语义化 ARIA 属性（如 `role="main"`）
+* 环境变量
 
-# ☁️ 部署建议（Deploy）
-- 将 `dist` 发布至任意静态托管（Netlify、Vercel、GitHub Pages 等）
-- 提供 `vercel.json` 可直接导入部署
-- 建议使用 HTTPS 以提升 PWA 体验
+  * `VITE_APP_VERSION`：指定版本号（默认读取 `package.json`）
+* 缓存策略
 
+  * 图片/字体/音频：`CacheFirst`
+  * 文档：`NetworkFirst`
+  * 忽略版本参数 `v`，优化离线体验
 
-# 🤝 贡献（Contributing）
-欢迎为本项目贡献！
-- 提交功能改进或性能优化 PR
-- 修复缺陷并完善交互细节
-- 改进文档与示例，帮助更多用户上手
+---
 
-建议流程：
-- Fork 仓库并创建功能分支
-- 保持代码风格一致与变更最小化
-- 提交 PR 并说明变更动机与截图
+## ☁️ 部署
 
-# 📄 许可证与作者（License & Author）
-- 许可证：MIT，详情请参阅 [LICENSE](LICENSE)
-- 作者：**QQHKX** — [个人网站](https://qqhkx.com) ｜ [GitHub](https://github.com/QQHKX)
+```bash
+# 构建后将 dist 目录上传到任意静态托管平台
+# 例如：Vercel / Netlify / GitHub Pages
+```
 
+建议使用 HTTPS 以获得完整 PWA 功能。
+已提供 `vercel.json` 可直接导入部署。
 
-# ⭐️ Star 历史（Star History）
+---
+
+## ♿ 无障碍支持
+
+| 操作              | 功能      |
+| --------------- | ------- |
+| `Space / Enter` | 显示 HUD  |
+| `Enter / Esc`   | 确认或关闭模态 |
+| 双击时间            | 打开倒计时设置 |
+| 触摸双击            | 移动端交互支持 |
+
+---
+
+## 🗂️ 目录结构
+
+```text
+immersive-clock/
+├── public/            # 静态资源（图标、音频、PWA manifest、文档等）
+├── src/               # 源码（组件、样式、hooks、utils 等）
+│  ├── components/     # 功能组件与界面元素
+│  ├── hooks/          # 自定义 Hook（计时、全屏、音频）
+│  ├── utils/          # 工具与本地存储管理
+│  ├── styles/         # 全局与变量样式
+│  └── pages/          # 页面
+├── docs/              # 使用说明与 FAQ
+├── scripts/           # 构建后处理脚本（站点地图日期等）
+├── vite.config.ts     # Vite 配置（含 PWA 与版本注入）
+└── package.json       # 项目元数据与脚本
+```
+
+---
+
+## ❓ 常见问题
+
+- 无法定位城市？检查浏览器定位授权或使用手动刷新。
+- 噪音监测无数据？确认已授权麦克风且设备支持。
+- HUD 未出现？确保未打开模态框，点击页面或按 `Space/Enter`。
+- 如何查看公告与更新日志？点击右下角版本号或在菜单中打开弹窗。
+
+更多问题与解答请查看 [docs/faq.zh-CN.md](docs/faq.zh-CN.md)。
+
+---
+
+## 🤝 贡献指南
+
+欢迎任何形式的贡献（功能优化、Bug 修复、文档改进等）：
+
+1. Fork 仓库并创建分支
+2. 保持代码风格一致、变更最小
+3. 提交 PR 并附带简要说明与截图
+4. 问题反馈与建议请至 [Issues](https://github.com/QQHKX/immersive-clock/issues)
+
+---
+
+## 📄 许可证与作者
+
+* 许可证：MIT
+* 作者：**QQHKX**
+
+  * 🌐 [个人网站](https://qqhkx.com)
+  * 💻 [GitHub](https://github.com/QQHKX)
+
+---
+
+## ⭐️ Star 历史
+
 <div align="center">
-  <a href="https://star-history.com/#QQHKX/Immersive-clock" target="_blank" rel="noopener noreferrer">
-    <img src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=Date" alt="Immersive-clock Star History Chart" />
+  <a href="https://star-history.com/#QQHKX/Immersive-clock" target="_blank">
+    <img src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=Date" alt="Star History Chart" />
   </a>
-  <br/>
 </div>
