@@ -9,7 +9,7 @@ import styles from './QuoteChannelManager.module.css';
  * 金句渠道管理组件
  * 支持调节各渠道的获取概率权重和独立启用/禁用每个励志短语获取渠道
  */
-export function QuoteChannelManager() {
+export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: () => void) => void }) {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [channels, setChannels] = useState<QuoteSourceConfig[]>([]);
@@ -44,12 +44,9 @@ export function QuoteChannelManager() {
       loadedChannels.sort((a, b) => a.id.localeCompare(b.id));
       setChannels(loadedChannels);
 
-      // 如果全局状态中没有渠道配置，则初始化
+      // 如果全局状态中没有渠道配置，则初始化到本地草稿
       if (state.quoteChannels.channels.length === 0) {
-        dispatch({
-          type: 'UPDATE_QUOTE_CHANNELS',
-          payload: loadedChannels
-        });
+        setChannels(loadedChannels);
       } else {
         // 合并现有配置和文件配置
         const mergedChannels = loadedChannels.map(fileChannel => {
@@ -69,54 +66,38 @@ export function QuoteChannelManager() {
    * 切换渠道启用状态
    */
   const handleToggleChannel = useCallback((channelId: string) => {
-    dispatch({
-      type: 'TOGGLE_QUOTE_CHANNEL',
-      payload: channelId
-    });
-    
-    // 更新本地状态
+    // 仅更新本地草稿，不立即分发
     setChannels(prev => prev.map(channel =>
       channel.id === channelId
         ? { ...channel, enabled: !channel.enabled }
         : channel
     ));
-  }, [dispatch]);
+  }, []);
 
   /**
    * 更新渠道权重
    */
   const handleUpdateWeight = useCallback((channelId: string, weight: number) => {
     const clampedWeight = Math.max(1, Math.min(99, weight));
-    
-    dispatch({
-      type: 'UPDATE_QUOTE_CHANNEL_WEIGHT',
-      payload: { id: channelId, weight: clampedWeight }
-    });
-    
     // 更新本地状态
     setChannels(prev => prev.map(channel =>
       channel.id === channelId
         ? { ...channel, weight: clampedWeight }
         : channel
     ));
-  }, [dispatch]);
+  }, []);
 
   /**
    * 更新一言分类
    */
   const handleUpdateCategories = useCallback((channelId: string, categories: HitokotoCategory[]) => {
-    dispatch({
-      type: 'UPDATE_QUOTE_CHANNEL_CATEGORIES',
-      payload: { id: channelId, categories }
-    });
-    
     // 更新本地状态
     setChannels(prev => prev.map(channel =>
       channel.id === channelId
         ? { ...channel, hitokotoCategories: categories }
         : channel
     ));
-  }, [dispatch]);
+  }, []);
 
   /**
    * 切换分类选择
@@ -158,6 +139,13 @@ export function QuoteChannelManager() {
       setChannels(state.quoteChannels.channels);
     }
   }, [state.quoteChannels.channels]);
+
+  // 注册保存：保存当前草稿到全局状态与本地存储
+  useEffect(() => {
+    onRegisterSave?.(() => {
+      dispatch({ type: 'UPDATE_QUOTE_CHANNELS', payload: channels });
+    });
+  }, [onRegisterSave, channels, dispatch]);
 
   if (isLoading) {
     return (

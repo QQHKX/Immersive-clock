@@ -147,11 +147,6 @@ npm run preview
 - 提供 `vercel.json` 可直接导入部署
 - 建议使用 HTTPS 以提升 PWA 体验
 
-# 📝 Roadmap（规划）
-- 番茄工作法模式与自定义番茄区间
-- 噪音监测可视化图表与历史记录
-- 国际化（i18n）与多语言界面
-- 自定义主题与皮肤（可选）
 
 # 🤝 贡献（Contributing）
 欢迎为本项目贡献！
@@ -168,16 +163,6 @@ npm run preview
 - 许可证：MIT，详情请参阅 [LICENSE](LICENSE)
 - 作者：**QQHKX** — [个人网站](https://qqhkx.com) ｜ [GitHub](https://github.com/QQHKX)
 
-# 📊 GitHub 统计（GitHub Stats）
-<div align="center">
-  <a href="https://github.com/QQHKX" target="_blank" rel="noopener noreferrer">
-    <img src="https://github-readme-stats.vercel.app/api?username=QQHKX&show_icons=true&rank_icon=github&theme=radical" alt="GitHub Stats" />
-  </a>
-  <br/>
-  <a href="https://github.com/QQHKX" target="_blank" rel="noopener noreferrer">
-    <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=QQHKX&layout=compact&langs_count=8&theme=radical" alt="Top Languages" />
-  </a>
-</div>
 
 # ⭐️ Star 历史（Star History）
 <div align="center">

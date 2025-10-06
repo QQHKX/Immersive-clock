@@ -4,6 +4,7 @@ import { StudyPeriod, DEFAULT_SCHEDULE } from '../StudyStatus';
 import { Modal } from '../Modal';
 import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from '../FormComponents';
 import styles from './ScheduleSettings.module.css';
+import { readStudySchedule, writeStudySchedule } from '../../utils/studyScheduleStorage';
 
 interface ScheduleSettingsProps {
   isOpen: boolean;
@@ -23,19 +24,8 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
    * 从localStorage加载课程表
    */
   const loadSchedule = useCallback(() => {
-    try {
-      const savedSchedule = localStorage.getItem('study-schedule');
-      if (savedSchedule) {
-        const parsed = JSON.parse(savedSchedule);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSchedule(parsed);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('加载课程表失败:', error);
-    }
-    setSchedule(DEFAULT_SCHEDULE);
+    const data = readStudySchedule();
+    setSchedule(Array.isArray(data) && data.length > 0 ? data : DEFAULT_SCHEDULE);
   }, []);
 
   /**
@@ -43,7 +33,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
    */
   const saveSchedule = useCallback((newSchedule: StudyPeriod[]) => {
     try {
-      localStorage.setItem('study-schedule', JSON.stringify(newSchedule));
+      writeStudySchedule(newSchedule);
       onSave(newSchedule);
     } catch (error) {
       console.error('保存课程表失败:', error);
