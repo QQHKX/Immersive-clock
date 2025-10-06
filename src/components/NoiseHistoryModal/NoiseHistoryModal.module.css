@@ -106,3 +106,49 @@
   font-size: 0.9rem;
   opacity: 0.8;
 }
+
+/* 响应式：移动端优先右侧空间，缩小时间轴（左侧栏） */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: minmax(140px, 32%) 1fr;
+    gap: 12px;
+  }
+  .sidebar {
+    padding-right: 8px;
+  }
+  .timelineTitle {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+  .timelineList {
+    gap: 6px;
+  }
+  .timelineItem {
+    padding: 6px 8px;
+  }
+  .itemTitle {
+    font-size: 0.85rem;
+  }
+  .itemSub {
+    font-size: 0.75rem;
+  }
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    grid-template-columns: minmax(120px, 28%) 1fr;
+    gap: 8px;
+  }
+  .timelineItem {
+    padding: 5px 7px;
+  }
+  .itemTitle {
+    font-size: 0.82rem;
+  }
+  .itemSub {
+    font-size: 0.72rem;
+  }
+}
