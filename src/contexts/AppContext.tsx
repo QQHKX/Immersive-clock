@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState } from '../types';
+import { nowMs } from '../utils/timeSource';
+import { STOPWATCH_TICK_MS } from '../constants/timer';
 
 /**
  * 从本地存储加载金句设置状态
@@ -154,6 +156,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           initialTime: action.payload,
           currentTime: action.payload,
           isActive: false,
+          endTimestamp: undefined,
         },
       };
 
@@ -163,15 +166,22 @@ function appReducer(state: AppState, action: AppAction): AppState {
         countdown: {
           ...state.countdown,
           isActive: true,
+          endTimestamp: nowMs() + state.countdown.currentTime * 1000,
         },
       };
 
     case 'PAUSE_COUNTDOWN':
+      // 暂停时根据结束时间戳收敛一次剩余时间，并清除结束时间戳
+      const remaining = state.countdown.endTimestamp
+        ? Math.max(0, Math.ceil((state.countdown.endTimestamp - nowMs()) / 1000))
+        : state.countdown.currentTime;
       return {
         ...state,
         countdown: {
           ...state.countdown,
+          currentTime: remaining,
           isActive: false,
+          endTimestamp: undefined,
         },
       };
 
@@ -182,20 +192,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...state.countdown,
           currentTime: state.countdown.initialTime,
           isActive: false,
+          endTimestamp: undefined,
         },
       };
 
-    case 'TICK_COUNTDOWN':
-      const newCurrentTime = Math.max(0, state.countdown.currentTime - 1);
-      return {
-        ...state,
-        countdown: {
-          ...state.countdown,
-          currentTime: newCurrentTime,
-          // 如果倒计时结束，自动停止
-          isActive: newCurrentTime > 0 ? state.countdown.isActive : false,
-        },
-      };
+    // 删除 TICK_COUNTDOWN 分支（组件级局部刷新已接管）
 
     case 'START_STOPWATCH':
       return {
@@ -229,7 +230,27 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         stopwatch: {
           ...state.stopwatch,
-          elapsedTime: state.stopwatch.elapsedTime + 10, // 增加10毫秒
+          elapsedTime: state.stopwatch.elapsedTime + STOPWATCH_TICK_MS,
+        },
+      };
+
+    case 'TICK_STOPWATCH_BY':
+      return {
+        ...state,
+        stopwatch: {
+          ...state.stopwatch,
+          elapsedTime: state.stopwatch.elapsedTime + action.payload * STOPWATCH_TICK_MS,
+        },
+      };
+
+    case 'FINISH_COUNTDOWN':
+      return {
+        ...state,
+        countdown: {
+          ...state.countdown,
+          currentTime: 0,
+          isActive: false,
+          endTimestamp: undefined,
         },
       };
 

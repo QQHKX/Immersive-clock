@@ -9,6 +9,14 @@ function formatDateZh(date) {
   return `${y}年${m}月${d}日`;
 }
 
+// 格式化为 sitemap.xml 使用的 YYYY-MM-DD
+function formatDateIso(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function updateSitemapHtml(html) {
   const todayZh = formatDateZh(new Date());
   const pattern = /(最后更新:\s*)(\d{4}年\d{1,2}月\d{1,2}日)/;
@@ -57,9 +65,14 @@ function main() {
   const sitemapXmlPath = path.join(root, 'sitemap.xml');
   if (fs.existsSync(sitemapXmlPath)) {
     try {
+      // 读取并更新 <lastmod>
+      const xml = fs.readFileSync(sitemapXmlPath, 'utf-8');
+      const todayIso = formatDateIso(new Date());
+      // 将所有 <lastmod>YYYY-MM-DD</lastmod> 更新为今天
+      const updatedXml = xml.replace(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g, `<lastmod>${todayIso}</lastmod>`);
       const outXmlPath = path.join(distDir, 'sitemap.xml');
-      fs.copyFileSync(sitemapXmlPath, outXmlPath);
-      console.log(`[postbuild] sitemap.xml 已复制到: ${outXmlPath}`);
+      fs.writeFileSync(outXmlPath, updatedXml, 'utf-8');
+      console.log(`[postbuild] sitemap.xml 已更新日期并写入到: ${outXmlPath}`);
     } catch (e) {
       console.error('[postbuild] 复制 sitemap.xml 失败:', e);
     }

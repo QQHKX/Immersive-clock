@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useHighFrequencyTimer } from '../../hooks/useTimer';
+import { useAccumulatingTimer } from '../../hooks/useTimer';
+import { STOPWATCH_TICK_MS } from '../../constants/timer';
 import { formatStopwatch } from '../../utils/formatTime';
 import styles from './Stopwatch.module.css';
 
@@ -16,12 +17,13 @@ export function Stopwatch() {
   /**
    * 秒表递增处理函数
    */
-  const handleTick = useCallback(() => {
-    dispatch({ type: 'TICK_STOPWATCH' });
+  const handleTick = useCallback((count: number) => {
+    // 一次性派发补偿量，减少多次 dispatch
+    dispatch({ type: 'TICK_STOPWATCH_BY', payload: count });
   }, [dispatch]);
 
-  // 使用高频计时器每10毫秒递增秒表时间
-  useHighFrequencyTimer(handleTick, stopwatch.isActive);
+  // 使用累积计时器：按10ms间隔计算应触发次数，一次性派发
+  useAccumulatingTimer(handleTick, stopwatch.isActive, STOPWATCH_TICK_MS);
 
   const timeString = formatStopwatch(stopwatch.elapsedTime);
   const totalSeconds = Math.floor(stopwatch.elapsedTime / 1000);

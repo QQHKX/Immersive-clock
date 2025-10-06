@@ -76,6 +76,8 @@ export interface CountdownState {
   currentTime: number;
   /** 是否正在运行 */
   isActive: boolean;
+  /** 目标结束时间戳（毫秒），用于精确倒计时） */
+  endTimestamp?: number;
 }
 
 /**
@@ -223,11 +225,12 @@ export type AppAction =
   | { type: 'START_COUNTDOWN' }
   | { type: 'PAUSE_COUNTDOWN' }
   | { type: 'RESET_COUNTDOWN' }
-  | { type: 'TICK_COUNTDOWN' }
+  | { type: 'FINISH_COUNTDOWN' }
   | { type: 'START_STOPWATCH' }
   | { type: 'PAUSE_STOPWATCH' }
   | { type: 'RESET_STOPWATCH' }
   | { type: 'TICK_STOPWATCH' }
+  | { type: 'TICK_STOPWATCH_BY'; payload: number }
   | { type: 'SET_TARGET_YEAR'; payload: number }
   | { type: 'SET_COUNTDOWN_TYPE'; payload: 'gaokao' | 'custom' }
   | { type: 'SET_CUSTOM_COUNTDOWN'; payload: { name: string; date: string } }

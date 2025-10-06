@@ -23,7 +23,7 @@
 
 .time.clickable {
   cursor: pointer;
-  opacity: 0.7;
+  opacity: 1;
   transition: all var(--transition-fast);
   /* 防止触摸时的选择高亮 */
   -webkit-tap-highlight-color: transparent;
@@ -55,7 +55,7 @@
 /* 为触摸设备优化的样式 */
 @media (hover: none) and (pointer: coarse) {
   .time.clickable {
-    opacity: 0.8;
+    opacity: 1;
   }
 
   .time.clickable:active {

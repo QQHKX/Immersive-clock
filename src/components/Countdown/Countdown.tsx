@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { useTimer } from '../../hooks/useTimer';
+import { COUNTDOWN_REFRESH_MS } from '../../constants/timer';
 import { useAudio } from '../../hooks/useAudio';
 import { formatTimer } from '../../utils/formatTime';
+import { nowMs } from '../../utils/timeSource';
 import styles from './Countdown.module.css';
 
 /**
@@ -13,19 +15,65 @@ import styles from './Countdown.module.css';
 export function Countdown() {
   const { countdown } = useAppState();
   const dispatch = useAppDispatch();
-  const [playSound] = useAudio('/ding.mp3');
+  // 终止音效（倒计时结束）
+  const [playFinal] = useAudio('/ding.mp3');
+  // 最后5秒逐秒提示音
+  const [playTick] = useAudio('/ding-1.mp3');
   const lastTouchTime = useRef<number>(0);
   const touchCount = useRef<number>(0);
+  const [displayTime, setDisplayTime] = useState<number>(countdown.currentTime);
+  const hasFinishedRef = useRef<boolean>(false);
+  const lastBeepSecondRef = useRef<number>(-1);
 
   /**
-   * 倒计时递减处理函数
+   * 本地刷新：根据 endTimestamp 计算剩余秒数并刷新 UI。
+   * 结束时播放提示音并一次性派发 FINISH_COUNTDOWN。
    */
-  const handleTick = useCallback(() => {
-    dispatch({ type: 'TICK_COUNTDOWN' });
-  }, [dispatch]);
+  const localRefresh = useCallback(() => {
+    const now = nowMs();
+    const hasAnchor = !!countdown.endTimestamp;
+    const remaining = hasAnchor
+      ? Math.max(0, Math.ceil((countdown.endTimestamp! - now) / 1000))
+      : Math.max(0, countdown.currentTime);
 
-  // 使用计时器每秒递减倒计时
-  useTimer(handleTick, countdown.isActive, 1000);
+    setDisplayTime(remaining);
+
+    // 最后5秒逐秒提示音（5,4,3,2,1），同一秒只播放一次
+    if (countdown.initialTime > 0 && hasAnchor && remaining > 0 && remaining <= 5) {
+      if (lastBeepSecondRef.current !== remaining) {
+        lastBeepSecondRef.current = remaining;
+        playTick();
+      }
+    } else if (remaining > 5) {
+      // 回到非警告区时重置，确保后续能再次播放
+      lastBeepSecondRef.current = -1;
+    }
+
+    // 当达到结束时间点，播放提示音并完成倒计时（仅触发一次）
+    if (countdown.initialTime > 0 && hasAnchor) {
+      if (remaining === 0 && !hasFinishedRef.current) {
+        hasFinishedRef.current = true;
+        // 重置逐秒提示状态并播放终止音效
+        lastBeepSecondRef.current = -1;
+        playFinal();
+        dispatch({ type: 'FINISH_COUNTDOWN' });
+      } else if (remaining > 0) {
+        hasFinishedRef.current = false;
+      }
+    }
+  }, [countdown.endTimestamp, countdown.currentTime, countdown.initialTime, playFinal, playTick, dispatch]);
+
+  // 使用计时器以更高频率刷新（100ms），结合绝对时间计算减少最终误差
+  useTimer(localRefresh, countdown.isActive, COUNTDOWN_REFRESH_MS);
+
+  // 非激活态或外部状态变化时同步显示时间（暂停/重置/设置）
+  useEffect(() => {
+    if (!countdown.isActive) {
+      setDisplayTime(countdown.currentTime);
+      hasFinishedRef.current = false;
+      lastBeepSecondRef.current = -1;
+    }
+  }, [countdown.isActive, countdown.currentTime]);
 
   /**
    * 打开设置模态框
@@ -89,17 +137,9 @@ export function Countdown() {
     }
   }, [openModal]);
 
-  // 监听倒计时结束
-  useEffect(() => {
-    if (countdown.currentTime === 0 && countdown.initialTime > 0) {
-      // 倒计时结束，播放提示音
-      playSound();
-    }
-  }, [countdown.currentTime, countdown.initialTime, playSound]);
-
-  const timeString = formatTimer(countdown.currentTime);
-  const isWarning = countdown.currentTime <= 10 && countdown.currentTime > 0;
-  const isFinished = countdown.currentTime === 0 && countdown.initialTime > 0;
+  const timeString = formatTimer(displayTime);
+  const isWarning = displayTime <= 10 && displayTime > 0;
+  const isFinished = displayTime === 0 && countdown.initialTime > 0;
 
   return (
     <div className={styles.countdown}>
@@ -129,7 +169,7 @@ export function Countdown() {
       
       {isFinished && (
         <div className={styles.finishedMessage}>
-          时间到！
+          时间到
         </div>
       )}
       

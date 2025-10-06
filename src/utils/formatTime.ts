@@ -28,21 +28,22 @@ export function formatTimer(totalSeconds: number): string {
 }
 
 /**
- * 格式化秒表时间（包含毫秒）
+ * 格式化秒表时间
  * @param totalMilliseconds 总毫秒数
- * @returns 格式化的时间字符串 (MM:SS.mm 或 HH:MM:SS.mm)
+ * @returns 格式化的时间字符串 (MM:SS 或 HH:MM:SS)
  */
 export function formatStopwatch(totalMilliseconds: number): string {
   const totalSeconds = Math.floor(totalMilliseconds / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  
+
   if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  } else {
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 /**

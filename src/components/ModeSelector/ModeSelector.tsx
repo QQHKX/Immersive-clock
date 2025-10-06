@@ -39,9 +39,9 @@ export function ModeSelector() {
     },
     {
       key: 'stopwatch' as AppMode,
-      label: '计时',
+      label: '秒表',
       icon: WatchIcon,
-      description: '计时器功能'
+      description: '秒表功能'
     },
     {
       key: 'study' as AppMode,

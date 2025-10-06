@@ -48,9 +48,17 @@ export function useTimer(
 
       const elapsed = currentTime - lastTimeRef.current;
 
+      // 计算应触发的次数，确保不丢失余量，避免累积误差
       if (elapsed >= intervalRef.current) {
-        callbackRef.current();
-        lastTimeRef.current = currentTime;
+        const count = Math.floor(elapsed / intervalRef.current);
+
+        // 触发相应次数的回调（用于补偿浏览器帧间隔抖动或页面休眠）
+        for (let i = 0; i < count; i++) {
+          callbackRef.current();
+        }
+
+        // 仅向前推进 count * interval，保留剩余的余量，减少长期漂移
+        lastTimeRef.current += count * intervalRef.current;
       }
 
       if (isActive) {
@@ -78,4 +86,62 @@ export function useHighFrequencyTimer(
   isActive: boolean
 ): void {
   return useTimer(callback, isActive, 10); // 10ms 间隔
+}
+
+/**
+ * 累积计时钩子：不直接多次触发回调，而是传递应触发的次数
+ * 适用于在页面休眠后恢复，避免一次性大量 dispatch
+ */
+export function useAccumulatingTimer(
+  callback: (count: number) => void,
+  isActive: boolean,
+  interval: number
+): void {
+  const callbackRef = useRef(callback);
+  const intervalRef = useRef(interval);
+  const lastTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    intervalRef.current = interval;
+  }, [interval]);
+
+  useEffect(() => {
+    if (!isActive) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = 0;
+      }
+      lastTimeRef.current = 0;
+      return;
+    }
+
+    const tick = (currentTime: number) => {
+      if (lastTimeRef.current === 0) {
+        lastTimeRef.current = currentTime;
+      }
+      const elapsed = currentTime - lastTimeRef.current;
+      if (elapsed >= intervalRef.current) {
+        const count = Math.floor(elapsed / intervalRef.current);
+        if (count > 0) {
+          callbackRef.current(count);
+          lastTimeRef.current += count * intervalRef.current;
+        }
+      }
+      if (isActive) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isActive]);
 }
