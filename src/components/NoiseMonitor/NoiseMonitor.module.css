@@ -278,9 +278,7 @@
     /* 更大的点击区域 */
     min-height: 44px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    /* 添加背景以提高可见性 */
-    backdrop-filter: blur(10px);
+    /* 移除移动端背景，保持与桌面端一致 */
     cursor: pointer;
   }
 
