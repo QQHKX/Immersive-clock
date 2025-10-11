@@ -46,6 +46,26 @@ export default defineConfig(({ mode }) => {
         ignoreURLParametersMatching: [/^v$/],
         runtimeCaching: [
           {
+            // 缓存 Google Fonts 样式表（fonts.googleapis.com）
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // 缓存 Google Fonts 字体文件（fonts.gstatic.com）
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
