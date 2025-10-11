@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { FormSection } from '../FormComponents';
 import styles from './NoiseSettings.module.css';
+import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const NOISE_THRESHOLD = 55;
+const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
   t: number;
@@ -85,8 +86,8 @@ export const RealTimeNoiseChart: React.FC = () => {
           <line 
             x1={24} 
             x2={chart.width - 24} 
-            y1={chart.height - 24 - (NOISE_THRESHOLD / 80) * (chart.height - 48)} 
-            y2={chart.height - 24 - (NOISE_THRESHOLD / 80) * (chart.height - 48)} 
+            y1={chart.height - 24 - (getThreshold() / 80) * (chart.height - 48)} 
+            y2={chart.height - 24 - (getThreshold() / 80) * (chart.height - 48)} 
             className={styles.threshold} 
           />
           <path d={chart.path} className={styles.line} />

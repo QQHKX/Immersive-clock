@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { FormSection } from '../FormComponents';
 import styles from './NoiseSettings.module.css';
+import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const NOISE_THRESHOLD = 55;
+const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
   t: number;
@@ -26,7 +27,8 @@ export const NoiseAlertHistory: React.FC = () => {
       for (let i = 1; i < all.length; i++) {
         const prev = all[i - 1];
         const cur = all[i];
-        if (prev.v <= NOISE_THRESHOLD && cur.v > NOISE_THRESHOLD) {
+        const threshold = getThreshold();
+        if (prev.v <= threshold && cur.v > threshold) {
           list.push({ t: cur.t, v: cur.v });
         }
       }

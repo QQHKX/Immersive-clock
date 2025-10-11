@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './NoiseMonitor.module.css';
+import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 
 // 噪音状态类型
 type NoiseStatus = 'quiet' | 'noisy' | 'error' | 'permission-denied' | 'initializing';
 
-// 噪音阈值（分贝）
-// 需求：校准后基线为 40dB，超出 15dB 判定为吵闹 => 55dB
-const NOISE_THRESHOLD = 55;
+// 噪音阈值（分贝）从设置中读取
+// 需求：默认 55dB，可在设置菜单中自定义
 
 // 分贝计算相关常量
-const REFERENCE_LEVEL = 0.00002; // 20 微帕，标准参考声压级
-const MIN_DECIBELS = -90; // 最小分贝值
-const MAX_DECIBELS = -10; // 最大分贝值
+const REFERENCE_LEVEL = 0.00002; // 20 微帕，标准参考声压级（保留注释，当前未直接使用）
+const MIN_DECIBELS = -90; // 最小分贝值（频域专用，保留）
+const MAX_DECIBELS = -10; // 最大分贝值（频域专用，保留）
+const BASELINE_DB_DEFAULT = 40; // 默认基线显示分贝
+const BASELINE_RMS_KEY = 'noise-monitor-baseline-rms';
+const EMA_ALPHA = 0.25; // 指数滑动平均系数，平衡响应与稳定
 
 // localStorage 键名
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
@@ -30,12 +33,21 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const [noiseStatus, setNoiseStatus] = useState<NoiseStatus>('initializing');
   const [currentVolume, setCurrentVolume] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
+  // 旧版：保存映射后的 dB 基线；新版：保存 RMS 基线
   const [baselineNoise, setBaselineNoise] = useState<number>(() => {
-    // 从 localStorage 读取保存的基准噪音值
     const saved = localStorage.getItem(BASELINE_NOISE_KEY);
     return saved ? parseFloat(saved) : 0;
-  }); // 基准噪音水平
+  }); // UI 显示用的基线 dB（新版校准后固定为 40）
+  const [baselineRms, setBaselineRms] = useState<number>(() => {
+    const saved = localStorage.getItem(BASELINE_RMS_KEY);
+    return saved ? parseFloat(saved) : 0;
+  }); // 新版：用于相对 dB 计算的 RMS 基线
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false); // 校准状态
+  const [thresholdDb, setThresholdDb] = useState<number>(() => getNoiseControlSettings().maxLevelDb);
+  const [displayBaselineDb, setDisplayBaselineDb] = useState<number>(() => {
+    const s = getNoiseControlSettings();
+    return s.baselineDb ?? BASELINE_DB_DEFAULT;
+  });
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -47,6 +59,9 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
   const initializationCountRef = useRef<number>(0); // 初始化计数器
   const lastPersistTsRef = useRef<number>(0); // 上次持久化采样时间戳
+  const emaDbRef = useRef<number | null>(null); // 保存平滑后的 dB
+  const highpassRef = useRef<BiquadFilterNode | null>(null);
+  const lowpassRef = useRef<BiquadFilterNode | null>(null);
   
   // 检测是否为移动设备
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -57,42 +72,40 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const getMobileDelay = () => isMobileDevice ? 3000 : 2000;
 
   /**
-   * 计算音量分贝值
-   * 使用更准确的分贝计算公式
+   * 计算并平滑显示分贝值（相对 dB：基线定义为 40dB）
+   * 使用 Float32 时域数据，提高精度；相对 dB 更稳定。
    */
-  const calculateVolume = useCallback((dataArray: Uint8Array): number => {
-    // 计算 RMS（均方根）值
+  const calculateDisplayDb = useCallback((dataArray: Float32Array): number => {
+    // 计算 RMS（均方根）
     let sum = 0;
     for (let i = 0; i < dataArray.length; i++) {
-      // 将 0-255 范围转换为 -1 到 1 的浮点数
-      const normalizedValue = (dataArray[i] - 128) / 128;
-      sum += normalizedValue * normalizedValue;
+      const v = dataArray[i];
+      sum += v * v;
     }
-    const rms = Math.sqrt(sum / dataArray.length);
-    
-    // 避免对数计算中的零值
-    if (rms < 0.001) {
-      return 20; // 返回一个较低的基准值而不是0
+    let rms = Math.sqrt(sum / dataArray.length);
+    // 低信号保护，避免 log(0)
+    rms = Math.max(rms, 1e-6);
+
+    // 相对 dB：以校准的 baselineRms 为参考，基线显示为 40dB
+    let db: number;
+    if (baselineRms > 0) {
+      db = displayBaselineDb + 20 * Math.log10(rms / baselineRms);
+    } else {
+      // 未校准时的保守映射（避免显示为 0），提示用户尽快校准
+      db = Math.max(20, Math.min(100, 20 * Math.log10(rms / 1e-3) + 60));
     }
-    
-    // 使用更准确的分贝计算公式
-    // 参考标准：20 * log10(rms / reference)
-    // 调整参考值以获得更合理的分贝范围
-    const decibels = 20 * Math.log10(rms / 0.01); // 调整参考值
-    
-    // 将结果映射到合理的分贝范围（约 20-100 dB）
-    // 这个范围更接近实际环境噪音水平
-    let mappedDecibels = Math.max(20, Math.min(100, decibels + 80));
-    
-    // 如果有基准噪音水平，进行相对校准
-    if (baselineNoise > 0) {
-      // 使用更温和的校准方式，避免过度调整
-      const calibrationOffset = baselineNoise - 40; // 40dB 作为标准安静环境
-      mappedDecibels = Math.max(20, mappedDecibels - calibrationOffset);
+
+    // 指数滑动平均（EMA）平滑输出，减少抖动
+    if (emaDbRef.current == null) {
+      emaDbRef.current = db;
+    } else {
+      emaDbRef.current = EMA_ALPHA * db + (1 - EMA_ALPHA) * emaDbRef.current;
     }
-    
-    return Math.round(mappedDecibels);
-  }, [baselineNoise]);
+
+    // 四舍五入到 0.1dB 提升显示观感
+    const smoothed = Math.round(emaDbRef.current * 10) / 10;
+    return smoothed;
+  }, [baselineRms, displayBaselineDb]);
 
   /**
    * 延迟设置噪音状态，避免频繁切换
@@ -138,15 +151,15 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const analyzeAudio = useCallback(() => {
     if (!analyserRef.current) return;
 
-    // 使用时域数据而不是频域数据，更准确地反映音量
-    const dataArray = new Uint8Array(analyserRef.current.fftSize);
-    analyserRef.current.getByteTimeDomainData(dataArray);
-    
-    const volume = calculateVolume(dataArray);
-    setCurrentVolume(volume);
-    
+    // 使用 Float32 时域数据，更准确地反映音量
+    const dataArray = new Float32Array(analyserRef.current.fftSize);
+    analyserRef.current.getFloatTimeDomainData(dataArray);
+
+    const displayDb = calculateDisplayDb(dataArray);
+    setCurrentVolume(displayDb);
+
     // 根据音量设置状态（带延迟防抖）
-    if (volume > NOISE_THRESHOLD) {
+    if (displayDb >= thresholdDb) {
       setNoiseStatusWithDelay('noisy');
     } else {
       setNoiseStatusWithDelay('quiet');
@@ -158,7 +171,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       try {
         const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
         const list: { t: number; v: number; s: 'quiet' | 'noisy' }[] = raw ? JSON.parse(raw) : [];
-        list.push({ t: now, v: volume, s: volume > NOISE_THRESHOLD ? 'noisy' : 'quiet' });
+        list.push({ t: now, v: displayDb, s: displayDb >= thresholdDb ? 'noisy' : 'quiet' });
         // 仅保留最近24小时的数据，避免无限增长
         const cutoff = now - 24 * 60 * 60 * 1000;
         const trimmed = list.filter(item => item.t >= cutoff);
@@ -172,7 +185,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
     // 继续下一帧分析
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
-  }, [calculateVolume, setNoiseStatusWithDelay]);
+  }, [calculateDisplayDb, setNoiseStatusWithDelay, thresholdDb]);
 
   /**
    * 校准基准噪音水平
@@ -186,45 +199,41 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       });
       return;
     }
-    
-    console.log('开始校准基准噪音水平...');
+
+    console.log('开始校准基准噪音水平（RMS）...');
     setIsCalibrating(true);
-    const samples: number[] = [];
+    const rmsSamples: number[] = [];
     const sampleDuration = 3000; // 3秒
     const sampleInterval = 100; // 每100ms采样一次
     const totalSamples = sampleDuration / sampleInterval;
-    
+
     for (let i = 0; i < totalSamples; i++) {
       await new Promise(resolve => setTimeout(resolve, sampleInterval));
-      
       if (analyserRef.current) {
-        const dataArray = new Uint8Array(analyserRef.current.fftSize);
-        analyserRef.current.getByteTimeDomainData(dataArray);
-        
-        // 计算原始分贝值（不使用基准校准）
+        const dataArray = new Float32Array(analyserRef.current.fftSize);
+        analyserRef.current.getFloatTimeDomainData(dataArray);
         let sum = 0;
         for (let j = 0; j < dataArray.length; j++) {
-          const normalizedValue = (dataArray[j] - 128) / 128;
-          sum += normalizedValue * normalizedValue;
+          const v = dataArray[j];
+          sum += v * v;
         }
-        const rms = Math.sqrt(sum / dataArray.length);
-        if (rms >= 0.001) {
-          // 使用与主计算函数相同的算法
-          const decibels = 20 * Math.log10(rms / 0.01);
-          const mappedDecibels = Math.max(20, Math.min(100, decibels + 80));
-          samples.push(mappedDecibels);
-        }
+        let rms = Math.sqrt(sum / dataArray.length);
+        rms = Math.max(rms, 1e-6);
+        rmsSamples.push(rms);
       }
     }
-    
-    if (samples.length > 0) {
-      const averageBaseline = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
-      setBaselineNoise(averageBaseline);
-      // 保存到 localStorage，永不过期
-      localStorage.setItem(BASELINE_NOISE_KEY, averageBaseline.toString());
-      console.log(`噪音基准校准完成: ${averageBaseline.toFixed(1)}dB，已保存到本地存储`);
+
+    if (rmsSamples.length > 0) {
+      const avgRms = rmsSamples.reduce((s, x) => s + x, 0) / rmsSamples.length;
+      setBaselineRms(avgRms);
+      localStorage.setItem(BASELINE_RMS_KEY, avgRms.toString());
+      // UI 显示基线统一为 40dB
+      const manualBaseline = getNoiseControlSettings().baselineDb ?? BASELINE_DB_DEFAULT;
+      setBaselineNoise(manualBaseline);
+      localStorage.setItem(BASELINE_NOISE_KEY, manualBaseline.toString());
+      console.log(`噪音基准校准完成: baselineRms=${avgRms.toExponential(3)}，显示基线为 ${manualBaseline}dB`);
     }
-    
+
     setIsCalibrating(false);
   }, [isCalibrating]);
 
@@ -234,7 +243,10 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
    */
   const clearCalibration = useCallback(() => {
     setBaselineNoise(0);
+    setBaselineRms(0);
+    emaDbRef.current = null;
     localStorage.removeItem(BASELINE_NOISE_KEY);
+    localStorage.removeItem(BASELINE_RMS_KEY);
     console.log('校准数据已清除');
   }, []);
 
@@ -275,10 +287,25 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       analyser.maxDecibels = MAX_DECIBELS;
       analyserRef.current = analyser;
 
-      // 连接麦克风到分析器
+      // 构建音频图：麦克风 -> 高通 -> 低通 -> 分析器
       const microphone = audioContext.createMediaStreamSource(stream);
       microphoneRef.current = microphone;
-      microphone.connect(analyser);
+
+      const highpass = audioContext.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 80; // 去除低频/风噪/直流分量
+      highpass.Q.value = 0.707; // Butterworth 近似
+      highpassRef.current = highpass;
+
+      const lowpass = audioContext.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 8000; // 去除超高频，近似听感范围
+      lowpass.Q.value = 0.707;
+      lowpassRef.current = lowpass;
+
+      microphone.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(analyser);
 
       // 开始分析
       analyzeAudio();
@@ -296,6 +323,18 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       }
     }
   }, [analyzeAudio]);
+
+  // 同步阈值与手动基准dB（定时刷新，避免每帧读localStorage）
+  useEffect(() => {
+    const sync = () => {
+      const s = getNoiseControlSettings();
+      setThresholdDb(s.maxLevelDb);
+      setDisplayBaselineDb(s.baselineDb ?? BASELINE_DB_DEFAULT);
+    };
+    sync();
+    const id = setInterval(sync, 2000);
+    return () => clearInterval(id);
+  }, []);
 
   /**
    * 清理音频资源
@@ -320,8 +359,16 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
     // 断开音频连接
     if (microphoneRef.current) {
-      microphoneRef.current.disconnect();
+      try { microphoneRef.current.disconnect(); } catch {}
       microphoneRef.current = null;
+    }
+    if (highpassRef.current) {
+      try { highpassRef.current.disconnect(); } catch {}
+      highpassRef.current = null;
+    }
+    if (lowpassRef.current) {
+      try { lowpassRef.current.disconnect(); } catch {}
+      lowpassRef.current = null;
     }
 
     // 关闭音频上下文
@@ -428,7 +475,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     // 更严格的条件检查，防止重复触发
     if (
       (noiseStatus === 'quiet' || noiseStatus === 'noisy') && 
-      baselineNoise === 0 && 
+      baselineRms === 0 && 
       !isCalibrating && 
       !autoCalibrationTriggeredRef.current && 
       hasPermission && 
@@ -441,13 +488,13 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
        // 根据设备类型调整延迟时间
         const delay = getMobileDelay();
         setTimeout(() => {
-          if (!isCalibrating && baselineNoise === 0) {
+          if (!isCalibrating && baselineRms === 0) {
             console.log('延迟校准开始，设备类型：', isMobileDevice ? '移动设备' : '桌面设备');
             calibrateBaseline();
           }
         }, delay);
     }
-  }, [noiseStatus, baselineNoise, isCalibrating, hasPermission, calibrateBaseline]);
+  }, [noiseStatus, baselineRms, isCalibrating, hasPermission, calibrateBaseline]);
 
   return (
     <div className={styles.noiseMonitor}>
@@ -479,7 +526,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       </div>
       {process.env.NODE_ENV === 'development' && (
         <div className={styles.debugInfo}>
-          音量: {currentVolume.toFixed(1)}dB | 阈值: {NOISE_THRESHOLD}dB
+          音量: {currentVolume.toFixed(1)}dB | 阈值: {thresholdDb}dB
           {baselineNoise > 0 && ` | 基准: ${baselineNoise.toFixed(1)}dB`}
         </div>
       )}

@@ -163,6 +163,21 @@
   font-family: var(--font-ui);
 }
 
+/* 状态徽标：已校准/未校准指示点 */
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+.statusCalibrated {
+  background: #4caf50; /* 绿色：已校准 */
+}
+.statusUncalibrated {
+  background: #f44336; /* 红色：未校准 */
+}
+
 .helpText {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;

@@ -2,9 +2,10 @@ import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { FormSection } from '../FormComponents';
 import styles from './NoiseSettings.module.css';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus';
+import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const NOISE_THRESHOLD = 55;
+const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
   t: number;
@@ -87,10 +88,11 @@ export const NoiseStatsSummary: React.FC = () => {
         sum += cur.v;
         if (cur.v > max) max = cur.v;
         const dt = cur.t - prev.t;
-        if (prev.v > NOISE_THRESHOLD || cur.v > NOISE_THRESHOLD) {
+        const threshold = getThreshold();
+        if (prev.v > threshold || cur.v > threshold) {
           noisyDurationMs += dt;
         }
-        if (prev.v <= NOISE_THRESHOLD && cur.v > NOISE_THRESHOLD) {
+        if (prev.v <= threshold && cur.v > threshold) {
           transitions++;
         }
       }

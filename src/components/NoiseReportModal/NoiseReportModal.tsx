@@ -3,6 +3,7 @@ import Modal from '../Modal/Modal';
 import { FormButton, FormButtonGroup } from '../FormComponents';
 import styles from './NoiseReportModal.module.css';
 import { saveNoiseReport, SavedNoiseReport } from '../../utils/noiseReportStorage';
+import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 
 export interface NoiseReportPeriod {
   id: string;
@@ -26,7 +27,7 @@ interface NoiseReportModalProps {
 }
 
 const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const NOISE_THRESHOLD = 55; // 校准40dB后超出15dB为吵闹
+const getThreshold = () => getNoiseControlSettings().maxLevelDb; // 从设置读取阈值
 const CHART_HEIGHT = 160;
 const CHART_PADDING = 36;
 
@@ -84,12 +85,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       if (i > 0) {
         const prev = samplesInPeriod[i - 1];
         const dt = cur.t - prev.t;
+        const threshold = getThreshold();
         // 累计吵闹时长：区间内任一端超过阈值则记为吵闹
-        if (prev.v > NOISE_THRESHOLD || cur.v > NOISE_THRESHOLD) {
+        if (prev.v > threshold || cur.v > threshold) {
           noisyDurationMs += dt;
         }
         // 由安静变为吵闹计数
-        if (prev.v <= NOISE_THRESHOLD && cur.v > NOISE_THRESHOLD) {
+        if (prev.v <= threshold && cur.v > threshold) {
           transitions++;
         }
       }
@@ -199,7 +201,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       chart: {
         height: CHART_HEIGHT,
         padding: CHART_PADDING,
-        threshold: NOISE_THRESHOLD,
+        threshold: getThreshold(),
       },
       series,
     };
@@ -306,8 +308,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   <line 
                     x1={chart.padding} 
                     x2={chart.width - chart.padding} 
-                    y1={chart.height - chart.padding - (NOISE_THRESHOLD / 80) * (chart.height - chart.padding * 2)} 
-                    y2={chart.height - chart.padding - (NOISE_THRESHOLD / 80) * (chart.height - chart.padding * 2)} 
+                    y1={chart.height - chart.padding - (getThreshold() / 80) * (chart.height - chart.padding * 2)} 
+                    y2={chart.height - chart.padding - (getThreshold() / 80) * (chart.height - chart.padding * 2)} 
                     className={styles.threshold} 
                   />
                   {/* 渐变面积填充 */}
