@@ -18,6 +18,24 @@
   stroke-width: 1;
 }
 
+.tick {
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1;
+}
+
+.tickLabel {
+  fill: var(--text-color, #ffffff);
+  opacity: 0.9;
+  font-size: 0.75rem;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+}
+
+.gridLine {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
 .line {
   fill: none;
   stroke: #4cc9f0;

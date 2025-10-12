@@ -4,7 +4,6 @@ import { FormSection, FormButton, FormButtonGroup, FormCheckbox, FormInput, Form
 import { PlusIcon, TrashIcon, SaveIcon, VolumeIcon, VolumeMuteIcon } from '../../Icons';
 import RealTimeNoiseChart from '../../NoiseSettings/RealTimeNoiseChart';
 import NoiseStatsSummary from '../../NoiseSettings/NoiseStatsSummary';
-import NoiseAlertHistory from '../../NoiseSettings/NoiseAlertHistory';
 import { StudyPeriod, DEFAULT_SCHEDULE } from '../../StudyStatus';
 import { getNoiseReportSettings, setAutoPopupSetting } from '../../../utils/noiseReportSettings';
 import { readStudySchedule, writeStudySchedule } from '../../../utils/studyScheduleStorage';
@@ -53,6 +52,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
   const initialControl = getNoiseControlSettings();
   const [draftMaxNoiseLevel, setDraftMaxNoiseLevel] = useState<number>(initialControl.maxLevelDb);
   const [draftManualBaselineDb, setDraftManualBaselineDb] = useState<number>(initialControl.baselineDb);
+  const [draftShowRealtimeDb, setDraftShowRealtimeDb] = useState<boolean>(initialControl.showRealtimeDb);
 
   const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -73,6 +73,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     // 同步噪音控制默认值
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
+    setDraftShowRealtimeDb(currentControl.showRealtimeDb);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -240,6 +241,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
       saveNoiseControlSettings({
         maxLevelDb: draftMaxNoiseLevel,
         baselineDb: draftManualBaselineDb,
+        showRealtimeDb: draftShowRealtimeDb,
       });
       // 课程表
       const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
@@ -266,18 +268,23 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
           <p className={styles.infoText}>自动噪音限制：最大允许 {draftMaxNoiseLevel.toFixed(0)}dB</p>
           <p className={styles.helpText}>超过该阈值时将判定为“吵闹”，用于提醒与报告统计。</p>
         </div>
-        <FormSlider
-          label="最大允许噪音级别"
-          value={draftMaxNoiseLevel}
-          min={40}
-          max={80}
-          step={1}
-          onChange={setDraftMaxNoiseLevel}
-          formatValue={(v: number) => `${v.toFixed(0)}dB`}
-          showRange={true}
-          rangeLabels={["40dB", "80dB"]}
-        />
-      </FormSection>
+      <FormSlider
+        label="最大允许噪音级别"
+        value={draftMaxNoiseLevel}
+        min={40}
+        max={80}
+        step={1}
+        onChange={setDraftMaxNoiseLevel}
+        formatValue={(v: number) => `${v.toFixed(0)}dB`}
+        showRange={true}
+        rangeLabels={["40dB", "80dB"]}
+      />
+      <FormCheckbox
+        label="显示实时分贝"
+        checked={draftShowRealtimeDb}
+        onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
+      />
+    </FormSection>
 
       <FormSection title="噪音基准与校准">
         <div className={styles.noiseCalibrationInfo}>
@@ -333,7 +340,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
 
       <RealTimeNoiseChart />
       <NoiseStatsSummary />
-      <NoiseAlertHistory />
 
       <FormSection title="课程表设置（草稿）">
         <FormButtonGroup align="right" className={styles.sectionActions}>

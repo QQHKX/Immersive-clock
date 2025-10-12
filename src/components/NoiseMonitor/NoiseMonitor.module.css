@@ -10,6 +10,12 @@
   gap: 0.7rem;
 }
 
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;
+}
+
 .statusText {
   font-family: var(--font-ui);
   font-size: 1.4rem;
@@ -21,6 +27,16 @@
   display: inline-block;
   padding: 0.4rem 0.7rem;
   border-radius: var(--border-radius-sm);
+}
+
+.statusSubtext {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 0 0.7rem;
+  margin-top: 0;
+  /* 紧贴状态文本 */
 }
 
 /* 安静状态 */
@@ -213,14 +229,7 @@
   }
 }
 
-/* 调试信息（仅开发环境显示） */
-.debugInfo {
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 0.25rem;
-  font-weight: 400;
-}
+/* 调试信息已移除 */
 
 /* 响应式设计 */
 @media (max-width: 768px) {
@@ -253,9 +262,7 @@
     height: 12px;
   }
 
-  .debugInfo {
-    font-size: 0.75rem;
-  }
+  /* 调试信息已移除 */
 }
 
 @media (max-width: 480px) {
@@ -292,9 +299,7 @@
     /* 抵消padding的视觉影响 */
   }
 
-  .debugInfo {
-    font-size: 0.7rem;
-  }
+  /* 调试信息已移除 */
 }
 
 /* 竖屏显示优化 */

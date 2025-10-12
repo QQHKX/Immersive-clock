@@ -48,6 +48,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     const s = getNoiseControlSettings();
     return s.baselineDb ?? BASELINE_DB_DEFAULT;
   });
+  const [showRealtimeDb, setShowRealtimeDb] = useState<boolean>(() => getNoiseControlSettings().showRealtimeDb);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -330,6 +331,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       const s = getNoiseControlSettings();
       setThresholdDb(s.maxLevelDb);
       setDisplayBaselineDb(s.baselineDb ?? BASELINE_DB_DEFAULT);
+      setShowRealtimeDb(s.showRealtimeDb);
     };
     sync();
     const id = setInterval(sync, 2000);
@@ -506,30 +508,31 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
             isCalibrating ? '正在校准基准噪音水平...' :
             noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
             noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''}` :
-              `当前音量: ${currentVolume.toFixed(1)}dB`
+              `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
+              `当前音量: ${currentVolume.toFixed(0)}dB`
           }
         ></div>
-        <div 
-          className={`${styles.statusText} ${getStatusClassName()}`}
-          onClick={handleClick}
-          title={
-            isCalibrating ? '正在校准基准噪音水平...' :
-            noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
-            noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(1)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(1)}dB)` : ''}` :
-              `当前音量: ${currentVolume.toFixed(1)}dB`
-          }
-        >
-          {getStatusText()}
+        <div className={styles.textBlock}>
+          <div 
+            className={`${styles.statusText} ${getStatusClassName()}`}
+            onClick={handleClick}
+            title={
+              isCalibrating ? '正在校准基准噪音水平...' :
+              noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
+              noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
+                `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
+                `当前音量: ${currentVolume.toFixed(0)}dB`
+            }
+          >
+            {getStatusText()}
+          </div>
+          {showRealtimeDb && (noiseStatus === 'quiet' || noiseStatus === 'noisy') && (
+            <div className={styles.statusSubtext} aria-live="polite">
+              {currentVolume.toFixed(0)} dB
+            </div>
+          )}
         </div>
       </div>
-      {process.env.NODE_ENV === 'development' && (
-        <div className={styles.debugInfo}>
-          音量: {currentVolume.toFixed(1)}dB | 阈值: {thresholdDb}dB
-          {baselineNoise > 0 && ` | 基准: ${baselineNoise.toFixed(1)}dB`}
-        </div>
-      )}
     </div>
   );
 };

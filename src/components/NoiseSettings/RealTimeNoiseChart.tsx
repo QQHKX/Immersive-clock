@@ -38,13 +38,13 @@ export const RealTimeNoiseChart: React.FC = () => {
     const cutoff = now - windowMs;
 
     if (!samples.length) {
-      return { width, height, path: '', startTs: cutoff, endTs: now };
+      return { width, height, padding, path: '', startTs: cutoff, endTs: now, xTicks: [], yTicks: [] };
     }
 
     // 仅显示最近5分钟的数据
     const recent = samples.filter(s => s.t >= cutoff);
     if (!recent.length) {
-      return { width, height, path: '', startTs: cutoff, endTs: now };
+      return { width, height, padding, path: '', startTs: cutoff, endTs: now, xTicks: [], yTicks: [] };
     }
 
     // 为了获得稳定的时间范围映射，使用固定窗口[start=cutoff, end=now]
@@ -59,37 +59,72 @@ export const RealTimeNoiseChart: React.FC = () => {
       const ratio = (clamped - minDb) / (maxDb - minDb);
       return height - padding - ratio * (height - padding * 2);
     };
-
-    // 指数移动平均（EMA）平滑，不改变采样频率，仅用于绘制
-    const alpha = 0.25; // 平滑系数，0<alpha<=1，越小越平滑
-    const smoothed: number[] = [];
-    for (let i = 0; i < recent.length; i++) {
-      const v = recent[i].v;
-      if (i === 0) {
-        smoothed[i] = v;
-      } else {
-        smoothed[i] = alpha * v + (1 - alpha) * smoothed[i - 1];
-      }
-    }
-
-    const pts = recent.map((s, i) => `${mapX(s.t)},${mapY(smoothed[i])}`);
+    // 直接使用原始采样值绘制折线（去除平滑）
+    const pts = recent.map((s) => `${mapX(s.t)},${mapY(s.v)}`);
     const path = pts.map((p, i) => (i === 0 ? `M ${p}` : `L ${p}`)).join(' ');
-    return { width, height, path, startTs: minTs, endTs: maxTs };
+
+    // 生成与报告一致的刻度
+    const xTickCount = 5;
+    const xTicks = Array.from({ length: xTickCount }, (_, i) => {
+      const t = minTs + (span * i) / (xTickCount - 1);
+      return {
+        x: mapX(t),
+        y: height - padding,
+        label: new Date(t).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })
+      };
+    });
+
+    const yTickValues = [0, 20, 40, 60, 80];
+    const yTicks = yTickValues.map((v) => ({
+      x: padding,
+      y: mapY(v),
+      label: `${v}`
+    }));
+
+    const thresholdY = mapY(getThreshold());
+
+    return { width, height, padding, path, startTs: minTs, endTs: maxTs, xTicks, yTicks, thresholdY };
   }, [samples]);
 
   return (
     <FormSection title="实时噪音曲线图">
       {chart.path ? (
         <svg width={chart.width} height={chart.height} className={styles.chart}>
-          <line x1={24} y1={chart.height - 24} x2={chart.width - 24} y2={chart.height - 24} className={styles.axis} />
-          <line x1={24} y1={24} x2={24} y2={chart.height - 24} className={styles.axis} />
+          {/* 轴线 */}
+          <line x1={chart.padding} y1={chart.height - chart.padding} x2={chart.width - chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
+          <line x1={chart.padding} y1={chart.padding} x2={chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
+
+          {/* 横向网格线 */}
+          {chart.yTicks?.map((t: any, idx: number) => (
+            <line key={`yg-${idx}`} x1={chart.padding} y1={t.y} x2={chart.width - chart.padding} y2={t.y} className={styles.gridLine} />
+          ))}
+
+          {/* X轴刻度与时间标签 */}
+          {chart.xTicks?.map((t: any, idx: number) => (
+            <g key={`xt-${idx}`}>
+              <line x1={t.x} y1={chart.height - chart.padding - 4} x2={t.x} y2={chart.height - chart.padding + 4} className={styles.tick} />
+              <text x={t.x} y={chart.height - chart.padding + 18} className={styles.tickLabel} textAnchor="middle">{t.label}</text>
+            </g>
+          ))}
+
+          {/* Y轴刻度与分贝标签 */}
+          {chart.yTicks?.map((t: any, idx: number) => (
+            <g key={`yt-${idx}`}>
+              <line x1={chart.padding - 4} y1={t.y} x2={chart.padding + 4} y2={t.y} className={styles.tick} />
+              <text x={chart.padding - 8} y={t.y + 4} className={styles.tickLabel} textAnchor="end">{t.label}</text>
+            </g>
+          ))}
+
+          {/* 阈值线 */}
           <line 
-            x1={24} 
-            x2={chart.width - 24} 
-            y1={chart.height - 24 - (getThreshold() / 80) * (chart.height - 48)} 
-            y2={chart.height - 24 - (getThreshold() / 80) * (chart.height - 48)} 
+            x1={chart.padding} 
+            x2={chart.width - chart.padding} 
+            y1={chart.thresholdY} 
+            y2={chart.thresholdY} 
             className={styles.threshold} 
           />
+
+          {/* 折线路径 */}
           <path d={chart.path} className={styles.line} />
         </svg>
       ) : (

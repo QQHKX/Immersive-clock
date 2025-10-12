@@ -6,24 +6,29 @@
 // localStorage 键名
 const NOISE_MAX_LEVEL_KEY = 'noise-control-max-level-db';
 const NOISE_BASELINE_DB_KEY = 'noise-control-baseline-db';
+const NOISE_SHOW_REALTIME_DB_KEY = 'noise-control-show-realtime-db';
 
 export interface NoiseControlSettings {
   maxLevelDb: number; // 最大允许噪音级别（阈值）
   baselineDb: number; // 手动基准显示分贝
+  showRealtimeDb: boolean; // 是否显示实时分贝副文本
 }
 
 const DEFAULT_SETTINGS: NoiseControlSettings = {
   maxLevelDb: 55,
   baselineDb: 40,
+  showRealtimeDb: true,
 };
 
 export function getNoiseControlSettings(): NoiseControlSettings {
   try {
     const maxLevel = localStorage.getItem(NOISE_MAX_LEVEL_KEY);
     const baselineDb = localStorage.getItem(NOISE_BASELINE_DB_KEY);
+    const showRealtimeDb = localStorage.getItem(NOISE_SHOW_REALTIME_DB_KEY);
     return {
       maxLevelDb: maxLevel !== null ? parseFloat(maxLevel) : DEFAULT_SETTINGS.maxLevelDb,
       baselineDb: baselineDb !== null ? parseFloat(baselineDb) : DEFAULT_SETTINGS.baselineDb,
+      showRealtimeDb: showRealtimeDb !== null ? showRealtimeDb === 'true' : DEFAULT_SETTINGS.showRealtimeDb,
     };
   } catch (error) {
     console.warn('读取噪音控制设置失败:', error);
@@ -40,6 +45,9 @@ export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>
     }
     if (settings.baselineDb !== undefined) {
       localStorage.setItem(NOISE_BASELINE_DB_KEY, next.baselineDb.toString());
+    }
+    if (settings.showRealtimeDb !== undefined) {
+      localStorage.setItem(NOISE_SHOW_REALTIME_DB_KEY, next.showRealtimeDb ? 'true' : 'false');
     }
   } catch (error) {
     console.error('保存噪音控制设置失败:', error);
@@ -62,10 +70,19 @@ export function setManualBaselineDb(db: number): void {
   saveNoiseControlSettings({ baselineDb: db });
 }
 
+export function getShowRealtimeDb(): boolean {
+  return getNoiseControlSettings().showRealtimeDb;
+}
+
+export function setShowRealtimeDb(show: boolean): void {
+  saveNoiseControlSettings({ showRealtimeDb: show });
+}
+
 export function resetNoiseControlSettings(): void {
   try {
     localStorage.removeItem(NOISE_MAX_LEVEL_KEY);
     localStorage.removeItem(NOISE_BASELINE_DB_KEY);
+    localStorage.removeItem(NOISE_SHOW_REALTIME_DB_KEY);
   } catch (error) {
     console.error('重置噪音控制设置失败:', error);
   }
