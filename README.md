@@ -15,7 +15,7 @@
 
 <div align="center">
 
-[![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
+[![](https://img.shields.io/badge/version-3.10.4-blue.svg)](https://github.com/QQHKX/immersive-clock)
 [![](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
