@@ -54,3 +54,43 @@ jobs:
             immersive-clock-${{ steps.get_version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows-exe:
+    runs-on: windows-latest
+    needs: build-release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read version from package.json
+        id: get_version_win
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build Windows EXE with electron-builder
+        env:
+          NODE_ENV: production
+        run: npm run build:win
+
+      - name: Upload EXE to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Immersive Clock v${{ steps.get_version_win.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

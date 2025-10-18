@@ -54,3 +54,4 @@ coverage
 dev-dist/
 Thumbs.db
 *.tsbuildinfo
+release/

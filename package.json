@@ -6,10 +6,13 @@
   "homepage": "https://qqhkx.com",
   "license": "MIT",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/postbuild.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:electron": "tsc && vite build --base=./ && node scripts/postbuild.mjs",
+    "build:win": "npm run build:electron && electron-builder --win --publish never"
   },
   "dependencies": {
     "marked": "^16.3.0",
@@ -24,10 +27,35 @@
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
     "@vitejs/plugin-react": "^3.1.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.5",
     "terser": "^5.43.1",
     "typescript": "^4.9.3",
     "vite": "^4.1.0",
     "vite-plugin-pwa": "^1.0.3",
     "workbox-window": "^7.3.0"
+  },
+  "build": {
+    "appId": "com.qqhkx.immersiveclock",
+    "productName": "Immersive Clock",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "asar": false,
+    "publish": null,
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    }
   }
 }
