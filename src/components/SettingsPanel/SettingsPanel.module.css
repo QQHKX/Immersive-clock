@@ -163,6 +163,24 @@
   font-family: var(--font-ui);
 }
 
+/* 统一链接样式，避免浏览器默认蓝色 */
+.infoText a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: color var(--transition-normal, 0.2s), text-decoration-color var(--transition-normal, 0.2s);
+}
+
+.infoText a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+
+.infoText a:focus-visible {
+  outline: 2px solid var(--accent-color, #03DAC6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
 /* 状态徽标：已校准/未校准指示点 */
 .statusDot {
   width: 8px;

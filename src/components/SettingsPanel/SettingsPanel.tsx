@@ -8,6 +8,7 @@ import BasicSettingsPanel from './sections/BasicSettingsPanel';
 import StudySettingsPanel from './sections/StudySettingsPanel';
 import ContentSettingsPanel from './sections/ContentSettingsPanel';
 import modalStyles from '../Modal/Modal.module.css';
+import AboutSettingsPanel from './sections/AboutSettingsPanel';
 
 // 分区逻辑已拆分到子组件中
 
@@ -34,7 +35,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
   
-  const [activeCategory, setActiveCategory] = useState<'basic' | 'study' | 'content'>('basic');
+  const [activeCategory, setActiveCategory] = useState<'basic' | 'study' | 'content' | 'about'>('basic');
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 其余状态由子组件管理
   // 分区保存注册
@@ -113,10 +114,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           items={[
             { key: 'basic', label: '基础设置' },
             { key: 'study', label: '学习功能' },
-            { key: 'content', label: '内容管理' }
+            { key: 'content', label: '内容管理' },
+            { key: 'about', label: '关于' }
           ]}
           activeKey={activeCategory}
-          onChange={(key) => setActiveCategory(key as 'basic' | 'study' | 'content')}
+          onChange={(key) => setActiveCategory(key as 'basic' | 'study' | 'content' | 'about')}
           variant="announcement"
           size="md"
           scrollable
@@ -140,6 +142,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         {/* 内容管理区域 */}
         {activeCategory === 'content' && (
           <ContentSettingsPanel onRegisterSave={(fn) => { contentSaveRef.current = fn; }} />
+        )}
+
+        {activeCategory === 'about' && (
+          <AboutSettingsPanel onRegisterSave={() => { /* noop */ }} />
         )}
         </div>
       </Modal>
