@@ -13,9 +13,10 @@ export interface TabsProps {
   items: TabItem[];
   activeKey: string;
   onChange: (key: string) => void;
-  variant?: 'underlined' | 'pill' | 'browser';
+  variant?: 'underlined' | 'pill' | 'browser' | 'announcement';
   size?: 'sm' | 'md' | 'lg';
   scrollable?: boolean;
+  sticky?: boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export const Tabs: React.FC<TabsProps> = ({
   variant = 'underlined',
   size = 'md',
   scrollable = true,
+  sticky = false,
   className = ''
 }) => {
   const rootClass = [
@@ -40,6 +42,7 @@ export const Tabs: React.FC<TabsProps> = ({
     scrollable ? styles.scrollable : '',
     styles[variant],
     styles[size],
+    sticky ? styles.sticky : '',
     className
   ].filter(Boolean).join(' ');
 

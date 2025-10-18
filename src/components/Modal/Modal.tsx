@@ -13,6 +13,10 @@ export interface ModalProps {
   showCloseButton?: boolean;
   className?: string;
   footer?: React.ReactNode;
+  /** 控制头部是否显示分隔线（默认显示） */
+  headerDivider?: boolean;
+  /** 压缩内容区顶部内边距，使粘性 Tabs 贴合头部（默认关闭） */
+  compactBodyTop?: boolean;
 }
 
 /**
@@ -27,7 +31,9 @@ export function Modal({
   maxWidth = 'md',
   showCloseButton = true,
   className = '',
-  footer
+  footer,
+  headerDivider = true,
+  compactBodyTop = false
 }: ModalProps) {
   /**
    * 处理背景点击关闭
@@ -62,6 +68,9 @@ export function Modal({
 
   if (!isOpen) return null;
 
+  const headerClass = `${styles.modalHeader} ${headerDivider ? '' : styles.modalHeaderNoDivider}`;
+  const bodyClass = `${styles.modalBody} ${compactBodyTop ? styles.bodyCompactTop : ''}`;
+
   return createPortal(
     (
       <div
@@ -72,7 +81,7 @@ export function Modal({
         aria-labelledby="modal-title"
       >
         <div className={`${styles.modalContent} ${styles[maxWidth]} ${className}`}>
-          <div className={styles.modalHeader}>
+          <div className={headerClass}>
             <h3 id="modal-title" className={styles.modalTitle}>
               {title}
             </h3>
@@ -88,7 +97,7 @@ export function Modal({
             )}
           </div>
 
-          <div className={styles.modalBody}>{children}</div>
+          <div className={bodyClass}>{children}</div>
 
           {footer && <div className={styles.modalFooter}>{footer}</div>}
         </div>

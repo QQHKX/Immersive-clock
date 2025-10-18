@@ -5,6 +5,7 @@ import { FormButton, FormButtonGroup, FormCheckbox } from '../FormComponents/For
 import { AnnouncementModalProps, AnnouncementTab, AnnouncementTabConfig, MarkdownDocument } from '../../types';
 import { setDontShowForWeek } from '../../utils/announcementStorage';
 import styles from './AnnouncementModal.module.css';
+import { Tabs } from '../Tabs/Tabs';
 
 /**
  * 公告选项卡配置
@@ -163,6 +164,8 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       onClose={handleClose}
       title="系统公告"
       maxWidth="lg"
+      headerDivider={false}
+      compactBodyTop
       footer={
         <div className={styles.footer}>
           <div className={styles.checkboxContainer}>
@@ -182,19 +185,16 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       }
     >
       <div className={styles.container}>
-        {/* 选项卡导航 */}
-        <div className={styles.tabNav}>
-          {ANNOUNCEMENT_TABS.map(tab => (
-            <button
-              key={tab.key}
-              className={`${styles.tabButton} ${activeTab === tab.key ? styles.active : ''}`}
-              onClick={() => handleTabChange(tab.key)}
-            >
-              <span className={styles.tabIcon}>{tab.icon}</span>
-              <span className={styles.tabTitle}>{tab.title}</span>
-            </button>
-          ))}
-        </div>
+        {/* 选项卡导航：统一使用 Tabs 组件（公告风格） */}
+        <Tabs
+          items={ANNOUNCEMENT_TABS.map(t => ({ key: t.key, label: t.title, icon: t.icon }))}
+          activeKey={activeTab}
+          onChange={(key) => handleTabChange(key as AnnouncementTab)}
+          variant="announcement"
+          size="md"
+          scrollable
+          sticky
+        />
 
         {/* 内容区域 */}
         <div className={styles.content}>

@@ -58,6 +58,11 @@
   flex-shrink: 0;
 }
 
+/* 允许去除头部与内容的分隔线，以便 Tabs 无缝贴合 */
+.modalHeaderNoDivider {
+  border-bottom: none;
+}
+
 .modalTitle {
   margin: 0;
   color: var(--text-color, #ffffff);
@@ -95,6 +100,11 @@
   max-height: 64vh;
   overflow-y: auto;
   flex: 1;
+}
+
+/* 针对粘性 Tabs 的顶部补偿类，消除与头部的空隙 */
+.bodyCompactTop {
+  padding-top: 0; /* 让粘性 Tabs 紧贴头部 */
 }
 
 .modalFooter {

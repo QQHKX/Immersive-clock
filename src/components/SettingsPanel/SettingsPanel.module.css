@@ -171,11 +171,15 @@
   display: inline-block;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
+
 .statusCalibrated {
-  background: #4caf50; /* 绿色：已校准 */
+  background: #4caf50;
+  /* 绿色：已校准 */
 }
+
 .statusUncalibrated {
-  background: #f44336; /* 红色：未校准 */
+  background: #f44336;
+  /* 红色：未校准 */
 }
 
 .helpText {

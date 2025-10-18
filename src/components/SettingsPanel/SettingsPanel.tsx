@@ -83,6 +83,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         onClose={onClose} 
         title="设置" 
         maxWidth="lg"
+        headerDivider={false}
+        compactBodyTop
         footer={
           <FormButtonGroup align="right">
             <FormButton variant="secondary" onClick={onClose}>
@@ -104,9 +106,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           ]}
           activeKey={activeCategory}
           onChange={(key) => setActiveCategory(key as 'basic' | 'study' | 'content')}
-          variant="browser"
+          variant="announcement"
           size="md"
           scrollable
+          sticky
         />
 
         {/* 基础设置区域 */}
