@@ -72,7 +72,8 @@ export const setDontShowForWeek = (): void => {
 };
 
 /**
- * 清除公告隐藏设置（用于测试或重置）
+ * 清除公告隐藏设置
+ * @remarks 调试与重置辅助：清空“一周内不再显示”偏好。
  */
 export const clearAnnouncementHidePreference = (): void => {
   try {
@@ -83,8 +84,9 @@ export const clearAnnouncementHidePreference = (): void => {
 };
 
 /**
- * 获取公告隐藏状态信息（用于调试）
- * @returns object - 包含隐藏状态的详细信息
+ * 获取公告隐藏状态信息
+ * @returns 返回包含隐藏状态详细信息的对象
+ * @remarks 调试辅助：用于排查公告显示逻辑与缓存状态。
  */
 export const getAnnouncementHideInfo = (): {
   isHidden: boolean;
