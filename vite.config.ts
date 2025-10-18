@@ -46,22 +46,12 @@ export default defineConfig(({ mode }) => {
         ignoreURLParametersMatching: [/^v$/],
         runtimeCaching: [
           {
-            // 缓存 Google Fonts 样式表（fonts.googleapis.com）
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            // 缓存 Google Fonts 字体文件（fonts.gstatic.com）
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*$/i,
+            // 缓存本地字体文件（内置自托管）
+            urlPattern: /\/fonts\/.*\.(woff2?|ttf|otf|eot)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheName: 'local-webfonts',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
@@ -78,7 +68,7 @@ export default defineConfig(({ mode }) => {
             handler: 'CacheFirst',
             options: {
               cacheName: 'fonts-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
           {
