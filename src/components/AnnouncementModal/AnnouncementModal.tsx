@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { marked } from 'marked';
 import Modal from '../Modal/Modal';
 import { FormButton, FormButtonGroup, FormCheckbox } from '../FormComponents/FormComponents';
@@ -6,6 +6,7 @@ import { AnnouncementModalProps, AnnouncementTab, AnnouncementTabConfig, Markdow
 import { setDontShowForWeek } from '../../utils/announcementStorage';
 import styles from './AnnouncementModal.module.css';
 import { Tabs } from '../Tabs/Tabs';
+import modalStyles from '../Modal/Modal.module.css';
 
 /**
  * 公告选项卡配置
@@ -39,6 +40,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
 }) => {
   // 当前激活的选项卡
   const [activeTab, setActiveTab] = useState<AnnouncementTab>(initialTab);
+  const containerRef = useRef<HTMLDivElement>(null);
   // 是否勾选"一周内不再显示"
   const [dontShowAgain, setDontShowAgain] = useState(false);
   // Markdown文档状态
@@ -147,6 +149,18 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     }
   };
 
+  // 切换选项卡时将模态内容滚动到顶部
+  useEffect(() => {
+    if (!isOpen) return;
+    const root = containerRef.current;
+    if (root) {
+      const bodyEl = root.closest(`.${modalStyles.modalBody}`) as HTMLElement | null;
+      if (bodyEl) bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+      const inner = root.querySelector(`.${styles.content}`) as HTMLElement | null;
+      if (inner) inner.scrollTo({ top: 0 });
+    }
+  }, [activeTab, isOpen]);
+
   // 组件挂载时加载初始选项卡的文档
   useEffect(() => {
     if (isOpen) {
@@ -184,7 +198,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         </div>
       }
     >
-      <div className={styles.container}>
+      <div ref={containerRef} className={styles.container}>
         {/* 选项卡导航：统一使用 Tabs 组件（公告风格） */}
         <Tabs
           items={ANNOUNCEMENT_TABS.map(t => ({ key: t.key, label: t.title, icon: t.icon }))}

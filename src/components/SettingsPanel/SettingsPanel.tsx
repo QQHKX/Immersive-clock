@@ -7,6 +7,7 @@ import styles from './SettingsPanel.module.css';
 import BasicSettingsPanel from './sections/BasicSettingsPanel';
 import StudySettingsPanel from './sections/StudySettingsPanel';
 import ContentSettingsPanel from './sections/ContentSettingsPanel';
+import modalStyles from '../Modal/Modal.module.css';
 
 // 分区逻辑已拆分到子组件中
 
@@ -40,6 +41,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const basicSaveRef = useRef<() => void>(() => {});
   const studySaveRef = useRef<() => void>(() => {});
   const contentSaveRef = useRef<() => void>(() => {});
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // 其余逻辑由子组件管理
 
@@ -65,7 +67,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   
   // 已移除：设置面板的噪音与天气处理，由子组件负责
   
-  // 组件打开时加载数据
+  // 组件打开时加载数据（仅在打开时重置默认分区与目标年份）
   useEffect(() => {
     if (isOpen) {
       setTargetYear(study.targetYear);
@@ -73,6 +75,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setActiveCategory('basic');
     }
   }, [isOpen, study.targetYear]);
+
+  // 切换分区时，将模态内容滚动到顶部（不再重置分区）
+  useEffect(() => {
+    if (!isOpen) return;
+    const bodyEl = containerRef.current?.closest(`.${modalStyles.modalBody}`) as HTMLElement | null;
+    if (bodyEl) {
+      bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeCategory, isOpen]);
   
   if (!isOpen) return null;
   
@@ -96,7 +107,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           </FormButtonGroup>
         }
       >
-        <div className={styles.settingsContainer}>
+        <div ref={containerRef} className={styles.settingsContainer}>
         {/* 顶部分类选项卡 */}
         <Tabs
           items={[
