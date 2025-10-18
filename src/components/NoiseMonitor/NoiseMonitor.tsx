@@ -55,8 +55,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const statusChangeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingStatusRef = useRef<NoiseStatus | null>(null);
   const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
   const initializationCountRef = useRef<number>(0); // 初始化计数器
   const lastPersistTsRef = useRef<number>(0); // 上次持久化采样时间戳
@@ -108,42 +106,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     return smoothed;
   }, [baselineRms, displayBaselineDb]);
 
-  /**
-   * 延迟设置噪音状态，避免频繁切换
-   */
-  const setNoiseStatusWithDelay = useCallback((newStatus: 'quiet' | 'noisy') => {
-    // 如果新状态与当前状态相同，清除待处理的状态变更
-    if (newStatus === noiseStatus) {
-      if (statusChangeTimerRef.current) {
-        clearTimeout(statusChangeTimerRef.current);
-        statusChangeTimerRef.current = null;
-      }
-      pendingStatusRef.current = null;
-      return;
-    }
-
-    // 如果已有待处理的状态变更且与新状态相同，直接返回
-    if (pendingStatusRef.current === newStatus) {
-      return;
-    }
-
-    // 清除之前的定时器
-    if (statusChangeTimerRef.current) {
-      clearTimeout(statusChangeTimerRef.current);
-    }
-
-    // 设置新的待处理状态
-    pendingStatusRef.current = newStatus;
-
-    // 1秒后执行状态变更
-    statusChangeTimerRef.current = setTimeout(() => {
-      if (pendingStatusRef.current === newStatus) {
-        setNoiseStatus(newStatus);
-        pendingStatusRef.current = null;
-        statusChangeTimerRef.current = null;
-      }
-    }, 1000);
-  }, [noiseStatus]);
+  // 状态防抖已删除：状态由每 2000ms 的持久化样本直接驱动
 
   /**
    * 分析音频数据
@@ -157,26 +120,23 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     analyserRef.current.getFloatTimeDomainData(dataArray);
 
     const displayDb = calculateDisplayDb(dataArray);
-    setCurrentVolume(displayDb);
 
-    // 根据音量设置状态（带延迟防抖）
-    if (displayDb >= thresholdDb) {
-      setNoiseStatusWithDelay('noisy');
-    } else {
-      setNoiseStatusWithDelay('quiet');
-    }
-
-    // 每2秒持久化一次采样到 localStorage
+    // 每 2000ms 更新展示与状态，并持久化
     const now = Date.now();
     if (!lastPersistTsRef.current || now - lastPersistTsRef.current >= 2000) {
       try {
         const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
         const list: { t: number; v: number; s: 'quiet' | 'noisy' }[] = raw ? JSON.parse(raw) : [];
-        list.push({ t: now, v: displayDb, s: displayDb >= thresholdDb ? 'noisy' : 'quiet' });
+        const isNoisy = displayDb >= thresholdDb;
+        list.push({ t: now, v: displayDb, s: isNoisy ? 'noisy' : 'quiet' });
         // 仅保留最近24小时的数据，避免无限增长
         const cutoff = now - 24 * 60 * 60 * 1000;
         const trimmed = list.filter(item => item.t >= cutoff);
         localStorage.setItem(NOISE_SAMPLE_STORAGE_KEY, JSON.stringify(trimmed));
+
+        // 使用持久化样本作为标准更新 UI 与状态
+        setCurrentVolume(displayDb);
+        setNoiseStatus(isNoisy ? 'noisy' : 'quiet');
       } catch (e) {
         // 忽略单次持久化错误，避免影响实时监测
         console.warn('噪音采样持久化失败:', e);
@@ -186,7 +146,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
     // 继续下一帧分析
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
-  }, [calculateDisplayDb, setNoiseStatusWithDelay, thresholdDb]);
+  }, [calculateDisplayDb, thresholdDb]);
 
   /**
    * 校准基准噪音水平
@@ -348,12 +308,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       animationFrameRef.current = null;
     }
 
-    // 清除状态变更定时器
-    if (statusChangeTimerRef.current) {
-      clearTimeout(statusChangeTimerRef.current);
-      statusChangeTimerRef.current = null;
-    }
-    pendingStatusRef.current = null;
+    // 已移除状态防抖相关定时器与挂起状态
 
     // 重置自动校准和初始化状态
     autoCalibrationTriggeredRef.current = false;
