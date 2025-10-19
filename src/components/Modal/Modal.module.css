@@ -105,6 +105,7 @@
 /* 针对粘性 Tabs 的顶部补偿类，消除与头部的空隙 */
 .bodyCompactTop {
   padding-top: 0; /* 让粘性 Tabs 紧贴头部 */
+  --tabs-safe-top: 0; /* 覆盖 Tabs 的安全顶部内边距，移除多余间隙 */
 }
 
 .modalFooter {
