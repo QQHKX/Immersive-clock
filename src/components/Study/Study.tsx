@@ -11,6 +11,7 @@ import NoiseReportModal, { NoiseReportPeriod } from '../NoiseReportModal/NoiseRe
 import NoiseHistoryModal from '../NoiseHistoryModal/NoiseHistoryModal';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
 import { getAutoPopupSetting } from '../../utils/noiseReportSettings';
+import { readStudyBackground } from '../../utils/studyBackgroundStorage';
 
 /**
  * 晚自习组件
@@ -27,6 +28,9 @@ export function Study() {
   const lastPopupPeriodIdRef = useRef<string | null>(null);
   const dismissedPeriodIdRef = useRef<string | null>(null);
 
+  // 背景设置
+  const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
+
   /**
    * 更新当前时间
    */
@@ -41,6 +45,13 @@ export function Study() {
   useEffect(() => {
     updateTime();
   }, [updateTime]);
+
+  // 监听背景设置更新事件
+  useEffect(() => {
+    const handler = () => setBackgroundSettings(readStudyBackground());
+    window.addEventListener('study-background-updated', handler as EventListener);
+    return () => window.removeEventListener('study-background-updated', handler as EventListener);
+  }, []);
 
   // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
@@ -157,7 +168,20 @@ export function Study() {
     : `距离${study.targetYear}年高考仅`;
   const countdownDays = isCustom ? daysToCustom : daysToGaokao;
 
-  
+  // 背景样式
+  const backgroundStyle: React.CSSProperties = (() => {
+    const style: React.CSSProperties = {};
+    if (backgroundSettings?.type === 'image' && backgroundSettings.imageDataUrl) {
+      style.backgroundImage = `url(${backgroundSettings.imageDataUrl})`;
+      style.backgroundSize = 'cover';
+      style.backgroundPosition = 'center';
+      style.backgroundRepeat = 'no-repeat';
+    } else if (backgroundSettings?.type === 'color' && backgroundSettings.color) {
+      style.backgroundImage = 'none';
+      style.backgroundColor = backgroundSettings.color;
+    }
+    return style;
+  })();
 
   // 手动关闭报告：记录当前课时的关闭标记，避免在窗口内重复弹出
   const handleCloseReport = useCallback(() => {
@@ -177,7 +201,7 @@ export function Study() {
   }, []);
 
   return (
-    <div className={styles.study}>
+    <div className={styles.study} style={backgroundStyle}>
       {/* 智能晚自习状态管理 */}
       <StudyStatus />
       

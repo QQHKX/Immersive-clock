@@ -8,6 +8,7 @@ import { StudyPeriod, DEFAULT_SCHEDULE } from '../../StudyStatus';
 import { getNoiseReportSettings, setAutoPopupSetting } from '../../../utils/noiseReportSettings';
 import { readStudySchedule, writeStudySchedule } from '../../../utils/studyScheduleStorage';
 import { getNoiseControlSettings, saveNoiseControlSettings } from '../../../utils/noiseControlSettings';
+import { readStudyBackground, saveStudyBackground, resetStudyBackground } from '../../../utils/studyBackgroundStorage';
 
 /**
  * 学习功能分段组件的属性
@@ -57,6 +58,11 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
   const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // 背景设置草稿
+  const [bgType, setBgType] = useState<'default' | 'color' | 'image'>('default');
+  const [bgColor, setBgColor] = useState<string>('#0d1117');
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
   // 加载课程表与噪音设置为草稿
   useEffect(() => {
     const data = readStudySchedule();
@@ -74,6 +80,12 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
+
+    // 背景设置
+    const bg = readStudyBackground();
+    setBgType(bg.type);
+    if (bg.color) setBgColor(bg.color);
+    setBgImage(bg.imageDataUrl ?? null);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -243,6 +255,16 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         baselineDb: draftManualBaselineDb,
         showRealtimeDb: draftShowRealtimeDb,
       });
+      
+      // 背景设置
+      saveStudyBackground({
+        type: bgType,
+        color: bgType === 'color' ? bgColor : undefined,
+        imageDataUrl: bgType === 'image' ? (bgImage ?? undefined) : undefined,
+      });
+      // 通知学习页面刷新背景
+      window.dispatchEvent(new CustomEvent('study-background-updated'));
+      
       // 课程表
       const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
       if (invalidPeriods.length === 0) {
@@ -250,7 +272,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         onScheduleSave?.(schedule);
       }
     });
-  }, [onRegisterSave, baselineRms, autoPopupReport, schedule, onScheduleSave, draftManualBaselineDb, draftMaxNoiseLevel]);
+  }, [onRegisterSave, baselineRms, autoPopupReport, schedule, onScheduleSave, draftManualBaselineDb, draftMaxNoiseLevel, draftShowRealtimeDb, bgType, bgColor, bgImage]);
 
   const handleResetSchedule = useCallback(() => {
     if (confirm('确定要重置课程表吗？这将恢复到默认设置。')) {
@@ -337,6 +359,68 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     />
         <p className={styles.helpText}>开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。</p>
   </FormSection>
+
+      <FormSection title="背景设置">
+        <p className={styles.helpText}>选择背景来源，并支持颜色或本地图片。保存后将应用到晚自习页面。</p>
+        <FormRow gap="sm">
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <input type="radio" name="bg-type" checked={bgType==='default'} onChange={() => setBgType('default')} />
+            使用系统默认
+          </label>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <input type="radio" name="bg-type" checked={bgType==='color'} onChange={() => setBgType('color')} />
+            自定义颜色
+          </label>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <input type="radio" name="bg-type" checked={bgType==='image'} onChange={() => setBgType('image')} />
+            背景图片
+          </label>
+        </FormRow>
+
+        {bgType === 'color' && (
+          <>
+            <FormRow gap="sm">
+              <FormInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
+              <FormInput type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="#000000" />
+            </FormRow>
+            <p className={styles.helpText}>支持调色盘或十六进制颜色代码（例如 #1a1a1a）。</p>
+          </>
+        )}
+
+        {bgType === 'image' && (
+          <>
+            <FormRow gap="sm">
+              <input type="file" accept="image/*" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = () => setBgImage(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+              }} />
+            </FormRow>
+            {bgImage && (
+              <div aria-label="背景预览" style={{
+                backgroundImage: `url(${bgImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                width: '100%',
+                height: '120px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }} />
+            )}
+            <p className={styles.helpText}>图片将以 cover 方式填充，自动适配不同设备尺寸。</p>
+            <FormButtonGroup align="left">
+              <FormButton variant="danger" onClick={() => setBgImage(null)}>清除图片</FormButton>
+            </FormButtonGroup>
+          </>
+        )}
+
+        <FormButtonGroup align="right">
+          <FormButton variant="secondary" onClick={() => { setBgType('default'); setBgImage(null); }}>恢复默认背景</FormButton>
+        </FormButtonGroup>
+      </FormSection>
 
       <RealTimeNoiseChart />
       <NoiseStatsSummary />
