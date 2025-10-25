@@ -1,21 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styles from '../SettingsPanel.module.css';
-import { FormSection, FormButton, FormButtonGroup, FormCheckbox, FormInput, FormRow, FormSlider } from '../../FormComponents';
-import { PlusIcon, TrashIcon, SaveIcon, VolumeIcon, VolumeMuteIcon } from '../../Icons';
+import { FormSection, FormButton, FormButtonGroup, FormCheckbox, FormSlider } from '../../FormComponents';
+import { VolumeIcon, VolumeMuteIcon } from '../../Icons';
 import RealTimeNoiseChart from '../../NoiseSettings/RealTimeNoiseChart';
 import NoiseStatsSummary from '../../NoiseSettings/NoiseStatsSummary';
-import { StudyPeriod, DEFAULT_SCHEDULE } from '../../StudyStatus';
 import { getNoiseReportSettings, setAutoPopupSetting } from '../../../utils/noiseReportSettings';
-import { readStudySchedule, writeStudySchedule } from '../../../utils/studyScheduleStorage';
 import { getNoiseControlSettings, saveNoiseControlSettings } from '../../../utils/noiseControlSettings';
-import { readStudyBackground, saveStudyBackground, resetStudyBackground } from '../../../utils/studyBackgroundStorage';
 
 /**
  * 学习功能分段组件的属性
  * - `onScheduleSave`：保存课程表后的回调
  */
 export interface StudySettingsPanelProps {
-  onScheduleSave?: (schedule: StudyPeriod[]) => void;
   onRegisterSave?: (fn: () => void) => void;
 }
 
@@ -35,7 +31,7 @@ const BASELINE_DB = 40;
  * - 噪音图表与历史
  * - 课程表编辑
  */
-export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onScheduleSave, onRegisterSave }) => {
+export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegisterSave }) => {
   const [noiseBaseline, setNoiseBaseline] = useState<number>(() => {
     const saved = localStorage.getItem(BASELINE_NOISE_KEY);
     return saved ? parseFloat(saved) : 0;
@@ -56,37 +52,20 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
   const [draftShowRealtimeDb, setDraftShowRealtimeDb] = useState<boolean>(initialControl.showRealtimeDb);
   const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
 
-  const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // 背景设置草稿
-  const [bgType, setBgType] = useState<'default' | 'color' | 'image'>('default');
-  const [bgColor, setBgColor] = useState<string>('#0d1117');
-  const [bgImage, setBgImage] = useState<string | null>(null);
-
-  // 加载课程表与噪音设置为草稿
+  // 初始化噪音设置为草稿
   useEffect(() => {
-    const data = readStudySchedule();
-    setSchedule(Array.isArray(data) && data.length > 0 ? data : DEFAULT_SCHEDULE);
     const savedDb = localStorage.getItem(BASELINE_NOISE_KEY);
     const savedRms = localStorage.getItem(BASELINE_RMS_KEY);
     const savedDbValue = savedDb ? parseFloat(savedDb) : 0;
     const savedRmsValue = savedRms ? parseFloat(savedRms) : 0;
-    // 优先显示DB；若仅有RMS则显示为当前手动显示基准
     const currentControl = getNoiseControlSettings();
     setNoiseBaseline(savedDbValue > 0 ? savedDbValue : (savedRmsValue > 0 ? currentControl.baselineDb : 0));
     setBaselineRms(savedRmsValue);
     setAutoPopupReport(getNoiseReportSettings().autoPopup);
-    // 同步噪音控制默认值
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
-
-    // 背景设置
-    const bg = readStudyBackground();
-    setBgType(bg.type);
-    if (bg.color) setBgColor(bg.color);
-    setBgImage(bg.imageDataUrl ?? null);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -192,62 +171,19 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     }
   }, [performCalibration, isCalibrating]);
 
-  // 课程表交互
-  const handleAddPeriod = useCallback(() => {
-    const newPeriod: StudyPeriod = {
-      id: Date.now().toString(),
-      name: '新课程',
-      startTime: '19:00',
-      endTime: '21:00'
-    };
-    const newSchedule = [...schedule, newPeriod];
-    setSchedule(newSchedule);
-    setEditingId(newPeriod.id);
-  }, [schedule]);
-
-  const handleDeletePeriod = useCallback((id: string) => {
-    const newSchedule = schedule.filter(period => period.id !== id);
-    setSchedule(newSchedule);
-    if (editingId === id) setEditingId(null);
-  }, [schedule, editingId]);
-
-  const handleUpdatePeriod = useCallback((id: string, field: keyof StudyPeriod, value: string) => {
-    const newSchedule = schedule.map(period =>
-      period.id === id ? { ...period, [field]: value } : period
-    );
-    setSchedule(newSchedule);
-  }, [schedule]);
-
-  const isValidTime = (time: string): boolean => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-  const isValidPeriod = (period: StudyPeriod): boolean => {
-    if (!period.name.trim() || !isValidTime(period.startTime) || !isValidTime(period.endTime)) return false;
-    const start = new Date(`2000-01-01 ${period.startTime}`);
-    const end = new Date(`2000-01-01 ${period.endTime}`);
-    return start < end;
-  };
-
-  const handleSaveSchedule = useCallback(() => {
-    const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
-    if (invalidPeriods.length > 0) {
-      alert('请检查课程时段设置，确保名称不为空且时间格式正确');
-      return;
-    }
-    // 不直接持久化，统一由主面板的“保存”进行写入
-    alert('课程表已更新为草稿，最终请点击面板下方“保存”应用变更');
-  }, [schedule, onScheduleSave]);
-
+  // 课表编辑功能已迁移到基础设置面板
   // 注册保存：在父组件点击保存时统一写入持久化存储
   useEffect(() => {
     onRegisterSave?.(() => {
       // 噪音基线：统一持久化为 RMS 与显示DB
       if (baselineRms > 0) {
         localStorage.setItem(BASELINE_RMS_KEY, baselineRms.toString());
-        // 将显示DB写入为滑块设定的值，保持与全局设置一致
         localStorage.setItem(BASELINE_NOISE_KEY, draftManualBaselineDb.toString());
       } else {
         localStorage.removeItem(BASELINE_RMS_KEY);
         localStorage.removeItem(BASELINE_NOISE_KEY);
       }
+
       // 自动弹出报告设置
       setAutoPopupSetting(autoPopupReport);
       // 噪音控制设置
@@ -257,35 +193,14 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         showRealtimeDb: draftShowRealtimeDb,
         avgWindowSec: draftAvgWindowSec,
       });
-
-      // 背景设置
-      saveStudyBackground({
-        type: bgType,
-        color: bgType === 'color' ? bgColor : undefined,
-        imageDataUrl: bgType === 'image' ? (bgImage ?? undefined) : undefined,
-      });
-      // 通知学习页面刷新背景
-      window.dispatchEvent(new CustomEvent('study-background-updated'));
-
-      // 课程表
-      const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
-      if (invalidPeriods.length === 0) {
-        writeStudySchedule(schedule);
-        onScheduleSave?.(schedule);
-      }
     });
-  }, [onRegisterSave, baselineRms, autoPopupReport, schedule, onScheduleSave, draftManualBaselineDb, draftMaxNoiseLevel, draftShowRealtimeDb, bgType, bgColor, bgImage]);
+  }, [onRegisterSave, baselineRms, autoPopupReport, draftManualBaselineDb, draftMaxNoiseLevel, draftShowRealtimeDb, draftAvgWindowSec]);
 
-  const handleResetSchedule = useCallback(() => {
-    if (confirm('确定要重置课程表吗？这将恢复到默认设置。')) {
-      setSchedule(DEFAULT_SCHEDULE);
-      setEditingId(null);
-    }
-  }, []);
+  // 课表重置功能已迁移到基础设置面板
 
   return (
     <div className={styles.settingsGroup} id="study-panel" role="tabpanel" aria-labelledby="study">
-      <h3 className={styles.groupTitle}>学习功能</h3>
+      <h3 className={styles.groupTitle}>监测设置</h3>
 
       <FormSection title="噪音控制">
         <div className={styles.noiseCalibrationInfo}>
@@ -374,108 +289,12 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         <p className={styles.helpText}>开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。</p>
       </FormSection>
 
-      <FormSection title="背景设置">
-        <p className={styles.helpText}>选择背景来源，并支持颜色或本地图片。保存后将应用到晚自习页面。</p>
-        <FormRow gap="sm">
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType === 'default'} onChange={() => setBgType('default')} />
-            使用系统默认
-          </label>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType === 'color'} onChange={() => setBgType('color')} />
-            自定义颜色
-          </label>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType === 'image'} onChange={() => setBgType('image')} />
-            背景图片
-          </label>
-        </FormRow>
-
-        {bgType === 'color' && (
-          <>
-            <FormRow gap="sm">
-              <FormInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
-              <FormInput type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="#000000" />
-            </FormRow>
-            <p className={styles.helpText}>支持调色盘或十六进制颜色代码（例如 #1a1a1a）。</p>
-          </>
-        )}
-
-        {bgType === 'image' && (
-          <>
-            <FormRow gap="sm">
-              <input type="file" accept="image/*" onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = () => setBgImage(reader.result as string);
-                  reader.readAsDataURL(file);
-                }
-              }} />
-            </FormRow>
-            {bgImage && (
-              <div aria-label="背景预览" style={{
-                backgroundImage: `url(${bgImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                width: '100%',
-                height: '120px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }} />
-            )}
-            <p className={styles.helpText}>图片将以 cover 方式填充，自动适配不同设备尺寸。</p>
-            <FormButtonGroup align="left">
-              <FormButton variant="danger" onClick={() => setBgImage(null)}>清除图片</FormButton>
-            </FormButtonGroup>
-          </>
-        )}
-
-        <FormButtonGroup align="right">
-          <FormButton variant="secondary" onClick={() => { setBgType('default'); setBgImage(null); }}>恢复默认背景</FormButton>
-        </FormButtonGroup>
-      </FormSection>
+      {/* 背景设置已迁移到基础设置 */}
 
       <RealTimeNoiseChart />
       <NoiseStatsSummary />
 
-      <FormSection title="课程表设置（草稿）">
-        <FormButtonGroup align="right" className={styles.sectionActions}>
-          <FormButton variant="secondary" onClick={handleResetSchedule}>重置</FormButton>
-          <FormButton variant="primary" onClick={handleAddPeriod} icon={<PlusIcon size={16} />}>添加</FormButton>
-        </FormButtonGroup>
-        <div className={styles.scheduleList}>
-          {schedule.map((period) => (
-            <div key={period.id} className={styles.periodItem}>
-              {editingId === period.id ? (
-                <div className={styles.editForm}>
-                  <FormInput type="text" value={period.name} onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)} placeholder="课程名称" />
-                  <FormRow gap="sm">
-                    <FormInput type="time" value={period.startTime} onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)} variant="time" />
-                    <span className={styles.timeSeparator}>-</span>
-                    <FormInput type="time" value={period.endTime} onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)} variant="time" />
-                  </FormRow>
-                  <FormButtonGroup align="right">
-                    <FormButton variant="success" onClick={() => setEditingId(null)} icon={<SaveIcon size={14} />} size="sm" />
-                    <FormButton variant="danger" onClick={() => handleDeletePeriod(period.id)} icon={<TrashIcon size={14} />} size="sm" />
-                  </FormButtonGroup>
-                </div>
-              ) : (
-                <div className={styles.periodDisplay} onClick={() => setEditingId(period.id)}>
-                  <div className={styles.periodInfo}>
-                    <span className={styles.periodName}>{period.name}</span>
-                    <span className={styles.periodTime}>{period.startTime} - {period.endTime}</span>
-                  </div>
-                  <FormButton variant="danger" onClick={(e) => { e.stopPropagation(); handleDeletePeriod(period.id); }} icon={<TrashIcon size={14} />} size="sm" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <FormButtonGroup align="right">
-          <FormButton variant="primary" onClick={handleSaveSchedule} icon={<SaveIcon size={14} />}>保存课程表</FormButton>
-        </FormButtonGroup>
-      </FormSection>
+      {/* 课表设置已迁移到基础设置 */}
     </div>
   );
 };

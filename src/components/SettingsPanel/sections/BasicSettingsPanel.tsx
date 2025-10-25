@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAppState, useAppDispatch } from '../../../contexts/AppContext';
 import { FormSection, FormInput, FormSegmented, FormButton, FormButtonGroup, FormCheckbox, FormRow } from '../../FormComponents';
-import { RefreshIcon } from '../../Icons';
 import styles from '../SettingsPanel.module.css';
+import ScheduleSettings from '../../ScheduleSettings';
+import { readStudyBackground, saveStudyBackground } from '../../../utils/studyBackgroundStorage';
 
 /**
  * 基础设置分段组件的属性
@@ -18,21 +19,13 @@ export interface BasicSettingsPanelProps {
 /**
  * 基础设置分段组件
  * - 倒计时类型与目标年份/自定义事件设置
- * - 天气信息展示与刷新
- */
-/**
- * 基础设置分段组件
- * - 倒计时类型与目标年份/自定义事件设置
- * - 天气信息展示与刷新
+ * - 晚自习组件显示开关（时间始终显示）
+ * - 背景设置
+ * - 课表设置入口
  */
 export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYear, onTargetYearChange, onRegisterSave }) => {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
-
-  // 天气增强：地址、刷新状态、最后成功时间
-  const [weatherAddress, setWeatherAddress] = useState<string>(() => localStorage.getItem('weather.address') || '');
-  const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>(() => localStorage.getItem('weather.refreshStatus') || '');
-  const [weatherLastTs, setWeatherLastTs] = useState<number>(() => parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10));
 
   // 倒计时设置草稿
   const [draftCountdownType, setDraftCountdownType] = useState<'gaokao' | 'custom'>(study.countdownType ?? 'gaokao');
@@ -43,12 +36,13 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
   const defaultDisplay = { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
   const [draftDisplay, setDraftDisplay] = useState<typeof defaultDisplay>({ ...(study.display || defaultDisplay) });
 
-  const handleRefreshWeather = useCallback(() => {
-    const weatherRefreshEvent = new CustomEvent('weatherRefresh');
-    window.dispatchEvent(weatherRefreshEvent);
-    setWeatherRefreshStatus('刷新中');
-    localStorage.setItem('weather.refreshStatus', '刷新中');
-  }, []);
+  // 背景设置草稿
+  const [bgType, setBgType] = useState<'default' | 'color' | 'image'>('default');
+  const [bgColor, setBgColor] = useState<string>('#0d1117');
+  const [bgImage, setBgImage] = useState<string | null>(null);
+
+  // 课表设置弹窗
+  const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   useEffect(() => {
     // 同步草稿为当前应用状态（打开面板或刷新时）
@@ -56,18 +50,11 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
     setDraftCustomName(study.customName ?? '');
     setDraftCustomDate(study.customDate ?? '');
     setDraftDisplay({ ...(study.display || defaultDisplay), showTime: true });
-
-    const onDone = (e: Event) => {
-      const detail = (e as CustomEvent).detail || {};
-      const status = detail.status || localStorage.getItem('weather.refreshStatus') || '';
-      const address = detail.address || localStorage.getItem('weather.address') || '';
-      const ts = detail.ts || parseInt(localStorage.getItem('weather.lastSuccessTs') || '0', 10);
-      setWeatherRefreshStatus(status);
-      setWeatherAddress(address);
-      if (status === '成功') setWeatherLastTs(ts);
-    };
-    window.addEventListener('weatherRefreshDone', onDone as EventListener);
-    return () => window.removeEventListener('weatherRefreshDone', onDone as EventListener);
+    // 背景设置
+    const bg = readStudyBackground();
+    setBgType(bg.type);
+    if (bg.color) setBgColor(bg.color);
+    setBgImage(bg.imageDataUrl ?? null);
   }, [study.countdownType, study.customName, study.customDate, study.display]);
 
   // 注册保存动作：统一在父组件保存时派发
@@ -79,12 +66,56 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
       }
       // 保存组件显示设置（强制时间显示）
       dispatch({ type: 'SET_STUDY_DISPLAY', payload: { ...draftDisplay, showTime: true } });
+      // 保存背景设置
+      saveStudyBackground({
+        type: bgType,
+        color: bgType === 'color' ? bgColor : undefined,
+        imageDataUrl: bgType === 'image' ? (bgImage ?? undefined) : undefined,
+      });
+      // 通知学习页面刷新背景
+      window.dispatchEvent(new CustomEvent('study-background-updated'));
     });
-  }, [onRegisterSave, draftCountdownType, draftCustomName, draftCustomDate, draftDisplay, dispatch]);
+  }, [onRegisterSave, draftCountdownType, draftCustomName, draftCustomDate, draftDisplay, bgType, bgColor, bgImage, dispatch]);
 
   return (
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
       <h3 className={styles.groupTitle}>基础设置</h3>
+
+      {/* 组件开关 */}
+      <FormSection title="晚自习页面组件显示">
+        <p className={styles.helpText}>自定义晚自习页面各组件的显示与隐藏（当前时间始终显示）。</p>
+        <FormRow gap="lg" align="start">
+          <FormCheckbox
+            label="显示状态栏"
+            checked={!!draftDisplay.showStatusBar}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showStatusBar: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示噪音监测"
+            checked={!!draftDisplay.showNoiseMonitor}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showNoiseMonitor: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示倒计时"
+            checked={!!draftDisplay.showCountdown}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showCountdown: e.target.checked })}
+          />
+        </FormRow>
+        <FormRow gap="lg" align="start">
+          <FormCheckbox
+            label="显示励志金句"
+            checked={!!draftDisplay.showQuote}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showQuote: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示当前日期"
+            checked={!!draftDisplay.showDate}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showDate: e.target.checked })}
+          />
+        </FormRow>
+      </FormSection>
+
+      {/* 高考年份/自定义事件 */}
       <FormSection title="倒计时设置">
         <p className={styles.helpText}>
           选择倒计时类型。高考模式默认使用最近一年高考日期；自定义模式可设置事件名称与日期。
@@ -130,84 +161,72 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
         )}
       </FormSection>
 
-      <FormSection title="晚自习页面组件显示">
-        <p className={styles.helpText}>自定义晚自习页面各组件的显示与隐藏（当前时间始终显示）。</p>
-        <FormRow gap="lg" align="start">
-          <FormCheckbox
-            label="显示状态栏"
-            checked={!!draftDisplay.showStatusBar}
-            onChange={(e) => setDraftDisplay({ ...draftDisplay, showStatusBar: e.target.checked })}
-          />
-          <FormCheckbox
-            label="显示噪音监测"
-            checked={!!draftDisplay.showNoiseMonitor}
-            onChange={(e) => setDraftDisplay({ ...draftDisplay, showNoiseMonitor: e.target.checked })}
-          />
-          <FormCheckbox
-            label="显示倒计时"
-            checked={!!draftDisplay.showCountdown}
-            onChange={(e) => setDraftDisplay({ ...draftDisplay, showCountdown: e.target.checked })}
-          />
-        </FormRow>
-        <FormRow gap="lg" align="start">
-          <FormCheckbox
-            label="显示励志金句"
-            checked={!!draftDisplay.showQuote}
-            onChange={(e) => setDraftDisplay({ ...draftDisplay, showQuote: e.target.checked })}
-          />
-          <FormCheckbox
-            label="显示当前日期"
-            checked={!!draftDisplay.showDate}
-            onChange={(e) => setDraftDisplay({ ...draftDisplay, showDate: e.target.checked })}
-          />
-        </FormRow>
+      {/* 背景设置 */}
+      <FormSection title="背景设置">
+        <p className={styles.helpText}>选择背景来源，并支持颜色或本地图片。保存后将应用到晚自习页面。</p>
+        <FormSegmented
+          label="背景来源"
+          value={bgType}
+          options={[
+            { label: '使用系统默认', value: 'default' },
+            { label: '自定义颜色', value: 'color' },
+            { label: '背景图片', value: 'image' },
+          ]}
+          onChange={(v) => setBgType(v as 'default' | 'color' | 'image')}
+        />
+
+        {bgType === 'color' && (
+          <>
+            <FormRow gap="sm">
+              <FormInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
+              <FormInput type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="#000000" />
+            </FormRow>
+            <p className={styles.helpText}>支持调色盘或十六进制颜色代码（例如 #1a1a1a）。</p>
+          </>
+        )}
+
+        {bgType === 'image' && (
+          <>
+            <FormRow gap="sm">
+              <input type="file" accept="image/*" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = () => setBgImage(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+              }} />
+            </FormRow>
+            {bgImage && (
+              <div aria-label="背景预览" style={{
+                backgroundImage: `url(${bgImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                width: '100%',
+                height: '120px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }} />
+            )}
+            <p className={styles.helpText}>图片将以 cover 方式填充，自动适配不同设备尺寸。</p>
+            <FormButtonGroup align="left">
+              <FormButton variant="danger" onClick={() => setBgImage(null)}>清除图片</FormButton>
+            </FormButtonGroup>
+          </>
+        )}
+
+        <FormButtonGroup align="right">
+          <FormButton variant="secondary" onClick={() => { setBgType('default'); setBgImage(null); }}>恢复默认背景</FormButton>
+        </FormButtonGroup>
       </FormSection>
 
-      <FormSection title="天气设置">
-        <div className={styles.weatherInfo}>
-          <p className={styles.infoText}>手动刷新天气数据以获取最新的天气信息。</p>
-          <p className={styles.infoText}>定位坐标：{(() => {
-            const lat = localStorage.getItem('weather.coords.lat');
-            const lon = localStorage.getItem('weather.coords.lon');
-            return lat && lon ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}` : '未获取';
-          })()}</p>
-          <p className={styles.infoText}>定位方式：{(() => {
-            const source = localStorage.getItem('weather.coords.source');
-            if (!source) return '未获取';
-            if (source === 'geolocation') return '浏览器定位';
-            if (source === 'amap_ip') return '高德IP定位';
-            if (source === 'ip') return '公共IP定位';
-            return source;
-          })()}</p>
-          <p className={styles.infoText}>街道地址：{weatherAddress || '未获取'}</p>
-          <p className={styles.infoText}>时间：{localStorage.getItem('weather.now.obsTime') || '未获取'}</p>
-          <p className={styles.infoText}>天气：{localStorage.getItem('weather.now.text') || '未获取'}</p>
-          <p className={styles.infoText}>气温：{localStorage.getItem('weather.now.temp') ? `${localStorage.getItem('weather.now.temp')}°C` : '未获取'}  体感：{localStorage.getItem('weather.now.feelsLike') ? `${localStorage.getItem('weather.now.feelsLike')}°C` : '未获取'}</p>
-          <p className={styles.infoText}>风向：{localStorage.getItem('weather.now.windDir') || '未获取'}  风力：{localStorage.getItem('weather.now.windScale') || '未获取'}  风速：{localStorage.getItem('weather.now.windSpeed') ? `${localStorage.getItem('weather.now.windSpeed')} km/h` : '未获取'}</p>
-          <p className={styles.infoText}>湿度：{localStorage.getItem('weather.now.humidity') ? `${localStorage.getItem('weather.now.humidity')}%` : '未获取'}  气压：{localStorage.getItem('weather.now.pressure') ? `${localStorage.getItem('weather.now.pressure')} hPa` : '未获取'}</p>
-          <p className={styles.infoText}>降水：{localStorage.getItem('weather.now.precip') ? `${localStorage.getItem('weather.now.precip')} mm` : '未获取'}  能见度：{localStorage.getItem('weather.now.vis') ? `${localStorage.getItem('weather.now.vis')} km` : '未获取'}  云量：{localStorage.getItem('weather.now.cloud') || '未获取'}</p>
-          <p className={styles.infoText}>露点：{localStorage.getItem('weather.now.dew') || '未获取'}</p>
-          <p className={styles.infoText}>数据源：{(() => {
-            const sources = localStorage.getItem('weather.refer.sources');
-            return sources ? 'QWeather' : '未获取';
-          })()}</p>
-          <p className={styles.infoText}>许可：{(() => {
-            const license = localStorage.getItem('weather.refer.license');
-            return license ? 'QWeather Developers License' : '未获取';
-          })()}</p>
-          <p className={styles.infoText}>刷新状态：{weatherRefreshStatus || '未刷新'}</p>
-          <p className={styles.infoText}>最后成功时间：{weatherLastTs > 0 ? new Date(weatherLastTs).toLocaleString() : '未成功'}</p>
-        </div>
-
+      {/* 课表设置入口 */}
+      <FormSection title="课表设置">
+        <p className={styles.helpText}>点击下方按钮打开课表编辑弹窗，支持添加、修改、删除与排序。</p>
         <FormButtonGroup align="left">
-          <FormButton
-            variant="secondary"
-            onClick={handleRefreshWeather}
-            icon={<RefreshIcon size={16} />}
-          >
-            刷新天气
-          </FormButton>
+          <FormButton variant="primary" onClick={() => setScheduleOpen(true)}>打开课表设置</FormButton>
         </FormButtonGroup>
+        <ScheduleSettings isOpen={scheduleOpen} onClose={() => setScheduleOpen(false)} onSave={() => { /* 已在弹窗内持久化 */ }} />
       </FormSection>
     </div>
   );

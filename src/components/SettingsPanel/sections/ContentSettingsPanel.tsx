@@ -50,7 +50,7 @@ export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRe
 
   return (
     <div className={styles.settingsGroup} id="content-panel" role="tabpanel" aria-labelledby="content">
-      <h3 className={styles.groupTitle}>内容管理</h3>
+      <h3 className={styles.groupTitle}>金句设置</h3>
       <FormSection title="金句自动刷新">
         <div className={styles.quoteRefreshInfo}>
           <p className={styles.infoText}>当前设置: {formatRefreshIntervalText(draftInterval)}</p>
