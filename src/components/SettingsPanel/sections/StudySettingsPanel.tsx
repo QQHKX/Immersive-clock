@@ -54,6 +54,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
   const [draftMaxNoiseLevel, setDraftMaxNoiseLevel] = useState<number>(initialControl.maxLevelDb);
   const [draftManualBaselineDb, setDraftManualBaselineDb] = useState<number>(initialControl.baselineDb);
   const [draftShowRealtimeDb, setDraftShowRealtimeDb] = useState<boolean>(initialControl.showRealtimeDb);
+  const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
 
   const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -108,8 +109,8 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     setIsCalibrating(true);
     setCalibrationProgress(0);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
@@ -211,7 +212,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
   }, [schedule, editingId]);
 
   const handleUpdatePeriod = useCallback((id: string, field: keyof StudyPeriod, value: string) => {
-    const newSchedule = schedule.map(period => 
+    const newSchedule = schedule.map(period =>
       period.id === id ? { ...period, [field]: value } : period
     );
     setSchedule(newSchedule);
@@ -254,8 +255,9 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         maxLevelDb: draftMaxNoiseLevel,
         baselineDb: draftManualBaselineDb,
         showRealtimeDb: draftShowRealtimeDb,
+        avgWindowSec: draftAvgWindowSec,
       });
-      
+
       // 背景设置
       saveStudyBackground({
         type: bgType,
@@ -264,7 +266,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
       });
       // 通知学习页面刷新背景
       window.dispatchEvent(new CustomEvent('study-background-updated'));
-      
+
       // 课程表
       const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
       if (invalidPeriods.length === 0) {
@@ -290,23 +292,35 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
           <p className={styles.infoText}>自动噪音限制：最大允许 {draftMaxNoiseLevel.toFixed(0)}dB</p>
           <p className={styles.helpText}>超过该阈值时将判定为“吵闹”，用于提醒与报告统计。</p>
         </div>
-      <FormSlider
-        label="最大允许噪音级别"
-        value={draftMaxNoiseLevel}
-        min={40}
-        max={80}
-        step={1}
-        onChange={setDraftMaxNoiseLevel}
-        formatValue={(v: number) => `${v.toFixed(0)}dB`}
-        showRange={true}
-        rangeLabels={["40dB", "80dB"]}
-      />
-      <FormCheckbox
-        label="显示实时分贝"
-        checked={draftShowRealtimeDb}
-        onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
-      />
-    </FormSection>
+        <FormSlider
+          label="最大允许噪音级别"
+          value={draftMaxNoiseLevel}
+          min={40}
+          max={80}
+          step={1}
+          onChange={setDraftMaxNoiseLevel}
+          formatValue={(v: number) => `${v.toFixed(0)}dB`}
+          showRange={true}
+          rangeLabels={["40dB", "80dB"]}
+        />
+        <FormCheckbox
+          label="显示实时分贝"
+          checked={draftShowRealtimeDb}
+          onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
+        />
+        <FormSlider
+          label="噪音平均时间窗"
+          value={draftAvgWindowSec}
+          min={0.5}
+          max={10}
+          step={0.5}
+          onChange={setDraftAvgWindowSec}
+          formatValue={(v: number) => `${v.toFixed(1)}秒`}
+          showRange={true}
+          rangeLabels={["0.5秒", "10秒"]}
+        />
+        <p className={styles.helpText}>显示与存储均采用该时间窗的平均值，默认 1 秒。</p>
+      </FormSection>
 
       <FormSection title="噪音基准与校准">
         <div className={styles.noiseCalibrationInfo}>
@@ -348,31 +362,31 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
         </FormButtonGroup>
       </FormSection>
 
-  <FormSection title="噪音报告设置">
-    <FormCheckbox
-      label="自动弹出噪音报告"
-      checked={autoPopupReport}
-      onChange={(e) => {
-        const checked = e.target.checked;
-        setAutoPopupReport(checked);
-      }}
-    />
+      <FormSection title="噪音报告设置">
+        <FormCheckbox
+          label="自动弹出噪音报告"
+          checked={autoPopupReport}
+          onChange={(e) => {
+            const checked = e.target.checked;
+            setAutoPopupReport(checked);
+          }}
+        />
         <p className={styles.helpText}>开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。</p>
-  </FormSection>
+      </FormSection>
 
       <FormSection title="背景设置">
         <p className={styles.helpText}>选择背景来源，并支持颜色或本地图片。保存后将应用到晚自习页面。</p>
         <FormRow gap="sm">
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType==='default'} onChange={() => setBgType('default')} />
+            <input type="radio" name="bg-type" checked={bgType === 'default'} onChange={() => setBgType('default')} />
             使用系统默认
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType==='color'} onChange={() => setBgType('color')} />
+            <input type="radio" name="bg-type" checked={bgType === 'color'} onChange={() => setBgType('color')} />
             自定义颜色
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <input type="radio" name="bg-type" checked={bgType==='image'} onChange={() => setBgType('image')} />
+            <input type="radio" name="bg-type" checked={bgType === 'image'} onChange={() => setBgType('image')} />
             背景图片
           </label>
         </FormRow>

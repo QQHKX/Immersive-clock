@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './NoiseMonitor.module.css';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import { readNoiseSamples, writeNoiseSample, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
 
 // 噪音状态类型
 type NoiseStatus = 'quiet' | 'noisy' | 'error' | 'permission-denied' | 'initializing';
@@ -18,7 +19,7 @@ const EMA_ALPHA = 0.25; // 指数滑动平均系数，平衡响应与稳定
 
 // localStorage 键名
 const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
-const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
+
 
 interface NoiseMonitorProps {
   // 点击状态文本时触发（安静/吵闹状态下）
@@ -49,7 +50,8 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     return s.baselineDb ?? BASELINE_DB_DEFAULT;
   });
   const [showRealtimeDb, setShowRealtimeDb] = useState<boolean>(() => getNoiseControlSettings().showRealtimeDb);
-  
+  const [avgWindowSec, setAvgWindowSec] = useState<number>(() => getNoiseControlSettings().avgWindowSec);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -61,10 +63,11 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const emaDbRef = useRef<number | null>(null); // 保存平滑后的 dB
   const highpassRef = useRef<BiquadFilterNode | null>(null);
   const lowpassRef = useRef<BiquadFilterNode | null>(null);
-  
+  const windowSamplesRef = useRef<{ t: number; v: number }[]>([]);
+
   // 检测是否为移动设备
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
+
   /**
    * 移动设备特殊处理：延长稳定时间
    */
@@ -94,16 +97,9 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       db = Math.max(20, Math.min(100, 20 * Math.log10(rms / 1e-3) + 60));
     }
 
-    // 指数滑动平均（EMA）平滑输出，减少抖动
-    if (emaDbRef.current == null) {
-      emaDbRef.current = db;
-    } else {
-      emaDbRef.current = EMA_ALPHA * db + (1 - EMA_ALPHA) * emaDbRef.current;
-    }
-
-    // 四舍五入到 0.1dB 提升显示观感
-    const smoothed = Math.round(emaDbRef.current * 10) / 10;
-    return smoothed;
+    // 返回瞬时 dB（时间窗平均实现平滑）
+    const instant = Math.round(db * 10) / 10;
+    return instant;
   }, [baselineRms, displayBaselineDb]);
 
   // 状态防抖已删除：状态由每 2000ms 的持久化样本直接驱动
@@ -119,34 +115,41 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     const dataArray = new Float32Array(analyserRef.current.fftSize);
     analyserRef.current.getFloatTimeDomainData(dataArray);
 
-    const displayDb = calculateDisplayDb(dataArray);
+    const instantDb = calculateDisplayDb(dataArray);
+
+    const now = Date.now();
+    // 维护时间窗样本
+    const windowArr = windowSamplesRef.current;
+    windowArr.push({ t: now, v: instantDb });
+    const cutoff = now - Math.max(200, Math.round(avgWindowSec * 1000));
+    while (windowArr.length && windowArr[0].t < cutoff) {
+      windowArr.shift();
+    }
+    // 计算时间加权平均
+    let sum = 0;
+    let total = 0;
+    for (let i = 0; i < windowArr.length; i++) {
+      const t0 = windowArr[i].t;
+      const t1 = i < windowArr.length - 1 ? windowArr[i + 1].t : now;
+      const dt = Math.max(0, t1 - t0);
+      sum += windowArr[i].v * dt;
+      total += dt;
+    }
+    const avgDb = total > 0 ? sum / total : instantDb;
 
     // 每 2000ms 更新展示与状态，并持久化
-    const now = Date.now();
     if (!lastPersistTsRef.current || now - lastPersistTsRef.current >= 2000) {
-      try {
-        const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
-        const list: { t: number; v: number; s: 'quiet' | 'noisy' }[] = raw ? JSON.parse(raw) : [];
-        const isNoisy = displayDb >= thresholdDb;
-        list.push({ t: now, v: displayDb, s: isNoisy ? 'noisy' : 'quiet' });
-        // 仅保留最近24小时的数据，避免无限增长
-        const cutoff = now - 24 * 60 * 60 * 1000;
-        const trimmed = list.filter(item => item.t >= cutoff);
-        localStorage.setItem(NOISE_SAMPLE_STORAGE_KEY, JSON.stringify(trimmed));
-
-        // 使用持久化样本作为标准更新 UI 与状态
-        setCurrentVolume(displayDb);
-        setNoiseStatus(isNoisy ? 'noisy' : 'quiet');
-      } catch (e) {
-        // 忽略单次持久化错误，避免影响实时监测
-        console.warn('噪音采样持久化失败:', e);
-      }
+      const isNoisy = avgDb >= thresholdDb;
+      writeNoiseSample({ t: now, v: avgDb, s: isNoisy ? 'noisy' : 'quiet' });
+      // 立即用同一数据源更新UI，避免“初始化中”卡住
+      setCurrentVolume(avgDb);
+      setNoiseStatus(isNoisy ? 'noisy' : 'quiet');
       lastPersistTsRef.current = now;
     }
 
     // 继续下一帧分析
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
-  }, [calculateDisplayDb, thresholdDb]);
+  }, [calculateDisplayDb, thresholdDb, avgWindowSec]);
 
   /**
    * 校准基准噪音水平
@@ -205,7 +208,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const clearCalibration = useCallback(() => {
     setBaselineNoise(0);
     setBaselineRms(0);
-    emaDbRef.current = null;
+    // emaDbRef.current = null; // 已移除EMA
     localStorage.removeItem(BASELINE_NOISE_KEY);
     localStorage.removeItem(BASELINE_RMS_KEY);
     console.log('校准数据已清除');
@@ -220,19 +223,19 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       console.log('音频监测已在初始化中，跳过重复初始化');
       return;
     }
-    
+
     initializationCountRef.current += 1;
-    
+
     try {
       // 请求麦克风权限
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false
-        } 
+        }
       });
-      
+
       streamRef.current = stream;
       setHasPermission(true);
 
@@ -270,7 +273,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
       // 开始分析
       analyzeAudio();
-      
+
     } catch (error) {
       console.error('初始化音频监测失败:', error);
       if (error instanceof Error) {
@@ -292,6 +295,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       setThresholdDb(s.maxLevelDb);
       setDisplayBaselineDb(s.baselineDb ?? BASELINE_DB_DEFAULT);
       setShowRealtimeDb(s.showRealtimeDb);
+      setAvgWindowSec(s.avgWindowSec);
     };
     sync();
     const id = setInterval(sync, 2000);
@@ -316,15 +320,15 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
     // 断开音频连接
     if (microphoneRef.current) {
-      try { microphoneRef.current.disconnect(); } catch {}
+      try { microphoneRef.current.disconnect(); } catch { }
       microphoneRef.current = null;
     }
     if (highpassRef.current) {
-      try { highpassRef.current.disconnect(); } catch {}
+      try { highpassRef.current.disconnect(); } catch { }
       highpassRef.current = null;
     }
     if (lowpassRef.current) {
-      try { lowpassRef.current.disconnect(); } catch {}
+      try { lowpassRef.current.disconnect(); } catch { }
       lowpassRef.current = null;
     }
 
@@ -350,7 +354,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (isCalibrating) {
       return '校准中...';
     }
-    
+
     switch (noiseStatus) {
       case 'quiet':
         return '安静';
@@ -373,7 +377,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (isCalibrating) {
       return styles.calibrating;
     }
-    
+
     switch (noiseStatus) {
       case 'quiet':
         return styles.quiet;
@@ -394,11 +398,11 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
    */
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡，防止触发页面点击事件
-    
+
     if (isCalibrating) {
       return; // 校准中不响应点击
     }
-    
+
     if (noiseStatus === 'permission-denied' || noiseStatus === 'error') {
       // 重试初始化
       setNoiseStatus('initializing');
@@ -427,56 +431,76 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     return cleanup;
   }, [initializeAudioMonitoring, cleanup]);
 
+  // 订阅统一噪音样本更新事件：用最后一次保存的样本驱动显示
+  useEffect(() => {
+    const applyLastSample = () => {
+      try {
+        const samples = readNoiseSamples();
+        const last = samples[samples.length - 1];
+        if (last) {
+          setCurrentVolume(last.v);
+          setNoiseStatus(last.s);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    const unsubscribe = subscribeNoiseSamplesUpdated(applyLastSample);
+    // 初次挂载时尝试应用一次（避免一直停留在“初始化中”）
+    applyLastSample();
+    return unsubscribe;
+  }, []);
+
   // 自动校准：当音频监测初始化完成且没有保存的校准数据时自动开始校准
   useEffect(() => {
     // 更严格的条件检查，防止重复触发
     if (
-      (noiseStatus === 'quiet' || noiseStatus === 'noisy') && 
-      baselineRms === 0 && 
-      !isCalibrating && 
-      !autoCalibrationTriggeredRef.current && 
-      hasPermission && 
-      analyserRef.current && 
+      (noiseStatus === 'quiet' || noiseStatus === 'noisy') &&
+      baselineRms === 0 &&
+      !isCalibrating &&
+      !autoCalibrationTriggeredRef.current &&
+      hasPermission &&
+      analyserRef.current &&
       initializationCountRef.current <= 1 // 限制初始化次数
     ) {
       console.log('检测到首次使用，自动开始校准...', { isMobileDevice });
-       autoCalibrationTriggeredRef.current = true; // 标记已触发自动校准
-       
-       // 根据设备类型调整延迟时间
-        const delay = getMobileDelay();
-        setTimeout(() => {
-          if (!isCalibrating && baselineRms === 0) {
-            console.log('延迟校准开始，设备类型：', isMobileDevice ? '移动设备' : '桌面设备');
-            calibrateBaseline();
-          }
-        }, delay);
+      autoCalibrationTriggeredRef.current = true; // 标记已触发自动校准
+
+      // 根据设备类型调整延迟时间
+      const delay = getMobileDelay();
+      setTimeout(() => {
+        if (!isCalibrating && baselineRms === 0) {
+          console.log('延迟校准开始，设备类型：', isMobileDevice ? '移动设备' : '桌面设备');
+          calibrateBaseline();
+        }
+      }, delay);
     }
   }, [noiseStatus, baselineRms, isCalibrating, hasPermission, calibrateBaseline]);
 
   return (
     <div className={styles.noiseMonitor}>
       <div className={styles.statusContainer}>
-        <div 
+        <div
           className={`${styles.breathingLight} ${getStatusClassName()}`}
           onClick={handleClick}
           title={
             isCalibrating ? '正在校准基准噪音水平...' :
-            noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
-            noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-              `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
-              `当前音量: ${currentVolume.toFixed(0)}dB`
+              noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
+                noiseStatus === 'quiet' || noiseStatus === 'noisy' ?
+                  `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
+                  `当前音量: ${currentVolume.toFixed(0)}dB`
           }
         ></div>
         <div className={styles.textBlock}>
-          <div 
+          <div
             className={`${styles.statusText} ${getStatusClassName()}`}
             onClick={handleClick}
             title={
               isCalibrating ? '正在校准基准噪音水平...' :
-              noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
-              noiseStatus === 'quiet' || noiseStatus === 'noisy' ? 
-                `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
-                `当前音量: ${currentVolume.toFixed(0)}dB`
+                noiseStatus === 'permission-denied' || noiseStatus === 'error' ? '点击重试' :
+                  noiseStatus === 'quiet' || noiseStatus === 'noisy' ?
+                    `当前音量: ${currentVolume.toFixed(0)}dB${baselineNoise > 0 ? ` (基准: ${baselineNoise.toFixed(0)}dB)` : ''}` :
+                    `当前音量: ${currentVolume.toFixed(0)}dB`
             }
           >
             {getStatusText()}

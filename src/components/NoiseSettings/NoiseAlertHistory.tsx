@@ -1,9 +1,9 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { FormSection } from '../FormComponents';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './NoiseSettings.module.css';
+import { FormSection } from '../FormComponents';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
 
-const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
@@ -15,45 +15,49 @@ interface NoiseSample {
 export const NoiseAlertHistory: React.FC = () => {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 3000);
-    return () => clearInterval(id);
+    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
+    setTick(t => t + 1);
+    return unsubscribe;
   }, []);
 
-  const alerts = useMemo(() => {
+  const { items, total } = useMemo(() => {
     try {
-      const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
-      const all: NoiseSample[] = raw ? JSON.parse(raw) : [];
-      const list: { t: number; v: number }[] = [];
-      for (let i = 1; i < all.length; i++) {
-        const prev = all[i - 1];
-        const cur = all[i];
-        const threshold = getThreshold();
+      const all: NoiseSample[] = readNoiseSamples();
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 最近24小时
+      const threshold = getThreshold();
+      const recent = all.filter(s => s.t >= cutoff).sort((a, b) => a.t - b.t);
+      const transitions: { time: string; value: number }[] = [];
+      for (let i = 1; i < recent.length; i++) {
+        const prev = recent[i - 1];
+        const cur = recent[i];
         if (prev.v <= threshold && cur.v > threshold) {
-          list.push({ t: cur.t, v: cur.v });
+          transitions.push({ time: new Date(cur.t).toLocaleTimeString(), value: cur.v });
         }
       }
-      return list.reverse();
+      // 最新在前
+      transitions.reverse();
+      return { items: transitions, total: transitions.length };
     } catch {
-      return [];
+      return { items: [], total: 0 };
     }
   }, [tick]);
 
   return (
-    <FormSection title="历史记录面板">
-      <div className={styles.historyList} aria-live="polite">
-        {alerts.length === 0 ? (
+    <FormSection title="提醒记录">
+      <div className={styles.alertHeader}>
+        <div>最近24小时提醒次数：{total}</div>
+      </div>
+      <div className={styles.alertList}>
+        {items.length === 0 ? (
           <div className={styles.empty}>暂无提醒记录</div>
         ) : (
-          alerts.map((a, idx) => (
-            <div key={idx} className={styles.historyItem}>
-              <span className={styles.historyTime}>{new Date(a.t).toLocaleString()}</span>
-              <span className={styles.historyBadge}>超标 {a.v.toFixed(1)} dB</span>
+          items.map((it, idx) => (
+            <div key={idx} className={styles.alertItem}>
+              <span className={styles.alertTime}>{it.time}</span>
+              <span className={styles.alertValue}>{it.value.toFixed(1)} dB</span>
             </div>
           ))
         )}
-      </div>
-      <div className={styles.sourceNote} aria-live="polite">
-        数据来源时间：最近24小时提醒记录
       </div>
     </FormSection>
   );

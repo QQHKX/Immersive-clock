@@ -104,6 +104,15 @@
   padding: 0.5rem 0.75rem;
 }
 
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-ui);
+}
+
 .historyTime {
   color: rgba(255, 255, 255, 0.85);
   font-family: var(--font-ui);

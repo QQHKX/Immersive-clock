@@ -7,17 +7,21 @@
 const NOISE_MAX_LEVEL_KEY = 'noise-control-max-level-db';
 const NOISE_BASELINE_DB_KEY = 'noise-control-baseline-db';
 const NOISE_SHOW_REALTIME_DB_KEY = 'noise-control-show-realtime-db';
+// 新增：噪音平均时间窗（秒）
+const NOISE_AVG_WINDOW_SEC_KEY = 'noise-control-avg-window-sec';
 
 export interface NoiseControlSettings {
   maxLevelDb: number; // 最大允许噪音级别（阈值）
   baselineDb: number; // 手动基准显示分贝
   showRealtimeDb: boolean; // 是否显示实时分贝副文本
+  avgWindowSec: number; // 噪音平均时间窗（秒）
 }
 
 const DEFAULT_SETTINGS: NoiseControlSettings = {
   maxLevelDb: 55,
   baselineDb: 40,
   showRealtimeDb: true,
+  avgWindowSec: 1,
 };
 
 export function getNoiseControlSettings(): NoiseControlSettings {
@@ -25,10 +29,12 @@ export function getNoiseControlSettings(): NoiseControlSettings {
     const maxLevel = localStorage.getItem(NOISE_MAX_LEVEL_KEY);
     const baselineDb = localStorage.getItem(NOISE_BASELINE_DB_KEY);
     const showRealtimeDb = localStorage.getItem(NOISE_SHOW_REALTIME_DB_KEY);
+    const avgWindowSecStr = localStorage.getItem(NOISE_AVG_WINDOW_SEC_KEY);
     return {
       maxLevelDb: maxLevel !== null ? parseFloat(maxLevel) : DEFAULT_SETTINGS.maxLevelDb,
       baselineDb: baselineDb !== null ? parseFloat(baselineDb) : DEFAULT_SETTINGS.baselineDb,
       showRealtimeDb: showRealtimeDb !== null ? showRealtimeDb === 'true' : DEFAULT_SETTINGS.showRealtimeDb,
+      avgWindowSec: avgWindowSecStr !== null ? Math.max(0.2, parseFloat(avgWindowSecStr)) : DEFAULT_SETTINGS.avgWindowSec,
     };
   } catch (error) {
     console.warn('读取噪音控制设置失败:', error);
@@ -48,6 +54,9 @@ export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>
     }
     if (settings.showRealtimeDb !== undefined) {
       localStorage.setItem(NOISE_SHOW_REALTIME_DB_KEY, next.showRealtimeDb ? 'true' : 'false');
+    }
+    if (settings.avgWindowSec !== undefined) {
+      localStorage.setItem(NOISE_AVG_WINDOW_SEC_KEY, next.avgWindowSec.toString());
     }
   } catch (error) {
     console.error('保存噪音控制设置失败:', error);
@@ -78,11 +87,20 @@ export function setShowRealtimeDb(show: boolean): void {
   saveNoiseControlSettings({ showRealtimeDb: show });
 }
 
+export function getAvgWindowSec(): number {
+  return getNoiseControlSettings().avgWindowSec;
+}
+
+export function setAvgWindowSec(sec: number): void {
+  saveNoiseControlSettings({ avgWindowSec: sec });
+}
+
 export function resetNoiseControlSettings(): void {
   try {
     localStorage.removeItem(NOISE_MAX_LEVEL_KEY);
     localStorage.removeItem(NOISE_BASELINE_DB_KEY);
     localStorage.removeItem(NOISE_SHOW_REALTIME_DB_KEY);
+    localStorage.removeItem(NOISE_AVG_WINDOW_SEC_KEY);
   } catch (error) {
     console.error('重置噪音控制设置失败:', error);
   }

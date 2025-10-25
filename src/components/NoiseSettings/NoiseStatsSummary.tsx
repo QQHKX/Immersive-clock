@@ -3,8 +3,8 @@ import { FormSection } from '../FormComponents';
 import styles from './NoiseSettings.module.css';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
 
-const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
@@ -23,8 +23,10 @@ function formatDuration(ms: number) {
 export const NoiseStatsSummary: React.FC = () => {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 3000);
-    return () => clearInterval(id);
+    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
+    // 立即更新一次，避免首次为空
+    setTick(t => t + 1);
+    return unsubscribe;
   }, []);
 
   // 计算当前课程时段（如果存在）
@@ -72,8 +74,7 @@ export const NoiseStatsSummary: React.FC = () => {
 
   const stats = useMemo(() => {
     try {
-      const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
-      const all: NoiseSample[] = raw ? JSON.parse(raw) : [];
+      const all: NoiseSample[] = readNoiseSamples();
       // 仅统计当前课程时段的数据
       const range = getCurrentPeriodRange();
       const list = range ? all.filter(s => s.t >= range.start.getTime() && s.t <= range.end.getTime()) : [];
