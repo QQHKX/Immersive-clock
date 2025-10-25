@@ -150,12 +150,6 @@ export function Study() {
     return Math.max(0, diffDays);
   }, [study.customDate]);
 
-
-
-
-
-
-
   const timeString = formatClock(currentTime);
   const dateString = currentTime.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -177,6 +171,8 @@ export function Study() {
     const measure = () => {
       if (countdownRef.current) {
         setCountdownWidth(countdownRef.current.offsetWidth);
+      } else {
+        setCountdownWidth(0);
       }
     };
     measure();
@@ -216,40 +212,48 @@ export function Study() {
     setHistoryOpen(false);
   }, []);
 
+  const display = study.display || { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
+
   return (
-    <div className={styles.study} style={backgroundStyle}>
-      {/* 智能晚自习状态管理 */}
-      <StudyStatus />
-      
-      {/* 左上角 - 噪音监测 */}
-      <div className={styles.topLeft}>
-        <NoiseMonitor onStatusClick={handleOpenHistory} />
-      </div>
-      
-      {/* 右上角 - 倒计时和励志金句 */}
-      <div className={styles.topRight}>
-        <div className={styles.gaokaoCountdown} ref={countdownRef}>
-          {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
+    <div className={styles.container}>
+      {/* 左上角：状态栏与噪音监测（分别可隐藏） */}
+      {(study.display?.showStatusBar || study.display?.showNoiseMonitor) && (
+        <div className={styles.topLeft}>
+          {study.display?.showStatusBar && <StudyStatus />}
+          {study.display?.showNoiseMonitor && <NoiseMonitor />}
         </div>
-        <div className={styles.quoteSection} style={{ width: countdownWidth || undefined }}>
-          <MotivationalQuote />
+      )}
+
+      {/* 右上角：倒计时与励志金句（分别可隐藏） */}
+      {(study.display?.showCountdown || study.display?.showQuote) && (
+        <div className={styles.topRight}>
+          {study.display?.showCountdown && (
+            <div className={styles.gaokaoCountdown} ref={countdownRef}>
+              {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
+            </div>
+          )}
+          {study.display?.showQuote && (
+            <div className={styles.quoteSection} style={{ width: study.display?.showCountdown ? (countdownWidth || undefined) : undefined }}>
+              <MotivationalQuote />
+            </div>
+          )}
         </div>
-      </div>
-      
-      {/* 中央 - 时间显示 */}
+      )}
+
+      {/* 居中：时间始终显示，日期可隐藏 */}
       <div className={styles.centerTime}>
         <div className={styles.currentTime}>{timeString}</div>
-        <div className={styles.currentDate}>{dateString}</div>
+        {study.display?.showDate && (
+          <div className={styles.currentDate}>{dateString}</div>
+        )}
       </div>
 
-      {/* 统计报告弹窗 */}
-      <NoiseReportModal 
-        isOpen={reportOpen} 
-        onClose={handleCloseReport} 
-        period={reportPeriod} 
+      {/* 噪音报告弹窗与历史记录弹窗保持不变 */}
+      <NoiseReportModal
+        isOpen={reportOpen}
+        onClose={handleCloseReport}
+        period={reportPeriod}
       />
-
-      {/* 历史记录弹窗 */}
       <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
     </div>
   );

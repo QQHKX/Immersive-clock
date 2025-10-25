@@ -63,14 +63,38 @@ function loadStudyState(): StudyState {
     const savedCountdownType = localStorage.getItem('countdown-type') as 'gaokao' | 'custom' | null;
     const savedCustomName = localStorage.getItem('custom-countdown-name');
     const savedCustomDate = localStorage.getItem('custom-countdown-date');
+    const savedDisplayRaw = localStorage.getItem('study-display');
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
+
+    const defaultDisplay = {
+      showStatusBar: true,
+      showNoiseMonitor: true,
+      showCountdown: true,
+      showQuote: true,
+      showTime: true,
+      showDate: true,
+    };
+
+    let display = defaultDisplay;
+    if (savedDisplayRaw) {
+      try {
+        const parsed = JSON.parse(savedDisplayRaw);
+        display = {
+          ...defaultDisplay,
+          ...parsed,
+        };
+      } catch (e) {
+        console.warn('Failed to parse study-display from localStorage:', e);
+      }
+    }
 
     return {
       targetYear,
       countdownType: savedCountdownType ?? 'gaokao',
       customName: savedCustomName ?? '',
-      customDate: savedCustomDate ?? ''
+      customDate: savedCustomDate ?? '',
+      display,
     };
   } catch (error) {
     console.warn('Failed to load study state from localStorage:', error);
@@ -82,7 +106,15 @@ function loadStudyState(): StudyState {
       targetYear: nearestGaokaoYear,
       countdownType: 'gaokao',
       customName: '',
-      customDate: ''
+      customDate: '',
+      display: {
+        showStatusBar: true,
+        showNoiseMonitor: true,
+        showCountdown: true,
+        showQuote: true,
+        showTime: true,
+        showDate: true,
+      },
     };
   }
 }
@@ -300,6 +332,20 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: customUpdatedStudy,
+      };
+
+    case 'SET_STUDY_DISPLAY':
+      const displayUpdatedStudy = {
+        ...state.study,
+        display: {
+          ...(state.study.display || {}),
+          ...action.payload,
+        },
+      };
+      localStorage.setItem('study-display', JSON.stringify(displayUpdatedStudy.display));
+      return {
+        ...state,
+        study: displayUpdatedStudy,
       };
 
     case 'UPDATE_QUOTE_CHANNELS':

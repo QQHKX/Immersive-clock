@@ -93,6 +93,24 @@ export interface StopwatchState {
 
 
 /**
+ * 晚自习页面组件显示设置
+ */
+export interface StudyDisplaySettings {
+  /** 是否显示状态栏 */
+  showStatusBar: boolean;
+  /** 是否显示噪音监测 */
+  showNoiseMonitor: boolean;
+  /** 是否显示倒计时 */
+  showCountdown: boolean;
+  /** 是否显示励志金句 */
+  showQuote: boolean;
+  /** 是否显示当前时间 */
+  showTime: boolean;
+  /** 是否显示当前日期 */
+  showDate: boolean;
+}
+
+/**
  * 晚自习状态接口
  */
 export interface StudyState {
@@ -104,6 +122,8 @@ export interface StudyState {
   customName?: string;
   /** 自定义事件日期（YYYY-MM-DD） */
   customDate?: string;
+  /** 组件显示设置 */
+  display?: StudyDisplaySettings;
 }
 
 /**
@@ -244,4 +264,5 @@ export type AppAction =
   | { type: 'SET_ANNOUNCEMENT_TAB'; payload: AnnouncementTab }
   | { type: 'SET_ANNOUNCEMENT_DONT_SHOW_AGAIN'; payload: boolean }
   | { type: 'OPEN_MODAL' }
-  | { type: 'CLOSE_MODAL' };
+  | { type: 'CLOSE_MODAL' }
+  | { type: 'SET_STUDY_DISPLAY'; payload: StudyDisplaySettings };

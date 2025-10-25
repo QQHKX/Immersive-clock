@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAppState, useAppDispatch } from '../../../contexts/AppContext';
-import { FormSection, FormInput, FormSegmented, FormButton, FormButtonGroup } from '../../FormComponents';
+import { FormSection, FormInput, FormSegmented, FormButton, FormButtonGroup, FormCheckbox, FormRow } from '../../FormComponents';
 import { RefreshIcon } from '../../Icons';
 import styles from '../SettingsPanel.module.css';
 
@@ -39,6 +39,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
   const [draftCustomName, setDraftCustomName] = useState<string>(study.customName ?? '');
   const [draftCustomDate, setDraftCustomDate] = useState<string>(study.customDate ?? '');
 
+  // 晚自习组件显示草稿（时间始终显示，不提供开关）
+  const defaultDisplay = { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
+  const [draftDisplay, setDraftDisplay] = useState<typeof defaultDisplay>({ ...(study.display || defaultDisplay) });
+
   const handleRefreshWeather = useCallback(() => {
     const weatherRefreshEvent = new CustomEvent('weatherRefresh');
     window.dispatchEvent(weatherRefreshEvent);
@@ -51,6 +55,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
     setDraftCountdownType(study.countdownType ?? 'gaokao');
     setDraftCustomName(study.customName ?? '');
     setDraftCustomDate(study.customDate ?? '');
+    setDraftDisplay({ ...(study.display || defaultDisplay), showTime: true });
 
     const onDone = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
@@ -63,7 +68,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
     };
     window.addEventListener('weatherRefreshDone', onDone as EventListener);
     return () => window.removeEventListener('weatherRefreshDone', onDone as EventListener);
-  }, [study.countdownType, study.customName, study.customDate]);
+  }, [study.countdownType, study.customName, study.customDate, study.display]);
 
   // 注册保存动作：统一在父组件保存时派发
   useEffect(() => {
@@ -72,8 +77,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
       if (draftCountdownType === 'custom') {
         dispatch({ type: 'SET_CUSTOM_COUNTDOWN', payload: { name: draftCustomName, date: draftCustomDate } });
       }
+      // 保存组件显示设置（强制时间显示）
+      dispatch({ type: 'SET_STUDY_DISPLAY', payload: { ...draftDisplay, showTime: true } });
     });
-  }, [onRegisterSave, draftCountdownType, draftCustomName, draftCustomDate, dispatch]);
+  }, [onRegisterSave, draftCountdownType, draftCustomName, draftCustomDate, draftDisplay, dispatch]);
 
   return (
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
@@ -121,6 +128,39 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
             />
           </>
         )}
+      </FormSection>
+
+      <FormSection title="晚自习页面组件显示">
+        <p className={styles.helpText}>自定义晚自习页面各组件的显示与隐藏（当前时间始终显示）。</p>
+        <FormRow gap="lg" align="start">
+          <FormCheckbox
+            label="显示状态栏"
+            checked={!!draftDisplay.showStatusBar}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showStatusBar: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示噪音监测"
+            checked={!!draftDisplay.showNoiseMonitor}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showNoiseMonitor: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示倒计时"
+            checked={!!draftDisplay.showCountdown}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showCountdown: e.target.checked })}
+          />
+        </FormRow>
+        <FormRow gap="lg" align="start">
+          <FormCheckbox
+            label="显示励志金句"
+            checked={!!draftDisplay.showQuote}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showQuote: e.target.checked })}
+          />
+          <FormCheckbox
+            label="显示当前日期"
+            checked={!!draftDisplay.showDate}
+            onChange={(e) => setDraftDisplay({ ...draftDisplay, showDate: e.target.checked })}
+          />
+        </FormRow>
       </FormSection>
 
       <FormSection title="天气设置">
