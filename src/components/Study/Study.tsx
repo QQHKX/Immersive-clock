@@ -31,6 +31,10 @@ export function Study() {
   // 背景设置
   const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
 
+  // 新增：用于测量倒计时文本的实际宽度
+  const countdownRef = useRef<HTMLDivElement | null>(null);
+  const [countdownWidth, setCountdownWidth] = useState<number>(0);
+
   /**
    * 更新当前时间
    */
@@ -168,6 +172,18 @@ export function Study() {
     : `距离${study.targetYear}年高考仅`;
   const countdownDays = isCustom ? daysToCustom : daysToGaokao;
 
+  // 监听窗口大小与倒计时文案变化，测量倒计时宽度
+  useEffect(() => {
+    const measure = () => {
+      if (countdownRef.current) {
+        setCountdownWidth(countdownRef.current.offsetWidth);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [countdownLabel, countdownDays]);
+
   // 背景样式
   const backgroundStyle: React.CSSProperties = (() => {
     const style: React.CSSProperties = {};
@@ -212,10 +228,10 @@ export function Study() {
       
       {/* 右上角 - 倒计时和励志金句 */}
       <div className={styles.topRight}>
-        <div className={styles.gaokaoCountdown}>
+        <div className={styles.gaokaoCountdown} ref={countdownRef}>
           {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
         </div>
-        <div className={styles.quoteSection}>
+        <div className={styles.quoteSection} style={{ width: countdownWidth || undefined }}>
           <MotivationalQuote />
         </div>
       </div>

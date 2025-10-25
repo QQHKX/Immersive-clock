@@ -48,7 +48,8 @@
 }
 
 .quoteSection {
-  max-width: 300px;
+  /* 让容器宽度由父级内容内联样式控制（Study.tsx 设置 width） */
+  width: auto;
   font-size: clamp(0.9rem, 2vw, 1.1rem);
   color: var(--text-secondary);
   line-height: 1.4;
@@ -85,16 +86,6 @@
   transition: all var(--transition-normal);
 }
 
-
-
-
-
-
-
-
-
-
-/* 响应式设计 */
 /* 响应式设计 - 与时钟界面保持一致 */
 @media (max-width: 1024px) {
 
@@ -116,7 +107,7 @@
   }
 
   .quoteSection {
-    max-width: 250px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
   }
 }
@@ -150,7 +141,7 @@
   }
 
   .quoteSection {
-    max-width: 250px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.85rem, 2vw, 1.1rem);
     line-height: 1.5;
   }
@@ -193,7 +184,7 @@
   }
 
   .quoteSection {
-    max-width: 200px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
     line-height: 1.5;
   }
@@ -211,13 +202,9 @@
   }
 
   .quoteSection {
-    max-width: 280px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
     line-height: 1.5;
-  }
-
-  .days {
-    font-size: 1.3em;
   }
 }
 
@@ -228,7 +215,8 @@
   }
 
   .quoteSection {
-    max-width: 240px;
+    width: 100%;
+    max-width: none;
     font-size: clamp(0.75rem, 1.6vw, 0.9rem);
   }
 }

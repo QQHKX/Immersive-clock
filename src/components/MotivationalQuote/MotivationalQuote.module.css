@@ -24,15 +24,13 @@
   text-align: left !important;
   line-height: 1.5;
   letter-spacing: 0.02em;
-  max-width: 300px;
+  max-width: 100%;
   word-wrap: break-word;
   word-break: break-word;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   transition: color var(--transition-fast);
-  white-space: pre-wrap;
-  /* 移除 pre-wrap，按需求单行展示 */
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* 恢复自动换行，换行符视为空格 */
+  /* 多行展示不使用省略号 */
 }
 
 .motivationalQuote:hover .quoteText {
@@ -67,25 +65,28 @@
 /* 响应式设计 */
 @media (max-width: 768px) {
   .motivationalQuote {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0;
     margin-top: 0;
   }
 
   .quoteText {
     font-size: 0.9rem;
-    max-width: 90%;
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
 @media (max-width: 480px) {
   .motivationalQuote {
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0;
     margin-top: 0;
   }
 
   .quoteText {
     font-size: 0.8rem;
     line-height: 1.4;
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
@@ -93,12 +94,14 @@
 @media (orientation: portrait) {
   .motivationalQuote {
     margin-top: 0;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0;
   }
 
   .quoteText {
     font-size: 0.85rem;
     line-height: 1.4;
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
