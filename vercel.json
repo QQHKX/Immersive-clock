@@ -17,6 +17,9 @@
   "redirects": [
     {
       "source": "/docs/(.*)\\.md",
+      "missing": [
+        { "type": "query", "key": "raw", "value": "1" }
+      ],
       "destination": "/docs/$1.html",
       "permanent": true
     }

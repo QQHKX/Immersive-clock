@@ -37,7 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     (function() {
-      fetch('/docs/changelog.md')
+      fetch('/docs/changelog.md?raw=1')
         .then(function(resp) { return resp.text(); })
         .then(function(md) {
           var html = marked.parse(md);
