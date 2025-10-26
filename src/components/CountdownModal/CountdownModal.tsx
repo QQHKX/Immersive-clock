@@ -14,7 +14,7 @@ import styles from './CountdownModal.module.css';
 export function CountdownModal() {
   const { isModalOpen } = useAppState();
   const dispatch = useAppDispatch();
-  
+
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(10);
   const [seconds, setSeconds] = useState(0);
@@ -80,7 +80,7 @@ export function CountdownModal() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isModalOpen) return;
-      
+
       if (e.key === 'Escape') {
         handleClose();
       } else if (e.key === 'Enter') {

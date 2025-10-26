@@ -12,10 +12,45 @@ import NoiseHistoryModal from '../NoiseHistoryModal/NoiseHistoryModal';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
 import { getAutoPopupSetting } from '../../utils/noiseReportSettings';
 import { readStudyBackground } from '../../utils/studyBackgroundStorage';
+import { CountdownItem } from '../../types';
+
+// 颜色工具：#rrggbb/#rgb 转 rgba(r,g,b,a)
+function hexToRgba(hex: string, alpha: number = 1): string {
+  if (!hex) return hex;
+  const h = hex.trim();
+  const clampA = Math.max(0, Math.min(1, alpha));
+  const short = /^#([A-Fa-f0-9]{3})$/;
+  const long = /^#([A-Fa-f0-9]{6})$/;
+  if (short.test(h)) {
+    const m = h.match(short)!;
+    const r = parseInt(m[1][0] + m[1][0], 16);
+    const g = parseInt(m[1][1] + m[1][1], 16);
+    const b = parseInt(m[1][2] + m[1][2], 16);
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  if (long.test(h)) {
+    const m = h.match(long)!;
+    const r = parseInt(m[1].slice(0, 2), 16);
+    const g = parseInt(m[1].slice(2, 4), 16);
+    const b = parseInt(m[1].slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  // 对 rgb(...) 直接加透明度
+  const rgb = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
+  const rm = h.match(rgb);
+  if (rm) {
+    const r = Math.max(0, Math.min(255, parseInt(rm[1], 10)));
+    const g = Math.max(0, Math.min(255, parseInt(rm[2], 10)));
+    const b = Math.max(0, Math.min(255, parseInt(rm[3], 10)));
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  // 若已是 rgba(...) 或其他格式，则原样返回
+  return h;
+}
 
 /**
  * 晚自习组件
- * 显示当前时间和高考倒计时
+ * 显示当前时间和倒计时轮播
  */
 export function Study() {
   const { study } = useAppState();
@@ -31,12 +66,14 @@ export function Study() {
   // 背景设置
   const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
 
-  // 新增：用于测量倒计时文本的实际宽度
+  // 轮播：容器与尺寸测量
   const countdownRef = useRef<HTMLDivElement | null>(null);
   const [countdownWidth, setCountdownWidth] = useState<number>(0);
+  const [itemHeight, setItemHeight] = useState<number>(0);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
   /**
-   * 更新当前时间
+   * 更新时间
    */
   const updateTime = useCallback(() => {
     setCurrentTime(new Date());
@@ -68,7 +105,7 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch {}
+    } catch { }
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -100,7 +137,7 @@ export function Study() {
       if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
         // 检查是否启用自动弹出设置
         const autoPopupEnabled = getAutoPopupSetting();
-        
+
         // 若本课时已经弹出过，或被手动关闭过，或设置中禁用了自动弹出，则不再重复弹出
         const alreadyPopped = lastPopupPeriodIdRef.current === p.id;
         const dismissed = dismissedPeriodIdRef.current === p.id;
@@ -114,41 +151,27 @@ export function Study() {
     }
   }, [currentTime, reportOpen]);
 
-  /**
-   * 计算距离高考的天数（基于最近的目标年份）
-   */
-  const calculateDaysToGaokao = useCallback(() => {
+  /** 工具函数：计算到指定日期的剩余天数（YYYY-MM-DD） */
+  const calcDaysToDate = useCallback((dateStr?: string) => {
+    if (!dateStr) return 0;
     const now = new Date();
-    const currentYear = now.getFullYear();
-    let gaokaoDate: Date;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return 0;
+    const target = new Date(y, m - 1, d);
+    const diffTime = target.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, []);
 
-    // 目标年份为当年，若已过6月7日则使用下一年
-    if (study.targetYear === currentYear) {
-      const thisYearGaokao = new Date(currentYear, 5, 7);
-      gaokaoDate = now > thisYearGaokao ? new Date(currentYear + 1, 5, 7) : thisYearGaokao;
-    } else {
-      gaokaoDate = new Date(study.targetYear, 5, 7);
-      // 如果选择的目标年份已过当前日期，仍按该年6月7日计算剩余天数（可能为0）
-    }
-
-    const diffTime = gaokaoDate.getTime() - now.getTime();
+  /** 计算到最近一次高考（6月7日）的剩余天数 */
+  const calcDaysToNextGaokao = useCallback(() => {
+    const now = new Date();
+    const year = study.targetYear || now.getFullYear();
+    const target = new Date(year, 5, 7);
+    const diffTime = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return Math.max(0, diffDays);
   }, [study.targetYear]);
-
-  /**
-   * 计算距离自定义事件的天数
-   */
-  const calculateDaysToCustom = useCallback(() => {
-    const now = new Date();
-    if (!study.customDate) return 0;
-    const [y, m, d] = study.customDate.split('-').map(Number);
-    if (!y || !m || !d) return 0;
-    const eventDate = new Date(y, (m - 1), d);
-    const diffTime = eventDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  }, [study.customDate]);
 
   const timeString = formatClock(currentTime);
   const dateString = currentTime.toLocaleDateString('zh-CN', {
@@ -157,28 +180,50 @@ export function Study() {
     day: 'numeric',
     weekday: 'long'
   });
-  const daysToGaokao = calculateDaysToGaokao();
-  const daysToCustom = calculateDaysToCustom();
 
-  const isCustom = (study.countdownType ?? 'gaokao') === 'custom';
-  const countdownLabel = isCustom
-    ? `距离${(study.customName && study.customName.trim()) || '自定义事件'}仅`
-    : `距离${study.targetYear}年高考仅`;
-  const countdownDays = isCustom ? daysToCustom : daysToGaokao;
+  /** 构建轮播项（兼容旧配置） */
+  const countdownItems: CountdownItem[] = (() => {
+    const list = (study.countdownItems || []) as CountdownItem[];
 
-  // 监听窗口大小与倒计时文案变化，测量倒计时宽度
+    if (list && list.length > 0) {
+      return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    // 兼容旧版：仅一个倒计时
+    const isCustom = (study.countdownType ?? 'gaokao') === 'custom';
+    if (isCustom && study.customDate) {
+      return [{ id: 'legacy-custom', kind: 'custom', name: study.customName || '自定义事件', targetDate: study.customDate, order: 0, bgColor: undefined, textColor: undefined }];
+    }
+    return [{ id: 'legacy-gaokao', kind: 'gaokao', name: `高考倒计时`, order: 0, bgColor: undefined, textColor: undefined }];
+  })();
+
+  // 容器尺寸与宽度测量
   useEffect(() => {
     const measure = () => {
-      if (countdownRef.current) {
-        setCountdownWidth(countdownRef.current.offsetWidth);
-      } else {
+      const el = countdownRef.current;
+      if (!el) {
         setCountdownWidth(0);
+        setItemHeight(0);
+        return;
       }
+      setCountdownWidth(el.offsetWidth);
+      setItemHeight(el.clientHeight);
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [countdownLabel, countdownDays]);
+  }, [countdownItems.length, activeIndex]);
+
+  // 自动轮播：按配置间隔切换
+  useEffect(() => {
+    const total = countdownItems.length;
+    if (total <= 1) return;
+    const intervalSec = Math.max(1, Math.min(60, study.carouselIntervalSec ?? 6));
+    const timer = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % total);
+    }, intervalSec * 1000);
+    return () => clearInterval(timer);
+  }, [countdownItems.length, study.carouselIntervalSec]);
 
   // 背景样式
   const backgroundStyle: React.CSSProperties = (() => {
@@ -190,7 +235,8 @@ export function Study() {
       style.backgroundRepeat = 'no-repeat';
     } else if (backgroundSettings?.type === 'color' && backgroundSettings.color) {
       style.backgroundImage = 'none';
-      style.backgroundColor = backgroundSettings.color;
+      const a = typeof backgroundSettings.colorAlpha === 'number' ? backgroundSettings.colorAlpha : 1;
+      style.backgroundColor = hexToRgba(backgroundSettings.color, a);
     }
     return style;
   })();
@@ -214,26 +260,56 @@ export function Study() {
 
   const display = study.display || { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
 
+  // 计算每个项的文案与天数
+  const renderItem = (item: typeof countdownItems[number]) => {
+    const days = item.kind === 'gaokao' ? calcDaysToNextGaokao() : calcDaysToDate(item.targetDate);
+    const nameText = (item.name && item.name.trim().length > 0) ? item.name!.trim() : (item.kind === 'gaokao' ? '高考倒计时' : '自定义事件');
+    const textCol = item.textColor ? hexToRgba(item.textColor, typeof item.textOpacity === 'number' ? item.textOpacity : 1) : undefined;
+    const bgCol = item.bgColor ? hexToRgba(item.bgColor, typeof item.bgOpacity === 'number' ? item.bgOpacity : 0) : undefined;
+    const digitBaseColor = item.digitColor ?? study.digitColor;
+    const digitAlpha = (typeof item.digitOpacity === 'number') ? item.digitOpacity : (typeof study.digitOpacity === 'number' ? study.digitOpacity : 1);
+    const digitCol = digitBaseColor ? hexToRgba(digitBaseColor, digitAlpha) : undefined;
+    return (
+      <div
+        key={item.id}
+        className={styles.carouselItem}
+        style={{
+          color: textCol,
+          backgroundColor: bgCol,
+          borderRadius: item.bgColor ? 6 : undefined,
+          padding: item.bgColor ? '0 8px' : undefined,
+        }}
+      >
+        距离{nameText}仅 <span className={styles.days} style={{ color: digitCol }}>{days}</span> 天
+      </div>
+    );
+   };
+
   return (
-    <div className={styles.container}>
+    <div className={styles.container} style={backgroundStyle}>
       {/* 左上角：状态栏与噪音监测（分别可隐藏） */}
-      {(study.display?.showStatusBar || study.display?.showNoiseMonitor) && (
+      {(display.showStatusBar || display.showNoiseMonitor) && (
         <div className={styles.topLeft}>
-          {study.display?.showStatusBar && <StudyStatus />}
-          {study.display?.showNoiseMonitor && <NoiseMonitor />}
+          {display.showStatusBar && <StudyStatus />}
+          {display.showNoiseMonitor && <NoiseMonitor />}
         </div>
       )}
 
       {/* 右上角：倒计时与励志金句（分别可隐藏） */}
-      {(study.display?.showCountdown || study.display?.showQuote) && (
+      {(display.showCountdown || display.showQuote) && (
         <div className={styles.topRight}>
-          {study.display?.showCountdown && (
-            <div className={styles.gaokaoCountdown} ref={countdownRef}>
-              {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
+          {display.showCountdown && (
+            <div className={styles.countdownCarousel} ref={countdownRef} aria-live="polite">
+              <div
+                className={styles.carouselTrack}
+                style={{ transform: `translateY(-${activeIndex * (itemHeight || 0)}px)` }}
+              >
+                {countdownItems.map(renderItem)}
+              </div>
             </div>
           )}
-          {study.display?.showQuote && (
-            <div className={styles.quoteSection} style={{ width: study.display?.showCountdown ? (countdownWidth || undefined) : undefined }}>
+          {display.showQuote && (
+            <div className={styles.quoteSection} style={{ width: display.showCountdown ? (countdownWidth || undefined) : undefined }}>
               <MotivationalQuote />
             </div>
           )}
@@ -243,18 +319,24 @@ export function Study() {
       {/* 居中：时间始终显示，日期可隐藏 */}
       <div className={styles.centerTime}>
         <div className={styles.currentTime}>{timeString}</div>
-        {study.display?.showDate && (
+        {display.showDate && (
           <div className={styles.currentDate}>{dateString}</div>
         )}
       </div>
 
-      {/* 噪音报告弹窗与历史记录弹窗保持不变 */}
-      <NoiseReportModal
-        isOpen={reportOpen}
-        onClose={handleCloseReport}
-        period={reportPeriod}
-      />
-      <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
+      {/* 噪音报告弹窗 */}
+      {reportOpen && reportPeriod && (
+        <NoiseReportModal
+          isOpen={reportOpen}
+          onClose={handleCloseReport}
+          period={reportPeriod}
+        />
+      )}
+
+      {/* 噪音历史记录弹窗 */}
+      {historyOpen && (
+        <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
+      )}
     </div>
   );
 }

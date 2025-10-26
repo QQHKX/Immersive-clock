@@ -1,11 +1,12 @@
 /* 学习组件样式（绝对定位布局） */
 
-.study {
+.study,
+.container {
   width: 100%;
   height: 100vh;
   position: relative;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--background-color);
+  color: var(--text-color);
   overflow: hidden;
 }
 
@@ -33,12 +34,27 @@
   z-index: 10;
 }
 
-.gaokaoCountdown {
+/* 轮播容器：固定高度与隐藏溢出 */
+.countdownCarousel {
   font-family: var(--font-ui);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
-  color: var(--text-primary);
   font-weight: 500;
+  height: 2.2em; /* 固定高度，匹配单行文本高度 */
+  overflow: hidden;
+}
+
+/* 轮播轨道：按列排列，滚动切换 */
+.carouselTrack {
+  display: flex;
+  flex-direction: column;
+  transition: transform 300ms ease; /* 滚动切换动画 */
+}
+
+/* 单项样式（继承原gaokaoCountdown样式） */
+.carouselItem {
+  color: var(--text-color);
   margin-bottom: 0;
+  line-height: 2.2em; /* 与容器高度一致，确保每项高度一致 */
 }
 
 .days {
@@ -51,7 +67,7 @@
   /* 让容器宽度由父级内容内联样式控制（Study.tsx 设置 width） */
   width: auto;
   font-size: clamp(0.9rem, 2vw, 1.1rem);
-  color: var(--text-secondary);
+  color: var(--secondary-color);
   line-height: 1.4;
   text-align: left !important;
 }
@@ -102,7 +118,7 @@
     right: 15px;
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1rem, 2.5vw, 1.5rem);
   }
 
@@ -135,7 +151,7 @@
     font-size: clamp(0.9rem, 3vw, 1.3rem);
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
     margin-bottom: 0;
   }
@@ -178,7 +194,7 @@
     right: 8px;
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1rem, 2.5vw, 1.4rem);
     margin-bottom: 0;
   }
@@ -196,7 +212,7 @@
 
 /* 竖屏显示优化 */
 @media (orientation: portrait) and (max-width: 768px) {
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.2rem, 3.2vw, 1.8rem);
     margin-bottom: 0;
   }
@@ -209,7 +225,7 @@
 }
 
 @media (orientation: portrait) and (max-width: 480px) {
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
     margin-bottom: 0;
   }

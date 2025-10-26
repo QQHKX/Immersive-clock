@@ -29,14 +29,14 @@ interface SettingsPanelProps {
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
-  
+
   const [activeCategory, setActiveCategory] = useState<'basic' | 'weather' | 'monitor' | 'quotes' | 'about'>('basic');
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 分区保存注册
-  const basicSaveRef = useRef<() => void>(() => {});
-  const weatherSaveRef = useRef<() => void>(() => {});
-  const monitorSaveRef = useRef<() => void>(() => {});
-  const quotesSaveRef = useRef<() => void>(() => {});
+  const basicSaveRef = useRef<() => void>(() => { });
+  const weatherSaveRef = useRef<() => void>(() => { });
+  const monitorSaveRef = useRef<() => void>(() => { });
+  const quotesSaveRef = useRef<() => void>(() => { });
   const containerRef = useRef<HTMLDivElement>(null);
 
   /** 保存所有设置 */
@@ -55,7 +55,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     }
     onClose();
   }, [targetYear, dispatch, onClose]);
-  
+
   // 打开时默认分区与数据
   useEffect(() => {
     if (isOpen) {
@@ -70,15 +70,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     const bodyEl = containerRef.current?.closest(`.${modalStyles.modalBody}`) as HTMLElement | null;
     if (bodyEl) bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeCategory, isOpen]);
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <>
-      <Modal 
-        isOpen={isOpen} 
-        onClose={onClose} 
-        title="设置" 
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="设置"
         maxWidth="lg"
         headerDivider={false}
         compactBodyTop
@@ -90,51 +90,51 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         }
       >
         <div ref={containerRef} className={styles.settingsContainer}>
-        {/* 顶部分类选项卡 */}
-        <Tabs
-          items={[
-            { key: 'basic', label: '基础设置' },
-            { key: 'weather', label: '天气设置' },
-            { key: 'monitor', label: '监测设置' },
-            { key: 'quotes', label: '金句设置' },
-            { key: 'about', label: '关于' }
-          ]}
-          activeKey={activeCategory}
-          onChange={(key) => setActiveCategory(key as 'basic' | 'weather' | 'monitor' | 'quotes' | 'about')}
-          variant="announcement"
-          size="md"
-          scrollable
-          sticky
-        />
-
-        {/* 基础设置 */}
-        {activeCategory === 'basic' && (
-          <BasicSettingsPanel 
-            targetYear={targetYear} 
-            onTargetYearChange={setTargetYear}
-            onRegisterSave={(fn) => { basicSaveRef.current = fn; }}
+          {/* 顶部分类选项卡 */}
+          <Tabs
+            items={[
+              { key: 'basic', label: '基础设置' },
+              { key: 'weather', label: '天气设置' },
+              { key: 'monitor', label: '监测设置' },
+              { key: 'quotes', label: '金句设置' },
+              { key: 'about', label: '关于' }
+            ]}
+            activeKey={activeCategory}
+            onChange={(key) => setActiveCategory(key as 'basic' | 'weather' | 'monitor' | 'quotes' | 'about')}
+            variant="announcement"
+            size="md"
+            scrollable
+            sticky
           />
-        )}
 
-        {/* 天气设置 */}
-        {activeCategory === 'weather' && (
-          <WeatherSettingsPanel onRegisterSave={(fn) => { weatherSaveRef.current = fn; }} />
-        )}
+          {/* 基础设置 */}
+          {activeCategory === 'basic' && (
+            <BasicSettingsPanel
+              targetYear={targetYear}
+              onTargetYearChange={setTargetYear}
+              onRegisterSave={(fn) => { basicSaveRef.current = fn; }}
+            />
+          )}
 
-        {/* 监测设置（噪音相关） */}
-        {activeCategory === 'monitor' && (
-          <StudySettingsPanel onRegisterSave={(fn) => { monitorSaveRef.current = fn; }} />
-        )}
+          {/* 天气设置 */}
+          {activeCategory === 'weather' && (
+            <WeatherSettingsPanel onRegisterSave={(fn) => { weatherSaveRef.current = fn; }} />
+          )}
 
-        {/* 金句设置 */}
-        {activeCategory === 'quotes' && (
-          <ContentSettingsPanel onRegisterSave={(fn) => { quotesSaveRef.current = fn; }} />
-        )}
+          {/* 监测设置（噪音相关） */}
+          {activeCategory === 'monitor' && (
+            <StudySettingsPanel onRegisterSave={(fn) => { monitorSaveRef.current = fn; }} />
+          )}
 
-        {/* 关于 */}
-        {activeCategory === 'about' && (
-          <AboutSettingsPanel onRegisterSave={() => { /* noop */ }} />
-        )}
+          {/* 金句设置 */}
+          {activeCategory === 'quotes' && (
+            <ContentSettingsPanel onRegisterSave={(fn) => { quotesSaveRef.current = fn; }} />
+          )}
+
+          {/* 关于 */}
+          {activeCategory === 'about' && (
+            <AboutSettingsPanel onRegisterSave={() => { /* noop */ }} />
+          )}
         </div>
       </Modal>
     </>

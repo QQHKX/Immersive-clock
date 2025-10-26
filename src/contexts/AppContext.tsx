@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState } from '../types';
+import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState, CountdownItem } from '../types';
 import { nowMs } from '../utils/timeSource';
 import { STOPWATCH_TICK_MS } from '../constants/timer';
 
@@ -18,7 +18,7 @@ function loadQuoteSettingsState(): QuoteSettingsState {
   } catch (error) {
     console.warn('Failed to load quote settings from localStorage:', error);
   }
-  
+
   return {
     autoRefreshInterval: 600 // 默认10分钟
   };
@@ -40,7 +40,7 @@ function loadQuoteChannelState(): QuoteChannelState {
   } catch (error) {
     console.warn('Failed to load quote channels from localStorage:', error);
   }
-  
+
   // 返回默认配置，从文件中加载
   return {
     channels: [],
@@ -64,6 +64,10 @@ function loadStudyState(): StudyState {
     const savedCustomName = localStorage.getItem('custom-countdown-name');
     const savedCustomDate = localStorage.getItem('custom-countdown-date');
     const savedDisplayRaw = localStorage.getItem('study-display');
+    const savedCountdownItemsRaw = localStorage.getItem('study-countdown-items');
+    const savedCarouselInterval = localStorage.getItem('study-carousel-interval');
+    const savedDigitColor = localStorage.getItem('study-digit-color');
+    const savedDigitOpacity = localStorage.getItem('study-digit-opacity');
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
 
@@ -89,12 +93,49 @@ function loadStudyState(): StudyState {
       }
     }
 
+    // 加载或初始化倒计时项目列表
+    let countdownItems: CountdownItem[] | undefined = undefined;
+    try {
+      if (savedCountdownItemsRaw) {
+        const parsed = JSON.parse(savedCountdownItemsRaw);
+        if (Array.isArray(parsed)) {
+          countdownItems = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse study-countdown-items from localStorage:', e);
+    }
+
+    if (!countdownItems || countdownItems.length === 0) {
+      // 默认包含一个高考倒计时项目（可在设置中调整显示顺序与颜色）
+      countdownItems = [{
+        id: 'gaokao',
+        kind: 'gaokao',
+        name: `${nearestGaokaoYear}年高考`,
+        order: 0,
+        bgColor: undefined,
+        textColor: undefined,
+      }];
+      // 立即持久化一次，确保后续有基础数据
+      try {
+        localStorage.setItem('study-countdown-items', JSON.stringify(countdownItems));
+      } catch { }
+    }
+
+    const carouselIntervalSec = savedCarouselInterval ? Math.max(1, Math.min(60, parseInt(savedCarouselInterval, 10))) : undefined;
+    const digitColor = savedDigitColor || undefined;
+    const digitOpacity = savedDigitOpacity !== null ? Math.max(0, Math.min(1, parseFloat(savedDigitOpacity))) : 1;
+
     return {
       targetYear,
       countdownType: savedCountdownType ?? 'gaokao',
       customName: savedCustomName ?? '',
       customDate: savedCustomDate ?? '',
       display,
+      countdownItems,
+      carouselIntervalSec,
+      digitColor,
+      digitOpacity,
     };
   } catch (error) {
     console.warn('Failed to load study state from localStorage:', error);
@@ -115,6 +156,10 @@ function loadStudyState(): StudyState {
         showTime: true,
         showDate: true,
       },
+      countdownItems: [{ id: 'gaokao', kind: 'gaokao', name: `${nearestGaokaoYear}年高考`, order: 0 }],
+      carouselIntervalSec: undefined,
+      digitColor: undefined,
+      digitOpacity: 1,
     };
   }
 }
@@ -348,6 +393,60 @@ function appReducer(state: AppState, action: AppAction): AppState {
         study: displayUpdatedStudy,
       };
 
+    case 'SET_COUNTDOWN_ITEMS':
+      const itemsUpdatedStudy = {
+        ...state.study,
+        countdownItems: action.payload,
+      };
+      try {
+        localStorage.setItem('study-countdown-items', JSON.stringify(action.payload));
+      } catch { }
+      return {
+        ...state,
+        study: itemsUpdatedStudy,
+      };
+
+    case 'SET_CAROUSEL_INTERVAL':
+      const intervalUpdatedStudy = {
+        ...state.study,
+        carouselIntervalSec: action.payload,
+      };
+      localStorage.setItem('study-carousel-interval', action.payload.toString());
+      return {
+        ...state,
+        study: intervalUpdatedStudy,
+      };
+
+    case 'SET_COUNTDOWN_DIGIT_COLOR':
+      const digitColorUpdatedStudy = {
+        ...state.study,
+        digitColor: action.payload,
+      };
+      if (action.payload) {
+        localStorage.setItem('study-digit-color', action.payload);
+      } else {
+        localStorage.removeItem('study-digit-color');
+      }
+      return {
+        ...state,
+        study: digitColorUpdatedStudy,
+      };
+
+    case 'SET_COUNTDOWN_DIGIT_OPACITY':
+      const digitOpacityUpdatedStudy = {
+        ...state.study,
+        digitOpacity: typeof action.payload === 'number' ? Math.max(0, Math.min(1, action.payload)) : 1,
+      };
+      if (typeof action.payload === 'number') {
+        localStorage.setItem('study-digit-opacity', digitOpacityUpdatedStudy.digitOpacity.toString());
+      } else {
+        localStorage.removeItem('study-digit-opacity');
+      }
+      return {
+        ...state,
+        study: digitOpacityUpdatedStudy,
+      };
+
     case 'UPDATE_QUOTE_CHANNELS':
       const newQuoteChannelState = {
         channels: action.payload,
@@ -448,7 +547,6 @@ interface AppContextProviderProps {
  */
 export function AppContextProvider({ children }: AppContextProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState);
-
 
 
 

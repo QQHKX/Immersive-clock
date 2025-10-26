@@ -110,6 +110,32 @@ export interface StudyDisplaySettings {
   showDate: boolean;
 }
 
+/** 新增：多倒计时项目配置 */
+export interface CountdownItem {
+  /** 唯一标识 */
+  id: string;
+  /** 类型：高考或自定义 */
+  kind: 'gaokao' | 'custom';
+  /** 显示名称，例如“2026高考”或“期末考试” */
+  name: string;
+  /** 目标日期（YYYY-MM-DD，仅自定义项目使用） */
+  targetDate?: string;
+  /** 背景色 */
+  bgColor?: string;
+  /** 背景透明度（0-1） */
+  bgOpacity?: number;
+  /** 文字颜色 */
+  textColor?: string;
+  /** 文字透明度（0-1） */
+  textOpacity?: number;
+  /** 数字颜色（覆盖全局 digitColor） */
+  digitColor?: string;
+  /** 数字透明度（0-1，覆盖全局 digitOpacity） */
+  digitOpacity?: number;
+  /** 显示顺序（越小越靠前） */
+  order: number;
+}
+
 /**
  * 晚自习状态接口
  */
@@ -124,6 +150,14 @@ export interface StudyState {
   customDate?: string;
   /** 组件显示设置 */
   display?: StudyDisplaySettings;
+  /** 新增：倒计时项目列表（包含高考与自定义项） */
+  countdownItems?: CountdownItem[];
+  /** 轮播间隔（秒，仅多事件模式下使用） */
+  carouselIntervalSec?: number;
+  /** 倒计时数字颜色（全局应用到天数字） */
+  digitColor?: string;
+  /** 倒计时数字透明度（0-1） */
+  digitOpacity?: number;
 }
 
 /**
@@ -265,4 +299,8 @@ export type AppAction =
   | { type: 'SET_ANNOUNCEMENT_DONT_SHOW_AGAIN'; payload: boolean }
   | { type: 'OPEN_MODAL' }
   | { type: 'CLOSE_MODAL' }
-  | { type: 'SET_STUDY_DISPLAY'; payload: StudyDisplaySettings };
+  | { type: 'SET_STUDY_DISPLAY'; payload: StudyDisplaySettings }
+  | { type: 'SET_COUNTDOWN_ITEMS'; payload: CountdownItem[] }
+  | { type: 'SET_CAROUSEL_INTERVAL'; payload: number }
+  | { type: 'SET_COUNTDOWN_DIGIT_COLOR'; payload: string | undefined }
+  | { type: 'SET_COUNTDOWN_DIGIT_OPACITY'; payload: number | undefined }
