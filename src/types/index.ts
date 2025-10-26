@@ -158,6 +158,8 @@ export interface StudyState {
   digitColor?: string;
   /** 倒计时数字透明度（0-1） */
   digitOpacity?: number;
+  // 新增：消息弹窗启用开关
+  messagePopupEnabled?: boolean;
 }
 
 /**
@@ -304,3 +306,4 @@ export type AppAction =
   | { type: 'SET_CAROUSEL_INTERVAL'; payload: number }
   | { type: 'SET_COUNTDOWN_DIGIT_COLOR'; payload: string | undefined }
   | { type: 'SET_COUNTDOWN_DIGIT_OPACITY'; payload: number | undefined }
+  | { type: 'SET_MESSAGE_POPUP_ENABLED'; payload: boolean }

@@ -1,0 +1,113 @@
+@import '../../styles/variables.css';
+
+.container {
+  position: fixed;
+  left: 16px;
+  top: 60vh; /* 屏幕中间偏下 */
+  z-index: var(--z-hud, 100);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  min-width: 260px;
+  max-width: 380px;
+  padding: 12px 14px 12px 12px;
+  border: 1px solid var(--color-border-strong);
+  opacity: 0; /* 初始为0，enter动画会置为1 */
+  transform: translateY(-50%); /* 以自身高度居中定位 */
+}
+
+/* 设置页内联预览时覆盖定位与层级 */
+.inline {
+  position: absolute;
+  left: 0;
+  top: 60%; /* 在预览容器中部偏下 */
+  transform: translateY(-50%);
+  z-index: var(--z-form, 300);
+}
+
+.enter {
+  animation: slideIn 300ms ease-out forwards;
+}
+
+.exit {
+  animation: slideOut 300ms ease-in forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-50%) translateX(-16px); opacity: 0; }
+  to { transform: translateY(-50%) translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateY(-50%) translateX(0); opacity: 1; }
+  to { transform: translateY(-50%) translateX(-16px); opacity: 0; }
+}
+
+.closeButton {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.closeButton:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
+}
+
+.content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.message {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.actionBtn {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.actionBtn:hover {
+  filter: brightness(1.05);
+}
+
+/* 类型样式扩展示例 */
+.general {}
+.weatherAlert { border-left: 3px solid var(--color-warning); }
+.coolingReminder { border-left: 3px solid var(--color-info); }
+.systemUpdate { border-left: 3px solid var(--color-success); }
