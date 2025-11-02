@@ -163,7 +163,7 @@ export function Study() {
     return Math.max(0, diffDays);
   }, []);
 
-  /** 计算到最近一次高考（6月7日）的剩余天数 */
+  /** 计算到最近一次高考（6月7日）的剩余天数（函数级注释：根据设置的目标年份计算到6月7日的剩余天数，返回非负整数） */
   const calcDaysToNextGaokao = useCallback(() => {
     const now = new Date();
     const year = study.targetYear || now.getFullYear();
@@ -260,10 +260,19 @@ export function Study() {
 
   const display = study.display || { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
 
-  // 计算每个项的文案与天数
+  // 计算每个项的文案与天数（函数级注释：生成倒计时项的显示文本，其中高考事件强制包含年份并采用“距离YYYY高考仅xx天”的格式）
   const renderItem = (item: typeof countdownItems[number]) => {
     const days = item.kind === 'gaokao' ? calcDaysToNextGaokao() : calcDaysToDate(item.targetDate);
-    const nameText = (item.name && item.name.trim().length > 0) ? item.name!.trim() : (item.kind === 'gaokao' ? '高考倒计时' : '自定义事件');
+    // 高考事件：优先从名称中解析年份，否则使用设置中的目标年份
+    let nameText: string;
+    if (item.kind === 'gaokao') {
+      const rawName = (item.name || '').trim();
+      const m = rawName.match(/\b(19|20)\d{2}\b/); // 尝试从名称中提取四位年份
+      const year = m ? parseInt(m[0], 10) : (study.targetYear || new Date().getFullYear());
+      nameText = `${year}高考`;
+    } else {
+      nameText = (item.name && item.name.trim().length > 0) ? item.name!.trim() : '自定义事件';
+    }
     const textCol = item.textColor ? hexToRgba(item.textColor, typeof item.textOpacity === 'number' ? item.textOpacity : 1) : undefined;
     const bgCol = item.bgColor ? hexToRgba(item.bgColor, typeof item.bgOpacity === 'number' ? item.bgOpacity : 0) : undefined;
     const digitBaseColor = item.digitColor ?? study.digitColor;

@@ -262,6 +262,13 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
   }
 }
 
+/**
+ * 构建天气数据获取流程（函数级注释）：
+ * - 优先使用本地缓存的地理坐标与地理反编码结果；缓存有效期为12小时；
+ * - 缓存失效时按序执行定位：浏览器 Geolocation → 高德 IP → 其他 IP；
+ * - 反编码（高德/OSM）与和风城市查询同样进行缓存，避免重复请求；
+ * - 始终实时请求和风实时天气（不缓存），以保证数据新鲜。
+ */
 export async function buildWeatherFlow(): Promise<{
   coords: Coords | null;
   coordsSource?: string | null;
@@ -270,38 +277,115 @@ export async function buildWeatherFlow(): Promise<{
   addressInfo?: AddressInfo | null;
   weather?: WeatherNow | null;
 }> {
-  // 新定位策略：优先浏览器 Geolocation，其次高德 IP，最后其他 IP 源
+  const MAX_AGE = 12 * 60 * 60 * 1000; // 12小时缓存
+  const now = Date.now();
+
+  // 读取坐标缓存
+  let coords: Coords | null = null;
   let coordsSource: string | null = null;
-  let coords: Coords | null = await getCoordsViaGeolocation();
-  if (coords) {
-    coordsSource = 'geolocation';
-  } else {
-    coords = await getCoordsViaAmapIP();
-    if (coords) {
-      coordsSource = 'amap_ip';
-    } else {
-      coords = await getCoordsViaIP();
-      if (coords) {
-        coordsSource = 'ip';
+  try {
+    const latStr = localStorage.getItem('weather.coords.lat');
+    const lonStr = localStorage.getItem('weather.coords.lon');
+    const cachedAtStr = localStorage.getItem('weather.coords.cachedAt');
+    const sourceStr = localStorage.getItem('weather.coords.source');
+    const cachedAt = cachedAtStr ? parseInt(cachedAtStr, 10) : 0;
+    if (latStr && lonStr && cachedAt > 0 && (now - cachedAt) < MAX_AGE) {
+      const lat = parseFloat(latStr);
+      const lon = parseFloat(lonStr);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        coords = { lat, lon };
+        coordsSource = sourceStr || null;
       }
     }
+  } catch { /* 忽略缓存读取错误 */ }
+
+  // 缓存缺失或过期时重新定位
+  if (!coords) {
+    // 新定位策略：优先浏览器 Geolocation，其次高德 IP，最后其他 IP 源
+    const g = await getCoordsViaGeolocation();
+    if (g) {
+      coords = g; coordsSource = 'geolocation';
+    } else {
+      const a = await getCoordsViaAmapIP();
+      if (a) { coords = a; coordsSource = 'amap_ip'; }
+      else {
+        const i = await getCoordsViaIP();
+        if (i) { coords = i; coordsSource = 'ip'; }
+      }
+    }
+    // 写入坐标缓存
+    try {
+      if (coords) {
+        localStorage.setItem('weather.coords.lat', String(coords.lat));
+        localStorage.setItem('weather.coords.lon', String(coords.lon));
+        localStorage.setItem('weather.coords.cachedAt', String(now));
+        if (coordsSource) localStorage.setItem('weather.coords.source', coordsSource);
+      }
+    } catch { /* 忽略写入错误 */ }
   }
+
   if (!coords) {
     return { coords: null, coordsSource: null };
   }
-  const cityLookup = await geoCityLookup(coords.lat, coords.lon);
+
+  // 构造坐标签名，减少浮点抖动导致的误判
+  const coordSig = `${coords.lat.toFixed(4)},${coords.lon.toFixed(4)}`;
+
+  // 城市与 LocationID 缓存
   let city: string | null = null;
   let locationId: string | null = null;
-  if (cityLookup && Array.isArray(cityLookup.location) && cityLookup.location.length > 0) {
-    const first = cityLookup.location[0];
-    city = first?.name || null;
-    locationId = first?.id || null;
-  }
-  let addrInfo = await reverseGeocodeAmap(coords.lat, coords.lon);
-  if (!addrInfo.address) {
-    const fallback = await reverseGeocodeOSM(coords.lat, coords.lon);
-    if (fallback?.address) addrInfo = fallback;
-  }
+  try {
+    const cityCachedAtStr = localStorage.getItem('weather.city.cachedAt');
+    const citySig = localStorage.getItem('weather.city.sig') || '';
+    const cityCachedAt = cityCachedAtStr ? parseInt(cityCachedAtStr, 10) : 0;
+    if (citySig === coordSig && cityCachedAt > 0 && (now - cityCachedAt) < MAX_AGE) {
+      city = localStorage.getItem('weather.city');
+      locationId = localStorage.getItem('weather.locationId');
+    } else {
+      const lookup = await geoCityLookup(coords.lat, coords.lon);
+      if (lookup && Array.isArray(lookup.location) && lookup.location.length > 0) {
+        const first = lookup.location[0];
+        city = first?.name || null;
+        locationId = first?.id || null;
+        try {
+          if (city) localStorage.setItem('weather.city', city);
+          if (locationId) localStorage.setItem('weather.locationId', locationId);
+          localStorage.setItem('weather.city.cachedAt', String(now));
+          localStorage.setItem('weather.city.sig', coordSig);
+        } catch { /* 忽略写入错误 */ }
+      }
+    }
+  } catch { /* 忽略读取错误 */ }
+
+  // 反向地理编码缓存（详细地址）
+  let addrInfo: AddressInfo | null = null;
+  try {
+    const addrCachedAtStr = localStorage.getItem('weather.address.cachedAt');
+    const addrSig = localStorage.getItem('weather.address.sig') || '';
+    const addrCachedAt = addrCachedAtStr ? parseInt(addrCachedAtStr, 10) : 0;
+    if (addrSig === coordSig && addrCachedAt > 0 && (now - addrCachedAt) < MAX_AGE) {
+      const address = localStorage.getItem('weather.address') || undefined;
+      const source = localStorage.getItem('weather.address.source') || undefined;
+      addrInfo = { address, source };
+    } else {
+      let tmp = await reverseGeocodeAmap(coords.lat, coords.lon);
+      if (!tmp.address) {
+        const fb = await reverseGeocodeOSM(coords.lat, coords.lon);
+        if (fb?.address) tmp = fb;
+      }
+      addrInfo = tmp;
+      try {
+        if (tmp.address) {
+          localStorage.setItem('weather.address', tmp.address);
+          if (tmp.source) localStorage.setItem('weather.address.source', tmp.source);
+          localStorage.setItem('weather.address.cachedAt', String(now));
+          localStorage.setItem('weather.address.sig', coordSig);
+        }
+      } catch { /* 忽略写入错误 */ }
+    }
+  } catch { /* 忽略读取错误 */ }
+
+  // 实时天气始终请求最新
   const locationParam = locationId || `${coords.lon},${coords.lat}`;
   const weather = await fetchWeatherNow(locationParam);
   return { coords, coordsSource, city, locationId, addressInfo: addrInfo, weather };
