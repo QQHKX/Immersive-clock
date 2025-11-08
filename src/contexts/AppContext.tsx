@@ -68,6 +68,7 @@ function loadStudyState(): StudyState {
     const savedCarouselInterval = localStorage.getItem('study-carousel-interval');
     const savedDigitColor = localStorage.getItem('study-digit-color');
     const savedDigitOpacity = localStorage.getItem('study-digit-opacity');
+    const savedMessagePopupEnabled = localStorage.getItem('study-message-popup-enabled');
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
 
@@ -125,6 +126,7 @@ function loadStudyState(): StudyState {
     const carouselIntervalSec = savedCarouselInterval ? Math.max(1, Math.min(60, parseInt(savedCarouselInterval, 10))) : undefined;
     const digitColor = savedDigitColor || undefined;
     const digitOpacity = savedDigitOpacity !== null ? Math.max(0, Math.min(1, parseFloat(savedDigitOpacity))) : 1;
+    const messagePopupEnabled = savedMessagePopupEnabled ? savedMessagePopupEnabled === 'true' : false;
 
     return {
       targetYear,
@@ -136,6 +138,7 @@ function loadStudyState(): StudyState {
       carouselIntervalSec,
       digitColor,
       digitOpacity,
+      messagePopupEnabled,
     };
   } catch (error) {
     console.warn('Failed to load study state from localStorage:', error);
@@ -160,6 +163,7 @@ function loadStudyState(): StudyState {
       carouselIntervalSec: undefined,
       digitColor: undefined,
       digitOpacity: 1,
+      messagePopupEnabled: false,
     };
   }
 }
@@ -445,6 +449,17 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: digitOpacityUpdatedStudy,
+      };
+
+    case 'SET_MESSAGE_POPUP_ENABLED':
+      const msgUpdatedStudy = {
+        ...state.study,
+        messagePopupEnabled: !!action.payload,
+      };
+      localStorage.setItem('study-message-popup-enabled', (!!action.payload).toString());
+      return {
+        ...state,
+        study: msgUpdatedStudy,
       };
 
     case 'UPDATE_QUOTE_CHANNELS':
