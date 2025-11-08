@@ -1,12 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './messagePopup.module.css';
+import { FormButton } from '../FormComponents';
 
 type MessageType = 'general' | 'weatherAlert' | 'coolingReminder' | 'systemUpdate';
 
+/**
+ * 消息弹窗动作项类型
+ * - 统一使用设计系统中的 FormButton 进行渲染
+ * - 支持可选的 variant 与 size，用于控制视觉层级与尺寸
+ */
 interface ActionItem {
   label: string;
   onClick: () => void;
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  icon?: React.ReactNode;
+  loading?: boolean;
 }
 
 interface MessagePopupProps {
@@ -110,14 +120,17 @@ export default function MessagePopup({
       {Array.isArray(actions) && actions.length > 0 && (
         <div className={styles.actions}>
           {actions.map((act, idx) => (
-            <button
+            <FormButton
               key={idx}
-              className={styles.actionBtn}
+              variant={act.variant ?? 'secondary'}
+              size={act.size ?? 'sm'}
+              icon={act.icon}
+              loading={act.loading}
               onClick={act.onClick}
               type="button"
             >
               {act.label}
-            </button>
+            </FormButton>
           ))}
         </div>
       )}

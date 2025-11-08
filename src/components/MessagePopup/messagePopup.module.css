@@ -3,25 +3,29 @@
 .container {
   position: fixed;
   left: 16px;
-  top: 60vh; /* 屏幕中间偏下 */
+  top: 60vh;
+  /* 屏幕中间偏下 */
   z-index: var(--z-hud, 100);
   background: var(--color-surface-2);
   color: var(--color-text-primary);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   min-width: 260px;
   max-width: 380px;
   padding: 12px 14px 12px 12px;
   border: 1px solid var(--color-border-strong);
-  opacity: 0; /* 初始为0，enter动画会置为1 */
-  transform: translateY(-50%); /* 以自身高度居中定位 */
+  opacity: 0;
+  /* 初始为0，enter动画会置为1 */
+  transform: translateY(-50%);
+  /* 以自身高度居中定位 */
 }
 
 /* 设置页内联预览时覆盖定位与层级 */
 .inline {
   position: absolute;
   left: 0;
-  top: 60%; /* 在预览容器中部偏下 */
+  top: 60%;
+  /* 在预览容器中部偏下 */
   transform: translateY(-50%);
   z-index: var(--z-form, 300);
 }
@@ -35,13 +39,27 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateY(-50%) translateX(-16px); opacity: 0; }
-  to { transform: translateY(-50%) translateX(0); opacity: 1; }
+  from {
+    transform: translateY(-50%) translateX(-16px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slideOut {
-  from { transform: translateY(-50%) translateX(0); opacity: 1; }
-  to { transform: translateY(-50%) translateX(-16px); opacity: 0; }
+  from {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(-50%) translateX(-16px);
+    opacity: 0;
+  }
 }
 
 .closeButton {
@@ -56,6 +74,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
 }
+
 .closeButton:hover {
   background: var(--color-surface-3);
   color: var(--color-text-primary);
@@ -102,12 +121,22 @@
   padding: 6px 10px;
   cursor: pointer;
 }
+
 .actionBtn:hover {
   filter: brightness(1.05);
 }
 
 /* 类型样式扩展示例 */
 .general {}
-.weatherAlert { border-left: 3px solid var(--color-warning); }
-.coolingReminder { border-left: 3px solid var(--color-info); }
-.systemUpdate { border-left: 3px solid var(--color-success); }
+
+.weatherAlert {
+  border-left: 3px solid var(--color-warning);
+}
+
+.coolingReminder {
+  border-left: 3px solid var(--color-info);
+}
+
+.systemUpdate {
+  border-left: 3px solid var(--color-success);
+}

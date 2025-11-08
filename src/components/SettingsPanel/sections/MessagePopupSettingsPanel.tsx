@@ -32,7 +32,7 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({ o
 
       <FormSection title="基础设置">
         <FormCheckbox
-          label="启用消息弹窗"
+          label="启用消息弹窗beta"
           checked={enabled}
           onChange={(e) => setEnabled(e.target.checked)}
         />
