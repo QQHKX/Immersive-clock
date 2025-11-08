@@ -302,6 +302,71 @@
   font-size: var(--font-size-md);
 }
 
+/* 金句编辑器区域 */
+.editorSection {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.editorTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.importInfo {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quoteList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.quoteItem {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.quoteInput {
+  flex: 1;
+}
+
+/* 单文本框编辑模式样式 */
+.quoteTextarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+}
+
+.quoteActions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.errorText {
+  color: #ff6b6b;
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .channelHeader {
@@ -327,6 +392,11 @@
   
   .weightInput {
     width: 80px !important;
+  }
+  
+  .quoteItem {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

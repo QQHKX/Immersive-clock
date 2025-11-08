@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { ToggleOffIcon, ToggleOnIcon, SettingsIcon, RefreshIcon } from '../Icons';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ToggleOffIcon, ToggleOnIcon, SettingsIcon, RefreshIcon, EditIcon, ResetIcon, FileIcon } from '../Icons';
 import { useAppState, useAppDispatch } from '../../contexts/AppContext';
 import { QuoteSourceConfig, HitokotoCategory, HITOKOTO_CATEGORY_LIST } from '../../types';
-import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow, FormCheckbox } from '../FormComponents';
+import { FormSection, FormInput, FormTextarea, FormButton, FormButtonGroup, FormRow, FormCheckbox } from '../FormComponents';
 import styles from './QuoteChannelManager.module.css';
 
 /**
@@ -15,6 +15,12 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   const [channels, setChannels] = useState<QuoteSourceConfig[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedChannelId, setExpandedChannelId] = useState<string | null>(null);
+  const [expandedEditorChannelId, setExpandedEditorChannelId] = useState<string | null>(null);
+  const [defaultQuotesMap, setDefaultQuotesMap] = useState<Record<string, string[]>>({});
+  const [importError, setImportError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [editorDraftMap, setEditorDraftMap] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /**
    * 从数据文件加载渠道配置
@@ -25,15 +31,19 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
       // 使用 import.meta.glob 动态加载所有 quotes-*.json 文件
       const quoteFiles = import.meta.glob('/src/data/quotes-*.json');
       const loadedChannels: QuoteSourceConfig[] = [];
+      const defaults: Record<string, string[]> = {};
 
       for (const [path, loader] of Object.entries(quoteFiles)) {
         try {
           const module = await loader() as { default: QuoteSourceConfig };
           const config = module.default;
-          
+
           // 确保配置有必要的字段
           if (config.id && config.name !== undefined) {
             loadedChannels.push(config);
+            if (Array.isArray(config.quotes)) {
+              defaults[config.id] = [...config.quotes];
+            }
           }
         } catch (error) {
           console.warn(`Failed to load quote file ${path}:`, error);
@@ -43,6 +53,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
       // 按 ID 排序
       loadedChannels.sort((a, b) => a.id.localeCompare(b.id));
       setChannels(loadedChannels);
+      setDefaultQuotesMap(defaults);
 
       // 如果全局状态中没有渠道配置，则初始化到本地草稿
       if (state.quoteChannels.channels.length === 0) {
@@ -122,11 +133,112 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   }, []);
 
   /**
+   * 切换本地金句编辑器展开/收起
+   * @param channelId 渠道ID
+   */
+  const handleToggleEditorExpanded = useCallback((channelId: string) => {
+    setExpandedEditorChannelId(prev => {
+      const next = prev === channelId ? null : channelId;
+      if (next) {
+        const ch = channels.find(c => c.id === channelId);
+        const initial = Array.isArray(ch?.quotes) ? ch!.quotes!.join('\n') : '';
+        setEditorDraftMap(d => ({ ...d, [channelId]: initial }));
+      }
+      return next;
+    });
+  }, [channels]);
+
+  /**
    * 重新加载渠道配置
    */
   const handleRefreshChannels = useCallback(() => {
     loadChannelsFromFiles();
   }, [loadChannelsFromFiles]);
+
+  /**
+   * 导入TXT文件作为自定义金句源
+   * - 按行分割，过滤空行与超长行
+   * - 校验总条目数上限
+   */
+  const handleImportTxt = useCallback(() => {
+    setImportError(null);
+    fileInputRef.current?.click();
+  }, []);
+
+  /**
+   * 处理TXT文件选择与解析
+   * @param e input change事件
+   */
+  const handleImportTxtFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null);
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const rawLines = text.split(/\r?\n/);
+      const lines = rawLines
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && l.length <= 200);
+
+      if (lines.length === 0) {
+        setImportError('导入失败：TXT内容为空或格式无效。');
+        return;
+      }
+      if (lines.length > 1000) {
+        setImportError('导入失败：金句条目超过上限（1000条）。');
+        return;
+      }
+
+      const basename = file.name.replace(/\.[^.]+$/, '');
+      const newChannel: QuoteSourceConfig = {
+        id: `custom-txt-${Date.now()}`,
+        name: `自定义TXT：${basename}`,
+        weight: 10,
+        enabled: true,
+        onlineFetch: false,
+        quotes: lines
+      };
+
+      setChannels(prev => [...prev, newChannel]);
+    } catch (err) {
+      console.error('TXT导入错误:', err);
+      setImportError('导入失败：无法读取文件。');
+    }
+  }, []);
+
+  /**
+   * 从文本域更新金句（每行一个）
+   * @param channelId 渠道ID
+   * @param text 文本域内容
+   */
+  const handleUpdateQuotesFromTextarea = useCallback((channelId: string, text: string) => {
+    setEditorError(null);
+    setEditorDraftMap(prev => ({ ...prev, [channelId]: text }));
+    const rawLines = text.split(/\r?\n/);
+    const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0);
+
+    if (lines.length > 1000) {
+      setEditorError('编辑提示：金句条目超过上限（1000行）。');
+    } else if (lines.some(l => l.length > 200)) {
+      setEditorError('编辑提示：存在超过200字符的长句，建议适当裁剪。');
+    }
+
+    setChannels(prev => prev.map(ch => (ch.id === channelId ? { ...ch, quotes: lines } : ch)));
+  }, []);
+
+  /**
+   * 恢复该渠道全部金句为系统默认（仅内置源）
+   * @param channelId 渠道ID
+   */
+  const handleRestoreDefaultAll = useCallback((channelId: string) => {
+    const defaults = defaultQuotesMap[channelId];
+    if (!defaults) return;
+    setChannels(prev => prev.map(ch => (ch.id === channelId ? { ...ch, quotes: [...defaults] } : ch)));
+    setEditorDraftMap(prev => ({ ...prev, [channelId]: defaults.join('\n') }));
+    setEditorError(null);
+  }, [defaultQuotesMap]);
 
   // 组件挂载时加载渠道配置
   useEffect(() => {
@@ -167,6 +279,22 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
       </div>
 
       <FormButtonGroup align="right">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt"
+          style={{ display: 'none' }}
+          onChange={handleImportTxtFileChange}
+        />
+        <FormButton
+          variant="secondary"
+          onClick={handleImportTxt}
+          icon={<FileIcon size={16} />}
+          aria-label="导入TXT金句源"
+          title="导入TXT金句源"
+        >
+          导入TXT
+        </FormButton>
         <FormButton
           variant="secondary"
           onClick={handleRefreshChannels}
@@ -175,6 +303,10 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
           刷新配置
         </FormButton>
       </FormButtonGroup>
+
+      {importError && (
+        <div className={styles.errorText} role="alert">{importError}</div>
+      )}
 
       <div className={styles.channelList}>
         {channels.map(channel => (
@@ -186,7 +318,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                   {channel.onlineFetch ? '在线获取' : '本地数据'}
                 </span>
               </div>
-              
+
               <div className={styles.channelControls}>
                 <div className={styles.weightControl}>
                   <label className={styles.weightLabel}>权重:</label>
@@ -200,7 +332,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                     className={styles.weightInput}
                   />
                 </div>
-                
+
                 <FormButton
                   className={styles.toggleButton}
                   onClick={() => handleToggleChannel(channel.id)}
@@ -214,7 +346,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                     <ToggleOffIcon className={styles.toggleIconDisabled} />
                   )}
                 />
-                
+
                 {channel.onlineFetch && channel.hitokotoCategories && (
                   <FormButton
                     className={styles.settingsButton}
@@ -224,6 +356,18 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                     title="分类设置"
                     aria-label="分类设置"
                     icon={<SettingsIcon size={16} />}
+                  />
+                )}
+
+                {!channel.onlineFetch && (
+                  <FormButton
+                    className={styles.settingsButton}
+                    onClick={() => handleToggleEditorExpanded(channel.id)}
+                    variant="secondary"
+                    size="sm"
+                    title="编辑金句"
+                    aria-label="编辑金句"
+                    icon={<EditIcon size={16} />}
                   />
                 )}
               </div>
@@ -250,6 +394,44 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                     未选择任何分类时将获取所有类型的一言。
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* 本地金句编辑器 */}
+            {expandedEditorChannelId === channel.id && !channel.onlineFetch && (
+              <div className={styles.editorSection}>
+                <div className={styles.editorHeader}>
+                  <h5 className={styles.editorTitle}>金句编辑器</h5>
+                  <FormButton
+                    variant="secondary"
+                    size="sm"
+                    title="恢复默认（全部）"
+                    aria-label="恢复默认（全部）"
+                    icon={<ResetIcon size={16} />}
+                    disabled={!defaultQuotesMap[channel.id]}
+                    onClick={() => handleRestoreDefaultAll(channel.id)}
+                  />
+                </div>
+                <FormTextarea
+                  label="金句文本（每行一个）"
+                  className={styles.quoteTextarea}
+                  value={editorDraftMap[channel.id] ?? (Array.isArray(channel.quotes) ? channel.quotes.join('\n') : '')}
+                  onChange={(e) => handleUpdateQuotesFromTextarea(channel.id, e.target.value)}
+                  placeholder={"例如：\n保持专注，持续前进。\n小步快跑，积累成塔。\n接受不完美并继续优化。"}
+                  aria-label={`编辑 ${channel.name} 的金句文本，每行一个`}
+                  rows={10}
+                />
+                <div className={styles.importInfo}>
+                  <p className={styles.helpText}>当前条目：{Array.isArray(channel.quotes) ? channel.quotes.length : 0}</p>
+                </div>
+                {editorError && (
+                  <div className={styles.errorText} role="alert">{editorError}</div>
+                )}
+                {(!channel.quotes || channel.quotes.length === 0) && (
+                  <div className={styles.importInfo}>
+                    <p className={styles.helpText}>当前渠道暂无金句，可通过“导入TXT”或在上方文本框直接编写。</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

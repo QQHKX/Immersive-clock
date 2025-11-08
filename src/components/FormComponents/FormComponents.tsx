@@ -50,6 +50,35 @@ export function FormInput({
   );
 }
 
+// 文本域组件
+export interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string;
+  error?: string;
+}
+
+/**
+ * 统一的多行文本输入组件（文本域）
+ * 用于需要多行输入的场景，遵循项目统一样式与交互
+ */
+export function FormTextarea({
+  label,
+  error,
+  className = '',
+  rows = 8,
+  ...props
+}: FormTextareaProps) {
+  const textareaClass = `${styles.input} ${className} ${error ? styles.error : ''}`;
+
+  return (
+    <div className={styles.inputGroup}>
+      {label && <label className={styles.label}>{label}</label>}
+      {/* 使用统一的 input 类样式以保持设计一致性 */}
+      <textarea className={textareaClass} rows={rows} {...props} />
+      {error && <span className={styles.errorText}>{error}</span>}
+    </div>
+  );
+}
+
 // 选择器组件
 export interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
