@@ -10,6 +10,22 @@
   overflow: hidden;
 }
 
+/* 背景渐变覆层：与时钟页面保持一致的微弱中心高亮 */
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.01) 50%,
+      transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* 进度条下方左侧 - 天气和噪音监测 */
 .topLeft {
   position: absolute;
@@ -39,7 +55,8 @@
   font-family: var(--font-ui);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   font-weight: 500;
-  height: 2.2em; /* 固定高度，匹配单行文本高度 */
+  height: 2.2em;
+  /* 固定高度，匹配单行文本高度 */
   overflow: hidden;
 }
 
@@ -47,14 +64,16 @@
 .carouselTrack {
   display: flex;
   flex-direction: column;
-  transition: transform 300ms ease; /* 滚动切换动画 */
+  transition: transform 300ms ease;
+  /* 滚动切换动画 */
 }
 
 /* 单项样式（继承原gaokaoCountdown样式） */
 .carouselItem {
   color: var(--text-color);
   margin-bottom: 0;
-  line-height: 2.2em; /* 与容器高度一致，确保每项高度一致 */
+  line-height: 2.2em;
+  /* 与容器高度一致，确保每项高度一致 */
 }
 
 .days {
@@ -75,7 +94,7 @@
 /* 中央 - 时间显示 */
 .centerTime {
   position: absolute;
-  top: 45%;
+  top: 49%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -207,6 +226,30 @@
 
   .days {
     font-size: 1.2em;
+  }
+}
+
+/* 高对比度模式支持：与时钟页面一致，禁用渐变并切换为纯黑白 */
+@media (prefers-contrast: high) {
+  .container {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .container::before {
+    display: none;
+  }
+}
+
+/* 打印样式：与时钟页面一致 */
+@media print {
+  .container {
+    background: white;
+    color: black;
+  }
+
+  .container::before {
+    display: none;
   }
 }
 

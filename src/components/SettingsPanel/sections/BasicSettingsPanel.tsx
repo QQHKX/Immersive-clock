@@ -311,7 +311,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
           <>
             <FormRow gap="sm">
               <FormInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
-              <FormInput type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="#000000" />
+              <FormInput type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="#121212" />
               <FormSlider label="背景透明度" min={0} max={1} step={0.01} value={bgAlpha} onChange={(v) => setBgAlpha(v)} formatValue={(v) => `${Math.round(v * 100)}%`} />
             </FormRow>
             <p className={styles.helpText}>支持调色盘或十六进制颜色代码（例如 #1a1a1a）。</p>
