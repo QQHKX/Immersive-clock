@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import Modal from '../Modal/Modal';
-import { FormSection, FormButton, FormButtonGroup } from '../FormComponents';
+import { FormButton, FormButtonGroup } from '../FormComponents';
 import styles from './NoiseReportModal.module.css';
 import { saveNoiseReport, SavedNoiseReport } from '../../utils/noiseReportStorage';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
@@ -161,8 +161,10 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
   // 渲染逻辑保持不变，仅数据来源统一
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`${period?.name || '晚自习'} 统计报告`}>
-      <FormSection title="报告概览">
+    <Modal isOpen={isOpen} onClose={onClose} title={`${period?.name || '晚自习'} 统计报告`} maxWidth="xl">
+      {/* 单层容器：去除双层 FormSection，保持标题与内容结构 */}
+      <div className={styles.singleContainer}>
+        <h4 className={styles.sectionTitle}>报告概览</h4>
         <div className={styles.summaryGrid}>
           <div className={styles.statItem}>
             <div className={styles.statLabel}>时长</div>
@@ -189,8 +191,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             <div className={styles.statValue}>{formatDurationCn(stats.noisyDurationMs)}</div>
           </div>
         </div>
-      </FormSection>
-      <FormSection title="噪音走势">
+
+        <h4 className={styles.sectionTitle}>噪音走势</h4>
         <div ref={chartContainerRef} className={styles.chartRow}>
           {samplesInPeriod.length > 0 ? (
             <svg
@@ -251,7 +253,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         <div className={styles.chartHint}>
           统计范围：{period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : '无'}
         </div>
-      </FormSection>
+      </div>
       <FormButtonGroup>
         <FormButton onClick={onClose}>关闭</FormButton>
       </FormButtonGroup>
