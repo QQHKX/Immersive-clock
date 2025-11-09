@@ -157,9 +157,92 @@
   margin-bottom: 0.2rem;
 }
 
+/* 额外统计图：两列自适应网格，不影响上方紧凑布局 */
+.extraChartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+.miniTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin: 0.2rem 0 0.1rem 0;
+}
+
+.barRect {
+  fill: rgba(3, 218, 198, 0.55);
+}
+
+/* 说明文字（迷你图下方解释） */
+.chartCaption {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--secondary-color);
+}
+
+/* 圆环图：安静占比 */
+.donutTrack {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 16;
+}
+
+.donutValue {
+  fill: none;
+  stroke: #4caf50; /* success 基色 */
+  stroke-linecap: round;
+  stroke-width: 16;
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.donutTextMain {
+  fill: var(--text-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.donutTextSub {
+  fill: var(--secondary-color);
+  font-size: 0.8rem;
+}
+
+/* 箱线图样式 */
+.boxWhisker {
+  stroke: var(--secondary-color);
+  stroke-width: 2;
+}
+
+.boxLine {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 2;
+}
+
+.boxRect {
+  fill: #03DAC6;
+  opacity: 0.35;
+}
+
+.boxMedian {
+  stroke: #03DAC6;
+  stroke-width: 3;
+}
+
+/* 提醒密度条形图（细柱） */
+.barThin {
+  fill: #ff6b6b;
+  opacity: 0.9;
+}
+
 @media (max-width: 768px) {
   .summaryGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+  .extraChartsGrid {
+    grid-template-columns: 1fr;
     gap: 0.65rem;
   }
   .statItem {
