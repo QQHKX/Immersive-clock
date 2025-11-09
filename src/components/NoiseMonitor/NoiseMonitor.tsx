@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './NoiseMonitor.module.css';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import type { NoiseControlSettings } from '../../utils/noiseControlSettings';
 import { readNoiseSamples, writeNoiseSample, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
+import { subscribeSettingsEvent, broadcastSettingsEvent, SETTINGS_EVENTS } from '../../utils/settingsEvents';
 
 // 噪音状态类型
 type NoiseStatus = 'quiet' | 'noisy' | 'error' | 'permission-denied' | 'initializing';
@@ -196,10 +198,33 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       setBaselineNoise(manualBaseline);
       localStorage.setItem(BASELINE_NOISE_KEY, manualBaseline.toString());
       console.log(`噪音基准校准完成: baselineRms=${avgRms.toExponential(3)}，显示基线为 ${manualBaseline}dB`);
+      // 广播：基线更新（用于其他组件提示或联动）
+      broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: manualBaseline, baselineRms: avgRms });
     }
 
     setIsCalibrating(false);
   }, [isCalibrating]);
+
+  // 订阅：噪音控制设置变化，及时更新阈值、显示基线、副文本与平均时间窗
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, (evt: CustomEvent) => {
+      try {
+        const detail = evt.detail as { settings?: NoiseControlSettings };
+        const s = (detail && detail.settings) || getNoiseControlSettings();
+        if (typeof s.maxLevelDb === 'number') setThresholdDb(s.maxLevelDb);
+        if (typeof s.baselineDb === 'number') setDisplayBaselineDb(s.baselineDb);
+        if (typeof s.showRealtimeDb === 'boolean') setShowRealtimeDb(!!s.showRealtimeDb);
+        if (typeof s.avgWindowSec === 'number') setAvgWindowSec(Math.max(0.2, s.avgWindowSec));
+      } catch {
+        const s = getNoiseControlSettings();
+        setThresholdDb(s.maxLevelDb);
+        setDisplayBaselineDb(s.baselineDb);
+        setShowRealtimeDb(s.showRealtimeDb);
+        setAvgWindowSec(s.avgWindowSec);
+      }
+    });
+    return off;
+  }, []);
 
   /**
    * 清除校准数据
@@ -212,6 +237,8 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     localStorage.removeItem(BASELINE_NOISE_KEY);
     localStorage.removeItem(BASELINE_RMS_KEY);
     console.log('校准数据已清除');
+    // 广播：基线已清除
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: 0, baselineRms: 0 });
   }, []);
 
   /**

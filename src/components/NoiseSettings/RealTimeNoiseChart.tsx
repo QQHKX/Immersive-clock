@@ -3,6 +3,7 @@ import styles from './NoiseSettings.module.css';
 import { FormSection } from '../FormComponents';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
+import { subscribeSettingsEvent, SETTINGS_EVENTS } from '../../utils/settingsEvents';
 
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
@@ -18,6 +19,12 @@ export const RealTimeNoiseChart: React.FC = () => {
     const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
     setTick(t => t + 1);
     return unsubscribe;
+  }, []);
+
+  // 订阅：阈值等噪音控制设置变化，触发图表刷新
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, () => setTick(t => t + 1));
+    return off;
   }, []);
 
   const { points, threshold, latest, width, height, margin, yTicks, yScale, path, thresholdY } = useMemo(() => {
