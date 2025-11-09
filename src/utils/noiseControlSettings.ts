@@ -2,6 +2,7 @@
  * 噪音控制设置存储工具
  * 管理用户的最大允许噪音级别与手动基准噪音显示值
  */
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from './settingsEvents';
 
 // localStorage 键名
 const NOISE_MAX_LEVEL_KEY = 'noise-control-max-level-db';
@@ -58,6 +59,11 @@ export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>
     if (settings.avgWindowSec !== undefined) {
       localStorage.setItem(NOISE_AVG_WINDOW_SEC_KEY, next.avgWindowSec.toString());
     }
+    // 广播：噪音控制设置更新
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, { settings: next });
+    if (settings.baselineDb !== undefined) {
+      broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: next.baselineDb });
+    }
   } catch (error) {
     console.error('保存噪音控制设置失败:', error);
   }
@@ -101,6 +107,8 @@ export function resetNoiseControlSettings(): void {
     localStorage.removeItem(NOISE_BASELINE_DB_KEY);
     localStorage.removeItem(NOISE_SHOW_REALTIME_DB_KEY);
     localStorage.removeItem(NOISE_AVG_WINDOW_SEC_KEY);
+    // 广播：重置后也应通知订阅者使用默认值
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, { settings: getNoiseControlSettings() });
   } catch (error) {
     console.error('重置噪音控制设置失败:', error);
   }

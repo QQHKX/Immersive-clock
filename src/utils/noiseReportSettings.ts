@@ -2,6 +2,7 @@
  * 噪音报告设置存储工具
  * 管理用户的噪音报告相关偏好设置
  */
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from './settingsEvents';
 
 // localStorage 键名
 const AUTO_POPUP_KEY = 'noise-report-auto-popup';
@@ -49,6 +50,8 @@ export function saveNoiseReportSettings(settings: Partial<NoiseReportSettings>):
     if (settings.autoPopup !== undefined) {
       localStorage.setItem(AUTO_POPUP_KEY, settings.autoPopup.toString());
     }
+    // 广播：噪音报告设置更新
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, { settings: newSettings });
   } catch (error) {
     console.error('保存噪音报告设置失败:', error);
   }
@@ -76,6 +79,7 @@ export function setAutoPopupSetting(autoPopup: boolean): void {
 export function resetNoiseReportSettings(): void {
   try {
     localStorage.removeItem(AUTO_POPUP_KEY);
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, { settings: getNoiseReportSettings() });
   } catch (error) {
     console.error('重置噪音报告设置失败:', error);
   }

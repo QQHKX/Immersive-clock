@@ -6,6 +6,7 @@ import RealTimeNoiseChart from '../../NoiseSettings/RealTimeNoiseChart';
 import NoiseStatsSummary from '../../NoiseSettings/NoiseStatsSummary';
 import { getNoiseReportSettings, setAutoPopupSetting } from '../../../utils/noiseReportSettings';
 import { getNoiseControlSettings, saveNoiseControlSettings } from '../../../utils/noiseControlSettings';
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from '../../../utils/settingsEvents';
 
 /**
  * 学习功能分段组件的属性
@@ -179,9 +180,12 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       if (baselineRms > 0) {
         localStorage.setItem(BASELINE_RMS_KEY, baselineRms.toString());
         localStorage.setItem(BASELINE_NOISE_KEY, draftManualBaselineDb.toString());
+        // 广播基线更新，便于其他组件立即刷新
+        broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: draftManualBaselineDb, baselineRms });
       } else {
         localStorage.removeItem(BASELINE_RMS_KEY);
         localStorage.removeItem(BASELINE_NOISE_KEY);
+        broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: 0, baselineRms: 0 });
       }
 
       // 自动弹出报告设置

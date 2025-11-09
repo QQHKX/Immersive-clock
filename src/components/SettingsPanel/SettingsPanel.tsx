@@ -11,6 +11,7 @@ import modalStyles from '../Modal/Modal.module.css';
 import AboutSettingsPanel from './sections/AboutSettingsPanel';
 import WeatherSettingsPanel from './sections/WeatherSettingsPanel';
 import MessagePopupSettingsPanel from './sections/MessagePopupSettingsPanel';
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from '../../utils/settingsEvents';
 
 /**
  * 设置面板属性
@@ -41,6 +42,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const messagesSaveRef = useRef<() => void>(() => { });
   const containerRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * 统一关闭处理：广播面板关闭事件
+   */
+  const handleClose = useCallback(() => {
+    try {
+      broadcastSettingsEvent(SETTINGS_EVENTS.SettingsPanelClosed);
+    } finally {
+      onClose();
+    }
+  }, [onClose]);
+
   /** 保存所有设置 */
   const handleSaveAll = useCallback(() => {
     // 目标年份持久化（基础设置中会调整，但此处统一写入）
@@ -56,7 +68,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       alert('保存设置时出现错误，请重试');
       return;
     }
-    onClose();
+    // 广播：保存完成事件（包含关键摘要）
+    broadcastSettingsEvent(SETTINGS_EVENTS.SettingsSaved, { targetYear });
+    handleClose();
   }, [targetYear, dispatch, onClose]);
 
   // 打开时默认分区与数据
@@ -80,14 +94,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     <>
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         title="设置"
         maxWidth="lg"
         headerDivider={false}
         compactBodyTop
         footer={
           <FormButtonGroup align="right">
-            <FormButton variant="secondary" onClick={onClose}>取消</FormButton>
+            <FormButton variant="secondary" onClick={handleClose}>取消</FormButton>
             <FormButton variant="primary" onClick={handleSaveAll}>保存</FormButton>
           </FormButtonGroup>
         }

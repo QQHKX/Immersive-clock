@@ -4,6 +4,7 @@ import styles from './NoiseSettings.module.css';
 import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus';
 import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
 import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
+import { subscribeSettingsEvent, SETTINGS_EVENTS } from '../../utils/settingsEvents';
 
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
@@ -27,6 +28,12 @@ export const NoiseStatsSummary: React.FC = () => {
     // 立即更新一次，避免首次为空
     setTick(t => t + 1);
     return unsubscribe;
+  }, []);
+
+  // 订阅：噪音控制设置变化（阈值），引发统计重新计算
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, () => setTick(t => t + 1));
+    return off;
   }, []);
 
   // 计算当前课程时段（如果存在）
