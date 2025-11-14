@@ -1,0 +1,33 @@
+name: Build and Release Windows Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release-win:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (Vite)
+        run: npm run build
+
+      - name: Build Electron (TS)
+        run: npm run build:electron
+
+      - name: Package and Publish (electron-builder)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always --config electron-builder.yml

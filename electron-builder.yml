@@ -1,0 +1,21 @@
+appId: com.immersive.clock
+productName: Immersive Clock
+directories:
+  output: release/win
+files:
+  - dist/**/*
+  - electron/out/**/*
+  - package.json
+asar: true
+win:
+  target:
+    - nsis
+  artifactName: ImmersiveClock-${version}-Setup.exe
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: Immersive Clock
+publish:
+  - provider: github
