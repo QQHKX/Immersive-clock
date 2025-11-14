@@ -1,10 +1,12 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
-import Modal from '../Modal/Modal';
-import { FormButton, FormButtonGroup } from '../FormComponents';
-import styles from './NoiseReportModal.module.css';
-import { saveNoiseReport, SavedNoiseReport } from '../../utils/noiseReportStorage';
-import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
-import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
+import React, { useMemo, useRef, useEffect, useState } from "react";
+
+import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
+import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
+// 保存逻辑由外部统一入口处理，本弹窗只负责展示
+import { FormButton, FormButtonGroup } from "../FormComponents";
+import Modal from "../Modal/Modal";
+
+import styles from "./NoiseReportModal.module.css";
 
 export interface NoiseReportPeriod {
   id: string;
@@ -16,7 +18,7 @@ export interface NoiseReportPeriod {
 interface NoiseSample {
   t: number; // timestamp
   v: number; // volume (dB)
-  s: 'quiet' | 'noisy';
+  s: "quiet" | "noisy";
 }
 
 interface NoiseReportModalProps {
@@ -39,7 +41,12 @@ const MINI_CHART_PADDING = 30;
  * - 使用带坐标轴的折线图显示噪音走势，包含阈值红虚线与面积填充；
  * - 数据来源统一于噪音采样存储，支持外部覆盖样本用于测试。
  */
-export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onClose, period, samplesOverride }) => {
+export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
+  isOpen,
+  onClose,
+  period,
+  samplesOverride,
+}) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(860);
   const [tick, setTick] = useState(0);
@@ -50,31 +57,32 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       setChartWidth(w);
     };
     measure();
-    window.addEventListener('resize', measure);
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("resize", measure);
     };
   }, [isOpen]);
 
   // 当噪音样本更新时，如果弹窗打开则刷新
   useEffect(() => {
     if (!isOpen) return;
-    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
+    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick((t) => t + 1));
     // 打开后立即触发一次，避免初次为空
-    setTick(t => t + 1);
+    setTick((t) => t + 1);
     return unsubscribe;
   }, [isOpen]);
 
   const samplesInPeriod = useMemo<NoiseSample[]>(() => {
+    void tick;
     if (!period) return [];
     const startTs = period.start.getTime();
     const endTs = period.end.getTime();
     if (samplesOverride && samplesOverride.length) {
-      return samplesOverride.filter(item => item.t >= startTs && item.t <= endTs);
+      return samplesOverride.filter((item) => item.t >= startTs && item.t <= endTs);
     }
     try {
       const all: NoiseSample[] = readNoiseSamples();
-      return all.filter(item => item.t >= startTs && item.t <= endTs);
+      return all.filter((item) => item.t >= startTs && item.t <= endTs);
     } catch {
       return [];
     }
@@ -139,8 +147,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     }
 
     // 提取原始值与时间戳
-    const values = samplesInPeriod.map(s => s.v);
-    const times = samplesInPeriod.map(s => s.t);
+    const values = samplesInPeriod.map((s) => s.v);
+    const times = samplesInPeriod.map((s) => s.t);
 
     // 移动平均平滑（窗口 5）
     const k = 5;
@@ -161,7 +169,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
     // 标准差
     const mean = smoothed.reduce((a, b) => a + b, 0) / smoothed.length;
-    const stdDev = Math.sqrt(smoothed.reduce((a, b) => a + (b - mean) * (b - mean), 0) / Math.max(1, smoothed.length));
+    const stdDev = Math.sqrt(
+      smoothed.reduce((a, b) => a + (b - mean) * (b - mean), 0) / Math.max(1, smoothed.length)
+    );
 
     // 归一化到 [0,1]，经验常量保证与校准无关
     const normAvg = clamp01(avgAbsDiff / 3);
@@ -186,7 +196,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     const bin = 4;
     const binCount = Math.ceil((maxDb - minDb) / bin);
     const hist = new Array(binCount).fill(0);
-    smoothed.forEach(v => {
+    smoothed.forEach((v) => {
       const idx = Math.max(0, Math.min(binCount - 1, Math.floor((v - minDb) / bin)));
       hist[idx] += 1;
     });
@@ -203,16 +213,28 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     const minDb = 0;
     const maxDb = 80;
     if (!period || samplesInPeriod.length === 0) {
-      const thresholdY = height - padding - ((getThreshold() - minDb) / (maxDb - minDb)) * (height - padding * 2);
-      return { width, height, padding, path: '', thresholdY, xTicks: [] as number[], yTicks: [20, 40, 60, 80] };
+      const thresholdY =
+        height - padding - ((getThreshold() - minDb) / (maxDb - minDb)) * (height - padding * 2);
+      return {
+        width,
+        height,
+        padding,
+        path: "",
+        thresholdY,
+        xTicks: [] as number[],
+        yTicks: [20, 40, 60, 80],
+      };
     }
     const startTs = period.start.getTime();
     const endTs = period.end.getTime();
     const span = Math.max(1, endTs - startTs);
     const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
-    const mapY = (v: number) => height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
-    const pts = samplesInPeriod.map(p => ({ x: mapX(p.t), y: mapY(p.v) }));
-    const path = pts.map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`)).join(' ');
+    const mapY = (v: number) =>
+      height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
+    const pts = samplesInPeriod.map((p) => ({ x: mapX(p.t), y: mapY(p.v) }));
+    const path = pts
+      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
+      .join(" ");
     const thresholdY = mapY(getThreshold());
     // 构造坐标轴刻度：X 轴均匀 4 个点，Y 轴固定 20/40/60/80
     const xTicks: number[] = [];
@@ -234,9 +256,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
   // 综合评价：根据提醒次数与吵闹时长给出等级
   const gradeText = useMemo(() => {
     const s = volatility.score ?? 0;
-    if (s >= 85) return '优秀';
-    if (s >= 70) return '良好';
-    return '待改进';
+    if (s >= 85) return "优秀";
+    if (s >= 70) return "良好";
+    return "待改进";
   }, [volatility.score]);
 
   /**
@@ -245,7 +267,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
    * - 当分数不可用时仅显示等级文本，保持简洁。
    */
   const gradeDisplay = useMemo(() => {
-    return typeof volatility.score === 'number'
+    return typeof volatility.score === "number"
       ? `${volatility.score} 分（${gradeText}）`
       : gradeText;
   }, [volatility.score, gradeText]);
@@ -260,7 +282,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
    */
   const extraStats = useMemo(() => {
     const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
-    const totalMs = stats.durationMs || (period ? period.end.getTime() - period.start.getTime() : 0);
+    const totalMs =
+      stats.durationMs || (period ? period.end.getTime() - period.start.getTime() : 0);
     const noisyMs = stats.noisyDurationMs;
     const quietPercent = totalMs > 0 ? clamp01((totalMs - noisyMs) / totalMs) : 0;
 
@@ -289,27 +312,39 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         const cur = samplesInPeriod[i];
         if (prev.v <= threshold && cur.v > threshold) {
           const t = cur.t;
-          const idx = Math.min(binCount - 1, Math.max(0, Math.floor(((t - startTs) / span) * binCount)));
+          const idx = Math.min(
+            binCount - 1,
+            Math.max(0, Math.floor(((t - startTs) / span) * binCount))
+          );
           bins[idx] += 1;
         }
       }
     }
 
     return { quietPercent, min, q1, median, q3, max, alertBins: bins };
-  }, [stats.durationMs, stats.noisyDurationMs, period, volatility.smoothed, samplesInPeriod]);
+  }, [
+    stats.durationMs,
+    stats.noisyDurationMs,
+    period,
+    volatility.smoothed,
+    volatility.times.length,
+    samplesInPeriod,
+  ]);
 
   // 渲染逻辑保持不变，仅数据来源统一
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${period?.name || '晚自习'} 统计报告`}
+      title={`${period?.name || "晚自习"} 统计报告`}
       maxWidth="xl"
-      footer={(
+      footer={
         <FormButtonGroup>
-          <FormButton onClick={onClose} variant="primary">关闭</FormButton>
+          <FormButton onClick={onClose} variant="primary">
+            关闭
+          </FormButton>
         </FormButtonGroup>
-      )}
+      }
     >
       {/* 单层容器：去除双层 FormSection，保持标题与内容结构 */}
       <div className={styles.singleContainer}>
@@ -317,7 +352,10 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         <div className={styles.summaryGrid}>
           <div className={styles.statItem}>
             <div className={styles.statLabel}>时长</div>
-            <div className={styles.statValue}>{period ? Math.round((period.end.getTime() - period.start.getTime()) / 60000) : 0} 分钟</div>
+            <div className={styles.statValue}>
+              {period ? Math.round((period.end.getTime() - period.start.getTime()) / 60000) : 0}{" "}
+              分钟
+            </div>
           </div>
           <div className={styles.statItem}>
             <div className={styles.statLabel}>表现</div>
@@ -351,56 +389,134 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
               viewBox={`0 0 ${chart.width} ${chart.height}`}
             >
               <defs>
-                <linearGradient id="reportAreaGradient" x1="0" y1="0" x2="0" y2={chart.height} gradientUnits="userSpaceOnUse">
+                <linearGradient
+                  id="reportAreaGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2={chart.height}
+                  gradientUnits="userSpaceOnUse"
+                >
                   <stop offset="0%" stopColor="#03DAC6" stopOpacity={0.35} />
                   <stop offset="100%" stopColor="#03DAC6" stopOpacity={0} />
                 </linearGradient>
               </defs>
 
               {/* 坐标轴 */}
-              <line x1={chart.padding} y1={chart.height - chart.padding} x2={chart.width - chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
-              <line x1={chart.padding} y1={chart.padding} x2={chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
+              <line
+                x1={chart.padding}
+                y1={chart.height - chart.padding}
+                x2={chart.width - chart.padding}
+                y2={chart.height - chart.padding}
+                className={styles.axis}
+              />
+              <line
+                x1={chart.padding}
+                y1={chart.padding}
+                x2={chart.padding}
+                y2={chart.height - chart.padding}
+                className={styles.axis}
+              />
 
               {/* X 轴刻度与标签 */}
               {chart.xTicks.map((t, idx) => {
-                const x = chart.padding + ((t - (period!.start.getTime())) / (period!.end.getTime() - period!.start.getTime())) * (chart.width - chart.padding * 2);
-                const label = new Date(t).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                const x =
+                  chart.padding +
+                  ((t - period!.start.getTime()) /
+                    (period!.end.getTime() - period!.start.getTime())) *
+                    (chart.width - chart.padding * 2);
+                const label = new Date(t).toLocaleTimeString("zh-CN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
                 return (
                   <g key={`xt-${idx}`}>
-                    <line x1={x} y1={chart.height - chart.padding} x2={x} y2={chart.height - chart.padding + 6} className={styles.tick} />
-                    <text x={x} y={chart.height - chart.padding + 18} textAnchor="middle" className={styles.tickLabel}>{label}</text>
+                    <line
+                      x1={x}
+                      y1={chart.height - chart.padding}
+                      x2={x}
+                      y2={chart.height - chart.padding + 6}
+                      className={styles.tick}
+                    />
+                    <text
+                      x={x}
+                      y={chart.height - chart.padding + 18}
+                      textAnchor="middle"
+                      className={styles.tickLabel}
+                    >
+                      {label}
+                    </text>
                     {/* 网格线 */}
-                    <line x1={x} y1={chart.padding} x2={x} y2={chart.height - chart.padding} className={styles.gridLine} />
+                    <line
+                      x1={x}
+                      y1={chart.padding}
+                      x2={x}
+                      y2={chart.height - chart.padding}
+                      className={styles.gridLine}
+                    />
                   </g>
                 );
               })}
 
               {/* Y 轴刻度与标签 */}
               {chart.yTicks.map((v, idx) => {
-                const y = chart.height - chart.padding - ((v - 0) / (80 - 0)) * (chart.height - chart.padding * 2);
+                const y =
+                  chart.height -
+                  chart.padding -
+                  ((v - 0) / (80 - 0)) * (chart.height - chart.padding * 2);
                 return (
                   <g key={`yt-${idx}`}>
-                    <line x1={chart.padding - 6} y1={y} x2={chart.padding} y2={y} className={styles.tick} />
-                    <text x={chart.padding - 10} y={y + 4} textAnchor="end" className={styles.tickLabel}>{v}</text>
+                    <line
+                      x1={chart.padding - 6}
+                      y1={y}
+                      x2={chart.padding}
+                      y2={y}
+                      className={styles.tick}
+                    />
+                    <text
+                      x={chart.padding - 10}
+                      y={y + 4}
+                      textAnchor="end"
+                      className={styles.tickLabel}
+                    >
+                      {v}
+                    </text>
                     {/* 网格线 */}
-                    <line x1={chart.padding} y1={y} x2={chart.width - chart.padding} y2={y} className={styles.gridLine} />
+                    <line
+                      x1={chart.padding}
+                      y1={y}
+                      x2={chart.width - chart.padding}
+                      y2={y}
+                      className={styles.gridLine}
+                    />
                   </g>
                 );
               })}
 
               {/* 阈值线 */}
-              <line x1={chart.padding} y1={chart.thresholdY} x2={chart.width - chart.padding} y2={chart.thresholdY} className={styles.threshold} />
+              <line
+                x1={chart.padding}
+                y1={chart.thresholdY}
+                x2={chart.width - chart.padding}
+                y2={chart.thresholdY}
+                className={styles.threshold}
+              />
               {/* 折线 */}
               <path d={chart.path} className={styles.line} />
               {/* 面积填充 */}
-              <path d={`${chart.path} L ${chart.width - chart.padding} ${chart.height - chart.padding} L ${chart.padding} ${chart.height - chart.padding} Z`} fill="url(#reportAreaGradient)" className={styles.area} />
+              <path
+                d={`${chart.path} L ${chart.width - chart.padding} ${chart.height - chart.padding} L ${chart.padding} ${chart.height - chart.padding} Z`}
+                fill="url(#reportAreaGradient)"
+                className={styles.area}
+              />
             </svg>
           ) : (
             <div className={styles.empty}>该时段暂无数据</div>
           )}
         </div>
         <div className={styles.chartHint}>
-          统计范围：{period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : '无'}
+          统计范围：
+          {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "无"}
         </div>
 
         {/* 更多统计：保持上部紧凑，将迷你图放在下方两列网格中 */}
@@ -414,23 +530,55 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
                 const height = MINI_CHART_HEIGHT;
                 const padding = MINI_CHART_PADDING;
-                const maxV = Math.max(3, Math.max(...volatility.rollingDiff.map(p => p.v)));
+                const maxV = Math.max(3, Math.max(...volatility.rollingDiff.map((p) => p.v)));
                 const startTs = volatility.times[0];
                 const endTs = volatility.times[volatility.times.length - 1];
                 const span = Math.max(1, endTs - startTs);
-                const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
+                const mapX = (t: number) =>
+                  padding + ((t - startTs) / span) * (width - padding * 2);
                 const mapY = (v: number) => height - padding - (v / maxV) * (height - padding * 2);
-                const pts = volatility.rollingDiff.map(p => ({ x: mapX(p.t), y: mapY(p.v) }));
-                const path = pts.map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`)).join(' ');
+                const pts = volatility.rollingDiff.map((p) => ({ x: mapX(p.t), y: mapY(p.v) }));
+                const path = pts
+                  .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
+                  .join(" ");
                 const thresholdY1 = mapY(1);
                 const thresholdY2 = mapY(3);
                 return (
-                  <svg width={width} height={height} className={styles.chart} viewBox={`0 0 ${width} ${height}`}>
-                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className={styles.axis} />
-                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} className={styles.axis} />
+                  <svg
+                    width={width}
+                    height={height}
+                    className={styles.chart}
+                    viewBox={`0 0 ${width} ${height}`}
+                  >
+                    <line
+                      x1={padding}
+                      y1={height - padding}
+                      x2={width - padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
+                    <line
+                      x1={padding}
+                      y1={padding}
+                      x2={padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
                     {/* 阈值参考线：1dB 与 3dB */}
-                    <line x1={padding} y1={thresholdY1} x2={width - padding} y2={thresholdY1} className={styles.threshold} />
-                    <line x1={padding} y1={thresholdY2} x2={width - padding} y2={thresholdY2} className={styles.threshold} />
+                    <line
+                      x1={padding}
+                      y1={thresholdY1}
+                      x2={width - padding}
+                      y2={thresholdY1}
+                      className={styles.threshold}
+                    />
+                    <line
+                      x1={padding}
+                      y1={thresholdY2}
+                      x2={width - padding}
+                      y2={thresholdY2}
+                      className={styles.threshold}
+                    />
                     <path d={path} className={styles.line} />
                   </svg>
                 );
@@ -438,7 +586,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             ) : (
               <div className={styles.empty}>暂无数据</div>
             )}
-            <div className={styles.chartCaption}>解释：值越低表示曲线越平稳，连续稳定更利于纪律维持。</div>
+            <div className={styles.chartCaption}>
+              解释：值越低表示曲线越平稳，连续稳定更利于纪律维持。
+            </div>
           </div>
 
           {/* 迷你图2：分贝直方图 */}
@@ -449,18 +599,44 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
                 const height = MINI_CHART_HEIGHT;
                 const padding = MINI_CHART_PADDING;
-                const maxH = Math.max(1, Math.max(...volatility.histogram.map(b => b.h)));
+                const maxH = Math.max(1, Math.max(...volatility.histogram.map((b) => b.h)));
                 const barW = (width - padding * 2) / volatility.histogram.length;
                 const bars = volatility.histogram.map((b, i) => {
                   const x = padding + i * barW;
-                  const h = ((b.h) / maxH) * (height - padding * 2);
+                  const h = (b.h / maxH) * (height - padding * 2);
                   const y = height - padding - h;
-                  return <rect key={`b-${i}`} x={x} y={y} width={Math.max(1, barW - 1)} height={h} className={styles.barRect} />;
+                  return (
+                    <rect
+                      key={`b-${i}`}
+                      x={x}
+                      y={y}
+                      width={Math.max(1, barW - 1)}
+                      height={h}
+                      className={styles.barRect}
+                    />
+                  );
                 });
                 return (
-                  <svg width={width} height={height} className={styles.chart} viewBox={`0 0 ${width} ${height}`}>
-                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className={styles.axis} />
-                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} className={styles.axis} />
+                  <svg
+                    width={width}
+                    height={height}
+                    className={styles.chart}
+                    viewBox={`0 0 ${width} ${height}`}
+                  >
+                    <line
+                      x1={padding}
+                      y1={height - padding}
+                      x2={width - padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
+                    <line
+                      x1={padding}
+                      y1={padding}
+                      x2={padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
                     {bars}
                   </svg>
                 );
@@ -468,7 +644,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             ) : (
               <div className={styles.empty}>暂无数据</div>
             )}
-            <div className={styles.chartCaption}>解释：柱形显示各分贝区间出现的次数，偏低且集中代表环境更稳定。</div>
+            <div className={styles.chartCaption}>
+              解释：柱形显示各分贝区间出现的次数，偏低且集中代表环境更稳定。
+            </div>
           </div>
 
           {/* 迷你图3：安静占比圆环图 */}
@@ -486,24 +664,40 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 const percent = extraStats.quietPercent;
                 const dash = percent * circumference;
                 return (
-                  <svg width={width} height={height} className={styles.chart} viewBox={`0 0 ${width} ${height}`}>
+                  <svg
+                    width={width}
+                    height={height}
+                    className={styles.chart}
+                    viewBox={`0 0 ${width} ${height}`}
+                  >
                     {/* 背景轨道 */}
                     <circle cx={cx} cy={cy} r={r} className={styles.donutTrack} />
                     {/* 数值圈，起点旋转到顶部 */}
                     <g transform={`rotate(-90 ${cx} ${cy})`}>
-                      <circle cx={cx} cy={cy} r={r} className={styles.donutValue}
-                        strokeDasharray={`${dash} ${circumference - dash}`} />
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={r}
+                        className={styles.donutValue}
+                        strokeDasharray={`${dash} ${circumference - dash}`}
+                      />
                     </g>
                     {/* 中心文本 */}
-                    <text x={cx} y={cy - 2} textAnchor="middle" className={styles.donutTextMain}>{Math.round(percent * 100)}%</text>
-                    <text x={cx} y={cy + 20} textAnchor="middle" className={styles.donutTextSub}>安静时长占比</text>
+                    <text x={cx} y={cy - 2} textAnchor="middle" className={styles.donutTextMain}>
+                      {Math.round(percent * 100)}%
+                    </text>
+                    <text x={cx} y={cy + 20} textAnchor="middle" className={styles.donutTextSub}>
+                      安静时长占比
+                    </text>
                   </svg>
                 );
               })()
             ) : (
               <div className={styles.empty}>暂无数据</div>
             )}
-            <div className={styles.chartCaption}>解释：按时段总时长计算安静时间比例，数值越高纪律越好。</div>
+            <div className={styles.chartCaption}>
+              解释：按时段总时长计算安静时间比例，数值越高纪律越好。
+            </div>
           </div>
 
           {/* 迷你图4：分贝箱线图（平滑序列） */}
@@ -516,7 +710,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 const padding = 30;
                 const minDb = 0;
                 const maxDb = 80;
-                const mapX = (v: number) => padding + ((v - minDb) / (maxDb - minDb)) * (width - padding * 2);
+                const mapX = (v: number) =>
+                  padding + ((v - minDb) / (maxDb - minDb)) * (width - padding * 2);
                 const yMid = height / 2;
                 const xMin = mapX(extraStats.min);
                 const xQ1 = mapX(extraStats.q1);
@@ -525,30 +720,82 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 const xMax = mapX(extraStats.max);
                 const boxH = 24;
                 return (
-                  <svg width={width} height={height} className={styles.chart} viewBox={`0 0 ${width} ${height}`}>
+                  <svg
+                    width={width}
+                    height={height}
+                    className={styles.chart}
+                    viewBox={`0 0 ${width} ${height}`}
+                  >
                     {/* 轴线 */}
-                    <line x1={padding} y1={yMid} x2={width - padding} y2={yMid} className={styles.axis} />
+                    <line
+                      x1={padding}
+                      y1={yMid}
+                      x2={width - padding}
+                      y2={yMid}
+                      className={styles.axis}
+                    />
                     {/* 胡须与最值 */}
-                    <line x1={xMin} y1={yMid - 12} x2={xMin} y2={yMid + 12} className={styles.boxWhisker} />
-                    <line x1={xMax} y1={yMid - 12} x2={xMax} y2={yMid + 12} className={styles.boxWhisker} />
+                    <line
+                      x1={xMin}
+                      y1={yMid - 12}
+                      x2={xMin}
+                      y2={yMid + 12}
+                      className={styles.boxWhisker}
+                    />
+                    <line
+                      x1={xMax}
+                      y1={yMid - 12}
+                      x2={xMax}
+                      y2={yMid + 12}
+                      className={styles.boxWhisker}
+                    />
                     <line x1={xMin} y1={yMid} x2={xQ1} y2={yMid} className={styles.boxLine} />
                     <line x1={xQ3} y1={yMid} x2={xMax} y2={yMid} className={styles.boxLine} />
                     {/* 箱体与中位线 */}
-                    <rect x={xQ1} y={yMid - boxH / 2} width={Math.max(1, xQ3 - xQ1)} height={boxH} className={styles.boxRect} />
-                    <line x1={xMedian} y1={yMid - boxH / 2} x2={xMedian} y2={yMid + boxH / 2} className={styles.boxMedian} />
+                    <rect
+                      x={xQ1}
+                      y={yMid - boxH / 2}
+                      width={Math.max(1, xQ3 - xQ1)}
+                      height={boxH}
+                      className={styles.boxRect}
+                    />
+                    <line
+                      x1={xMedian}
+                      y1={yMid - boxH / 2}
+                      x2={xMedian}
+                      y2={yMid + boxH / 2}
+                      className={styles.boxMedian}
+                    />
                     {/* 标签 */}
-                    <text x={xMin} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>{extraStats.min.toFixed(1)}</text>
-                    <text x={xQ1} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>{extraStats.q1.toFixed(1)}</text>
-                    <text x={xMedian} y={yMid + boxH + 12} textAnchor="middle" className={styles.tickLabel}>{extraStats.median.toFixed(1)}</text>
-                    <text x={xQ3} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>{extraStats.q3.toFixed(1)}</text>
-                    <text x={xMax} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>{extraStats.max.toFixed(1)}</text>
+                    <text x={xMin} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
+                      {extraStats.min.toFixed(1)}
+                    </text>
+                    <text x={xQ1} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
+                      {extraStats.q1.toFixed(1)}
+                    </text>
+                    <text
+                      x={xMedian}
+                      y={yMid + boxH + 12}
+                      textAnchor="middle"
+                      className={styles.tickLabel}
+                    >
+                      {extraStats.median.toFixed(1)}
+                    </text>
+                    <text x={xQ3} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
+                      {extraStats.q3.toFixed(1)}
+                    </text>
+                    <text x={xMax} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
+                      {extraStats.max.toFixed(1)}
+                    </text>
                   </svg>
                 );
               })()
             ) : (
               <div className={styles.empty}>暂无数据</div>
             )}
-            <div className={styles.chartCaption}>解释：箱体越窄代表分贝波动集中，稳定性更好；中位线偏低代表整体更安静。</div>
+            <div className={styles.chartCaption}>
+              解释：箱体越窄代表分贝波动集中，稳定性更好；中位线偏低代表整体更安静。
+            </div>
           </div>
 
           {/* 迷你图5：提醒密度条形图 */}
@@ -566,12 +813,38 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   const x = padding + i * barW;
                   const h = (v / maxV) * (height - padding * 2);
                   const y = height - padding - h;
-                  return <rect key={`ad-${i}`} x={x} y={y} width={Math.max(1, barW - 2)} height={h} className={styles.barThin} />;
+                  return (
+                    <rect
+                      key={`ad-${i}`}
+                      x={x}
+                      y={y}
+                      width={Math.max(1, barW - 2)}
+                      height={h}
+                      className={styles.barThin}
+                    />
+                  );
                 });
                 return (
-                  <svg width={width} height={height} className={styles.chart} viewBox={`0 0 ${width} ${height}`}>
-                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className={styles.axis} />
-                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} className={styles.axis} />
+                  <svg
+                    width={width}
+                    height={height}
+                    className={styles.chart}
+                    viewBox={`0 0 ${width} ${height}`}
+                  >
+                    <line
+                      x1={padding}
+                      y1={height - padding}
+                      x2={width - padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
+                    <line
+                      x1={padding}
+                      y1={padding}
+                      x2={padding}
+                      y2={height - padding}
+                      className={styles.axis}
+                    />
                     {items}
                   </svg>
                 );
@@ -579,7 +852,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             ) : (
               <div className={styles.empty}>暂无数据</div>
             )}
-            <div className={styles.chartCaption}>解释：柱形越高表示该时间段提醒更密集，可针对性加强管理。</div>
+            <div className={styles.chartCaption}>
+              解释：柱形越高表示该时间段提醒更密集，可针对性加强管理。
+            </div>
           </div>
         </div>
       </div>

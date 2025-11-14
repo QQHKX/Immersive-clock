@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useTimer } from '../../hooks/useTimer';
-import { COUNTDOWN_REFRESH_MS } from '../../constants/timer';
-import { useAudio } from '../../hooks/useAudio';
-import { formatTimer } from '../../utils/formatTime';
-import { nowMs } from '../../utils/timeSource';
-import styles from './Countdown.module.css';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
+import { COUNTDOWN_REFRESH_MS } from "../../constants/timer";
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { useAudio } from "../../hooks/useAudio";
+import { useTimer } from "../../hooks/useTimer";
+import { formatTimer } from "../../utils/formatTime";
+import { nowMs } from "../../utils/timeSource";
+
+import styles from "./Countdown.module.css";
 
 /**
  * 倒计时组件
@@ -16,9 +18,9 @@ export function Countdown() {
   const { countdown } = useAppState();
   const dispatch = useAppDispatch();
   // 终止音效（倒计时结束）
-  const [playFinal] = useAudio('/ding.mp3');
+  const [playFinal] = useAudio("/ding.mp3");
   // 最后5秒逐秒提示音
-  const [playTick] = useAudio('/ding-1.mp3');
+  const [playTick] = useAudio("/ding-1.mp3");
   const lastTouchTime = useRef<number>(0);
   const touchCount = useRef<number>(0);
   const [displayTime, setDisplayTime] = useState<number>(countdown.currentTime);
@@ -56,12 +58,19 @@ export function Countdown() {
         // 重置逐秒提示状态并播放终止音效
         lastBeepSecondRef.current = -1;
         playFinal();
-        dispatch({ type: 'FINISH_COUNTDOWN' });
+        dispatch({ type: "FINISH_COUNTDOWN" });
       } else if (remaining > 0) {
         hasFinishedRef.current = false;
       }
     }
-  }, [countdown.endTimestamp, countdown.currentTime, countdown.initialTime, playFinal, playTick, dispatch]);
+  }, [
+    countdown.endTimestamp,
+    countdown.currentTime,
+    countdown.initialTime,
+    playFinal,
+    playTick,
+    dispatch,
+  ]);
 
   // 使用计时器以更高频率刷新（100ms），结合绝对时间计算减少最终误差
   useTimer(localRefresh, countdown.isActive, COUNTDOWN_REFRESH_MS);
@@ -80,7 +89,7 @@ export function Countdown() {
    */
   const openModal = useCallback(() => {
     // 允许在任何时候打开设置模态框
-    dispatch({ type: 'OPEN_MODAL' });
+    dispatch({ type: "OPEN_MODAL" });
   }, [dispatch]);
 
   /**
@@ -93,36 +102,39 @@ export function Countdown() {
   /**
    * 处理触摸开始事件，实现自定义双击检测
    */
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // 阻止默认的缩放行为
-    if (e.touches.length > 1) {
-      e.preventDefault();
-      return;
-    }
-
-    const now = Date.now();
-    const timeDiff = now - lastTouchTime.current;
-
-    // 如果两次触摸间隔小于300ms，认为是双击
-    if (timeDiff < 300 && timeDiff > 0) {
-      touchCount.current += 1;
-      if (touchCount.current === 2) {
-        e.preventDefault(); // 阻止默认行为
-        openModal();
-        touchCount.current = 0;
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      // 阻止默认的缩放行为
+      if (e.touches.length > 1) {
+        e.preventDefault();
         return;
       }
-    } else {
-      touchCount.current = 1;
-    }
 
-    lastTouchTime.current = now;
-  }, [openModal]);
+      const now = Date.now();
+      const timeDiff = now - lastTouchTime.current;
+
+      // 如果两次触摸间隔小于300ms，认为是双击
+      if (timeDiff < 300 && timeDiff > 0) {
+        touchCount.current += 1;
+        if (touchCount.current === 2) {
+          e.preventDefault(); // 阻止默认行为
+          openModal();
+          touchCount.current = 0;
+          return;
+        }
+      } else {
+        touchCount.current = 1;
+      }
+
+      lastTouchTime.current = now;
+    },
+    [openModal]
+  );
 
   /**
    * 处理触摸移动事件，防止意外触发
    */
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((_e: React.TouchEvent) => {
     // 如果有移动，重置触摸计数
     touchCount.current = 0;
   }, []);
@@ -130,12 +142,15 @@ export function Countdown() {
   /**
    * 处理键盘事件
    */
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      openModal();
-    }
-  }, [openModal]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openModal();
+      }
+    },
+    [openModal]
+  );
 
   const timeString = formatTimer(displayTime);
   const isWarning = displayTime <= 10 && displayTime > 0;
@@ -144,9 +159,9 @@ export function Countdown() {
   return (
     <div className={styles.countdown}>
       <div
-        className={`${styles.time} ${isWarning ? styles.warning : ''
-          } ${isFinished ? styles.finished : ''
-          } ${styles.clickable}`}
+        className={`${styles.time} ${isWarning ? styles.warning : ""} ${
+          isFinished ? styles.finished : ""
+        } ${styles.clickable}`}
         onDoubleClick={handleTimeDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -155,7 +170,7 @@ export function Countdown() {
         tabIndex={0}
         aria-label="双击或双触设置倒计时时间"
         style={{
-          touchAction: 'manipulation'
+          touchAction: "manipulation",
         }}
       >
         {countdown.currentTime === 0 && countdown.initialTime === 0 ? (
@@ -165,13 +180,7 @@ export function Countdown() {
         )}
       </div>
 
-      {isFinished && (
-        <div className={styles.finishedMessage}>
-          时间到
-        </div>
-      )}
-
-
+      {isFinished && <div className={styles.finishedMessage}>时间到</div>}
     </div>
   );
 }

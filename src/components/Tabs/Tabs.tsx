@@ -1,6 +1,8 @@
-import React from 'react';
-import styles from './Tabs.module.css';
-import { LightButton } from '../LightControls/LightControls';
+import React from "react";
+
+import { LightButton } from "../LightControls/LightControls";
+
+import styles from "./Tabs.module.css";
 
 export interface TabItem {
   key: string;
@@ -13,8 +15,8 @@ export interface TabsProps {
   items: TabItem[];
   activeKey: string;
   onChange: (key: string) => void;
-  variant?: 'underlined' | 'pill' | 'browser' | 'announcement';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "underlined" | "pill" | "browser" | "announcement";
+  size?: "sm" | "md" | "lg";
   scrollable?: boolean;
   sticky?: boolean;
   className?: string;
@@ -31,30 +33,34 @@ export const Tabs: React.FC<TabsProps> = ({
   items,
   activeKey,
   onChange,
-  variant = 'underlined',
-  size = 'md',
+  variant = "underlined",
+  size = "md",
   scrollable = true,
   sticky = false,
-  className = ''
+  className = "",
 }) => {
   const rootClass = [
     styles.tabs,
-    scrollable ? styles.scrollable : '',
+    scrollable ? styles.scrollable : "",
     styles[variant],
     styles[size],
-    sticky ? styles.sticky : '',
-    className
-  ].filter(Boolean).join(' ');
+    sticky ? styles.sticky : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={rootClass} role="tablist">
-      {items.map(item => {
+      {items.map((item) => {
         const isActive = item.key === activeKey;
         const btnClass = [
           styles.tabButton,
-          isActive ? styles.tabButtonActive : '',
-          variant === 'underlined' && isActive ? styles.underlinedIndicator : ''
-        ].filter(Boolean).join(' ');
+          isActive ? styles.tabButtonActive : "",
+          variant === "underlined" && isActive ? styles.underlinedIndicator : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
 
         return (
           <LightButton

@@ -1,26 +1,35 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState, CountdownItem } from '../types';
-import { nowMs } from '../utils/timeSource';
-import { STOPWATCH_TICK_MS } from '../constants/timer';
+import React, { createContext, useContext, useReducer, ReactNode } from "react";
+
+import { STOPWATCH_TICK_MS } from "../constants/timer";
+import {
+  AppState,
+  AppAction,
+  StudyState,
+  QuoteChannelState,
+  QuoteSettingsState,
+  CountdownItem,
+} from "../types";
+import { logger } from "../utils/logger";
+import { nowMs } from "../utils/timeSource";
 
 /**
  * 从本地存储加载金句设置状态
  */
 function loadQuoteSettingsState(): QuoteSettingsState {
   try {
-    const savedInterval = localStorage.getItem('quote-auto-refresh-interval');
+    const savedInterval = localStorage.getItem("quote-auto-refresh-interval");
     if (savedInterval) {
       const interval = parseInt(savedInterval, 10);
       return {
-        autoRefreshInterval: isNaN(interval) ? 600 : interval // 默认10分钟
+        autoRefreshInterval: isNaN(interval) ? 600 : interval, // 默认10分钟
       };
     }
   } catch (error) {
-    console.warn('Failed to load quote settings from localStorage:', error);
+    logger.warn("Failed to load quote settings from localStorage:", error);
   }
 
   return {
-    autoRefreshInterval: 600 // 默认10分钟
+    autoRefreshInterval: 600, // 默认10分钟
   };
 }
 
@@ -29,25 +38,24 @@ function loadQuoteSettingsState(): QuoteSettingsState {
  */
 function loadQuoteChannelState(): QuoteChannelState {
   try {
-    const savedChannels = localStorage.getItem('quote-channels');
+    const savedChannels = localStorage.getItem("quote-channels");
     if (savedChannels) {
       const parsed = JSON.parse(savedChannels);
       return {
         channels: parsed.channels || [],
-        lastUpdated: parsed.lastUpdated || Date.now()
+        lastUpdated: parsed.lastUpdated || Date.now(),
       };
     }
   } catch (error) {
-    console.warn('Failed to load quote channels from localStorage:', error);
+    logger.warn("Failed to load quote channels from localStorage:", error);
   }
 
   // 返回默认配置，从文件中加载
   return {
     channels: [],
-    lastUpdated: Date.now()
+    lastUpdated: Date.now(),
   };
 }
-
 
 /**
  * 从本地存储加载晚自习状态
@@ -59,16 +67,16 @@ function loadStudyState(): StudyState {
     const thisYearGaokao = new Date(currentYear, 5, 7); // 月份从0开始，6月为5
     const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
 
-    const savedTargetYear = localStorage.getItem('study-target-year');
-    const savedCountdownType = localStorage.getItem('countdown-type') as 'gaokao' | 'custom' | null;
-    const savedCustomName = localStorage.getItem('custom-countdown-name');
-    const savedCustomDate = localStorage.getItem('custom-countdown-date');
-    const savedDisplayRaw = localStorage.getItem('study-display');
-    const savedCountdownItemsRaw = localStorage.getItem('study-countdown-items');
-    const savedCarouselInterval = localStorage.getItem('study-carousel-interval');
-    const savedDigitColor = localStorage.getItem('study-digit-color');
-    const savedDigitOpacity = localStorage.getItem('study-digit-opacity');
-    const savedMessagePopupEnabled = localStorage.getItem('study-message-popup-enabled');
+    const savedTargetYear = localStorage.getItem("study-target-year");
+    const savedCountdownType = localStorage.getItem("countdown-type") as "gaokao" | "custom" | null;
+    const savedCustomName = localStorage.getItem("custom-countdown-name");
+    const savedCustomDate = localStorage.getItem("custom-countdown-date");
+    const savedDisplayRaw = localStorage.getItem("study-display");
+    const savedCountdownItemsRaw = localStorage.getItem("study-countdown-items");
+    const savedCarouselInterval = localStorage.getItem("study-carousel-interval");
+    const savedDigitColor = localStorage.getItem("study-digit-color");
+    const savedDigitOpacity = localStorage.getItem("study-digit-opacity");
+    const savedMessagePopupEnabled = localStorage.getItem("study-message-popup-enabled");
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
 
@@ -90,7 +98,7 @@ function loadStudyState(): StudyState {
           ...parsed,
         };
       } catch (e) {
-        console.warn('Failed to parse study-display from localStorage:', e);
+        logger.warn("Failed to parse study-display from localStorage:", e);
       }
     }
 
@@ -104,35 +112,42 @@ function loadStudyState(): StudyState {
         }
       }
     } catch (e) {
-      console.warn('Failed to parse study-countdown-items from localStorage:', e);
+      logger.warn("Failed to parse study-countdown-items from localStorage:", e);
     }
 
     if (!countdownItems || countdownItems.length === 0) {
       // 默认包含一个高考倒计时项目（可在设置中调整显示顺序与颜色）
-      countdownItems = [{
-        id: 'gaokao',
-        kind: 'gaokao',
-        name: `${nearestGaokaoYear}年高考`,
-        order: 0,
-        bgColor: undefined,
-        textColor: undefined,
-      }];
+      countdownItems = [
+        {
+          id: "gaokao",
+          kind: "gaokao",
+          name: `${nearestGaokaoYear}年高考`,
+          order: 0,
+          bgColor: undefined,
+          textColor: undefined,
+        },
+      ];
       // 立即持久化一次，确保后续有基础数据
       try {
-        localStorage.setItem('study-countdown-items', JSON.stringify(countdownItems));
-      } catch { }
+        localStorage.setItem("study-countdown-items", JSON.stringify(countdownItems));
+      } catch {}
     }
 
-    const carouselIntervalSec = savedCarouselInterval ? Math.max(1, Math.min(60, parseInt(savedCarouselInterval, 10))) : undefined;
+    const carouselIntervalSec = savedCarouselInterval
+      ? Math.max(1, Math.min(60, parseInt(savedCarouselInterval, 10)))
+      : undefined;
     const digitColor = savedDigitColor || undefined;
-    const digitOpacity = savedDigitOpacity !== null ? Math.max(0, Math.min(1, parseFloat(savedDigitOpacity))) : 1;
-    const messagePopupEnabled = savedMessagePopupEnabled ? savedMessagePopupEnabled === 'true' : false;
+    const digitOpacity =
+      savedDigitOpacity !== null ? Math.max(0, Math.min(1, parseFloat(savedDigitOpacity))) : 1;
+    const messagePopupEnabled = savedMessagePopupEnabled
+      ? savedMessagePopupEnabled === "true"
+      : false;
 
     return {
       targetYear,
-      countdownType: savedCountdownType ?? 'gaokao',
-      customName: savedCustomName ?? '',
-      customDate: savedCustomDate ?? '',
+      countdownType: savedCountdownType ?? "gaokao",
+      customName: savedCustomName ?? "",
+      customDate: savedCustomDate ?? "",
       display,
       countdownItems,
       carouselIntervalSec,
@@ -141,16 +156,16 @@ function loadStudyState(): StudyState {
       messagePopupEnabled,
     };
   } catch (error) {
-    console.warn('Failed to load study state from localStorage:', error);
+    logger.warn("Failed to load study state from localStorage:", error);
     const now = new Date();
     const currentYear = now.getFullYear();
     const thisYearGaokao = new Date(currentYear, 5, 7);
     const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
     return {
       targetYear: nearestGaokaoYear,
-      countdownType: 'gaokao',
-      customName: '',
-      customDate: '',
+      countdownType: "gaokao",
+      customName: "",
+      customDate: "",
       display: {
         showStatusBar: true,
         showNoiseMonitor: true,
@@ -159,7 +174,9 @@ function loadStudyState(): StudyState {
         showTime: true,
         showDate: true,
       },
-      countdownItems: [{ id: 'gaokao', kind: 'gaokao', name: `${nearestGaokaoYear}年高考`, order: 0 }],
+      countdownItems: [
+        { id: "gaokao", kind: "gaokao", name: `${nearestGaokaoYear}年高考`, order: 0 },
+      ],
       carouselIntervalSec: undefined,
       digitColor: undefined,
       digitOpacity: 1,
@@ -172,7 +189,7 @@ function loadStudyState(): StudyState {
  * 应用初始状态
  */
 const initialState: AppState = {
-  mode: 'clock',
+  mode: "clock",
   isHudVisible: false,
   countdown: {
     initialTime: 0,
@@ -188,9 +205,9 @@ const initialState: AppState = {
   quoteSettings: loadQuoteSettingsState(),
   announcement: {
     isVisible: false,
-    activeTab: 'announcement',
+    activeTab: "announcement",
     dontShowAgain: false,
-    lastShownTime: 0
+    lastShownTime: 0,
   },
   isModalOpen: false,
 };
@@ -203,7 +220,7 @@ const initialState: AppState = {
  */
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_MODE':
+    case "SET_MODE":
       return {
         ...state,
         mode: action.payload,
@@ -211,25 +228,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
         isHudVisible: false,
       };
 
-    case 'TOGGLE_HUD':
+    case "TOGGLE_HUD":
       return {
         ...state,
         isHudVisible: !state.isHudVisible,
       };
 
-    case 'SHOW_HUD':
+    case "SHOW_HUD":
       return {
         ...state,
         isHudVisible: true,
       };
 
-    case 'HIDE_HUD':
+    case "HIDE_HUD":
       return {
         ...state,
         isHudVisible: false,
       };
 
-    case 'SET_COUNTDOWN':
+    case "SET_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -241,7 +258,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'START_COUNTDOWN':
+    case "START_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -251,7 +268,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'PAUSE_COUNTDOWN':
+    case "PAUSE_COUNTDOWN":
       // 暂停时根据结束时间戳收敛一次剩余时间，并清除结束时间戳
       const remaining = state.countdown.endTimestamp
         ? Math.max(0, Math.ceil((state.countdown.endTimestamp - nowMs()) / 1000))
@@ -266,7 +283,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'RESET_COUNTDOWN':
+    case "RESET_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -279,7 +296,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     // 删除 TICK_COUNTDOWN 分支（组件级局部刷新已接管）
 
-    case 'START_STOPWATCH':
+    case "START_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -288,7 +305,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'PAUSE_STOPWATCH':
+    case "PAUSE_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -297,7 +314,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'RESET_STOPWATCH':
+    case "RESET_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -306,7 +323,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'TICK_STOPWATCH':
+    case "TICK_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -315,7 +332,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'TICK_STOPWATCH_BY':
+    case "TICK_STOPWATCH_BY":
       return {
         ...state,
         stopwatch: {
@@ -324,7 +341,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'FINISH_COUNTDOWN':
+    case "FINISH_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -335,55 +352,55 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'OPEN_MODAL':
+    case "OPEN_MODAL":
       return {
         ...state,
         isModalOpen: true,
       };
 
-    case 'CLOSE_MODAL':
+    case "CLOSE_MODAL":
       return {
         ...state,
         isModalOpen: false,
       };
 
-    case 'SET_TARGET_YEAR':
+    case "SET_TARGET_YEAR":
       const newStudyState = {
         ...state.study,
-        targetYear: action.payload
+        targetYear: action.payload,
       };
       // 保存到本地存储
-      localStorage.setItem('study-target-year', action.payload.toString());
+      localStorage.setItem("study-target-year", action.payload.toString());
       return {
         ...state,
         study: newStudyState,
       };
 
-    case 'SET_COUNTDOWN_TYPE':
+    case "SET_COUNTDOWN_TYPE":
       const typeUpdatedStudy = {
         ...state.study,
-        countdownType: action.payload
+        countdownType: action.payload,
       };
-      localStorage.setItem('countdown-type', action.payload);
+      localStorage.setItem("countdown-type", action.payload);
       return {
         ...state,
         study: typeUpdatedStudy,
       };
 
-    case 'SET_CUSTOM_COUNTDOWN':
+    case "SET_CUSTOM_COUNTDOWN":
       const customUpdatedStudy = {
         ...state.study,
         customName: action.payload.name,
-        customDate: action.payload.date
+        customDate: action.payload.date,
       };
-      localStorage.setItem('custom-countdown-name', action.payload.name);
-      localStorage.setItem('custom-countdown-date', action.payload.date);
+      localStorage.setItem("custom-countdown-name", action.payload.name);
+      localStorage.setItem("custom-countdown-date", action.payload.date);
       return {
         ...state,
         study: customUpdatedStudy,
       };
 
-    case 'SET_STUDY_DISPLAY':
+    case "SET_STUDY_DISPLAY":
       const displayUpdatedStudy = {
         ...state.study,
         display: {
@@ -391,144 +408,144 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...action.payload,
         },
       };
-      localStorage.setItem('study-display', JSON.stringify(displayUpdatedStudy.display));
+      localStorage.setItem("study-display", JSON.stringify(displayUpdatedStudy.display));
       return {
         ...state,
         study: displayUpdatedStudy,
       };
 
-    case 'SET_COUNTDOWN_ITEMS':
+    case "SET_COUNTDOWN_ITEMS":
       const itemsUpdatedStudy = {
         ...state.study,
         countdownItems: action.payload,
       };
       try {
-        localStorage.setItem('study-countdown-items', JSON.stringify(action.payload));
-      } catch { }
+        localStorage.setItem("study-countdown-items", JSON.stringify(action.payload));
+      } catch {}
       return {
         ...state,
         study: itemsUpdatedStudy,
       };
 
-    case 'SET_CAROUSEL_INTERVAL':
+    case "SET_CAROUSEL_INTERVAL":
       const intervalUpdatedStudy = {
         ...state.study,
         carouselIntervalSec: action.payload,
       };
-      localStorage.setItem('study-carousel-interval', action.payload.toString());
+      localStorage.setItem("study-carousel-interval", action.payload.toString());
       return {
         ...state,
         study: intervalUpdatedStudy,
       };
 
-    case 'SET_COUNTDOWN_DIGIT_COLOR':
+    case "SET_COUNTDOWN_DIGIT_COLOR":
       const digitColorUpdatedStudy = {
         ...state.study,
         digitColor: action.payload,
       };
       if (action.payload) {
-        localStorage.setItem('study-digit-color', action.payload);
+        localStorage.setItem("study-digit-color", action.payload);
       } else {
-        localStorage.removeItem('study-digit-color');
+        localStorage.removeItem("study-digit-color");
       }
       return {
         ...state,
         study: digitColorUpdatedStudy,
       };
 
-    case 'SET_COUNTDOWN_DIGIT_OPACITY':
+    case "SET_COUNTDOWN_DIGIT_OPACITY":
       const digitOpacityUpdatedStudy = {
         ...state.study,
-        digitOpacity: typeof action.payload === 'number' ? Math.max(0, Math.min(1, action.payload)) : 1,
+        digitOpacity:
+          typeof action.payload === "number" ? Math.max(0, Math.min(1, action.payload)) : 1,
       };
-      if (typeof action.payload === 'number') {
-        localStorage.setItem('study-digit-opacity', digitOpacityUpdatedStudy.digitOpacity.toString());
+      if (typeof action.payload === "number") {
+        localStorage.setItem(
+          "study-digit-opacity",
+          digitOpacityUpdatedStudy.digitOpacity.toString()
+        );
       } else {
-        localStorage.removeItem('study-digit-opacity');
+        localStorage.removeItem("study-digit-opacity");
       }
       return {
         ...state,
         study: digitOpacityUpdatedStudy,
       };
 
-    case 'SET_MESSAGE_POPUP_ENABLED':
+    case "SET_MESSAGE_POPUP_ENABLED":
       const msgUpdatedStudy = {
         ...state.study,
         messagePopupEnabled: !!action.payload,
       };
-      localStorage.setItem('study-message-popup-enabled', (!!action.payload).toString());
+      localStorage.setItem("study-message-popup-enabled", (!!action.payload).toString());
       return {
         ...state,
         study: msgUpdatedStudy,
       };
 
-    case 'UPDATE_QUOTE_CHANNELS':
+    case "UPDATE_QUOTE_CHANNELS":
       const newQuoteChannelState = {
         channels: action.payload,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
       // 保存到本地存储
-      localStorage.setItem('quote-channels', JSON.stringify(newQuoteChannelState));
+      localStorage.setItem("quote-channels", JSON.stringify(newQuoteChannelState));
       return {
         ...state,
         quoteChannels: newQuoteChannelState,
       };
 
-    case 'TOGGLE_QUOTE_CHANNEL':
-      const updatedChannels = state.quoteChannels.channels.map(channel =>
-        channel.id === action.payload
-          ? { ...channel, enabled: !channel.enabled }
-          : channel
+    case "TOGGLE_QUOTE_CHANNEL":
+      const updatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload ? { ...channel, enabled: !channel.enabled } : channel
       );
       const toggledChannelState = {
         channels: updatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(toggledChannelState));
+      localStorage.setItem("quote-channels", JSON.stringify(toggledChannelState));
       return {
         ...state,
         quoteChannels: toggledChannelState,
       };
 
-    case 'UPDATE_QUOTE_CHANNEL_WEIGHT':
-      const weightUpdatedChannels = state.quoteChannels.channels.map(channel =>
-        channel.id === action.payload.id
-          ? { ...channel, weight: action.payload.weight }
-          : channel
+    case "UPDATE_QUOTE_CHANNEL_WEIGHT":
+      const weightUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id ? { ...channel, weight: action.payload.weight } : channel
       );
       const weightUpdatedState = {
         channels: weightUpdatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(weightUpdatedState));
+      localStorage.setItem("quote-channels", JSON.stringify(weightUpdatedState));
       return {
         ...state,
         quoteChannels: weightUpdatedState,
       };
 
-    case 'UPDATE_QUOTE_CHANNEL_CATEGORIES':
-      const categoriesUpdatedChannels = state.quoteChannels.channels.map(channel =>
+    case "UPDATE_QUOTE_CHANNEL_CATEGORIES":
+      const categoriesUpdatedChannels = state.quoteChannels.channels.map((channel) =>
         channel.id === action.payload.id
           ? { ...channel, hitokotoCategories: action.payload.categories }
           : channel
       );
       const categoriesUpdatedState = {
         channels: categoriesUpdatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(categoriesUpdatedState));
+      localStorage.setItem("quote-channels", JSON.stringify(categoriesUpdatedState));
       return {
         ...state,
         quoteChannels: categoriesUpdatedState,
       };
 
-    case 'SET_QUOTE_AUTO_REFRESH_INTERVAL':
+    case "SET_QUOTE_AUTO_REFRESH_INTERVAL":
       const newQuoteSettings = {
         ...state.quoteSettings,
-        autoRefreshInterval: action.payload
+        autoRefreshInterval: action.payload,
       };
       // 保存到本地存储
-      localStorage.setItem('quote-auto-refresh-interval', action.payload.toString());
+      localStorage.setItem("quote-auto-refresh-interval", action.payload.toString());
       return {
         ...state,
         quoteSettings: newQuoteSettings,
@@ -563,14 +580,9 @@ interface AppContextProviderProps {
 export function AppContextProvider({ children }: AppContextProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-
-
-
   return (
     <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
+      <AppDispatchContext.Provider value={dispatch}>{children}</AppDispatchContext.Provider>
     </AppStateContext.Provider>
   );
 }
@@ -582,7 +594,7 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
 export function useAppState(): AppState {
   const context = useContext(AppStateContext);
   if (context === undefined) {
-    throw new Error('useAppState must be used within an AppContextProvider');
+    throw new Error("useAppState must be used within an AppContextProvider");
   }
   return context;
 }
@@ -594,7 +606,7 @@ export function useAppState(): AppState {
 export function useAppDispatch(): React.Dispatch<AppAction> {
   const context = useContext(AppDispatchContext);
   if (context === undefined) {
-    throw new Error('useAppDispatch must be used within an AppContextProvider');
+    throw new Error("useAppDispatch must be used within an AppContextProvider");
   }
   return context;
 }

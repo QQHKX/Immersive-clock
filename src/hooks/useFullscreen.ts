@@ -1,4 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
+
+import { logger } from "../utils/logger";
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  mozFullScreenElement?: Element | null;
+  msFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+  mozCancelFullScreen?: () => Promise<void> | void;
+  msExitFullscreen?: () => Promise<void> | void;
+}
+
+interface FullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+  mozRequestFullScreen?: () => Promise<void> | void;
+  msRequestFullscreen?: () => Promise<void> | void;
+}
 
 /**
  * 全屏API钩子
@@ -12,11 +29,13 @@ export function useFullscreen(): [boolean, () => void] {
    * 检查当前是否处于全屏状态
    */
   const checkFullscreen = useCallback(() => {
-    const doc = document as any;
-    const isCurrentlyFullscreen = !!(doc.fullscreenElement ||
+    const doc = document as FullscreenDocument;
+    const isCurrentlyFullscreen = !!(
+      doc.fullscreenElement ||
       doc.webkitFullscreenElement ||
       doc.mozFullScreenElement ||
-      doc.msFullscreenElement);
+      doc.msFullscreenElement
+    );
     setIsFullscreen(isCurrentlyFullscreen);
   }, []);
 
@@ -24,8 +43,8 @@ export function useFullscreen(): [boolean, () => void] {
    * 进入全屏模式
    */
   const enterFullscreen = useCallback(async () => {
-    const element = document.documentElement as any;
-    
+    const element = document.documentElement as FullscreenElement;
+
     try {
       if (element.requestFullscreen) {
         await element.requestFullscreen();
@@ -37,7 +56,7 @@ export function useFullscreen(): [boolean, () => void] {
         await element.msRequestFullscreen();
       }
     } catch (error) {
-      console.warn('无法进入全屏模式:', error);
+      logger.warn("无法进入全屏模式:", error);
     }
   }, []);
 
@@ -45,8 +64,8 @@ export function useFullscreen(): [boolean, () => void] {
    * 退出全屏模式
    */
   const exitFullscreen = useCallback(async () => {
-    const doc = document as any;
-    
+    const doc = document as FullscreenDocument;
+
     try {
       if (doc.exitFullscreen) {
         await doc.exitFullscreen();
@@ -58,7 +77,7 @@ export function useFullscreen(): [boolean, () => void] {
         await doc.msExitFullscreen();
       }
     } catch (error) {
-      console.warn('无法退出全屏模式:', error);
+      logger.warn("无法退出全屏模式:", error);
     }
   }, []);
 
@@ -80,20 +99,20 @@ export function useFullscreen(): [boolean, () => void] {
     };
 
     // 添加各种浏览器的全屏事件监听器
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
 
     // 初始检查全屏状态
     checkFullscreen();
 
     return () => {
       // 清理事件监听器
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
     };
   }, [checkFullscreen]);
 

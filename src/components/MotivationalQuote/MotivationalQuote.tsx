@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useAppState } from '../../contexts/AppContext';
-import { QuoteSourceConfig, HitokotoResponse, HitokotoCategory } from '../../types';
-import styles from './MotivationalQuote.module.css';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+
+import { useAppState } from "../../contexts/AppContext";
+import { QuoteSourceConfig, HitokotoResponse } from "../../types";
+import { logger } from "../../utils/logger";
+
+import styles from "./MotivationalQuote.module.css";
 
 /**
  * 励志金句组件
@@ -13,8 +16,8 @@ import styles from './MotivationalQuote.module.css';
  */
 export function MotivationalQuote() {
   const { quoteChannels, quoteSettings } = useAppState();
-  const [currentQuote, setCurrentQuote] = useState(''); // 完整显示用
-  const [displayText, setDisplayText] = useState(''); // 打字动画显示用
+  const [currentQuote, setCurrentQuote] = useState(""); // 完整显示用
+  const [displayText, setDisplayText] = useState(""); // 打字动画显示用
   const [isTyping, setIsTyping] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -28,29 +31,29 @@ export function MotivationalQuote() {
    */
   const loadFallbackSources = useCallback(async () => {
     if (fallbackSourcesRef.current !== null) return;
-    
+
     try {
-      const modules = import.meta.glob('../../data/quotes-*.json');
+      const modules = import.meta.glob("../../data/quotes-*.json");
       const loadedSources: QuoteSourceConfig[] = [];
-      
+
       for (const [path, loader] of Object.entries(modules)) {
         try {
-          const module = await loader() as { default: QuoteSourceConfig };
+          const module = (await loader()) as { default: QuoteSourceConfig };
           const config = module.default;
-          
+
           // 过滤非法配置，权重与来源字段校验
-          if (config && typeof config.weight === 'number' && config.weight > 0) {
+          if (config && typeof config.weight === "number" && config.weight > 0) {
             loadedSources.push(config);
           }
         } catch (error) {
-          console.warn(`Failed to load fallback quote file ${path}:`, error);
+          logger.warn(`Failed to load fallback quote file ${path}:`, error);
         }
       }
-      
+
       fallbackSourcesRef.current = loadedSources;
       setFallbackSourcesLoaded(true);
     } catch (error) {
-      console.warn('Failed to load fallback quote sources:', error);
+      logger.warn("Failed to load fallback quote sources:", error);
       fallbackSourcesRef.current = [];
       setFallbackSourcesLoaded(true);
     }
@@ -67,11 +70,11 @@ export function MotivationalQuote() {
    */
   const getAvailableChannels = useCallback((): QuoteSourceConfig[] => {
     if (quoteChannels?.channels?.length > 0) {
-      return quoteChannels.channels.filter(channel => channel.enabled && channel.weight > 0);
+      return quoteChannels.channels.filter((channel) => channel.enabled && channel.weight > 0);
     }
     // 回退到文件配置（仅在备用数据源加载完成后）
     if (fallbackSourcesLoaded && fallbackSourcesRef.current) {
-      return fallbackSourcesRef.current.filter(s => s.weight > 0);
+      return fallbackSourcesRef.current.filter((s) => s.weight > 0);
     }
     return [];
   }, [quoteChannels, fallbackSourcesLoaded]);
@@ -82,10 +85,10 @@ export function MotivationalQuote() {
   const pickWeightedSource = useCallback((): QuoteSourceConfig | null => {
     const sources = getAvailableChannels();
     if (!sources.length) return null;
-    
+
     const total = sources.reduce((sum, s) => sum + (s.weight || 0), 0);
     if (total <= 0) return null;
-    
+
     let r = Math.random() * total;
     for (const s of sources) {
       r -= s.weight || 0;
@@ -108,17 +111,17 @@ export function MotivationalQuote() {
    * 构建一言API请求URL，支持多分类选择
    */
   const buildHitokotoUrl = useCallback((source: QuoteSourceConfig): string => {
-    let url = source.apiEndpoint || 'https://v1.hitokoto.cn/';
-    
+    let url = source.apiEndpoint || "https://v1.hitokoto.cn/";
+
     // 添加分类参数
     if (source.hitokotoCategories && source.hitokotoCategories.length > 0) {
       const params = new URLSearchParams();
-      source.hitokotoCategories.forEach(category => {
-        params.append('c', category);
+      source.hitokotoCategories.forEach((category) => {
+        params.append("c", category);
       });
-      url += '?' + params.toString();
+      url += "?" + params.toString();
     }
-    
+
     return url;
   }, []);
 
@@ -127,30 +130,33 @@ export function MotivationalQuote() {
    * 展示格式（单行）：
    *   文本 ——来源（如果有）
    */
-  const fetchOnlineQuote = useCallback(async (source: QuoteSourceConfig): Promise<string | null> => {
-    try {
-      const url = buildHitokotoUrl(source);
-      const res = await fetch(url, { 
-        cache: 'no-store',
-        signal: AbortSignal.timeout(5000) // 5秒超时
-      });
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = (await res.json()) as HitokotoResponse;
-      const text = (data?.hitokoto || '').trim();
-      if (!text) return null;
-      
-      const from = (data?.from || '').trim();
-      let final = text;
-      if (from) final = `${text} ——${from}`;
-      
-      return final;
-    } catch (e) {
-      console.warn(`[MotivationalQuote] 在线语录获取失败 (${source.name})，将回退到本地源：`, e);
-      return null;
-    }
-  }, [buildHitokotoUrl]);
+  const fetchOnlineQuote = useCallback(
+    async (source: QuoteSourceConfig): Promise<string | null> => {
+      try {
+        const url = buildHitokotoUrl(source);
+        const res = await fetch(url, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(5000), // 5秒超时
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = (await res.json()) as HitokotoResponse;
+        const text = (data?.hitokoto || "").trim();
+        if (!text) return null;
+
+        const from = (data?.from || "").trim();
+        let final = text;
+        if (from) final = `${text} ——${from}`;
+
+        return final;
+      } catch (e) {
+        logger.warn(`[MotivationalQuote] 在线语录获取失败 (${source.name})，将回退到本地源：`, e);
+        return null;
+      }
+    },
+    [buildHitokotoUrl]
+  );
 
   /**
    * 打字机动画效果
@@ -158,15 +164,15 @@ export function MotivationalQuote() {
    */
   const typewriterEffect = useCallback((text: string) => {
     if (!text) return;
-    
+
     // 清理之前的定时器
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     // 重置显示状态
-    setDisplayText('');
+    setDisplayText("");
     setIsTyping(true);
 
     let index = 0;
@@ -190,14 +196,14 @@ export function MotivationalQuote() {
   const updateQuote = useCallback(async () => {
     const source = pickWeightedSource();
     if (!source) {
-      const fallback = '保持热爱，奔赴山海。\n——系统提示';
+      const fallback = "保持热爱，奔赴山海。\n——系统提示";
       setCurrentQuote(fallback);
       typewriterEffect(fallback);
       return;
     }
 
     let text: string | null = null;
-    
+
     if (source.onlineFetch) {
       text = await fetchOnlineQuote(source);
       if (!text) {
@@ -210,7 +216,7 @@ export function MotivationalQuote() {
 
     // 兜底
     if (!text) {
-      text = '保持热爱，奔赴山海。\n——系统提示';
+      text = "保持热爱，奔赴山海。\n——系统提示";
     }
 
     // 先记录完整文本，再启动动画。渲染时会根据 isTyping 决定显示 displayText，避免闪现
@@ -228,19 +234,19 @@ export function MotivationalQuote() {
   /** 初始化与轮训更新 */
   useEffect(() => {
     void updateQuote();
-    
+
     // 清理之前的自动刷新定时器
     if (autoRefreshTimerRef.current) {
       clearInterval(autoRefreshTimerRef.current);
     }
-    
+
     // 如果自动刷新间隔大于等于1800秒，则不设置自动刷新（手动刷新模式）
     if (quoteSettings.autoRefreshInterval < 1800) {
       autoRefreshTimerRef.current = setInterval(() => {
         void updateQuote();
       }, quoteSettings.autoRefreshInterval * 1000);
     }
-    
+
     return () => {
       if (autoRefreshTimerRef.current) {
         clearInterval(autoRefreshTimerRef.current);
@@ -261,12 +267,8 @@ export function MotivationalQuote() {
   }, []);
 
   return (
-    <div
-      className={styles.motivationalQuote}
-      onClick={handleClick}
-      title="点击刷新励志金句"
-    >
-      <div className={`${styles.quoteText} ${isTyping ? styles.typing : ''}`}>
+    <div className={styles.motivationalQuote} onClick={handleClick} title="点击刷新励志金句">
+      <div className={`${styles.quoteText} ${isTyping ? styles.typing : ""}`}>
         {isTyping ? displayText : currentQuote}
         {isTyping && <span className={styles.cursor}>|</span>}
       </div>

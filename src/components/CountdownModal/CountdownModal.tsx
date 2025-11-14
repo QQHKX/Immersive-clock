@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { PlusIcon, MinusIcon } from '../Icons';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { timeToSeconds } from '../../utils/formatTime';
-import { Modal } from '../Modal';
-import { FormSection, FormButton, FormButtonGroup } from '../FormComponents';
+import React, { useState, useCallback, useEffect } from "react";
 
-import styles from './CountdownModal.module.css';
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { timeToSeconds } from "../../utils/formatTime";
+import { FormSection, FormButton, FormButtonGroup } from "../FormComponents";
+import { PlusIcon, MinusIcon } from "../Icons";
+import { Modal } from "../Modal";
+
+import styles from "./CountdownModal.module.css";
 
 /**
  * 倒计时设置模态框组件
@@ -23,17 +24,8 @@ export function CountdownModal() {
    * 关闭模态框
    */
   const handleClose = useCallback(() => {
-    dispatch({ type: 'CLOSE_MODAL' });
+    dispatch({ type: "CLOSE_MODAL" });
   }, [dispatch]);
-
-  /**
-   * 点击背景关闭模态框
-   */
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  }, [handleClose]);
 
   /**
    * 确认设置倒计时
@@ -41,7 +33,7 @@ export function CountdownModal() {
   const handleConfirm = useCallback(() => {
     const totalSeconds = timeToSeconds(hours, minutes, seconds);
     if (totalSeconds > 0) {
-      dispatch({ type: 'SET_COUNTDOWN', payload: totalSeconds });
+      dispatch({ type: "SET_COUNTDOWN", payload: totalSeconds });
       handleClose();
     }
   }, [hours, minutes, seconds, dispatch, handleClose]);
@@ -60,16 +52,16 @@ export function CountdownModal() {
   /**
    * 调整时间值
    */
-  const adjustTime = useCallback((type: 'hours' | 'minutes' | 'seconds', delta: number) => {
+  const adjustTime = useCallback((type: "hours" | "minutes" | "seconds", delta: number) => {
     switch (type) {
-      case 'hours':
-        setHours(prev => Math.max(0, Math.min(23, prev + delta)));
+      case "hours":
+        setHours((prev) => Math.max(0, Math.min(23, prev + delta)));
         break;
-      case 'minutes':
-        setMinutes(prev => Math.max(0, Math.min(59, prev + delta)));
+      case "minutes":
+        setMinutes((prev) => Math.max(0, Math.min(59, prev + delta)));
         break;
-      case 'seconds':
-        setSeconds(prev => Math.max(0, Math.min(59, prev + delta)));
+      case "seconds":
+        setSeconds((prev) => Math.max(0, Math.min(59, prev + delta)));
         break;
     }
   }, []);
@@ -81,15 +73,15 @@ export function CountdownModal() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isModalOpen) return;
 
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleClose();
-      } else if (e.key === 'Enter') {
+      } else if (e.key === "Enter") {
         handleConfirm();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen, handleClose, handleConfirm]);
 
   if (!isModalOpen) {
@@ -100,11 +92,11 @@ export function CountdownModal() {
   const isValid = totalSeconds > 0;
 
   const presets = [
-    { label: '10分钟', minutes: 10 },
-    { label: '30分钟', minutes: 30 },
-    { label: '1小时', minutes: 60 },
-    { label: '1小时15分', minutes: 75 },
-    { label: '2小时', minutes: 120 }
+    { label: "10分钟", minutes: 10 },
+    { label: "30分钟", minutes: 30 },
+    { label: "1小时", minutes: 60 },
+    { label: "1小时15分", minutes: 75 },
+    { label: "2小时", minutes: 120 },
   ];
 
   return (
@@ -115,23 +107,15 @@ export function CountdownModal() {
       maxWidth="md"
       footer={
         <FormButtonGroup align="right">
-          <FormButton
-            variant="secondary"
-            onClick={handleClose}
-          >
+          <FormButton variant="secondary" onClick={handleClose}>
             取消
           </FormButton>
-          <FormButton
-            variant="primary"
-            onClick={handleConfirm}
-            disabled={!isValid}
-          >
+          <FormButton variant="primary" onClick={handleConfirm} disabled={!isValid}>
             确认
           </FormButton>
         </FormButtonGroup>
       }
     >
-
       <FormSection title="时间设置">
         <div className={styles.timeInputs}>
           {/* 小时 */}
@@ -141,18 +125,16 @@ export function CountdownModal() {
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('hours', -1)}
+                onClick={() => adjustTime("hours", -1)}
                 disabled={hours === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少小时"
               />
-              <div className={styles.timeValue}>
-                {hours.toString().padStart(2, '0')}
-              </div>
+              <div className={styles.timeValue}>{hours.toString().padStart(2, "0")}</div>
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('hours', 1)}
+                onClick={() => adjustTime("hours", 1)}
                 disabled={hours === 23}
                 icon={<PlusIcon size={16} />}
                 aria-label="增加小时"
@@ -167,18 +149,16 @@ export function CountdownModal() {
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('minutes', -1)}
+                onClick={() => adjustTime("minutes", -1)}
                 disabled={minutes === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少分钟"
               />
-              <div className={styles.timeValue}>
-                {minutes.toString().padStart(2, '0')}
-              </div>
+              <div className={styles.timeValue}>{minutes.toString().padStart(2, "0")}</div>
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('minutes', 1)}
+                onClick={() => adjustTime("minutes", 1)}
                 disabled={minutes === 59}
                 icon={<PlusIcon size={16} />}
                 aria-label="增加分钟"
@@ -193,18 +173,16 @@ export function CountdownModal() {
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('seconds', -1)}
+                onClick={() => adjustTime("seconds", -1)}
                 disabled={seconds === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少秒"
               />
-              <div className={styles.timeValue}>
-                {seconds.toString().padStart(2, '0')}
-              </div>
+              <div className={styles.timeValue}>{seconds.toString().padStart(2, "0")}</div>
               <FormButton
                 variant="secondary"
                 size="sm"
-                onClick={() => adjustTime('seconds', 1)}
+                onClick={() => adjustTime("seconds", 1)}
                 disabled={seconds === 59}
                 icon={<PlusIcon size={16} />}
                 aria-label="增加秒"

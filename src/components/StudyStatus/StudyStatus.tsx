@@ -1,29 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Weather } from '../Weather';
-import styles from './StudyStatus.module.css';
+import React, { useState, useEffect, useCallback } from "react";
+
+import { logger } from "../../utils/logger";
+import { Weather } from "../Weather";
+
+import styles from "./StudyStatus.module.css";
 
 // 课程时间段接口
 interface StudyPeriod {
   id: string;
   startTime: string; // 格式: "HH:MM"
-  endTime: string;   // 格式: "HH:MM"
-  name: string;      // 课程名称，如 "第1节晚自习"
+  endTime: string; // 格式: "HH:MM"
+  name: string; // 课程名称，如 "第1节晚自习"
 }
 
 // 默认课程表
 const DEFAULT_SCHEDULE: StudyPeriod[] = [
   {
-    id: '1',
-    startTime: '19:10',
-    endTime: '20:20',
-    name: '第1节晚自习'
+    id: "1",
+    startTime: "19:10",
+    endTime: "20:20",
+    name: "第1节晚自习",
   },
   {
-    id: '2',
-    startTime: '20:30',
-    endTime: '22:20',
-    name: '第2节晚自习'
-  }
+    id: "2",
+    startTime: "20:30",
+    endTime: "22:20",
+    name: "第2节晚自习",
+  },
 ];
 
 // 当前状态类型
@@ -48,14 +51,14 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     isInClass: false,
     currentPeriod: null,
     progress: 0,
-    statusText: '未在晚自习时间'
+    statusText: "未在晚自习时间",
   });
 
   /**
    * 将时间字符串转换为今天的Date对象
    */
   const timeStringToDate = useCallback((timeStr: string): Date => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date;
@@ -70,8 +73,8 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
 
     // 按开始时间排序课程表
     const sortedSchedule = [...schedule].sort((a, b) => {
-      const timeA = parseInt(a.startTime.replace(':', ''));
-      const timeB = parseInt(b.startTime.replace(':', ''));
+      const timeA = parseInt(a.startTime.replace(":", ""));
+      const timeB = parseInt(b.startTime.replace(":", ""));
       return timeA - timeB;
     });
 
@@ -91,7 +94,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
           isInClass: true,
           currentPeriod: period,
           progress,
-          statusText: period.name
+          statusText: period.name,
         };
       }
     }
@@ -112,7 +115,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
           isInClass: false,
           currentPeriod: sortedSchedule[i],
           progress,
-          statusText: `${sortedSchedule[i].name} 下课`
+          statusText: `${sortedSchedule[i].name} 下课`,
         };
       }
     }
@@ -122,7 +125,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
       isInClass: false,
       currentPeriod: null,
       progress: 0,
-      statusText: '未在晚自习时间'
+      statusText: "未在晚自习时间",
     };
   }, [schedule, timeStringToDate]);
 
@@ -131,7 +134,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
    */
   const loadSchedule = useCallback(() => {
     try {
-      const savedSchedule = localStorage.getItem('study-schedule');
+      const savedSchedule = localStorage.getItem("study-schedule");
       if (savedSchedule) {
         const parsed = JSON.parse(savedSchedule);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -140,13 +143,11 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
         }
       }
     } catch (error) {
-      console.error('加载课程表失败:', error);
+      logger.error("加载课程表失败:", error);
     }
     // 如果加载失败或没有保存的数据，使用默认课程表
     setSchedule(DEFAULT_SCHEDULE);
   }, []);
-
-
 
   // 组件初始化时加载课程表
   useEffect(() => {
@@ -171,19 +172,14 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
   return (
     <div className={styles.studyStatus}>
       <div className={styles.statusRow}>
-        <div className={styles.statusText}>
-          {currentStatus.statusText}
-        </div>
+        <div className={styles.statusText}>{currentStatus.statusText}</div>
         <div className={styles.weatherContainer}>
           <Weather />
         </div>
       </div>
       <div className={styles.progressContainer}>
         <div className={styles.progressBar}>
-          <div 
-            className={styles.progressFill}
-            style={{ width: `${currentStatus.progress}%` }}
-          />
+          <div className={styles.progressFill} style={{ width: `${currentStatus.progress}%` }} />
         </div>
       </div>
     </div>

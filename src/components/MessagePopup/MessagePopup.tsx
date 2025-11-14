@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import styles from './messagePopup.module.css';
-import { FormButton } from '../FormComponents';
+import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 
-type MessageType = 'general' | 'weatherAlert' | 'coolingReminder' | 'systemUpdate';
+import { FormButton } from "../FormComponents";
+
+import styles from "./messagePopup.module.css";
+
+type MessageType = "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
 
 /**
  * 消息弹窗动作项类型
@@ -13,8 +15,8 @@ type MessageType = 'general' | 'weatherAlert' | 'coolingReminder' | 'systemUpdat
 interface ActionItem {
   label: string;
   onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "danger" | "success" | "ghost";
+  size?: "sm" | "md" | "lg";
   icon?: React.ReactNode;
   loading?: boolean;
 }
@@ -41,12 +43,12 @@ interface MessagePopupProps {
 export default function MessagePopup({
   isOpen,
   onClose,
-  type = 'general',
-  title = '消息提醒',
-  message = '',
+  type = "general",
+  title = "消息提醒",
+  message = "",
   icon = null,
   actions = [],
-  className = '',
+  className = "",
   usePortal = true,
 }: MessagePopupProps) {
   const [mounted, setMounted] = useState<boolean>(isOpen);
@@ -83,22 +85,18 @@ export default function MessagePopup({
   if (!mounted) return null;
 
   // 类型样式扩展点
-  const typeClass = {
-    general: styles.general,
-    weatherAlert: styles.weatherAlert,
-    coolingReminder: styles.coolingReminder,
-    systemUpdate: styles.systemUpdate,
-  }[type] || styles.general;
+  const typeClass =
+    {
+      general: styles.general,
+      weatherAlert: styles.weatherAlert,
+      coolingReminder: styles.coolingReminder,
+      systemUpdate: styles.systemUpdate,
+    }[type] || styles.general;
 
-  const rootClass = `${styles.container} ${exiting ? styles.exit : styles.enter} ${typeClass} ${!usePortal ? styles.inline : ''} ${className}`;
+  const rootClass = `${styles.container} ${exiting ? styles.exit : styles.enter} ${typeClass} ${!usePortal ? styles.inline : ""} ${className}`;
 
   const node = (
-    <div
-      className={rootClass}
-      role="dialog"
-      aria-live="polite"
-      aria-label={title}
-    >
+    <div className={rootClass} role="dialog" aria-live="polite" aria-label={title}>
       <button
         type="button"
         className={styles.closeButton}
@@ -122,8 +120,8 @@ export default function MessagePopup({
           {actions.map((act, idx) => (
             <FormButton
               key={idx}
-              variant={act.variant ?? 'secondary'}
-              size={act.size ?? 'sm'}
+              variant={act.variant ?? "secondary"}
+              size={act.size ?? "sm"}
               icon={act.icon}
               loading={act.loading}
               onClick={act.onClick}

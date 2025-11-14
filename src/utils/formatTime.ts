@@ -4,9 +4,9 @@
  * @returns 格式化的时间字符串 (HH:MM:SS)
  */
 export function formatClock(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const seconds = date.getSeconds().toString().padStart(2, "0");
   return `${hours}:${minutes}:${seconds}`;
 }
 
@@ -19,11 +19,11 @@ export function formatTimer(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  
+
   if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   } else {
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   }
 }
 
@@ -39,11 +39,11 @@ export function formatStopwatch(totalMilliseconds: number): string {
   const seconds = totalSeconds % 60;
 
   if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes
+    return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
-      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   }
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -62,7 +62,11 @@ export function timeToSeconds(hours: number, minutes: number, seconds: number): 
  * @param totalSeconds 总秒数
  * @returns 包含小时、分钟、秒的对象
  */
-export function secondsToTime(totalSeconds: number): { hours: number; minutes: number; seconds: number } {
+export function secondsToTime(totalSeconds: number): {
+  hours: number;
+  minutes: number;
+  seconds: number;
+} {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;

@@ -9,8 +9,8 @@ export {
   FormCheckbox,
   FormRadio,
   FormSlider,
-  FormSegmented
-} from './FormComponents';
+  FormSegmented,
+} from "./FormComponents";
 
 export type {
   FormSectionProps,
@@ -24,5 +24,5 @@ export type {
   FormRadioProps,
   FormSliderProps,
   FormSegmentedProps,
-  FormSegmentedOption
-} from './FormComponents';
+  FormSegmentedOption,
+} from "./FormComponents";

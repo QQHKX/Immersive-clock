@@ -2,10 +2,11 @@
  * 噪音报告设置存储工具
  * 管理用户的噪音报告相关偏好设置
  */
-import { broadcastSettingsEvent, SETTINGS_EVENTS } from './settingsEvents';
+import { logger } from "./logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
 
 // localStorage 键名
-const AUTO_POPUP_KEY = 'noise-report-auto-popup';
+const AUTO_POPUP_KEY = "noise-report-auto-popup";
 
 /**
  * 噪音报告设置接口
@@ -29,10 +30,10 @@ export function getNoiseReportSettings(): NoiseReportSettings {
   try {
     const autoPopup = localStorage.getItem(AUTO_POPUP_KEY);
     return {
-      autoPopup: autoPopup !== null ? autoPopup === 'true' : DEFAULT_SETTINGS.autoPopup,
+      autoPopup: autoPopup !== null ? autoPopup === "true" : DEFAULT_SETTINGS.autoPopup,
     };
   } catch (error) {
-    console.warn('读取噪音报告设置失败:', error);
+    logger.warn("读取噪音报告设置失败:", error);
     return DEFAULT_SETTINGS;
   }
 }
@@ -45,7 +46,7 @@ export function saveNoiseReportSettings(settings: Partial<NoiseReportSettings>):
   try {
     const currentSettings = getNoiseReportSettings();
     const newSettings = { ...currentSettings, ...settings };
-    
+
     // 保存各个设置项
     if (settings.autoPopup !== undefined) {
       localStorage.setItem(AUTO_POPUP_KEY, settings.autoPopup.toString());
@@ -53,7 +54,7 @@ export function saveNoiseReportSettings(settings: Partial<NoiseReportSettings>):
     // 广播：噪音报告设置更新
     broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, { settings: newSettings });
   } catch (error) {
-    console.error('保存噪音报告设置失败:', error);
+    logger.error("保存噪音报告设置失败:", error);
   }
 }
 
@@ -79,8 +80,10 @@ export function setAutoPopupSetting(autoPopup: boolean): void {
 export function resetNoiseReportSettings(): void {
   try {
     localStorage.removeItem(AUTO_POPUP_KEY);
-    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, { settings: getNoiseReportSettings() });
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, {
+      settings: getNoiseReportSettings(),
+    });
   } catch (error) {
-    console.error('重置噪音报告设置失败:', error);
+    logger.error("重置噪音报告设置失败:", error);
   }
 }

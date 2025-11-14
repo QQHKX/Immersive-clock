@@ -3,12 +3,12 @@
  * 统一管理 study-schedule 与 studySchedule 两个键名的读写，保证兼容性。
  * 写入时同时写两个键；读取时优先使用连字符键名，其次驼峰键名。
  */
-import { DEFAULT_SCHEDULE, StudyPeriod } from '../components/StudyStatus';
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../components/StudyStatus";
 
 /** 本地存储的规范键名（推荐） */
-export const STUDY_SCHEDULE_KEY_HYPHEN = 'study-schedule';
+export const STUDY_SCHEDULE_KEY_HYPHEN = "study-schedule";
 /** 历史遗留键名（兼容） */
-export const STUDY_SCHEDULE_KEY_CAMEL = 'studySchedule';
+export const STUDY_SCHEDULE_KEY_CAMEL = "studySchedule";
 
 /**
  * 读取课程表
@@ -27,7 +27,7 @@ export function readStudySchedule(): StudyPeriod[] {
       return parsed as StudyPeriod[];
     }
   } catch (e) {
-    console.warn('读取课程表失败，使用默认值:', e);
+    console.warn("读取课程表失败，使用默认值:", e);
   }
   return DEFAULT_SCHEDULE;
 }

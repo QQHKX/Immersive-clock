@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { ClockPage } from './pages/ClockPage/ClockPage';
-import AnnouncementModal from './components/AnnouncementModal';
-import { shouldShowAnnouncement } from './utils/announcementStorage';
-import { cleanupReports } from './utils/noiseReportStorage';
+import React, { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
 
-import styles from './App.module.css';
+import styles from "./App.module.css";
+import AnnouncementModal from "./components/AnnouncementModal";
+import { ClockPage } from "./pages/ClockPage/ClockPage";
+import { shouldShowAnnouncement } from "./utils/announcementStorage";
+import { logger } from "./utils/logger";
+import { cleanupReports } from "./utils/noiseReportStorage";
 
 /**
  * 主应用组件
@@ -23,7 +24,7 @@ export function App() {
   useEffect(() => {
     // 直接触发进入动画
     setShowEnterAnimation(true);
-    
+
     // 动画完成后隐藏
     const timer = setTimeout(() => {
       setShowEnterAnimation(false);
@@ -45,19 +46,19 @@ export function App() {
     try {
       cleanupReports();
     } catch (e) {
-      console.warn('初始化清理噪音报告失败:', e);
+      logger.warn("初始化清理噪音报告失败:", e);
     }
-    
+
     return () => clearTimeout(timer);
   }, []); // 空依赖数组确保只在组件挂载时执行一次
 
   return (
-    <div className={`${styles.app} ${showEnterAnimation ? styles.enterAnimation : ''}`}>
+    <div className={`${styles.app} ${showEnterAnimation ? styles.enterAnimation : ""}`}>
       <Routes>
         <Route path="/" element={<ClockPage />} />
         <Route path="*" element={<ClockPage />} />
       </Routes>
-      
+
       {/* 公告弹窗 */}
       <AnnouncementModal
         isOpen={showAnnouncement}

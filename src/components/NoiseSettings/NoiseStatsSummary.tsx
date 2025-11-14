@@ -1,17 +1,19 @@
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
-import { FormSection } from '../FormComponents';
-import styles from './NoiseSettings.module.css';
-import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus';
-import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
-import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
-import { subscribeSettingsEvent, SETTINGS_EVENTS } from '../../utils/settingsEvents';
+import React, { useMemo, useEffect, useState, useCallback } from "react";
+
+import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
+import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
+import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+import { FormSection } from "../FormComponents";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../StudyStatus";
+
+import styles from "./NoiseSettings.module.css";
 
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
   t: number;
   v: number;
-  s: 'quiet' | 'noisy';
+  s: "quiet" | "noisy";
 }
 
 function formatDuration(ms: number) {
@@ -24,15 +26,17 @@ function formatDuration(ms: number) {
 export const NoiseStatsSummary: React.FC = () => {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
+    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick((t) => t + 1));
     // 立即更新一次，避免首次为空
-    setTick(t => t + 1);
+    setTick((t) => t + 1);
     return unsubscribe;
   }, []);
 
   // 订阅：噪音控制设置变化（阈值），引发统计重新计算
   useEffect(() => {
-    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, () => setTick(t => t + 1));
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, () =>
+      setTick((t) => t + 1)
+    );
     return off;
   }, []);
 
@@ -40,8 +44,8 @@ export const NoiseStatsSummary: React.FC = () => {
   const getCurrentPeriodRange = useCallback((): { start: Date; end: Date } | null => {
     try {
       // 支持两种键名，取存在且有效的为准
-      const savedA = localStorage.getItem('study-schedule');
-      const savedB = localStorage.getItem('studySchedule');
+      const savedA = localStorage.getItem("study-schedule");
+      const savedB = localStorage.getItem("studySchedule");
       let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
       if (savedA) {
         const parsed = JSON.parse(savedA);
@@ -52,7 +56,7 @@ export const NoiseStatsSummary: React.FC = () => {
       }
 
       const toDate = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
+        const [h, m] = timeStr.split(":").map(Number);
         const d = new Date();
         d.setHours(h, m, 0, 0);
         return d;
@@ -60,7 +64,9 @@ export const NoiseStatsSummary: React.FC = () => {
 
       const now = new Date();
       const nowMin = now.getHours() * 60 + now.getMinutes();
-      const sorted = [...schedule].sort((a, b) => parseInt(a.startTime.replace(':', '')) - parseInt(b.startTime.replace(':', '')));
+      const sorted = [...schedule].sort(
+        (a, b) => parseInt(a.startTime.replace(":", "")) - parseInt(b.startTime.replace(":", ""))
+      );
 
       for (const p of sorted) {
         const start = toDate(p.startTime);
@@ -80,11 +86,14 @@ export const NoiseStatsSummary: React.FC = () => {
   }, []);
 
   const stats = useMemo(() => {
+    void tick;
     try {
       const all: NoiseSample[] = readNoiseSamples();
       // 仅统计当前课程时段的数据
       const range = getCurrentPeriodRange();
-      const list = range ? all.filter(s => s.t >= range.start.getTime() && s.t <= range.end.getTime()) : [];
+      const list = range
+        ? all.filter((s) => s.t >= range.start.getTime() && s.t <= range.end.getTime())
+        : [];
       if (list.length < 2) return { noisyDurationMs: 0, transitions: 0, avg: 0, max: 0 };
       let noisyDurationMs = 0;
       let transitions = 0;
@@ -132,9 +141,10 @@ export const NoiseStatsSummary: React.FC = () => {
         </div>
       </div>
       <div className={styles.sourceNote} aria-live="polite">
-        数据来源时间：{(() => {
+        数据来源时间：
+        {(() => {
           const range = getCurrentPeriodRange();
-          if (!range) return '当前无课程时段';
+          if (!range) return "当前无课程时段";
           const s = range.start.toLocaleTimeString();
           const e = range.end.toLocaleTimeString();
           return `${s} - ${e}`;

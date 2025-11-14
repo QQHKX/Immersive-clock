@@ -1,15 +1,37 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ToggleOffIcon, ToggleOnIcon, SettingsIcon, RefreshIcon, EditIcon, ResetIcon, FileIcon } from '../Icons';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { QuoteSourceConfig, HitokotoCategory, HITOKOTO_CATEGORY_LIST } from '../../types';
-import { FormSection, FormInput, FormTextarea, FormButton, FormButtonGroup, FormRow, FormCheckbox } from '../FormComponents';
-import styles from './QuoteChannelManager.module.css';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { QuoteSourceConfig, HitokotoCategory, HITOKOTO_CATEGORY_LIST } from "../../types";
+import { logger } from "../../utils/logger";
+import {
+  FormSection,
+  FormInput,
+  FormTextarea,
+  FormButton,
+  FormButtonGroup,
+  FormCheckbox,
+} from "../FormComponents";
+import {
+  ToggleOffIcon,
+  ToggleOnIcon,
+  SettingsIcon,
+  RefreshIcon,
+  EditIcon,
+  ResetIcon,
+  FileIcon,
+} from "../Icons";
+
+import styles from "./QuoteChannelManager.module.css";
 
 /**
  * 金句渠道管理组件
  * 支持调节各渠道的获取概率权重和独立启用/禁用每个励志短语获取渠道
  */
-export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: () => void) => void }) {
+export function QuoteChannelManager({
+  onRegisterSave,
+}: {
+  onRegisterSave?: (fn: () => void) => void;
+}) {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const [channels, setChannels] = useState<QuoteSourceConfig[]>([]);
@@ -29,13 +51,13 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
     setIsLoading(true);
     try {
       // 使用 import.meta.glob 动态加载所有 quotes-*.json 文件
-      const quoteFiles = import.meta.glob('/src/data/quotes-*.json');
+      const quoteFiles = import.meta.glob("/src/data/quotes-*.json");
       const loadedChannels: QuoteSourceConfig[] = [];
       const defaults: Record<string, string[]> = {};
 
       for (const [path, loader] of Object.entries(quoteFiles)) {
         try {
-          const module = await loader() as { default: QuoteSourceConfig };
+          const module = (await loader()) as { default: QuoteSourceConfig };
           const config = module.default;
 
           // 确保配置有必要的字段
@@ -46,7 +68,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
             }
           }
         } catch (error) {
-          console.warn(`Failed to load quote file ${path}:`, error);
+          logger.warn(`Failed to load quote file ${path}:`, error);
         }
       }
 
@@ -60,29 +82,29 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
         setChannels(loadedChannels);
       } else {
         // 合并现有配置和文件配置
-        const mergedChannels = loadedChannels.map(fileChannel => {
-          const existingChannel = state.quoteChannels.channels.find(c => c.id === fileChannel.id);
+        const mergedChannels = loadedChannels.map((fileChannel) => {
+          const existingChannel = state.quoteChannels.channels.find((c) => c.id === fileChannel.id);
           return existingChannel || fileChannel;
         });
         setChannels(mergedChannels);
       }
     } catch (error) {
-      console.error('Failed to load quote channels:', error);
+      logger.error("Failed to load quote channels:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [state.quoteChannels.channels, dispatch]);
+  }, [state.quoteChannels.channels]);
 
   /**
    * 切换渠道启用状态
    */
   const handleToggleChannel = useCallback((channelId: string) => {
     // 仅更新本地草稿，不立即分发
-    setChannels(prev => prev.map(channel =>
-      channel.id === channelId
-        ? { ...channel, enabled: !channel.enabled }
-        : channel
-    ));
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === channelId ? { ...channel, enabled: !channel.enabled } : channel
+      )
+    );
   }, []);
 
   /**
@@ -91,62 +113,71 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   const handleUpdateWeight = useCallback((channelId: string, weight: number) => {
     const clampedWeight = Math.max(1, Math.min(99, weight));
     // 更新本地状态
-    setChannels(prev => prev.map(channel =>
-      channel.id === channelId
-        ? { ...channel, weight: clampedWeight }
-        : channel
-    ));
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === channelId ? { ...channel, weight: clampedWeight } : channel
+      )
+    );
   }, []);
 
   /**
    * 更新一言分类
    */
-  const handleUpdateCategories = useCallback((channelId: string, categories: HitokotoCategory[]) => {
-    // 更新本地状态
-    setChannels(prev => prev.map(channel =>
-      channel.id === channelId
-        ? { ...channel, hitokotoCategories: categories }
-        : channel
-    ));
-  }, []);
+  const handleUpdateCategories = useCallback(
+    (channelId: string, categories: HitokotoCategory[]) => {
+      // 更新本地状态
+      setChannels((prev) =>
+        prev.map((channel) =>
+          channel.id === channelId ? { ...channel, hitokotoCategories: categories } : channel
+        )
+      );
+    },
+    []
+  );
 
   /**
    * 切换分类选择
    */
-  const handleToggleCategory = useCallback((channelId: string, category: HitokotoCategory) => {
-    const channel = channels.find(c => c.id === channelId);
-    if (!channel || !channel.hitokotoCategories) return;
+  const handleToggleCategory = useCallback(
+    (channelId: string, category: HitokotoCategory) => {
+      const channel = channels.find((c) => c.id === channelId);
+      if (!channel || !channel.hitokotoCategories) return;
 
-    const currentCategories = channel.hitokotoCategories;
-    const newCategories = currentCategories.includes(category)
-      ? currentCategories.filter(c => c !== category)
-      : [...currentCategories, category];
+      const currentCategories = channel.hitokotoCategories;
+      const newCategories = currentCategories.includes(category)
+        ? currentCategories.filter((c) => c !== category)
+        : [...currentCategories, category];
 
-    handleUpdateCategories(channelId, newCategories);
-  }, [channels, handleUpdateCategories]);
+      handleUpdateCategories(channelId, newCategories);
+    },
+    [channels, handleUpdateCategories]
+  );
 
   /**
    * 展开/收起渠道详细设置
    */
   const handleToggleExpanded = useCallback((channelId: string) => {
-    setExpandedChannelId(prev => prev === channelId ? null : channelId);
+    setExpandedChannelId((prev) => (prev === channelId ? null : channelId));
   }, []);
 
   /**
    * 切换本地金句编辑器展开/收起
    * @param channelId 渠道ID
    */
-  const handleToggleEditorExpanded = useCallback((channelId: string) => {
-    setExpandedEditorChannelId(prev => {
-      const next = prev === channelId ? null : channelId;
-      if (next) {
-        const ch = channels.find(c => c.id === channelId);
-        const initial = Array.isArray(ch?.quotes) ? ch!.quotes!.join('\n') : '';
-        setEditorDraftMap(d => ({ ...d, [channelId]: initial }));
-      }
-      return next;
-    });
-  }, [channels]);
+  const handleToggleEditorExpanded = useCallback(
+    (channelId: string) => {
+      setExpandedEditorChannelId((prev) => {
+        const next = prev === channelId ? null : channelId;
+        if (next) {
+          const ch = channels.find((c) => c.id === channelId);
+          const initial = Array.isArray(ch?.quotes) ? ch!.quotes!.join("\n") : "";
+          setEditorDraftMap((d) => ({ ...d, [channelId]: initial }));
+        }
+        return next;
+      });
+    },
+    [channels]
+  );
 
   /**
    * 重新加载渠道配置
@@ -172,39 +203,37 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   const handleImportTxtFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     setImportError(null);
     const file = e.target.files?.[0];
-    e.target.value = '';
+    e.target.value = "";
     if (!file) return;
 
     try {
       const text = await file.text();
       const rawLines = text.split(/\r?\n/);
-      const lines = rawLines
-        .map(l => l.trim())
-        .filter(l => l.length > 0 && l.length <= 200);
+      const lines = rawLines.map((l) => l.trim()).filter((l) => l.length > 0 && l.length <= 200);
 
       if (lines.length === 0) {
-        setImportError('导入失败：TXT内容为空或格式无效。');
+        setImportError("导入失败：TXT内容为空或格式无效。");
         return;
       }
       if (lines.length > 1000) {
-        setImportError('导入失败：金句条目超过上限（1000条）。');
+        setImportError("导入失败：金句条目超过上限（1000条）。");
         return;
       }
 
-      const basename = file.name.replace(/\.[^.]+$/, '');
+      const basename = file.name.replace(/\.[^.]+$/, "");
       const newChannel: QuoteSourceConfig = {
         id: `custom-txt-${Date.now()}`,
         name: `自定义TXT：${basename}`,
         weight: 10,
         enabled: true,
         onlineFetch: false,
-        quotes: lines
+        quotes: lines,
       };
 
-      setChannels(prev => [...prev, newChannel]);
+      setChannels((prev) => [...prev, newChannel]);
     } catch (err) {
-      console.error('TXT导入错误:', err);
-      setImportError('导入失败：无法读取文件。');
+      logger.error("TXT导入错误:", err);
+      setImportError("导入失败：无法读取文件。");
     }
   }, []);
 
@@ -215,30 +244,35 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
    */
   const handleUpdateQuotesFromTextarea = useCallback((channelId: string, text: string) => {
     setEditorError(null);
-    setEditorDraftMap(prev => ({ ...prev, [channelId]: text }));
+    setEditorDraftMap((prev) => ({ ...prev, [channelId]: text }));
     const rawLines = text.split(/\r?\n/);
-    const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0);
+    const lines = rawLines.map((l) => l.trim()).filter((l) => l.length > 0);
 
     if (lines.length > 1000) {
-      setEditorError('编辑提示：金句条目超过上限（1000行）。');
-    } else if (lines.some(l => l.length > 200)) {
-      setEditorError('编辑提示：存在超过200字符的长句，建议适当裁剪。');
+      setEditorError("编辑提示：金句条目超过上限（1000行）。");
+    } else if (lines.some((l) => l.length > 200)) {
+      setEditorError("编辑提示：存在超过200字符的长句，建议适当裁剪。");
     }
 
-    setChannels(prev => prev.map(ch => (ch.id === channelId ? { ...ch, quotes: lines } : ch)));
+    setChannels((prev) => prev.map((ch) => (ch.id === channelId ? { ...ch, quotes: lines } : ch)));
   }, []);
 
   /**
    * 恢复该渠道全部金句为系统默认（仅内置源）
    * @param channelId 渠道ID
    */
-  const handleRestoreDefaultAll = useCallback((channelId: string) => {
-    const defaults = defaultQuotesMap[channelId];
-    if (!defaults) return;
-    setChannels(prev => prev.map(ch => (ch.id === channelId ? { ...ch, quotes: [...defaults] } : ch)));
-    setEditorDraftMap(prev => ({ ...prev, [channelId]: defaults.join('\n') }));
-    setEditorError(null);
-  }, [defaultQuotesMap]);
+  const handleRestoreDefaultAll = useCallback(
+    (channelId: string) => {
+      const defaults = defaultQuotesMap[channelId];
+      if (!defaults) return;
+      setChannels((prev) =>
+        prev.map((ch) => (ch.id === channelId ? { ...ch, quotes: [...defaults] } : ch))
+      );
+      setEditorDraftMap((prev) => ({ ...prev, [channelId]: defaults.join("\n") }));
+      setEditorError(null);
+    },
+    [defaultQuotesMap]
+  );
 
   // 组件挂载时加载渠道配置
   useEffect(() => {
@@ -255,7 +289,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   // 注册保存：保存当前草稿到全局状态与本地存储
   useEffect(() => {
     onRegisterSave?.(() => {
-      dispatch({ type: 'UPDATE_QUOTE_CHANNELS', payload: channels });
+      dispatch({ type: "UPDATE_QUOTE_CHANNELS", payload: channels });
     });
   }, [onRegisterSave, channels, dispatch]);
 
@@ -273,9 +307,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
   return (
     <FormSection title="金句渠道管理">
       <div className={styles.channelManagerInfo}>
-        <p className={styles.infoText}>
-          管理励志金句的获取渠道，调节各渠道的权重和启用状态。
-        </p>
+        <p className={styles.infoText}>管理励志金句的获取渠道，调节各渠道的权重和启用状态。</p>
       </div>
 
       <FormButtonGroup align="right">
@@ -283,7 +315,7 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
           ref={fileInputRef}
           type="file"
           accept=".txt"
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
           onChange={handleImportTxtFileChange}
         />
         <FormButton
@@ -305,17 +337,19 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
       </FormButtonGroup>
 
       {importError && (
-        <div className={styles.errorText} role="alert">{importError}</div>
+        <div className={styles.errorText} role="alert">
+          {importError}
+        </div>
       )}
 
       <div className={styles.channelList}>
-        {channels.map(channel => (
+        {channels.map((channel) => (
           <div key={channel.id} className={styles.channelItem}>
             <div className={styles.channelHeader}>
               <div className={styles.channelInfo}>
                 <h4 className={styles.channelName}>{channel.name}</h4>
                 <span className={styles.channelType}>
-                  {channel.onlineFetch ? '在线获取' : '本地数据'}
+                  {channel.onlineFetch ? "在线获取" : "本地数据"}
                 </span>
               </div>
 
@@ -338,13 +372,15 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                   onClick={() => handleToggleChannel(channel.id)}
                   variant="secondary"
                   size="sm"
-                  aria-label={channel.enabled ? '点击禁用' : '点击启用'}
-                  title={channel.enabled ? '点击禁用' : '点击启用'}
-                  icon={channel.enabled ? (
-                    <ToggleOnIcon className={styles.toggleIconEnabled} />
-                  ) : (
-                    <ToggleOffIcon className={styles.toggleIconDisabled} />
-                  )}
+                  aria-label={channel.enabled ? "点击禁用" : "点击启用"}
+                  title={channel.enabled ? "点击禁用" : "点击启用"}
+                  icon={
+                    channel.enabled ? (
+                      <ToggleOnIcon className={styles.toggleIconEnabled} />
+                    ) : (
+                      <ToggleOffIcon className={styles.toggleIconDisabled} />
+                    )
+                  }
                 />
 
                 {channel.onlineFetch && channel.hitokotoCategories && (
@@ -374,28 +410,30 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
             </div>
 
             {/* 一言分类设置 */}
-            {expandedChannelId === channel.id && channel.onlineFetch && channel.hitokotoCategories && (
-              <div className={styles.categorySettings}>
-                <h5 className={styles.categoryTitle}>一言分类选择</h5>
-                <div className={styles.categoryGrid}>
-                  {HITOKOTO_CATEGORY_LIST.map(category => (
-                    <FormCheckbox
-                      key={category.key}
-                      label={category.name}
-                      checked={channel.hitokotoCategories!.includes(category.key)}
-                      onChange={() => handleToggleCategory(channel.id, category.key)}
-                      className={styles.categoryItem}
-                    />
-                  ))}
+            {expandedChannelId === channel.id &&
+              channel.onlineFetch &&
+              channel.hitokotoCategories && (
+                <div className={styles.categorySettings}>
+                  <h5 className={styles.categoryTitle}>一言分类选择</h5>
+                  <div className={styles.categoryGrid}>
+                    {HITOKOTO_CATEGORY_LIST.map((category) => (
+                      <FormCheckbox
+                        key={category.key}
+                        label={category.name}
+                        checked={channel.hitokotoCategories!.includes(category.key)}
+                        onChange={() => handleToggleCategory(channel.id, category.key)}
+                        className={styles.categoryItem}
+                      />
+                    ))}
+                  </div>
+                  <div className={styles.categoryInfo}>
+                    <p className={styles.helpText}>
+                      已选择 {channel.hitokotoCategories.length} 个分类。
+                      未选择任何分类时将获取所有类型的一言。
+                    </p>
+                  </div>
                 </div>
-                <div className={styles.categoryInfo}>
-                  <p className={styles.helpText}>
-                    已选择 {channel.hitokotoCategories.length} 个分类。
-                    未选择任何分类时将获取所有类型的一言。
-                  </p>
-                </div>
-              </div>
-            )}
+              )}
 
             {/* 本地金句编辑器 */}
             {expandedEditorChannelId === channel.id && !channel.onlineFetch && (
@@ -415,21 +453,32 @@ export function QuoteChannelManager({ onRegisterSave }: { onRegisterSave?: (fn: 
                 <FormTextarea
                   label="金句文本（每行一个）"
                   className={styles.quoteTextarea}
-                  value={editorDraftMap[channel.id] ?? (Array.isArray(channel.quotes) ? channel.quotes.join('\n') : '')}
+                  value={
+                    editorDraftMap[channel.id] ??
+                    (Array.isArray(channel.quotes) ? channel.quotes.join("\n") : "")
+                  }
                   onChange={(e) => handleUpdateQuotesFromTextarea(channel.id, e.target.value)}
-                  placeholder={"例如：\n保持专注，持续前进。\n小步快跑，积累成塔。\n接受不完美并继续优化。"}
+                  placeholder={
+                    "例如：\n保持专注，持续前进。\n小步快跑，积累成塔。\n接受不完美并继续优化。"
+                  }
                   aria-label={`编辑 ${channel.name} 的金句文本，每行一个`}
                   rows={10}
                 />
                 <div className={styles.importInfo}>
-                  <p className={styles.helpText}>当前条目：{Array.isArray(channel.quotes) ? channel.quotes.length : 0}</p>
+                  <p className={styles.helpText}>
+                    当前条目：{Array.isArray(channel.quotes) ? channel.quotes.length : 0}
+                  </p>
                 </div>
                 {editorError && (
-                  <div className={styles.errorText} role="alert">{editorError}</div>
+                  <div className={styles.errorText} role="alert">
+                    {editorError}
+                  </div>
                 )}
                 {(!channel.quotes || channel.quotes.length === 0) && (
                   <div className={styles.importInfo}>
-                    <p className={styles.helpText}>当前渠道暂无金句，可通过“导入TXT”或在上方文本框直接编写。</p>
+                    <p className={styles.helpText}>
+                      当前渠道暂无金句，可通过“导入TXT”或在上方文本框直接编写。
+                    </p>
                   </div>
                 )}
               </div>

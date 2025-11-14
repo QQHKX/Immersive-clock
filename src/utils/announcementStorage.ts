@@ -3,7 +3,7 @@
  * 用于管理"一周内不再显示"功能的本地存储逻辑
  */
 
-const STORAGE_KEY = 'immersive-clock-announcement';
+const STORAGE_KEY = "immersive-clock-announcement";
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 一周的毫秒数
 
 interface AnnouncementStorageData {
@@ -47,7 +47,9 @@ export const shouldShowAnnouncement = (): boolean => {
 
     return true; // 隐藏期已过，应该显示
   } catch (error) {
-    console.error('Error checking announcement visibility:', error);
+    import("../utils/logger")
+      .then(({ logger }) => logger.error("Error checking announcement visibility:", error))
+      .catch(() => {});
     return true; // 出错时默认显示
   }
 };
@@ -59,15 +61,17 @@ export const setDontShowForWeek = (): void => {
   try {
     const currentVersion = getCurrentVersion();
     const hideUntil = Date.now() + ONE_WEEK_MS;
-    
+
     const data: AnnouncementStorageData = {
       hideUntil,
-      version: currentVersion
+      version: currentVersion,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error('Error setting announcement hide preference:', error);
+    import("../utils/logger")
+      .then(({ logger }) => logger.error("Error setting announcement hide preference:", error))
+      .catch(() => {});
   }
 };
 
@@ -79,7 +83,9 @@ export const clearAnnouncementHidePreference = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Error clearing announcement hide preference:', error);
+    import("../utils/logger")
+      .then(({ logger }) => logger.error("Error clearing announcement hide preference:", error))
+      .catch(() => {});
   }
 };
 
@@ -101,7 +107,7 @@ export const getAnnouncementHideInfo = (): {
         isHidden: false,
         hideUntil: null,
         version: null,
-        remainingTime: null
+        remainingTime: null,
       };
     }
 
@@ -114,15 +120,17 @@ export const getAnnouncementHideInfo = (): {
       isHidden,
       hideUntil: new Date(data.hideUntil),
       version: data.version,
-      remainingTime
+      remainingTime,
     };
   } catch (error) {
-    console.error('Error getting announcement hide info:', error);
+    import("../utils/logger")
+      .then(({ logger }) => logger.error("Error getting announcement hide info:", error))
+      .catch(() => {});
     return {
       isHidden: false,
       hideUntil: null,
       version: null,
-      remainingTime: null
+      remainingTime: null,
     };
   }
 };

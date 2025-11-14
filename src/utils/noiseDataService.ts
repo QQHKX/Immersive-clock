@@ -3,7 +3,7 @@
  * 所有模块应通过该服务获取与写入噪音样本，避免直接访问 localStorage。
  */
 
-export type NoiseState = 'quiet' | 'noisy';
+export type NoiseState = "quiet" | "noisy";
 
 export interface NoiseSample {
   t: number; // 时间戳（ms）
@@ -11,9 +11,9 @@ export interface NoiseSample {
   s: NoiseState; // 状态：安静或吵闹
 }
 
-const STORAGE_KEY = 'noise-samples';
+const STORAGE_KEY = "noise-samples";
 export const NOISE_SAMPLE_STORAGE_KEY = STORAGE_KEY;
-export const NOISE_SAMPLES_UPDATED_EVENT = 'noise-samples-updated';
+export const NOISE_SAMPLES_UPDATED_EVENT = "noise-samples-updated";
 const RETENTION_MS = 24 * 60 * 60 * 1000; // 保留最近24小时
 
 export function readNoiseSamples(): NoiseSample[] {
@@ -31,7 +31,7 @@ export function writeNoiseSample(sample: NoiseSample): NoiseSample[] {
     const list = readNoiseSamples();
     list.push(sample);
     const cutoff = sample.t - RETENTION_MS;
-    const trimmed = list.filter(item => item.t >= cutoff);
+    const trimmed = list.filter((item) => item.t >= cutoff);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
     // 通知订阅者：样本已更新
     window.dispatchEvent(new CustomEvent(NOISE_SAMPLES_UPDATED_EVENT));
