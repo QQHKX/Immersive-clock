@@ -257,6 +257,78 @@ export async function fetchWeatherNow(location: string): Promise<WeatherNow> {
   }
 }
 
+// 天气预警类型
+export interface WeatherAlertResponse {
+  metadata?: {
+    tag?: string;
+    zeroResult?: boolean;
+  };
+  alerts?: Array<{
+    id?: string;
+    senderName?: string;
+    issuedTime?: string;
+    eventType?: { name?: string; code?: string };
+    severity?: string | null;
+    color?: { code?: string };
+    effectiveTime?: string;
+    expireTime?: string;
+    headline?: string;
+    description?: string;
+  }>;
+  error?: string;
+}
+
+// 分钟级降水类型
+export interface MinutelyPrecipResponse {
+  code?: string;
+  updateTime?: string;
+  summary?: string;
+  minutely?: Array<{ fxTime?: string; precip?: string; type?: string }>;
+  error?: string;
+}
+
+/**
+ * 获取指定坐标的天气预警
+ * 使用和风私有域，携带 API Key 与可选 JWT
+ */
+export async function fetchWeatherAlertsByCoords(lat: number, lon: number): Promise<WeatherAlertResponse> {
+  const url = `https://${QWEATHER_HOST}/weatheralert/v1/current/${lat.toFixed(2)}/${lon.toFixed(2)}?localTime=true&lang=zh`;
+  try {
+    const headers: Record<string, string> = {
+      "X-QW-Api-Key": QWEATHER_API_KEY,
+      "Accept-Encoding": "gzip, deflate",
+      "User-Agent": "QWeatherTest/1.0",
+    };
+    const jwt = import.meta.env.VITE_QWEATHER_JWT;
+    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+    const data = await httpGetJson(url, headers);
+    return data as WeatherAlertResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as WeatherAlertResponse;
+  }
+}
+
+/**
+ * 获取分钟级降水（未来2小时每5分钟）
+ * location 为 "lon,lat"，使用和风私有域
+ */
+export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPrecipResponse> {
+  const url = `https://${QWEATHER_HOST}/v7/minutely/5m?location=${encodeURIComponent(location)}&lang=zh`;
+  try {
+    const headers: Record<string, string> = {
+      "X-QW-Api-Key": QWEATHER_API_KEY,
+      "Accept-Encoding": "gzip, deflate",
+      "User-Agent": "QWeatherTest/1.0",
+    };
+    const jwt = import.meta.env.VITE_QWEATHER_JWT;
+    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+    const data = await httpGetJson(url, headers);
+    return data as MinutelyPrecipResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as MinutelyPrecipResponse;
+  }
+}
+
 export async function geoCityLookup(lat: number, lon: number): Promise<unknown> {
   const url = `https://geoapi.qweather.com/v2/city/lookup?location=${encodeURIComponent(`${lon},${lat}`)}&key=${encodeURIComponent(QWEATHER_API_KEY)}`;
   try {

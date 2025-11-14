@@ -21,13 +21,17 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
   const dispatch = useAppDispatch();
 
   const [enabled, setEnabled] = useState<boolean>(!!study.messagePopupEnabled);
+  const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(!!study.weatherAlertEnabled);
+  const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(!!study.minutelyPrecipEnabled);
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     onRegisterSave?.(() => {
       dispatch({ type: "SET_MESSAGE_POPUP_ENABLED", payload: enabled });
+      dispatch({ type: "SET_WEATHER_ALERT_ENABLED", payload: weatherAlertEnabled });
+      dispatch({ type: "SET_MINUTELY_PRECIP_ENABLED", payload: minutelyPrecipEnabled });
     });
-  }, [onRegisterSave, dispatch, enabled]);
+  }, [onRegisterSave, dispatch, enabled, weatherAlertEnabled, minutelyPrecipEnabled]);
 
   return (
     <div
@@ -53,6 +57,22 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
             预览默认样式
           </FormButton>
         </FormButtonGroup>
+      </FormSection>
+
+      <FormSection title="天气提醒">
+        <FormCheckbox
+          label="天气预警弹窗"
+          checked={weatherAlertEnabled}
+          onChange={(e) => setWeatherAlertEnabled(e.target.checked)}
+          disabled={!enabled}
+        />
+        <FormCheckbox
+          label="降雨提醒弹窗"
+          checked={minutelyPrecipEnabled}
+          onChange={(e) => setMinutelyPrecipEnabled(e.target.checked)}
+          disabled={!enabled}
+        />
+        <p className={styles.helpText}>请求方式参考程序已有的实时天气获取，需配置和风私有域。</p>
       </FormSection>
 
       {/* 预览区域：展示默认样式的消息弹窗（设置页内联渲染） */}
