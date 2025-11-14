@@ -1,5 +1,6 @@
-import React from 'react';
-import styles from './AuthorInfo.module.css';
+import React from "react";
+
+import styles from "./AuthorInfo.module.css";
 // 版本来自环境变量（vite.config 注入）
 const appVersion = import.meta.env.VITE_APP_VERSION;
 
@@ -27,18 +28,14 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
   return (
     <div className={styles.authorInfo}>
       <div className={styles.version}>
-        <span 
-          className={styles.versionNumber} 
-          onClick={handleVersionClick}
-          title="点击查看公告"
-        >
+        <span className={styles.versionNumber} onClick={handleVersionClick} title="点击查看公告">
           v{appVersion}
         </span>
-        {' by '}
-        <a 
-          href="https://qqhkx.com" 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        {" by "}
+        <a
+          href="https://qqhkx.com"
+          target="_blank"
+          rel="noopener noreferrer"
           className={styles.link}
         >
           qqhkx

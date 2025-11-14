@@ -1,31 +1,34 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import styles from './NoiseSettings.module.css';
-import { FormSection } from '../FormComponents';
-import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
-import { readNoiseSamples, subscribeNoiseSamplesUpdated } from '../../utils/noiseDataService';
+import React, { useEffect, useMemo, useState } from "react";
+
+import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
+import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
+import { FormSection } from "../FormComponents";
+
+import styles from "./NoiseSettings.module.css";
 
 const getThreshold = () => getNoiseControlSettings().maxLevelDb;
 
 interface NoiseSample {
   t: number;
   v: number;
-  s: 'quiet' | 'noisy';
+  s: "quiet" | "noisy";
 }
 
 export const NoiseAlertHistory: React.FC = () => {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick(t => t + 1));
-    setTick(t => t + 1);
+    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick((t) => t + 1));
+    setTick((t) => t + 1);
     return unsubscribe;
   }, []);
 
   const { items, total } = useMemo(() => {
+    void tick;
     try {
       const all: NoiseSample[] = readNoiseSamples();
       const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 最近24小时
       const threshold = getThreshold();
-      const recent = all.filter(s => s.t >= cutoff).sort((a, b) => a.t - b.t);
+      const recent = all.filter((s) => s.t >= cutoff).sort((a, b) => a.t - b.t);
       const transitions: { time: string; value: number }[] = [];
       for (let i = 1; i < recent.length; i++) {
         const prev = recent[i - 1];

@@ -1,1 +1,1 @@
-export { SettingsPanel } from './SettingsPanel';
+export { SettingsPanel } from "./SettingsPanel";

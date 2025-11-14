@@ -2,14 +2,15 @@
  * 噪音控制设置存储工具
  * 管理用户的最大允许噪音级别与手动基准噪音显示值
  */
-import { broadcastSettingsEvent, SETTINGS_EVENTS } from './settingsEvents';
+import { logger } from "./logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
 
 // localStorage 键名
-const NOISE_MAX_LEVEL_KEY = 'noise-control-max-level-db';
-const NOISE_BASELINE_DB_KEY = 'noise-control-baseline-db';
-const NOISE_SHOW_REALTIME_DB_KEY = 'noise-control-show-realtime-db';
+const NOISE_MAX_LEVEL_KEY = "noise-control-max-level-db";
+const NOISE_BASELINE_DB_KEY = "noise-control-baseline-db";
+const NOISE_SHOW_REALTIME_DB_KEY = "noise-control-show-realtime-db";
 // 新增：噪音平均时间窗（秒）
-const NOISE_AVG_WINDOW_SEC_KEY = 'noise-control-avg-window-sec';
+const NOISE_AVG_WINDOW_SEC_KEY = "noise-control-avg-window-sec";
 
 export interface NoiseControlSettings {
   maxLevelDb: number; // 最大允许噪音级别（阈值）
@@ -34,11 +35,15 @@ export function getNoiseControlSettings(): NoiseControlSettings {
     return {
       maxLevelDb: maxLevel !== null ? parseFloat(maxLevel) : DEFAULT_SETTINGS.maxLevelDb,
       baselineDb: baselineDb !== null ? parseFloat(baselineDb) : DEFAULT_SETTINGS.baselineDb,
-      showRealtimeDb: showRealtimeDb !== null ? showRealtimeDb === 'true' : DEFAULT_SETTINGS.showRealtimeDb,
-      avgWindowSec: avgWindowSecStr !== null ? Math.max(0.2, parseFloat(avgWindowSecStr)) : DEFAULT_SETTINGS.avgWindowSec,
+      showRealtimeDb:
+        showRealtimeDb !== null ? showRealtimeDb === "true" : DEFAULT_SETTINGS.showRealtimeDb,
+      avgWindowSec:
+        avgWindowSecStr !== null
+          ? Math.max(0.2, parseFloat(avgWindowSecStr))
+          : DEFAULT_SETTINGS.avgWindowSec,
     };
   } catch (error) {
-    console.warn('读取噪音控制设置失败:', error);
+    logger.warn("读取噪音控制设置失败:", error);
     return DEFAULT_SETTINGS;
   }
 }
@@ -54,7 +59,7 @@ export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>
       localStorage.setItem(NOISE_BASELINE_DB_KEY, next.baselineDb.toString());
     }
     if (settings.showRealtimeDb !== undefined) {
-      localStorage.setItem(NOISE_SHOW_REALTIME_DB_KEY, next.showRealtimeDb ? 'true' : 'false');
+      localStorage.setItem(NOISE_SHOW_REALTIME_DB_KEY, next.showRealtimeDb ? "true" : "false");
     }
     if (settings.avgWindowSec !== undefined) {
       localStorage.setItem(NOISE_AVG_WINDOW_SEC_KEY, next.avgWindowSec.toString());
@@ -65,7 +70,7 @@ export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>
       broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: next.baselineDb });
     }
   } catch (error) {
-    console.error('保存噪音控制设置失败:', error);
+    logger.error("保存噪音控制设置失败:", error);
   }
 }
 
@@ -108,8 +113,10 @@ export function resetNoiseControlSettings(): void {
     localStorage.removeItem(NOISE_SHOW_REALTIME_DB_KEY);
     localStorage.removeItem(NOISE_AVG_WINDOW_SEC_KEY);
     // 广播：重置后也应通知订阅者使用默认值
-    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, { settings: getNoiseControlSettings() });
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, {
+      settings: getNoiseControlSettings(),
+    });
   } catch (error) {
-    console.error('重置噪音控制设置失败:', error);
+    logger.error("重置噪音控制设置失败:", error);
   }
 }

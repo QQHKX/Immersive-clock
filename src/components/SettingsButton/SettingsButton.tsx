@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { SettingsIcon } from '../Icons';
-import styles from './SettingsButton.module.css';
+import React, { useState, useEffect, useCallback } from "react";
+
+import { SettingsIcon } from "../Icons";
+
+import styles from "./SettingsButton.module.css";
 
 interface SettingsButtonProps {
   onClick: () => void;
@@ -43,10 +45,10 @@ export function SettingsButton({ onClick, isVisible = true }: SettingsButtonProp
     };
 
     // 监听的事件类型
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    const events = ["mousedown", "mousemove", "keypress", "scroll", "touchstart", "click"];
 
     // 添加事件监听器
-    events.forEach(event => {
+    events.forEach((event) => {
       document.addEventListener(event, handleUserActivity, true);
     });
 
@@ -59,13 +61,13 @@ export function SettingsButton({ onClick, isVisible = true }: SettingsButtonProp
     };
 
     // 监听用户活动并重置定时器
-    events.forEach(event => {
+    events.forEach((event) => {
       document.addEventListener(event, resetTimeout, true);
     });
 
     return () => {
       clearTimeout(timeoutId);
-      events.forEach(event => {
+      events.forEach((event) => {
         document.removeEventListener(event, handleUserActivity, true);
         document.removeEventListener(event, resetTimeout, true);
       });
@@ -74,11 +76,7 @@ export function SettingsButton({ onClick, isVisible = true }: SettingsButtonProp
 
   return (
     <button
-      className={`${
-        styles.settingsButton
-      } ${
-        isVisible ? styles.visible : styles.hidden
-      } ${
+      className={`${styles.settingsButton} ${isVisible ? styles.visible : styles.hidden} ${
         isFaded ? styles.faded : styles.normal
       }`}
       onClick={onClick}

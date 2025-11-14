@@ -1,7 +1,7 @@
 /**
  * 公告选项卡类型
  */
-export type AnnouncementTab = 'announcement' | 'changelog';
+export type AnnouncementTab = "announcement" | "changelog";
 
 /**
  * 公告选项卡配置接口
@@ -64,7 +64,7 @@ export interface MarkdownDocument {
  * stopwatch: 秒表模式
  * study: 晚自习模式
  */
-export type AppMode = 'clock' | 'countdown' | 'stopwatch' | 'study';
+export type AppMode = "clock" | "countdown" | "stopwatch" | "study";
 
 /**
  * 倒计时状态接口
@@ -90,8 +90,6 @@ export interface StopwatchState {
   isActive: boolean;
 }
 
-
-
 /**
  * 晚自习页面组件显示设置
  */
@@ -115,7 +113,7 @@ export interface CountdownItem {
   /** 唯一标识 */
   id: string;
   /** 类型：高考或自定义 */
-  kind: 'gaokao' | 'custom';
+  kind: "gaokao" | "custom";
   /** 显示名称，例如“2026高考”或“期末考试” */
   name: string;
   /** 目标日期（YYYY-MM-DD，仅自定义项目使用） */
@@ -143,7 +141,7 @@ export interface StudyState {
   /** 目标高考年份 */
   targetYear: number;
   /** 倒计时类型：高考或自定义事件 */
-  countdownType?: 'gaokao' | 'custom';
+  countdownType?: "gaokao" | "custom";
   /** 自定义事件名称（当为自定义时使用） */
   customName?: string;
   /** 自定义事件日期（YYYY-MM-DD） */
@@ -166,16 +164,16 @@ export interface StudyState {
  * 一言分类类型
  * 只保留文学、哲学、诗词、抖机灵四个分类
  */
-export type HitokotoCategory = 'd' | 'i' | 'k' | 'l';
+export type HitokotoCategory = "d" | "i" | "k" | "l";
 
 /**
  * 一言分类映射
  */
 export const HITOKOTO_CATEGORIES: Record<HitokotoCategory, string> = {
-  d: '文学',
-  i: '诗词',
-  k: '哲学',
-  l: '抖机灵'
+  d: "文学",
+  i: "诗词",
+  k: "哲学",
+  l: "抖机灵",
 };
 
 /**
@@ -183,10 +181,10 @@ export const HITOKOTO_CATEGORIES: Record<HitokotoCategory, string> = {
  * 按照文化内涵排序：文学 -> 诗词 -> 哲学 -> 抖机灵
  */
 export const HITOKOTO_CATEGORY_LIST: Array<{ key: HitokotoCategory; name: string }> = [
-  { key: 'd', name: '文学' },
-  { key: 'i', name: '诗词' },
-  { key: 'k', name: '哲学' },
-  { key: 'l', name: '抖机灵' }
+  { key: "d", name: "文学" },
+  { key: "i", name: "诗词" },
+  { key: "k", name: "哲学" },
+  { key: "l", name: "抖机灵" },
 ];
 
 /**
@@ -273,37 +271,40 @@ export interface AppState {
  * 应用动作类型
  */
 export type AppAction =
-  | { type: 'SET_MODE'; payload: AppMode }
-  | { type: 'TOGGLE_HUD' }
-  | { type: 'SHOW_HUD' }
-  | { type: 'HIDE_HUD' }
-  | { type: 'SET_COUNTDOWN'; payload: number }
-  | { type: 'START_COUNTDOWN' }
-  | { type: 'PAUSE_COUNTDOWN' }
-  | { type: 'RESET_COUNTDOWN' }
-  | { type: 'FINISH_COUNTDOWN' }
-  | { type: 'START_STOPWATCH' }
-  | { type: 'PAUSE_STOPWATCH' }
-  | { type: 'RESET_STOPWATCH' }
-  | { type: 'TICK_STOPWATCH' }
-  | { type: 'TICK_STOPWATCH_BY'; payload: number }
-  | { type: 'SET_TARGET_YEAR'; payload: number }
-  | { type: 'SET_COUNTDOWN_TYPE'; payload: 'gaokao' | 'custom' }
-  | { type: 'SET_CUSTOM_COUNTDOWN'; payload: { name: string; date: string } }
-  | { type: 'UPDATE_QUOTE_CHANNELS'; payload: QuoteSourceConfig[] }
-  | { type: 'TOGGLE_QUOTE_CHANNEL'; payload: string }
-  | { type: 'UPDATE_QUOTE_CHANNEL_WEIGHT'; payload: { id: string; weight: number } }
-  | { type: 'UPDATE_QUOTE_CHANNEL_CATEGORIES'; payload: { id: string; categories: HitokotoCategory[] } }
-  | { type: 'SET_QUOTE_AUTO_REFRESH_INTERVAL'; payload: number }
-  | { type: 'SHOW_ANNOUNCEMENT' }
-  | { type: 'HIDE_ANNOUNCEMENT' }
-  | { type: 'SET_ANNOUNCEMENT_TAB'; payload: AnnouncementTab }
-  | { type: 'SET_ANNOUNCEMENT_DONT_SHOW_AGAIN'; payload: boolean }
-  | { type: 'OPEN_MODAL' }
-  | { type: 'CLOSE_MODAL' }
-  | { type: 'SET_STUDY_DISPLAY'; payload: StudyDisplaySettings }
-  | { type: 'SET_COUNTDOWN_ITEMS'; payload: CountdownItem[] }
-  | { type: 'SET_CAROUSEL_INTERVAL'; payload: number }
-  | { type: 'SET_COUNTDOWN_DIGIT_COLOR'; payload: string | undefined }
-  | { type: 'SET_COUNTDOWN_DIGIT_OPACITY'; payload: number | undefined }
-  | { type: 'SET_MESSAGE_POPUP_ENABLED'; payload: boolean }
+  | { type: "SET_MODE"; payload: AppMode }
+  | { type: "TOGGLE_HUD" }
+  | { type: "SHOW_HUD" }
+  | { type: "HIDE_HUD" }
+  | { type: "SET_COUNTDOWN"; payload: number }
+  | { type: "START_COUNTDOWN" }
+  | { type: "PAUSE_COUNTDOWN" }
+  | { type: "RESET_COUNTDOWN" }
+  | { type: "FINISH_COUNTDOWN" }
+  | { type: "START_STOPWATCH" }
+  | { type: "PAUSE_STOPWATCH" }
+  | { type: "RESET_STOPWATCH" }
+  | { type: "TICK_STOPWATCH" }
+  | { type: "TICK_STOPWATCH_BY"; payload: number }
+  | { type: "SET_TARGET_YEAR"; payload: number }
+  | { type: "SET_COUNTDOWN_TYPE"; payload: "gaokao" | "custom" }
+  | { type: "SET_CUSTOM_COUNTDOWN"; payload: { name: string; date: string } }
+  | { type: "UPDATE_QUOTE_CHANNELS"; payload: QuoteSourceConfig[] }
+  | { type: "TOGGLE_QUOTE_CHANNEL"; payload: string }
+  | { type: "UPDATE_QUOTE_CHANNEL_WEIGHT"; payload: { id: string; weight: number } }
+  | {
+      type: "UPDATE_QUOTE_CHANNEL_CATEGORIES";
+      payload: { id: string; categories: HitokotoCategory[] };
+    }
+  | { type: "SET_QUOTE_AUTO_REFRESH_INTERVAL"; payload: number }
+  | { type: "SHOW_ANNOUNCEMENT" }
+  | { type: "HIDE_ANNOUNCEMENT" }
+  | { type: "SET_ANNOUNCEMENT_TAB"; payload: AnnouncementTab }
+  | { type: "SET_ANNOUNCEMENT_DONT_SHOW_AGAIN"; payload: boolean }
+  | { type: "OPEN_MODAL" }
+  | { type: "CLOSE_MODAL" }
+  | { type: "SET_STUDY_DISPLAY"; payload: StudyDisplaySettings }
+  | { type: "SET_COUNTDOWN_ITEMS"; payload: CountdownItem[] }
+  | { type: "SET_CAROUSEL_INTERVAL"; payload: number }
+  | { type: "SET_COUNTDOWN_DIGIT_COLOR"; payload: string | undefined }
+  | { type: "SET_COUNTDOWN_DIGIT_OPACITY"; payload: number | undefined }
+  | { type: "SET_MESSAGE_POPUP_ENABLED"; payload: boolean };

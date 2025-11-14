@@ -1,17 +1,18 @@
-import React, { useCallback, useRef, useEffect, useState } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { Clock } from '../../components/Clock/Clock';
-import { Countdown } from '../../components/Countdown/Countdown';
-import { Stopwatch } from '../../components/Stopwatch/Stopwatch';
-import { Study } from '../../components/Study/Study';
-import { HUD } from '../../components/HUD/HUD';
-import { CountdownModal } from '../../components/CountdownModal/CountdownModal';
-import { AuthorInfo } from '../../components/AuthorInfo/AuthorInfo';
-import { SettingsButton } from '../../components/SettingsButton';
-import { SettingsPanel } from '../../components/SettingsPanel';
-import AnnouncementModal from '../../components/AnnouncementModal';
+import React, { useCallback, useRef, useEffect, useState } from "react";
 
-import styles from './ClockPage.module.css';
+import AnnouncementModal from "../../components/AnnouncementModal";
+import { AuthorInfo } from "../../components/AuthorInfo/AuthorInfo";
+import { Clock } from "../../components/Clock/Clock";
+import { Countdown } from "../../components/Countdown/Countdown";
+import { CountdownModal } from "../../components/CountdownModal/CountdownModal";
+import { HUD } from "../../components/HUD/HUD";
+import { SettingsButton } from "../../components/SettingsButton";
+import { SettingsPanel } from "../../components/SettingsPanel";
+import { Stopwatch } from "../../components/Stopwatch/Stopwatch";
+import { Study } from "../../components/Study/Study";
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+
+import styles from "./ClockPage.module.css";
 
 /**
  * 时钟主页面组件
@@ -24,7 +25,7 @@ export function ClockPage() {
   const prevModeRef = useRef(mode);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
-  
+
   // 跟踪模式变化
   useEffect(() => {
     prevModeRef.current = mode;
@@ -40,10 +41,8 @@ export function ClockPage() {
       return;
     }
 
-
-
     // 显示HUD
-    dispatch({ type: 'SHOW_HUD' });
+    dispatch({ type: "SHOW_HUD" });
 
     // 清除之前的定时器
     if (hideTimeoutRef.current) {
@@ -52,43 +51,46 @@ export function ClockPage() {
 
     // 设置8秒后自动隐藏HUD
     hideTimeoutRef.current = setTimeout(() => {
-      dispatch({ type: 'HIDE_HUD' });
+      dispatch({ type: "HIDE_HUD" });
       hideTimeoutRef.current = null;
     }, 8000);
-  }, [dispatch, isModalOpen, mode]);
+  }, [dispatch, isModalOpen]);
 
   /**
    * 处理键盘事件
    */
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    /**
-     * 如果倒计时模态框或设置面板打开，则不处理页面级键盘事件
-     * 避免拦截输入组件的回车（如 textarea 换行）
-     */
-    // 注意：SettingsPanel 通过 Portal 渲染，事件仍会沿 React 树冒泡到此处
-    if (isModalOpen || showSettings) {
-      return;
-    }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      /**
+       * 如果倒计时模态框或设置面板打开，则不处理页面级键盘事件
+       * 避免拦截输入组件的回车（如 textarea 换行）
+       */
+      // 注意：SettingsPanel 通过 Portal 渲染，事件仍会沿 React 树冒泡到此处
+      if (isModalOpen || showSettings) {
+        return;
+      }
 
-    /**
-     * 在表单输入或可编辑元素中，不拦截回车或空格
-     * 保证输入框/文本域/可编辑区域的默认行为（换行、输入等）
-     */
-    const eventTarget = e.target as HTMLElement | null;
-    const tagName = eventTarget?.tagName?.toUpperCase();
-    const isEditingElement = !!eventTarget && (
-      tagName === 'INPUT' || tagName === 'TEXTAREA' || eventTarget.isContentEditable === true
-    );
-    if (isEditingElement) {
-      return;
-    }
+      /**
+       * 在表单输入或可编辑元素中，不拦截回车或空格
+       * 保证输入框/文本域/可编辑区域的默认行为（换行、输入等）
+       */
+      const eventTarget = e.target as HTMLElement | null;
+      const tagName = eventTarget?.tagName?.toUpperCase();
+      const isEditingElement =
+        !!eventTarget &&
+        (tagName === "INPUT" || tagName === "TEXTAREA" || eventTarget.isContentEditable === true);
+      if (isEditingElement) {
+        return;
+      }
 
-    // 空格键或回车键显示HUD（仅当不在输入环境中）
-    if (e.code === 'Space' || e.code === 'Enter') {
-      e.preventDefault();
-      handlePageClick();
-    }
-  }, [handlePageClick, isModalOpen]);
+      // 空格键或回车键显示HUD（仅当不在输入环境中）
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        handlePageClick();
+      }
+    },
+    [handlePageClick, isModalOpen, showSettings]
+  );
 
   /**
    * 处理设置按钮点击
@@ -123,13 +125,13 @@ export function ClockPage() {
    */
   const renderTimeDisplay = () => {
     switch (mode) {
-      case 'clock':
+      case "clock":
         return <Clock />;
-      case 'countdown':
+      case "countdown":
         return <Countdown />;
-      case 'stopwatch':
+      case "stopwatch":
         return <Stopwatch />;
-      case 'study':
+      case "study":
         return <Study />;
       default:
         return <Clock />;
@@ -137,7 +139,7 @@ export function ClockPage() {
   };
 
   return (
-    <div 
+    <div
       className={styles.clockPage}
       onClick={handlePageClick}
       onKeyDown={handleKeyDown}
@@ -148,27 +150,21 @@ export function ClockPage() {
       <div className={styles.timeDisplay} id={`${mode}-panel`} role="tabpanel">
         {renderTimeDisplay()}
       </div>
-      
+
       <HUD />
-      
+
       <AuthorInfo onVersionClick={handleVersionClick} />
-      
+
       {/* 设置按钮 - 只在晚自习模式下显示 */}
-      {mode === 'study' && (
-        <SettingsButton 
-          onClick={handleSettingsClick}
-          isVisible={!isModalOpen && !showSettings}
-        />
+      {mode === "study" && (
+        <SettingsButton onClick={handleSettingsClick} isVisible={!isModalOpen && !showSettings} />
       )}
-      
+
       {/* 设置面板 */}
-      <SettingsPanel 
-        isOpen={showSettings}
-        onClose={handleSettingsClose}
-      />
-      
+      <SettingsPanel isOpen={showSettings} onClose={handleSettingsClose} />
+
       {isModalOpen && <CountdownModal />}
-      
+
       {/* 公告弹窗 */}
       <AnnouncementModal
         isOpen={showAnnouncement}

@@ -1,18 +1,19 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useTimer } from '../../hooks/useTimer';
-import { formatClock } from '../../utils/formatTime';
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
-import StudyStatus from '../StudyStatus';
-import NoiseMonitor from '../NoiseMonitor';
-import { MotivationalQuote } from '../MotivationalQuote';
-import styles from './Study.module.css';
-import NoiseReportModal, { NoiseReportPeriod } from '../NoiseReportModal/NoiseReportModal';
-import NoiseHistoryModal from '../NoiseHistoryModal/NoiseHistoryModal';
-import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
-import { getAutoPopupSetting } from '../../utils/noiseReportSettings';
-import { readStudyBackground } from '../../utils/studyBackgroundStorage';
-import { CountdownItem } from '../../types';
+import { useAppState } from "../../contexts/AppContext";
+import { useTimer } from "../../hooks/useTimer";
+import { CountdownItem } from "../../types";
+import { formatClock } from "../../utils/formatTime";
+import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
+import { readStudyBackground } from "../../utils/studyBackgroundStorage";
+import { MotivationalQuote } from "../MotivationalQuote";
+import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
+import NoiseMonitor from "../NoiseMonitor";
+import NoiseReportModal, { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
+import StudyStatus from "../StudyStatus";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../StudyStatus/StudyStatus";
+
+import styles from "./Study.module.css";
 
 // 颜色工具：#rrggbb/#rgb 转 rgba(r,g,b,a)
 function hexToRgba(hex: string, alpha: number = 1): string {
@@ -54,7 +55,6 @@ function hexToRgba(hex: string, alpha: number = 1): string {
  */
 export function Study() {
   const { study } = useAppState();
-  const dispatch = useAppDispatch();
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
@@ -90,13 +90,14 @@ export function Study() {
   // 监听背景设置更新事件
   useEffect(() => {
     const handler = () => setBackgroundSettings(readStudyBackground());
-    window.addEventListener('study-background-updated', handler as EventListener);
-    return () => window.removeEventListener('study-background-updated', handler as EventListener);
+    window.addEventListener("study-background-updated", handler as EventListener);
+    return () => window.removeEventListener("study-background-updated", handler as EventListener);
   }, []);
 
   // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
-    const scheduleRaw = localStorage.getItem('study-schedule') || localStorage.getItem('studySchedule');
+    const scheduleRaw =
+      localStorage.getItem("study-schedule") || localStorage.getItem("studySchedule");
     let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
     try {
       if (scheduleRaw) {
@@ -105,13 +106,13 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch { }
+    } catch {}
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
     const toDate = (timeStr: string) => {
-      const [h, m] = timeStr.split(':').map(Number);
+      const [h, m] = timeStr.split(":").map(Number);
       const d = new Date();
       d.setHours(h, m, 0, 0);
       return d;
@@ -134,7 +135,7 @@ export function Study() {
       }
 
       // 正在本节课内，并且进入结束前1分钟窗口（[end-1min, end)）
-      if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
+      if (nowMin >= startMin && nowMin < endMin && endMin - nowMin <= 1) {
         // 检查是否启用自动弹出设置
         const autoPopupEnabled = getAutoPopupSetting();
 
@@ -155,7 +156,7 @@ export function Study() {
   const calcDaysToDate = useCallback((dateStr?: string) => {
     if (!dateStr) return 0;
     const now = new Date();
-    const [y, m, d] = dateStr.split('-').map(Number);
+    const [y, m, d] = dateStr.split("-").map(Number);
     if (!y || !m || !d) return 0;
     const target = new Date(y, m - 1, d);
     const diffTime = target.getTime() - now.getTime();
@@ -174,11 +175,11 @@ export function Study() {
   }, [study.targetYear]);
 
   const timeString = formatClock(currentTime);
-  const dateString = currentTime.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
+  const dateString = currentTime.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
   });
 
   /** 构建轮播项（兼容旧配置） */
@@ -190,11 +191,30 @@ export function Study() {
     }
 
     // 兼容旧版：仅一个倒计时
-    const isCustom = (study.countdownType ?? 'gaokao') === 'custom';
+    const isCustom = (study.countdownType ?? "gaokao") === "custom";
     if (isCustom && study.customDate) {
-      return [{ id: 'legacy-custom', kind: 'custom', name: study.customName || '自定义事件', targetDate: study.customDate, order: 0, bgColor: undefined, textColor: undefined }];
+      return [
+        {
+          id: "legacy-custom",
+          kind: "custom",
+          name: study.customName || "自定义事件",
+          targetDate: study.customDate,
+          order: 0,
+          bgColor: undefined,
+          textColor: undefined,
+        },
+      ];
     }
-    return [{ id: 'legacy-gaokao', kind: 'gaokao', name: `高考倒计时`, order: 0, bgColor: undefined, textColor: undefined }];
+    return [
+      {
+        id: "legacy-gaokao",
+        kind: "gaokao",
+        name: `高考倒计时`,
+        order: 0,
+        bgColor: undefined,
+        textColor: undefined,
+      },
+    ];
   })();
 
   // 容器尺寸与宽度测量
@@ -210,8 +230,8 @@ export function Study() {
       setItemHeight(el.clientHeight);
     };
     measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, [countdownItems.length, activeIndex]);
 
   // 自动轮播：按配置间隔切换
@@ -228,14 +248,15 @@ export function Study() {
   // 背景样式
   const backgroundStyle: React.CSSProperties = (() => {
     const style: React.CSSProperties = {};
-    if (backgroundSettings?.type === 'image' && backgroundSettings.imageDataUrl) {
+    if (backgroundSettings?.type === "image" && backgroundSettings.imageDataUrl) {
       style.backgroundImage = `url(${backgroundSettings.imageDataUrl})`;
-      style.backgroundSize = 'cover';
-      style.backgroundPosition = 'center';
-      style.backgroundRepeat = 'no-repeat';
-    } else if (backgroundSettings?.type === 'color' && backgroundSettings.color) {
-      style.backgroundImage = 'none';
-      const a = typeof backgroundSettings.colorAlpha === 'number' ? backgroundSettings.colorAlpha : 1;
+      style.backgroundSize = "cover";
+      style.backgroundPosition = "center";
+      style.backgroundRepeat = "no-repeat";
+    } else if (backgroundSettings?.type === "color" && backgroundSettings.color) {
+      style.backgroundImage = "none";
+      const a =
+        typeof backgroundSettings.colorAlpha === "number" ? backgroundSettings.colorAlpha : 1;
       style.backgroundColor = hexToRgba(backgroundSettings.color, a);
     }
     return style;
@@ -249,34 +270,45 @@ export function Study() {
     setReportOpen(false);
   }, [reportPeriod]);
 
-  // 点击状态文本时打开历史记录弹窗
-  const handleOpenHistory = useCallback(() => {
-    setHistoryOpen(true);
-  }, []);
-
   const handleCloseHistory = useCallback(() => {
     setHistoryOpen(false);
   }, []);
 
-  const display = study.display || { showStatusBar: true, showNoiseMonitor: true, showCountdown: true, showQuote: true, showTime: true, showDate: true };
+  const display = study.display || {
+    showStatusBar: true,
+    showNoiseMonitor: true,
+    showCountdown: true,
+    showQuote: true,
+    showTime: true,
+    showDate: true,
+  };
 
   // 计算每个项的文案与天数（函数级注释：生成倒计时项的显示文本，其中高考事件强制包含年份并采用“距离YYYY高考仅xx天”的格式）
-  const renderItem = (item: typeof countdownItems[number]) => {
-    const days = item.kind === 'gaokao' ? calcDaysToNextGaokao() : calcDaysToDate(item.targetDate);
+  const renderItem = (item: (typeof countdownItems)[number]) => {
+    const days = item.kind === "gaokao" ? calcDaysToNextGaokao() : calcDaysToDate(item.targetDate);
     // 高考事件：优先从名称中解析年份，否则使用设置中的目标年份
     let nameText: string;
-    if (item.kind === 'gaokao') {
-      const rawName = (item.name || '').trim();
+    if (item.kind === "gaokao") {
+      const rawName = (item.name || "").trim();
       const m = rawName.match(/\b(19|20)\d{2}\b/); // 尝试从名称中提取四位年份
-      const year = m ? parseInt(m[0], 10) : (study.targetYear || new Date().getFullYear());
+      const year = m ? parseInt(m[0], 10) : study.targetYear || new Date().getFullYear();
       nameText = `${year}高考`;
     } else {
-      nameText = (item.name && item.name.trim().length > 0) ? item.name!.trim() : '自定义事件';
+      nameText = item.name && item.name.trim().length > 0 ? item.name!.trim() : "自定义事件";
     }
-    const textCol = item.textColor ? hexToRgba(item.textColor, typeof item.textOpacity === 'number' ? item.textOpacity : 1) : undefined;
-    const bgCol = item.bgColor ? hexToRgba(item.bgColor, typeof item.bgOpacity === 'number' ? item.bgOpacity : 0) : undefined;
+    const textCol = item.textColor
+      ? hexToRgba(item.textColor, typeof item.textOpacity === "number" ? item.textOpacity : 1)
+      : undefined;
+    const bgCol = item.bgColor
+      ? hexToRgba(item.bgColor, typeof item.bgOpacity === "number" ? item.bgOpacity : 0)
+      : undefined;
     const digitBaseColor = item.digitColor ?? study.digitColor;
-    const digitAlpha = (typeof item.digitOpacity === 'number') ? item.digitOpacity : (typeof study.digitOpacity === 'number' ? study.digitOpacity : 1);
+    const digitAlpha =
+      typeof item.digitOpacity === "number"
+        ? item.digitOpacity
+        : typeof study.digitOpacity === "number"
+          ? study.digitOpacity
+          : 1;
     const digitCol = digitBaseColor ? hexToRgba(digitBaseColor, digitAlpha) : undefined;
     return (
       <div
@@ -286,13 +318,17 @@ export function Study() {
           color: textCol,
           backgroundColor: bgCol,
           borderRadius: item.bgColor ? 6 : undefined,
-          padding: item.bgColor ? '0 8px' : undefined,
+          padding: item.bgColor ? "0 8px" : undefined,
         }}
       >
-        距离{nameText}仅 <span className={styles.days} style={{ color: digitCol }}>{days}</span> 天
+        距离{nameText}仅{" "}
+        <span className={styles.days} style={{ color: digitCol }}>
+          {days}
+        </span>{" "}
+        天
       </div>
     );
-   };
+  };
 
   return (
     <div className={styles.container} style={backgroundStyle}>
@@ -318,7 +354,10 @@ export function Study() {
             </div>
           )}
           {display.showQuote && (
-            <div className={styles.quoteSection} style={{ width: display.showCountdown ? (countdownWidth || undefined) : undefined }}>
+            <div
+              className={styles.quoteSection}
+              style={{ width: display.showCountdown ? countdownWidth || undefined : undefined }}
+            >
               <MotivationalQuote />
             </div>
           )}
@@ -328,24 +367,16 @@ export function Study() {
       {/* 居中：时间始终显示，日期可隐藏 */}
       <div className={styles.centerTime}>
         <div className={styles.currentTime}>{timeString}</div>
-        {display.showDate && (
-          <div className={styles.currentDate}>{dateString}</div>
-        )}
+        {display.showDate && <div className={styles.currentDate}>{dateString}</div>}
       </div>
 
       {/* 噪音报告弹窗 */}
       {reportOpen && reportPeriod && (
-        <NoiseReportModal
-          isOpen={reportOpen}
-          onClose={handleCloseReport}
-          period={reportPeriod}
-        />
+        <NoiseReportModal isOpen={reportOpen} onClose={handleCloseReport} period={reportPeriod} />
       )}
 
       {/* 噪音历史记录弹窗 */}
-      {historyOpen && (
-        <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
-      )}
+      {historyOpen && <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />}
     </div>
   );
 }

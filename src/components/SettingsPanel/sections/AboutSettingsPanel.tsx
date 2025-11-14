@@ -1,11 +1,11 @@
-import React, { useEffect, useCallback } from 'react';
-import styles from '../SettingsPanel.module.css';
-import { FormSection, FormButton, FormButtonGroup } from '../../FormComponents';
-import { TrashIcon } from '../../Icons';
+import React, { useEffect, useCallback } from "react";
+
+import pkg from "../../../../package.json";
+import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
+import { TrashIcon } from "../../Icons";
+import styles from "../SettingsPanel.module.css";
 // 版本建议优先从环境变量（vite.config 注入）读取，回退到 package.json
 const appVersion = import.meta.env.VITE_APP_VERSION;
-// 回退读取 package.json 中的元信息（license / homepage 等）
-import pkg from '../../../../package.json';
 
 export interface AboutSettingsPanelProps {
   onRegisterSave?: (fn: () => void) => void;
@@ -20,9 +20,9 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   }, [onRegisterSave]);
 
   const version = (appVersion && String(appVersion)) || pkg.version;
-  const license = pkg.license || 'MIT';
-  const authorSite = pkg.homepage || 'https://qqhkx.com';
-  const repoUrl = 'https://github.com/QQHKX/immersive-clock';
+  const license = pkg.license || "MIT";
+  const authorSite = pkg.homepage || "https://qqhkx.com";
+  const repoUrl = "https://github.com/QQHKX/immersive-clock";
 
   /**
    * 清除所有本地缓存（localStorage）
@@ -30,15 +30,15 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
    * - 清理后不会自动刷新页面，用户可手动刷新生效
    */
   const handleClearCaches = useCallback(() => {
-    const ok = window.confirm('确定要清除所有本地缓存吗？该操作将重置设置与本地数据。');
+    const ok = window.confirm("确定要清除所有本地缓存吗？该操作将重置设置与本地数据。");
     if (!ok) return;
     try {
       // 直接清空 localStorage，覆盖项目内所有键
       localStorage.clear();
-      alert('已清除所有缓存。建议刷新页面以确保设置重置。');
+      alert("已清除所有缓存。建议刷新页面以确保设置重置。");
     } catch (err) {
-      console.error('清除缓存失败:', err);
-      alert('清除缓存失败，请稍后重试。');
+      console.error("清除缓存失败:", err);
+      alert("清除缓存失败，请稍后重试。");
     }
   }, []);
 
@@ -51,18 +51,20 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         <p className={styles.infoText}>版权：{license} License</p>
         <p className={styles.infoText}>
           作者网站：
-          <a href={authorSite} target="_blank" rel="noopener noreferrer">{authorSite}</a>
+          <a href={authorSite} target="_blank" rel="noopener noreferrer">
+            {authorSite}
+          </a>
         </p>
         <p className={styles.infoText}>
           开源地址：
-          <a href={repoUrl} target="_blank" rel="noopener noreferrer">{repoUrl}</a>
+          <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+            {repoUrl}
+          </a>
         </p>
       </FormSection>
 
       <FormSection title="使用声明">
-        <p className={styles.infoText}>
-          本软件为开源软件，严禁倒卖商用。
-        </p>
+        <p className={styles.infoText}>本软件为开源软件，严禁倒卖商用。</p>
       </FormSection>
 
       <FormSection title="缓存与重置">

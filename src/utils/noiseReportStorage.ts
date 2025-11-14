@@ -29,7 +29,7 @@ export interface SavedNoiseReport {
   series: NoiseSeriesPoint[];
 }
 
-const REPORTS_KEY = 'noise-reports';
+const REPORTS_KEY = "noise-reports";
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function readReports(): SavedNoiseReport[] {
@@ -49,9 +49,9 @@ function writeReports(list: SavedNoiseReport[]) {
 }
 
 export function cleanupReports(nowTs?: number) {
-  const now = typeof nowTs === 'number' ? nowTs : Date.now();
+  const now = typeof nowTs === "number" ? nowTs : Date.now();
   const list = readReports();
-  const kept = list.filter(r => now - r.savedAt <= RETENTION_MS);
+  const kept = list.filter((r) => now - r.savedAt <= RETENTION_MS);
   if (kept.length !== list.length) {
     writeReports(kept);
   }
@@ -60,7 +60,9 @@ export function cleanupReports(nowTs?: number) {
 export function saveNoiseReport(report: SavedNoiseReport) {
   cleanupReports(report.savedAt);
   const list = readReports();
-  const idx = list.findIndex(r => r.periodId === report.periodId && r.start === report.start && r.end === report.end);
+  const idx = list.findIndex(
+    (r) => r.periodId === report.periodId && r.start === report.start && r.end === report.end
+  );
   if (idx >= 0) {
     list[idx] = report;
   } else {

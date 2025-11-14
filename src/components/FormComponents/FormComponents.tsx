@@ -1,5 +1,6 @@
-import React from 'react';
-import styles from './FormComponents.module.css';
+import React from "react";
+
+import styles from "./FormComponents.module.css";
 
 // 表单区域组件
 export interface FormSectionProps {
@@ -12,7 +13,7 @@ export interface FormSectionProps {
  * 表单区域组件
  * 用于组织设置界面中的不同配置区域
  */
-export function FormSection({ title, children, className = '' }: FormSectionProps) {
+export function FormSection({ title, children, className = "" }: FormSectionProps) {
   return (
     <div className={`${styles.section} ${className}`}>
       <h4 className={styles.sectionTitle}>{title}</h4>
@@ -25,22 +26,22 @@ export function FormSection({ title, children, className = '' }: FormSectionProp
 export interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  variant?: 'default' | 'time' | 'number';
+  variant?: "default" | "time" | "number";
 }
 
 /**
  * 统一的表单输入组件
  * 提供一致的样式和交互行为
  */
-export function FormInput({ 
-  label, 
-  error, 
-  variant = 'default', 
-  className = '', 
-  ...props 
+export function FormInput({
+  label,
+  error,
+  variant = "default",
+  className = "",
+  ...props
 }: FormInputProps) {
-  const inputClass = `${styles.input} ${styles[variant]} ${className} ${error ? styles.error : ''}`;
-  
+  const inputClass = `${styles.input} ${styles[variant]} ${className} ${error ? styles.error : ""}`;
+
   return (
     <div className={styles.inputGroup}>
       {label && <label className={styles.label}>{label}</label>}
@@ -63,11 +64,11 @@ export interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLText
 export function FormTextarea({
   label,
   error,
-  className = '',
+  className = "",
   rows = 8,
   ...props
 }: FormTextareaProps) {
-  const textareaClass = `${styles.input} ${className} ${error ? styles.error : ''}`;
+  const textareaClass = `${styles.input} ${className} ${error ? styles.error : ""}`;
 
   return (
     <div className={styles.inputGroup}>
@@ -90,33 +91,29 @@ export interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectEl
  * 统一的选择器组件
  * 提供一致的下拉选择样式
  */
-export function FormSelect({ 
-  label, 
-  error, 
-  options, 
-  className = '', 
-  ...props 
-}: FormSelectProps) {
-  const selectClass = `${styles.select} ${className} ${error ? styles.error : ''}`;
-  
+export function FormSelect({ label, error, options, className = "", ...props }: FormSelectProps) {
+  const selectClass = `${styles.select} ${className} ${error ? styles.error : ""}`;
+
   return (
     <div className={styles.inputGroup}>
       {label && <label className={styles.label}>{label}</label>}
       <div className={styles.selectWrapper}>
         <select className={selectClass} {...props}>
           {options.map((option) => (
-            <option 
-              key={option.value} 
-              value={option.value} 
-              disabled={option.disabled}
-            >
+            <option key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}
         </select>
         <div className={styles.selectArrow}>
           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-            <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M1 1L6 6L11 1"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       </div>
@@ -126,7 +123,8 @@ export function FormSelect({
 }
 
 // 复选框组件
-export interface FormCheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface FormCheckboxProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
   label: string;
   error?: string;
 }
@@ -135,23 +133,26 @@ export interface FormCheckboxProps extends Omit<React.InputHTMLAttributes<HTMLIn
  * 统一的复选框组件
  * 提供自定义样式的复选框
  */
-export function FormCheckbox({ 
-  label, 
-  error, 
-  className = '', 
-  ...props 
-}: FormCheckboxProps) {
+export function FormCheckbox({ label, error, className = "", ...props }: FormCheckboxProps) {
   return (
     <div className={`${styles.checkboxGroup} ${className}`}>
       <label className={styles.checkboxLabel}>
-        <input 
-          type="checkbox" 
-          className={styles.checkboxInput} 
-          {...props} 
-        />
+        <input type="checkbox" className={styles.checkboxInput} {...props} />
         <span className={styles.checkboxCustom}>
-          <svg className={styles.checkboxIcon} width="12" height="10" viewBox="0 0 12 10" fill="none">
-            <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg
+            className={styles.checkboxIcon}
+            width="12"
+            height="10"
+            viewBox="0 0 12 10"
+            fill="none"
+          >
+            <path
+              d="M1 5L4.5 8.5L11 1.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
         <span className={styles.checkboxText}>{label}</span>
@@ -182,14 +183,14 @@ export interface FormRadioProps {
  * 统一的单选框组件
  * 提供自定义样式的单选框组
  */
-export function FormRadio({ 
-  name, 
-  label, 
-  options, 
-  value, 
-  onChange, 
-  error, 
-  className = '' 
+export function FormRadio({
+  name,
+  label,
+  options,
+  value,
+  onChange,
+  error,
+  className = "",
 }: FormRadioProps) {
   return (
     <div className={`${styles.radioGroup} ${className}`}>
@@ -240,7 +241,7 @@ export function FormSegmented({
   value,
   options,
   onChange,
-  className = ''
+  className = "",
 }: FormSegmentedProps) {
   return (
     <div className={`${styles.segmentedGroup} ${className}`}>
@@ -252,9 +253,9 @@ export function FormSegmented({
             <button
               key={option.value}
               type="button"
-              className={`${styles.segmentedOption} ${active ? styles.segmentedOptionActive : ''}`}
+              className={`${styles.segmentedOption} ${active ? styles.segmentedOptionActive : ""}`}
               aria-pressed={active}
-              aria-disabled={option.disabled ? 'true' : undefined}
+              aria-disabled={option.disabled ? "true" : undefined}
               onClick={() => !option.disabled && onChange?.(option.value)}
               disabled={option.disabled}
             >
@@ -286,18 +287,18 @@ export interface FormSliderProps {
  * 统一的滑动条组件
  * 提供一致的滑动条样式和交互
  */
-export function FormSlider({ 
-  label, 
-  value, 
-  min, 
-  max, 
-  step = 1, 
-  onChange, 
-  formatValue, 
-  showRange = true, 
+export function FormSlider({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  formatValue,
+  showRange = true,
   rangeLabels,
-  error, 
-  className = ''
+  error,
+  className = "",
 }: FormSliderProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(parseFloat(e.target.value));
@@ -324,8 +325,8 @@ export function FormSlider({
       />
       {showRange && (
         <div className={styles.sliderRange}>
-          <span>{rangeLabels ? rangeLabels[0] : (formatValue ? formatValue(min) : min)}</span>
-          <span>{rangeLabels ? rangeLabels[1] : (formatValue ? formatValue(max) : max)}</span>
+          <span>{rangeLabels ? rangeLabels[0] : formatValue ? formatValue(min) : min}</span>
+          <span>{rangeLabels ? rangeLabels[1] : formatValue ? formatValue(max) : max}</span>
         </div>
       )}
       {error && <span className={styles.errorText}>{error}</span>}
@@ -335,8 +336,8 @@ export function FormSlider({
 
 // 按钮组件
 export interface FormButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "danger" | "success" | "ghost";
+  size?: "sm" | "md" | "lg";
   icon?: React.ReactNode;
   loading?: boolean;
 }
@@ -345,24 +346,20 @@ export interface FormButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
  * 统一的按钮组件
  * 提供不同样式变体和状态
  */
-export function FormButton({ 
-  variant = 'secondary', 
-  size = 'md', 
-  icon, 
-  loading = false, 
-  children, 
-  className = '', 
+export function FormButton({
+  variant = "secondary",
+  size = "md",
+  icon,
+  loading = false,
+  children,
+  className = "",
   disabled,
-  ...props 
+  ...props
 }: FormButtonProps) {
   const buttonClass = `${styles.button} ${styles[variant]} ${styles[size]} ${className}`;
-  
+
   return (
-    <button 
-      className={buttonClass} 
-      disabled={disabled || loading}
-      {...props}
-    >
+    <button className={buttonClass} disabled={disabled || loading} {...props}>
       {loading ? (
         <span className={styles.spinner} />
       ) : (
@@ -378,7 +375,7 @@ export function FormButton({
 // 按钮组组件
 export interface FormButtonGroupProps {
   children: React.ReactNode;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   className?: string;
 }
 
@@ -386,23 +383,19 @@ export interface FormButtonGroupProps {
  * 按钮组组件
  * 用于组织多个按钮的布局
  */
-export function FormButtonGroup({ 
-  children, 
-  align = 'right', 
-  className = '' 
+export function FormButtonGroup({
+  children,
+  align = "right",
+  className = "",
 }: FormButtonGroupProps) {
-  return (
-    <div className={`${styles.buttonGroup} ${styles[align]} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`${styles.buttonGroup} ${styles[align]} ${className}`}>{children}</div>;
 }
 
 // 表单行组件
 export interface FormRowProps {
   children: React.ReactNode;
-  gap?: 'sm' | 'md' | 'lg';
-  align?: 'start' | 'center' | 'end';
+  gap?: "sm" | "md" | "lg";
+  align?: "start" | "center" | "end";
   className?: string;
 }
 
@@ -410,14 +403,11 @@ export interface FormRowProps {
  * 表单行组件
  * 用于水平排列表单元素
  */
-export function FormRow({ 
-  children, 
-  gap = 'md', 
-  align = 'center', 
-  className = '' 
-}: FormRowProps) {
+export function FormRow({ children, gap = "md", align = "center", className = "" }: FormRowProps) {
   return (
-    <div className={`${styles.row} ${styles[`gap-${gap}`]} ${styles[`align-${align}`]} ${className}`}>
+    <div
+      className={`${styles.row} ${styles[`gap-${gap}`]} ${styles[`align-${align}`]} ${className}`}
+    >
       {children}
     </div>
   );

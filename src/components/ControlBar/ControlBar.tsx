@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
-import { PlayIcon, PauseIcon, ResetIcon, MaximizeIcon, MinimizeIcon } from '../Icons';
-import { FormButton } from '../FormComponents';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useFullscreen } from '../../hooks/useFullscreen';
+import React, { useCallback } from "react";
 
-import styles from './ControlBar.module.css';
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { useFullscreen } from "../../hooks/useFullscreen";
+import { FormButton } from "../FormComponents";
+import { PlayIcon, PauseIcon, ResetIcon, MaximizeIcon, MinimizeIcon } from "../Icons";
+
+import styles from "./ControlBar.module.css";
 
 /**
  * 控制栏组件
@@ -14,7 +15,7 @@ export function ControlBar() {
   const { mode, countdown, stopwatch } = useAppState();
   const dispatch = useAppDispatch();
   const [isFullscreen, toggleFullscreenOriginal] = useFullscreen();
-  
+
   /**
    * 包装全屏切换函数
    */
@@ -28,11 +29,11 @@ export function ControlBar() {
   const handleCountdownToggle = useCallback(() => {
     if (countdown.currentTime === 0) {
       // 如果倒计时为0，打开设置模态框
-      dispatch({ type: 'OPEN_MODAL' });
+      dispatch({ type: "OPEN_MODAL" });
     } else if (countdown.isActive) {
-      dispatch({ type: 'PAUSE_COUNTDOWN' });
+      dispatch({ type: "PAUSE_COUNTDOWN" });
     } else {
-      dispatch({ type: 'START_COUNTDOWN' });
+      dispatch({ type: "START_COUNTDOWN" });
     }
   }, [countdown.currentTime, countdown.isActive, dispatch]);
 
@@ -40,7 +41,7 @@ export function ControlBar() {
    * 处理倒计时重置
    */
   const handleCountdownReset = useCallback(() => {
-    dispatch({ type: 'RESET_COUNTDOWN' });
+    dispatch({ type: "RESET_COUNTDOWN" });
   }, [dispatch]);
 
   /**
@@ -48,9 +49,9 @@ export function ControlBar() {
    */
   const handleStopwatchToggle = useCallback(() => {
     if (stopwatch.isActive) {
-      dispatch({ type: 'PAUSE_STOPWATCH' });
+      dispatch({ type: "PAUSE_STOPWATCH" });
     } else {
-      dispatch({ type: 'START_STOPWATCH' });
+      dispatch({ type: "START_STOPWATCH" });
     }
   }, [stopwatch.isActive, dispatch]);
 
@@ -58,7 +59,7 @@ export function ControlBar() {
    * 处理秒表重置
    */
   const handleStopwatchReset = useCallback(() => {
-    dispatch({ type: 'RESET_STOPWATCH' });
+    dispatch({ type: "RESET_STOPWATCH" });
   }, [dispatch]);
 
   /**
@@ -67,29 +68,31 @@ export function ControlBar() {
   const renderCountdownControls = () => {
     const canStart = countdown.currentTime > 0;
     const isRunning = countdown.isActive;
-    
+
     return (
       <>
         <FormButton
           className={`${styles.controlButton} ${styles.primary}`}
           onClick={handleCountdownToggle}
-          aria-label={canStart ? (isRunning ? '暂停倒计时' : '开始倒计时') : '设置倒计时'}
-          title={canStart ? (isRunning ? '暂停倒计时' : '开始倒计时') : '设置倒计时'}
+          aria-label={canStart ? (isRunning ? "暂停倒计时" : "开始倒计时") : "设置倒计时"}
+          title={canStart ? (isRunning ? "暂停倒计时" : "开始倒计时") : "设置倒计时"}
           variant="ghost"
           size="sm"
-          icon={canStart ? (
-            isRunning ? (
-              <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
+          icon={
+            canStart ? (
+              isRunning ? (
+                <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
+              ) : (
+                <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
+              )
             ) : (
               <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
             )
-          ) : (
-            <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
-          )}
+          }
         >
-          {canStart ? (isRunning ? '暂停' : '开始') : '设置'}
+          {canStart ? (isRunning ? "暂停" : "开始") : "设置"}
         </FormButton>
-        
+
         <FormButton
           className={styles.controlButton}
           onClick={handleCountdownReset}
@@ -111,25 +114,27 @@ export function ControlBar() {
    */
   const renderStopwatchControls = () => {
     const isRunning = stopwatch.isActive;
-    
+
     return (
       <>
         <FormButton
           className={`${styles.controlButton} ${styles.primary}`}
           onClick={handleStopwatchToggle}
-          aria-label={isRunning ? '暂停秒表' : '开始秒表'}
-          title={isRunning ? '暂停秒表' : '开始秒表'}
+          aria-label={isRunning ? "暂停秒表" : "开始秒表"}
+          title={isRunning ? "暂停秒表" : "开始秒表"}
           variant="ghost"
           size="sm"
-          icon={isRunning ? (
-            <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
-          ) : (
-            <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
-          )}
+          icon={
+            isRunning ? (
+              <PauseIcon className={styles.icon} size={18} aria-hidden={true} />
+            ) : (
+              <PlayIcon className={styles.icon} size={18} aria-hidden={true} />
+            )
+          }
         >
-          {isRunning ? '暂停' : '开始'}
+          {isRunning ? "暂停" : "开始"}
         </FormButton>
-        
+
         <FormButton
           className={styles.controlButton}
           onClick={handleStopwatchReset}
@@ -149,26 +154,28 @@ export function ControlBar() {
   return (
     <div className={styles.controlBar} role="toolbar" aria-label="时钟控制">
       <div className={styles.modeControls}>
-        {mode === 'countdown' && renderCountdownControls()}
-        {mode === 'stopwatch' && renderStopwatchControls()}
-        {mode === 'clock' && null}
+        {mode === "countdown" && renderCountdownControls()}
+        {mode === "stopwatch" && renderStopwatchControls()}
+        {mode === "clock" && null}
       </div>
-      
+
       <div className={styles.globalControls}>
         <FormButton
           className={styles.controlButton}
           onClick={toggleFullscreen}
-          aria-label={isFullscreen ? '退出全屏' : '进入全屏'}
-          title={isFullscreen ? '退出全屏' : '进入全屏'}
+          aria-label={isFullscreen ? "退出全屏" : "进入全屏"}
+          title={isFullscreen ? "退出全屏" : "进入全屏"}
           variant="ghost"
           size="sm"
-          icon={isFullscreen ? (
-            <MinimizeIcon className={styles.icon} size={18} aria-hidden={true} />
-          ) : (
-            <MaximizeIcon className={styles.icon} size={18} aria-hidden={true} />
-          )}
+          icon={
+            isFullscreen ? (
+              <MinimizeIcon className={styles.icon} size={18} aria-hidden={true} />
+            ) : (
+              <MaximizeIcon className={styles.icon} size={18} aria-hidden={true} />
+            )
+          }
         >
-          {isFullscreen ? '退出全屏' : '全屏'}
+          {isFullscreen ? "退出全屏" : "全屏"}
         </FormButton>
       </div>
     </div>

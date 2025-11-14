@@ -1,42 +1,50 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { marked } from 'marked';
-import Modal from '../Modal/Modal';
-import { FormButton, FormButtonGroup, FormCheckbox } from '../FormComponents/FormComponents';
-import { AnnouncementModalProps, AnnouncementTab, AnnouncementTabConfig, MarkdownDocument } from '../../types';
-import { setDontShowForWeek } from '../../utils/announcementStorage';
-import styles from './AnnouncementModal.module.css';
-import { Tabs } from '../Tabs/Tabs';
-import modalStyles from '../Modal/Modal.module.css';
+import { marked } from "marked";
+import React, { useState, useEffect, useRef } from "react";
+
+import {
+  AnnouncementModalProps,
+  AnnouncementTab,
+  AnnouncementTabConfig,
+  MarkdownDocument,
+} from "../../types";
+import { setDontShowForWeek } from "../../utils/announcementStorage";
+import { logger } from "../../utils/logger";
+import { FormButton, FormButtonGroup, FormCheckbox } from "../FormComponents/FormComponents";
+import Modal from "../Modal/Modal";
+import modalStyles from "../Modal/Modal.module.css";
+import { Tabs } from "../Tabs/Tabs";
+
+import styles from "./AnnouncementModal.module.css";
 
 /**
  * 公告选项卡配置
  */
 const ANNOUNCEMENT_TABS: AnnouncementTabConfig[] = [
   {
-    key: 'announcement',
-    title: '公告',
-    filename: 'announcement.md',
-    icon: '📢'
+    key: "announcement",
+    title: "公告",
+    filename: "announcement.md",
+    icon: "📢",
   },
   {
-    key: 'changelog',
-    title: '更新日志',
-    filename: 'changelog.md',
-    icon: '📝'
-  }
+    key: "changelog",
+    title: "更新日志",
+    filename: "changelog.md",
+    icon: "📝",
+  },
 ];
 
 /**
  * 公告弹窗组件
  * 支持显示公告和更新日志，具有选项卡切换功能
- * 
+ *
  * @param props - 组件属性
  * @returns 公告弹窗组件
  */
 const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'announcement'
+  initialTab = "announcement",
 }) => {
   // 当前激活的选项卡
   const [activeTab, setActiveTab] = useState<AnnouncementTab>(initialTab);
@@ -45,28 +53,9 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [dontShowAgain, setDontShowAgain] = useState(false);
   // Markdown文档状态
   const [documents, setDocuments] = useState<Record<AnnouncementTab, MarkdownDocument>>({
-    announcement: { content: '', loading: true, filename: 'announcement.md' },
-    changelog: { content: '', loading: true, filename: 'changelog.md' }
+    announcement: { content: "", loading: true, filename: "announcement.md" },
+    changelog: { content: "", loading: true, filename: "changelog.md" },
   });
-
-  /**
-   * 加载Markdown文档内容
-   * @param filename - 文档文件名
-   * @returns Promise<string> - 文档内容
-   */
-  const loadMarkdownDocument = async (filename: string): Promise<string> => {
-    try {
-      const response = await fetch(`/docs/${filename}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load ${filename}: ${response.status}`);
-      }
-      const content = await response.text();
-      return content;
-    } catch (error) {
-      console.error(`Error loading markdown document ${filename}:`, error);
-      throw error;
-    }
-  };
 
   /**
    * 渲染Markdown内容为HTML
@@ -78,11 +67,11 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       return marked(content, {
         breaks: true,
         gfm: true,
-        async: false
+        async: false,
       }) as string;
     } catch (error) {
-      console.error('Error rendering markdown:', error);
-      return `<p>渲染失败: ${error instanceof Error ? error.message : '未知错误'}</p>`;
+      logger.error("Error rendering markdown:", error);
+      return `<p>渲染失败: ${error instanceof Error ? error.message : "未知错误"}</p>`;
     }
   };
 
@@ -91,12 +80,12 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
    * @param tab - 要加载的选项卡
    */
   const loadDocument = async (tab: AnnouncementTab) => {
-    const tabConfig = ANNOUNCEMENT_TABS.find(t => t.key === tab);
+    const tabConfig = ANNOUNCEMENT_TABS.find((t) => t.key === tab);
     if (!tabConfig) return;
 
-    setDocuments(prev => ({
+    setDocuments((prev) => ({
       ...prev,
-      [tab]: { ...prev[tab], loading: true, error: undefined }
+      [tab]: { ...prev[tab], loading: true, error: undefined },
     }));
 
     try {
@@ -105,23 +94,23 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       if (!response.ok) {
         throw new Error(`Failed to load ${tabConfig.filename}: ${response.status}`);
       }
-      
+
       const content = await response.text();
-      setDocuments(prev => ({
+      setDocuments((prev) => ({
         ...prev,
-        [tab]: { content, loading: false, filename: tabConfig.filename }
+        [tab]: { content, loading: false, filename: tabConfig.filename },
       }));
     } catch (error) {
-      console.error(`Error loading ${tabConfig.filename}:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setDocuments(prev => ({
+      logger.error(`Error loading ${tabConfig.filename}:`, error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      setDocuments((prev) => ({
         ...prev,
         [tab]: {
-          content: '',
+          content: "",
           loading: false,
           filename: tabConfig.filename,
-          error: `加载${tabConfig.title}失败: ${errorMessage}`
-        }
+          error: `加载${tabConfig.title}失败: ${errorMessage}`,
+        },
       }));
     }
   };
@@ -138,7 +127,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
 
   /**
    * 处理选项卡切换
-   * 
+   *
    * @param tab - 要切换到的选项卡
    */
   const handleTabChange = (tab: AnnouncementTab) => {
@@ -155,7 +144,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     const root = containerRef.current;
     if (root) {
       const bodyEl = root.closest(`.${modalStyles.modalBody}`) as HTMLElement | null;
-      if (bodyEl) bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+      if (bodyEl) bodyEl.scrollTo({ top: 0, behavior: "smooth" });
       const inner = root.querySelector(`.${styles.content}`) as HTMLElement | null;
       if (inner) inner.scrollTo({ top: 0 });
     }
@@ -170,7 +159,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
 
   // 获取当前文档
   const currentDocument = documents[activeTab];
-  const currentTabConfig = ANNOUNCEMENT_TABS.find(t => t.key === activeTab);
+  const currentTabConfig = ANNOUNCEMENT_TABS.find((t) => t.key === activeTab);
 
   return (
     <Modal
@@ -201,7 +190,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       <div ref={containerRef} className={styles.container}>
         {/* 选项卡导航：统一使用 Tabs 组件（公告风格） */}
         <Tabs
-          items={ANNOUNCEMENT_TABS.map(t => ({ key: t.key, label: t.title, icon: t.icon }))}
+          items={ANNOUNCEMENT_TABS.map((t) => ({ key: t.key, label: t.title, icon: t.icon }))}
           activeKey={activeTab}
           onChange={(key) => handleTabChange(key as AnnouncementTab)}
           variant="announcement"
@@ -220,19 +209,15 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
           ) : currentDocument.error ? (
             <div className={styles.error}>
               <p>加载失败：{currentDocument.error}</p>
-              <FormButton
-                onClick={() => loadDocument(activeTab)}
-                variant="secondary"
-                size="sm"
-              >
+              <FormButton onClick={() => loadDocument(activeTab)} variant="secondary" size="sm">
                 重试
               </FormButton>
             </div>
           ) : (
-            <div 
+            <div
               className={styles.markdownContent}
-              dangerouslySetInnerHTML={{ 
-                __html: currentDocument.content ? renderMarkdown(currentDocument.content) : '' 
+              dangerouslySetInnerHTML={{
+                __html: currentDocument.content ? renderMarkdown(currentDocument.content) : "",
               }}
             />
           )}

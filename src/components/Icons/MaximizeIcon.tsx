@@ -1,5 +1,6 @@
-import React from 'react';
-import { IconProps } from './index';
+import React from "react";
+
+import { IconProps } from "./index";
 
 /**
  * 最大化图标组件
@@ -8,11 +9,11 @@ import { IconProps } from './index';
  */
 export const MaximizeIcon: React.FC<IconProps> = ({
   size = 24,
-  color = 'currentColor',
-  className = '',
+  color = "currentColor",
+  className = "",
   style = {},
   onClick,
-  'aria-hidden': ariaHidden = true,
+  "aria-hidden": ariaHidden = true,
   title,
   ...props
 }) => {
@@ -20,8 +21,8 @@ export const MaximizeIcon: React.FC<IconProps> = ({
     width: size,
     height: size,
     color: color,
-    display: 'inline-block',
-    verticalAlign: 'middle',
+    display: "inline-block",
+    verticalAlign: "middle",
     flexShrink: 0,
     ...style,
   };

@@ -1,7 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import { useTimer } from '../../hooks/useTimer';
-import { formatClock } from '../../utils/formatTime';
-import styles from './Clock.module.css';
+import React, { useState, useCallback } from "react";
+
+import { useTimer } from "../../hooks/useTimer";
+import { formatClock } from "../../utils/formatTime";
+
+import styles from "./Clock.module.css";
 
 /**
  * 时钟组件
@@ -21,11 +23,11 @@ export function Clock() {
   useTimer(updateTime, true, 1000);
 
   const timeString = formatClock(currentTime);
-  const dateString = currentTime.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
+  const dateString = currentTime.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
   });
 
   return (
@@ -33,9 +35,7 @@ export function Clock() {
       <div className={styles.time} aria-live="polite">
         {timeString}
       </div>
-      <div className={styles.date}>
-        {dateString}
-      </div>
+      <div className={styles.date}>{dateString}</div>
     </div>
   );
 }

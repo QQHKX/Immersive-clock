@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
+
+import { logger } from "../utils/logger";
 
 /**
  * 音频管理钩子
@@ -18,11 +20,11 @@ export function useAudio(src: string): [() => void, boolean] {
       try {
         // 重置播放位置到开始
         audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(error => {
-          console.warn('音频播放失败:', error);
+        audioRef.current.play().catch((error) => {
+          logger.warn("音频播放失败:", error);
         });
       } catch (error) {
-        console.warn('音频播放出错:', error);
+        logger.warn("音频播放出错:", error);
       }
     }
   }, [isReady]);
@@ -43,7 +45,7 @@ export function useAudio(src: string): [() => void, boolean] {
      * 音频加载错误处理函数
      */
     const handleError = (error: Event) => {
-      console.warn('音频加载失败:', error);
+      logger.warn("音频加载失败:", error);
       setIsReady(false);
     };
 
@@ -55,12 +57,12 @@ export function useAudio(src: string): [() => void, boolean] {
     };
 
     // 添加事件监听器
-    audio.addEventListener('canplaythrough', handleCanPlayThrough);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener("canplaythrough", handleCanPlayThrough);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("loadstart", handleLoadStart);
 
     // 设置音频属性
-    audio.preload = 'auto';
+    audio.preload = "auto";
     audio.volume = 0.7; // 设置音量为70%
 
     // 开始预加载
@@ -68,13 +70,13 @@ export function useAudio(src: string): [() => void, boolean] {
 
     return () => {
       // 清理事件监听器
-      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      
+      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("loadstart", handleLoadStart);
+
       // 清理音频资源
       audio.pause();
-      audio.src = '';
+      audio.src = "";
       audioRef.current = null;
     };
   }, [src]);
@@ -88,10 +90,9 @@ export function useAudio(src: string): [() => void, boolean] {
  * @param audioSources 音频源对象，键为音频名称，值为音频路径
  * @returns [playAudio, audioStates] 播放函数和音频状态对象
  */
-export function useMultipleAudio(audioSources: Record<string, string>): [
-  (audioName: string) => void,
-  Record<string, boolean>
-] {
+export function useMultipleAudio(
+  audioSources: Record<string, string>
+): [(audioName: string) => void, Record<string, boolean>] {
   const [audioStates, setAudioStates] = useState<Record<string, boolean>>({});
   const audioRefsRef = useRef<Record<string, HTMLAudioElement>>({});
 
@@ -99,19 +100,22 @@ export function useMultipleAudio(audioSources: Record<string, string>): [
    * 播放指定音频
    * @param audioName 音频名称
    */
-  const playAudio = useCallback((audioName: string) => {
-    const audio = audioRefsRef.current[audioName];
-    if (audio && audioStates[audioName]) {
-      try {
-        audio.currentTime = 0;
-        audio.play().catch(error => {
-          console.warn(`音频 ${audioName} 播放失败:`, error);
-        });
-      } catch (error) {
-        console.warn(`音频 ${audioName} 播放出错:`, error);
+  const playAudio = useCallback(
+    (audioName: string) => {
+      const audio = audioRefsRef.current[audioName];
+      if (audio && audioStates[audioName]) {
+        try {
+          audio.currentTime = 0;
+          audio.play().catch((error) => {
+            logger.warn(`音频 ${audioName} 播放失败:`, error);
+          });
+        } catch (error) {
+          logger.warn(`音频 ${audioName} 播放出错:`, error);
+        }
       }
-    }
-  }, [audioStates]);
+    },
+    [audioStates]
+  );
 
   useEffect(() => {
     const audioRefs = audioRefsRef.current;
@@ -124,17 +128,17 @@ export function useMultipleAudio(audioSources: Record<string, string>): [
       newAudioStates[name] = false;
 
       const handleCanPlayThrough = () => {
-        setAudioStates(prev => ({ ...prev, [name]: true }));
+        setAudioStates((prev) => ({ ...prev, [name]: true }));
       };
 
       const handleError = (error: Event) => {
-        console.warn(`音频 ${name} 加载失败:`, error);
-        setAudioStates(prev => ({ ...prev, [name]: false }));
+        logger.warn(`音频 ${name} 加载失败:`, error);
+        setAudioStates((prev) => ({ ...prev, [name]: false }));
       };
 
-      audio.addEventListener('canplaythrough', handleCanPlayThrough);
-      audio.addEventListener('error', handleError);
-      audio.preload = 'auto';
+      audio.addEventListener("canplaythrough", handleCanPlayThrough);
+      audio.addEventListener("error", handleError);
+      audio.preload = "auto";
       audio.volume = 0.7;
       audio.load();
     });
@@ -143,9 +147,9 @@ export function useMultipleAudio(audioSources: Record<string, string>): [
 
     return () => {
       // 清理所有音频资源
-      Object.values(audioRefs).forEach(audio => {
+      Object.values(audioRefs).forEach((audio) => {
         audio.pause();
-        audio.src = '';
+        audio.src = "";
       });
       audioRefsRef.current = {};
     };
