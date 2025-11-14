@@ -41,6 +41,60 @@ export interface AddressInfo {
   error?: string;
 }
 
+// 第三方响应类型声明
+interface AmapIpResponse {
+  status?: string;
+  info?: string;
+  rectangle?: string;
+}
+
+interface IpapiCoResponse {
+  latitude?: number;
+  longitude?: number;
+}
+
+interface IpApiComResponse {
+  lat?: number;
+  lon?: number;
+}
+
+interface IpInfoResponse {
+  loc?: string;
+}
+
+interface OsmAddress {
+  road?: string;
+  house_number?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  county?: string;
+  state?: string;
+  country?: string;
+}
+
+interface OsmReverseResponse {
+  address?: OsmAddress;
+  display_name?: string;
+}
+
+interface AmapReverseResponse {
+  status?: string;
+  info?: string;
+  regeocode?: {
+    formatted_address?: string;
+    addressComponent?: {
+      streetNumber?: { street?: string; number?: string };
+      township?: string;
+      district?: string;
+      city?: string;
+      province?: string;
+    };
+  };
+}
+
 // 只使用环境变量，不再包含任何硬编码默认值
 function requireEnv(name: string, value: string | undefined): string {
   if (!value || !String(value).trim()) {
@@ -124,10 +178,10 @@ export async function getCoordsViaGeolocation(): Promise<Coords | null> {
 export async function getCoordsViaAmapIP(): Promise<Coords | null> {
   const url = `https://restapi.amap.com/v3/ip?key=${encodeURIComponent(AMAP_KEY)}`;
   try {
-    const data = await httpGetJson(url, {
+    const data = (await httpGetJson(url, {
       "User-Agent": "QWeatherTest/1.0",
       "Accept-Encoding": "gzip, deflate",
-    });
+    })) as AmapIpResponse;
     if (String(data?.status) !== "1") {
       return null;
     }
@@ -161,18 +215,20 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
   ];
   for (const [url, keys] of sources) {
     try {
-      const data = await httpGetJson(url, { "User-Agent": "QWeatherTest/1.0" });
+      const data = (await httpGetJson(url, { "User-Agent": "QWeatherTest/1.0" })) as Record<string, unknown>;
       if (keys.length === 1 && keys[0] === "loc") {
-        const loc: string | undefined = data?.loc;
+        const loc = (data as IpInfoResponse)?.loc;
         if (loc && loc.includes(",")) {
           const [latStr, lonStr] = loc.split(",", 2);
           return { lat: parseFloat(latStr), lon: parseFloat(lonStr) };
         }
       } else {
-        const lat = data?.[keys[0]];
-        const lon = data?.[keys[1]];
-        if (lat != null && lon != null) {
-          return { lat: parseFloat(lat), lon: parseFloat(lon) };
+        const latRaw = data[keys[0]];
+        const lonRaw = data[keys[1]];
+        const latNum = typeof latRaw === "number" ? latRaw : typeof latRaw === "string" ? parseFloat(latRaw) : NaN;
+        const lonNum = typeof lonRaw === "number" ? lonRaw : typeof lonRaw === "string" ? parseFloat(lonRaw) : NaN;
+        if (Number.isFinite(latNum) && Number.isFinite(lonNum)) {
+          return { lat: latNum, lon: lonNum };
         }
       }
     } catch {
@@ -216,12 +272,12 @@ export async function geoCityLookup(lat: number, lon: number): Promise<unknown> 
 export async function reverseGeocodeOSM(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
   try {
-    const data = await httpGetJson(url, {
+    const data = (await httpGetJson(url, {
       "User-Agent": "QWeatherTest/1.0 (+https://dev.qweather.com/)",
       "Accept-Language": "zh-CN",
       "Accept-Encoding": "gzip, deflate",
-    });
-    const addr = data?.address || {};
+    })) as OsmReverseResponse;
+    const addr: OsmAddress = data?.address || {};
     const parts: string[] = [];
     if (addr.road) parts.push(addr.road);
     if (addr.house_number) parts.push(addr.house_number);
@@ -241,16 +297,22 @@ export async function reverseGeocodeOSM(lat: number, lon: number): Promise<Addre
 export async function reverseGeocodeAmap(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://restapi.amap.com/v3/geocode/regeo?key=${encodeURIComponent(AMAP_KEY)}&location=${encodeURIComponent(`${lon},${lat}`)}&extensions=base&radius=1000&roadlevel=0`;
   try {
-    const data = await httpGetJson(url, {
+    const data = (await httpGetJson(url, {
       "User-Agent": "QWeatherTest/1.0",
       "Accept-Encoding": "gzip, deflate",
-    });
+    })) as AmapReverseResponse;
     if (String(data?.status) !== "1") {
       return { error: data?.info || "Amap status!=1" };
     }
     const regeocode = data?.regeocode || {};
-    const comp = regeocode?.addressComponent || {};
-    const streetNum = comp?.streetNumber || {};
+    const comp = (regeocode.addressComponent ?? {}) as {
+      streetNumber?: { street?: string; number?: string };
+      township?: string;
+      district?: string;
+      city?: string;
+      province?: string;
+    };
+    const streetNum = (comp?.streetNumber || {}) as { street?: string; number?: string };
     const parts: string[] = [];
     if (streetNum.street) parts.push(streetNum.street);
     if (streetNum.number) parts.push(streetNum.number);

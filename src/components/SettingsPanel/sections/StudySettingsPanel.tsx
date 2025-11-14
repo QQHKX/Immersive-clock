@@ -113,8 +113,12 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         AudioContext?: typeof AudioContext;
         webkitAudioContext?: typeof AudioContext;
       };
-      const audioContext = new (audioContextCtor.AudioContext ||
-        audioContextCtor.webkitAudioContext)();
+      const Ctor = audioContextCtor.AudioContext || audioContextCtor.webkitAudioContext;
+      if (!Ctor) {
+        logger.warn("当前环境不支持 WebAudio");
+        return;
+      }
+      const audioContext = new Ctor();
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.25;
