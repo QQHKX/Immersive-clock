@@ -6,14 +6,9 @@
   "homepage": "https://qqhkx.com",
   "license": "MIT",
   "type": "module",
-  "main": "electron/out/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/postbuild.mjs",
-    "dev:electron": "tsc -p electron/tsconfig.json && electron ./electron/out/main.js",
-    "build:electron": "tsc -p electron/tsconfig.json",
-    "pack:win": "electron-builder --win --config electron-builder.yml",
-    "release:win": "electron-builder --win --publish always --config electron-builder.yml",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
@@ -32,7 +27,6 @@
     "@types/node": "^24.1.0",
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
-    "@types/electron": "^1.6.0",
     "@vitejs/plugin-react": "^3.1.0",
     "terser": "^5.43.1",
     "typescript": "^4.9.3",
@@ -48,8 +42,6 @@
     "prettier": "^3.3.3",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
-    "vitest": "^1.6.0",
-    "electron": "^33.0.0",
-    "electron-builder": "^24.13.3"
+    "vitest": "^1.6.0"
   }
 }
