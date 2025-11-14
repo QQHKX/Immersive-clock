@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-import { buildWeatherFlow } from "../../services/weatherService";
+import { buildWeatherFlow, fetchWeatherAlertsByCoords, fetchMinutelyPrecip } from "../../services/weatherService";
 import { logger } from "../../utils/logger";
+import { useAppState } from "../../contexts/AppContext";
+import MessagePopup from "../MessagePopup/MessagePopup";
 
 import styles from "./Weather.module.css";
 
@@ -21,6 +23,13 @@ const Weather: React.FC = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { study } = useAppState();
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [rainOpen, setRainOpen] = useState(false);
+  const [rainTitle, setRainTitle] = useState("");
+  const [rainMessage, setRainMessage] = useState("");
 
   /**
    * 将天气文本映射到图标代码
@@ -188,6 +197,54 @@ const Weather: React.FC = () => {
   }, [mapWeatherToIcon]);
 
   /**
+   * 处理天气预警与降雨提醒
+   */
+  const handleAlertsAndPrecip = useCallback(async (coords?: { lat: number; lon: number } | null) => {
+    if (!coords || !study?.messagePopupEnabled) return;
+    const locationParam = `${coords.lon},${coords.lat}`;
+    try {
+      if (study.weatherAlertEnabled) {
+        const alertResp = await fetchWeatherAlertsByCoords(coords.lat, coords.lon);
+        if (!alertResp.error && alertResp.alerts && alertResp.alerts.length > 0 && !alertResp.metadata?.zeroResult) {
+          const first = alertResp.alerts[0];
+          const lastTag = localStorage.getItem("weather.alert.lastTag");
+          if (alertResp.metadata?.tag && alertResp.metadata.tag !== lastTag) {
+            localStorage.setItem("weather.alert.lastTag", alertResp.metadata.tag);
+            setAlertTitle(first.headline || (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"));
+            setAlertMessage(first.description || "请注意当前天气预警信息。");
+            setAlertOpen(true);
+          }
+        }
+      }
+    } catch (e) {
+      logger.warn("天气预警处理失败:", e);
+    }
+
+    try {
+      if (study.minutelyPrecipEnabled) {
+        const minResp = await fetchMinutelyPrecip(locationParam);
+        if (!minResp.error && minResp.code === "200") {
+          const lastUpdate = localStorage.getItem("weather.minutely.lastUpdateTime");
+          if (minResp.updateTime && minResp.updateTime !== lastUpdate) {
+            localStorage.setItem("weather.minutely.lastUpdateTime", minResp.updateTime);
+            const hasRainSoon = (minResp.minutely || []).some((m) => {
+              const p = m.precip ? parseFloat(m.precip) : 0;
+              return Number.isFinite(p) && p > 0;
+            });
+            if (hasRainSoon) {
+              setRainTitle("降雨提醒");
+              setRainMessage(minResp.summary || "未来两小时可能有降雨，请注意出行。");
+              setRainOpen(true);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      logger.warn("分钟级降水处理失败:", e);
+    }
+  }, [study]);
+
+  /**
    * 组件挂载时初始化天气数据
    */
   useEffect(() => {
@@ -202,12 +259,18 @@ const Weather: React.FC = () => {
     };
 
     window.addEventListener("weatherRefresh", handleWeatherRefresh);
+    const onDone = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      handleAlertsAndPrecip(detail.coords || null);
+    };
+    window.addEventListener("weatherRefreshDone", onDone as EventListener);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("weatherRefresh", handleWeatherRefresh);
+      window.removeEventListener("weatherRefreshDone", onDone as EventListener);
     };
-  }, [initializeWeather]);
+  }, [initializeWeather, handleAlertsAndPrecip]);
 
   // 加载状态
   if (loading) {
@@ -245,6 +308,24 @@ const Weather: React.FC = () => {
         />
       </div>
       <div className={styles.weatherText}>{getSimplifiedWeatherText(weatherData.text)}</div>
+      {alertOpen && (
+        <MessagePopup
+          isOpen={alertOpen}
+          onClose={() => setAlertOpen(false)}
+          type="weatherAlert"
+          title={alertTitle}
+          message={alertMessage}
+        />
+      )}
+      {rainOpen && (
+        <MessagePopup
+          isOpen={rainOpen}
+          onClose={() => setRainOpen(false)}
+          type="weatherAlert"
+          title={rainTitle}
+          message={rainMessage}
+        />
+      )}
     </div>
   );
 };

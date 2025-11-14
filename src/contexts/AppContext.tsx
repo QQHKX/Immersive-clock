@@ -77,6 +77,8 @@ function loadStudyState(): StudyState {
     const savedDigitColor = localStorage.getItem("study-digit-color");
     const savedDigitOpacity = localStorage.getItem("study-digit-opacity");
     const savedMessagePopupEnabled = localStorage.getItem("study-message-popup-enabled");
+    const savedWeatherAlertEnabled = localStorage.getItem("study-weather-alert-enabled");
+    const savedMinutelyPrecipEnabled = localStorage.getItem("study-minutely-precip-enabled");
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
 
@@ -142,6 +144,12 @@ function loadStudyState(): StudyState {
     const messagePopupEnabled = savedMessagePopupEnabled
       ? savedMessagePopupEnabled === "true"
       : false;
+    const weatherAlertEnabled = savedWeatherAlertEnabled
+      ? savedWeatherAlertEnabled === "true"
+      : false;
+    const minutelyPrecipEnabled = savedMinutelyPrecipEnabled
+      ? savedMinutelyPrecipEnabled === "true"
+      : false;
 
     return {
       targetYear,
@@ -154,6 +162,8 @@ function loadStudyState(): StudyState {
       digitColor,
       digitOpacity,
       messagePopupEnabled,
+      weatherAlertEnabled,
+      minutelyPrecipEnabled,
     };
   } catch (error) {
     logger.warn("Failed to load study state from localStorage:", error);
@@ -181,6 +191,8 @@ function loadStudyState(): StudyState {
       digitColor: undefined,
       digitOpacity: 1,
       messagePopupEnabled: false,
+      weatherAlertEnabled: false,
+      minutelyPrecipEnabled: false,
     };
   }
 }
@@ -481,6 +493,28 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: msgUpdatedStudy,
+      };
+
+    case "SET_WEATHER_ALERT_ENABLED":
+      const alertUpdatedStudy = {
+        ...state.study,
+        weatherAlertEnabled: !!action.payload,
+      };
+      localStorage.setItem("study-weather-alert-enabled", (!!action.payload).toString());
+      return {
+        ...state,
+        study: alertUpdatedStudy,
+      };
+
+    case "SET_MINUTELY_PRECIP_ENABLED":
+      const precipUpdatedStudy = {
+        ...state.study,
+        minutelyPrecipEnabled: !!action.payload,
+      };
+      localStorage.setItem("study-minutely-precip-enabled", (!!action.payload).toString());
+      return {
+        ...state,
+        study: precipUpdatedStudy,
       };
 
     case "UPDATE_QUOTE_CHANNELS":
