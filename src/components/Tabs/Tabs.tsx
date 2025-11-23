@@ -43,14 +43,18 @@ export const Tabs: React.FC<TabsProps> = ({
   const trackRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
+  const pressStartXRef = useRef(0);
   const startScrollLeftRef = useRef(0);
   const lastXRef = useRef(0);
   const lastTimeRef = useRef(0);
   const velocityRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
+  const pressTargetIdRef = useRef<string | null>(null);
+  const suppressNextClickRef = useRef(false);
   const [hasLeft, setHasLeft] = useState(false);
   const [hasRight, setHasRight] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  const DRAG_THRESHOLD = 6; // 像素阈值，低于此值视为点击
 
   /**
    * 根据当前滚动位置更新左右遮罩显示状态
@@ -139,29 +143,35 @@ export const Tabs: React.FC<TabsProps> = ({
     if (!scrollable || window.innerWidth >= 768) return;
     const el = containerRef.current;
     if (!el) return;
-    isDraggingRef.current = true;
+    isDraggingRef.current = false;
     el.setPointerCapture(e.pointerId);
     startXRef.current = e.clientX;
+    pressStartXRef.current = e.clientX;
     lastXRef.current = e.clientX;
     startScrollLeftRef.current = el.scrollLeft;
     lastTimeRef.current = performance.now();
     velocityRef.current = 0;
-    setIsScrolling(true);
+    pressTargetIdRef.current = (e.target as Element)?.closest('button[role="tab"]')?.id ?? null;
   };
 
   /**
    * 指针移动（拖拽中）
    */
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
     const el = containerRef.current;
     if (!el) return;
+    const moved = Math.abs(e.clientX - pressStartXRef.current);
+    if (!isDraggingRef.current && moved >= DRAG_THRESHOLD) {
+      isDraggingRef.current = true;
+      setIsScrolling(true);
+    }
+    if (!isDraggingRef.current) return;
     const dx = e.clientX - startXRef.current;
     el.scrollLeft = startScrollLeftRef.current - dx;
     const now = performance.now();
     const v = e.clientX - lastXRef.current;
     const dt = Math.max(1, now - lastTimeRef.current);
-    velocityRef.current = v / dt * 16; // 近似每帧像素速度
+    velocityRef.current = (v / dt) * 16;
     lastXRef.current = e.clientX;
     lastTimeRef.current = now;
     updateEdgeMasks();
@@ -171,15 +181,29 @@ export const Tabs: React.FC<TabsProps> = ({
    * 指针松开（结束拖拽）
    */
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
     const el = containerRef.current;
     if (!el) return;
-    isDraggingRef.current = false;
     try {
       el.releasePointerCapture(e.pointerId);
     } catch {}
-    startInertia();
-    updateEdgeMasks();
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      startInertia();
+      updateEdgeMasks();
+    } else {
+      const id = pressTargetIdRef.current;
+      pressTargetIdRef.current = null;
+      if (id) {
+        const itm = items.find((i) => i.key === id);
+        if (itm && !itm.disabled) {
+          suppressNextClickRef.current = true;
+          setTimeout(() => (suppressNextClickRef.current = false), 120);
+          if (id !== activeKey) {
+            onChange(id);
+          }
+        }
+      }
+    }
   };
 
   /**
@@ -228,6 +252,12 @@ export const Tabs: React.FC<TabsProps> = ({
     .filter(Boolean)
     .join(" ");
 
+  const handleTabClick = (key: string, disabled?: boolean) => {
+    if (disabled) return;
+    if (suppressNextClickRef.current) return;
+    if (key !== activeKey) onChange(key);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -259,7 +289,7 @@ export const Tabs: React.FC<TabsProps> = ({
               aria-controls={`${item.key}-panel`}
               className={btnClass}
               disabled={item.disabled}
-              onClick={() => !item.disabled && onChange(item.key)}
+              onClick={() => handleTabClick(item.key, item.disabled)}
               active={isActive}
             >
               {item.icon && <span className={styles.tabIcon}>{item.icon}</span>}

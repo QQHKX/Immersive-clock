@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { FormButton } from "../FormComponents";
+import { LightButton } from "../LightControls/LightControls";
 
 import styles from "./messagePopup.module.css";
 
@@ -97,15 +98,14 @@ export default function MessagePopup({
 
   const node = (
     <div className={rootClass} role="dialog" aria-live="polite" aria-label={title}>
-      <button
-        type="button"
+      <LightButton
         className={styles.closeButton}
         aria-label="关闭"
         title="关闭"
         onClick={handleClose}
       >
         ×
-      </button>
+      </LightButton>
 
       <div className={styles.content}>
         {icon && <div className={styles.icon}>{icon}</div>}
