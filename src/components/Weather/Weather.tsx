@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { buildWeatherFlow, fetchWeatherAlertsByCoords, fetchMinutelyPrecip } from "../../services/weatherService";
 import { logger } from "../../utils/logger";
 import { useAppState } from "../../contexts/AppContext";
-import MessagePopup from "../MessagePopup/MessagePopup";
 
 import styles from "./Weather.module.css";
 
@@ -24,12 +23,6 @@ const Weather: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { study } = useAppState();
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertMessage, setAlertMessage] = useState("");
-  const [rainOpen, setRainOpen] = useState(false);
-  const [rainTitle, setRainTitle] = useState("");
-  const [rainMessage, setRainMessage] = useState("");
 
   /**
    * 将天气文本映射到图标代码
@@ -210,9 +203,14 @@ const Weather: React.FC = () => {
           const lastTag = localStorage.getItem("weather.alert.lastTag");
           if (alertResp.metadata?.tag && alertResp.metadata.tag !== lastTag) {
             localStorage.setItem("weather.alert.lastTag", alertResp.metadata.tag);
-            setAlertTitle(first.headline || (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"));
-            setAlertMessage(first.description || "请注意当前天气预警信息。");
-            setAlertOpen(true);
+            const ev = new CustomEvent("messagePopup:open", {
+              detail: {
+                type: "weatherAlert",
+                title: first.headline || (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"),
+                message: first.description || "请注意当前天气预警信息。",
+              },
+            });
+            window.dispatchEvent(ev);
           }
         }
       }
@@ -232,9 +230,14 @@ const Weather: React.FC = () => {
               return Number.isFinite(p) && p > 0;
             });
             if (hasRainSoon) {
-              setRainTitle("降雨提醒");
-              setRainMessage(minResp.summary || "未来两小时可能有降雨，请注意出行。");
-              setRainOpen(true);
+              const ev = new CustomEvent("messagePopup:open", {
+                detail: {
+                  type: "weatherAlert",
+                  title: "降雨提醒",
+                  message: minResp.summary || "未来两小时可能有降雨，请注意出行。",
+                },
+              });
+              window.dispatchEvent(ev);
             }
           }
         }
@@ -308,24 +311,6 @@ const Weather: React.FC = () => {
         />
       </div>
       <div className={styles.weatherText}>{getSimplifiedWeatherText(weatherData.text)}</div>
-      {alertOpen && (
-        <MessagePopup
-          isOpen={alertOpen}
-          onClose={() => setAlertOpen(false)}
-          type="weatherAlert"
-          title={alertTitle}
-          message={alertMessage}
-        />
-      )}
-      {rainOpen && (
-        <MessagePopup
-          isOpen={rainOpen}
-          onClose={() => setRainOpen(false)}
-          type="weatherAlert"
-          title={rainTitle}
-          message={rainMessage}
-        />
-      )}
     </div>
   );
 };

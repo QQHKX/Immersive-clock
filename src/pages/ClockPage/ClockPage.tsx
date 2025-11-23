@@ -13,6 +13,7 @@ import { Study } from "../../components/Study/Study";
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 
 import styles from "./ClockPage.module.css";
+import MessagePopup from "../../components/MessagePopup/MessagePopup";
 
 /**
  * 时钟主页面组件
@@ -25,6 +26,7 @@ export function ClockPage() {
   const prevModeRef = useRef(mode);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [globalPopups, setGlobalPopups] = useState<Array<{ id: string; type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate"; title: string; message: string }>>([]);
 
   // 跟踪模式变化
   useEffect(() => {
@@ -138,6 +140,33 @@ export function ClockPage() {
     }
   };
 
+  // 全局消息弹窗事件监听：仅在晚自习模式下响应（堆叠显示）
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      if (mode !== "study") return;
+      const detail = (e as CustomEvent).detail || {};
+      const type = (detail.type as "general" | "weatherAlert" | "coolingReminder" | "systemUpdate") || "general";
+      const title = (detail.title as string) || "消息提醒";
+      const message = (detail.message as string) || "";
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setGlobalPopups((prev) => [...prev, { id, type, title, message }]);
+    };
+    const onClose = () => setGlobalPopups([]);
+    window.addEventListener("messagePopup:open", onOpen as EventListener);
+    window.addEventListener("messagePopup:close", onClose as EventListener);
+    return () => {
+      window.removeEventListener("messagePopup:open", onOpen as EventListener);
+      window.removeEventListener("messagePopup:close", onClose as EventListener);
+    };
+  }, [mode]);
+
+  // 模式切换到非晚自习时自动关闭全局弹窗
+  useEffect(() => {
+    if (mode !== "study" && globalPopups.length > 0) {
+      setGlobalPopups([]);
+    }
+  }, [mode, globalPopups.length]);
+
   return (
     <div
       className={styles.clockPage}
@@ -171,6 +200,35 @@ export function ClockPage() {
         onClose={handleAnnouncementClose}
         initialTab="announcement"
       />
+
+      {/* 全局消息弹窗堆叠容器：通过事件触发，不受设置面板卸载影响 */}
+      {mode === "study" && globalPopups.length > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 8,
+            bottom: 80,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            zIndex: 1200,
+          }}
+          aria-live="polite"
+          aria-label="消息弹窗堆叠容器"
+        >
+          {globalPopups.map((p) => (
+            <MessagePopup
+              key={p.id}
+              isOpen={true}
+              onClose={() => setGlobalPopups((prev) => prev.filter((x) => x.id !== p.id))}
+              type={p.type}
+              title={p.title}
+              message={p.message}
+              usePortal={false}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
