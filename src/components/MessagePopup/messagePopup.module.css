@@ -1,1 +1,108 @@
-@import './messagePopup.module.css';
+.container {
+    position: fixed;
+    left: 8px;
+    bottom: 80px;
+    z-index: var(--z-message-popup, 1200);
+    background: var(--hud-background, rgba(20, 20, 20, 0.95));
+    color: var(--text-color, #ffffff);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius, 8px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    padding: 12px 14px 12px 12px;
+    width: auto;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transform-origin: bottom left;
+}
+
+.inline {
+    position: relative;
+    left: 0;
+    bottom: 0;
+}
+
+.enter {
+    animation: mp-bubble-in 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.exit {
+    animation: mp-bubble-out 220ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+@keyframes mp-bubble-in {
+    0% { opacity: 0; transform: translateY(16px) scale(0.96); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    60% { opacity: 1; transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 28px rgba(0,0,0,0.28); }
+    100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 10px 24px rgba(0,0,0,0.3); }
+}
+
+@keyframes mp-bubble-out {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
+.general {}
+
+.weatherAlert {}
+
+.coolingReminder {}
+
+.systemUpdate {}
+
+.closeButton {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-color, #ffffff);
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.closeButton:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.content {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.texts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0; /* 允许在flex容器中收缩并换行 */
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.message {
+    font-size: 13px;
+    opacity: 0.9;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}

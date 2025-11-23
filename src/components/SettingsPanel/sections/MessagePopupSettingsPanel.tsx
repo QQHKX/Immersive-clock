@@ -24,6 +24,7 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
   const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(!!study.weatherAlertEnabled);
   const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(!!study.minutelyPrecipEnabled);
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
+  // 测试按钮通过全局事件触发弹窗，避免设置面板关闭时被卸载
 
   useEffect(() => {
     onRegisterSave?.(() => {
@@ -73,6 +74,42 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
           disabled={!enabled}
         />
         <p className={styles.helpText}>请求方式参考程序已有的实时天气获取，需配置和风私有域。</p>
+        <FormButtonGroup align="left">
+          <FormButton
+            variant="secondary"
+            onClick={() => {
+              const ev = new CustomEvent("messagePopup:open", {
+                detail: {
+                  type: "weatherAlert",
+                  title: "测试：天气预警",
+                  message:
+                    "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。",
+                },
+              });
+              window.dispatchEvent(ev);
+            }}
+            disabled={!enabled || !weatherAlertEnabled}
+          >
+            测试天气预警弹窗
+          </FormButton>
+          <FormButton
+            variant="secondary"
+            onClick={() => {
+              const ev = new CustomEvent("messagePopup:open", {
+                detail: {
+                  type: "weatherAlert",
+                  title: "测试：降雨提醒",
+                  message:
+                    "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。",
+                },
+              });
+              window.dispatchEvent(ev);
+            }}
+            disabled={!enabled || !minutelyPrecipEnabled}
+          >
+            测试降雨提醒弹窗
+          </FormButton>
+        </FormButtonGroup>
       </FormSection>
 
       {/* 预览区域：展示默认样式的消息弹窗（设置页内联渲染） */}
@@ -88,6 +125,7 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
               usePortal={false}
             />
           )}
+          {/* 测试弹窗改为通过全局事件触发 */}
         </div>
       )}
     </div>
