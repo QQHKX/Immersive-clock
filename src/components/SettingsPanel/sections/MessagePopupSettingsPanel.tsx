@@ -24,6 +24,7 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
   const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(!!study.weatherAlertEnabled);
   const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(!!study.minutelyPrecipEnabled);
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
+  const [previewData, setPreviewData] = useState<{ type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate"; title: string; message: string } | null>(null);
   // 测试按钮通过全局事件触发弹窗，避免设置面板关闭时被卸载
 
   useEffect(() => {
@@ -73,7 +74,6 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
           onChange={(e) => setMinutelyPrecipEnabled(e.target.checked)}
           disabled={!enabled}
         />
-        <p className={styles.helpText}>请求方式参考程序已有的实时天气获取，需配置和风私有域。</p>
         <FormButtonGroup align="left">
           <FormButton
             variant="secondary"
@@ -87,6 +87,8 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
                 },
               });
               window.dispatchEvent(ev);
+              setPreviewData({ type: "weatherAlert", title: "测试：天气预警", message: "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。" });
+              setPreviewOpen(true);
             }}
             disabled={!enabled || !weatherAlertEnabled}
           >
@@ -104,6 +106,8 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
                 },
               });
               window.dispatchEvent(ev);
+              setPreviewData({ type: "weatherAlert", title: "测试：降雨提醒", message: "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。" });
+              setPreviewOpen(true);
             }}
             disabled={!enabled || !minutelyPrecipEnabled}
           >
@@ -119,9 +123,9 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
             <MessagePopup
               isOpen={previewOpen}
               onClose={() => setPreviewOpen(false)}
-              type="general"
-              title="消息提醒"
-              message="这是一个通用的消息弹窗示例。点击左上角 × 可关闭。"
+              type={previewData?.type ?? "general"}
+              title={previewData?.title ?? "消息提醒"}
+              message={previewData?.message ?? "这是一个通用的消息弹窗示例。点击左上角 × 可关闭。"}
               usePortal={false}
             />
           )}

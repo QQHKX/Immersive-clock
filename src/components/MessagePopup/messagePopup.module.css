@@ -6,14 +6,14 @@
     background: var(--hud-background, rgba(20, 20, 20, 0.95));
     color: var(--text-color, #ffffff);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--border-radius, 8px);
+    border-radius: var(--border-radius-lg, 12px);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
-    padding: 12px 14px 12px 12px;
+    padding: 8px 10px;
     width: auto;
-    max-width: 420px;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     transform-origin: bottom left;
 }
 
@@ -32,30 +32,69 @@
 }
 
 @keyframes mp-bubble-in {
-    0% { opacity: 0; transform: translateY(16px) scale(0.96); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-    60% { opacity: 1; transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 28px rgba(0,0,0,0.28); }
-    100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 10px 24px rgba(0,0,0,0.3); }
+    0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    }
 }
 
 @keyframes mp-bubble-out {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(10px) scale(0.98); }
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
 }
 
 .general {}
 
-.weatherAlert {}
+/* 天气预警：强调黄色语义色与左侧色条 */
+.weatherAlert {
+    border-left: 3px solid var(--color-warning, #f5a524);
+    background: linear-gradient(to right,
+            rgba(245, 165, 36, 0.08),
+            rgba(20, 20, 20, 0.95));
+}
 
-.coolingReminder {}
+/* 降温提醒：绿色语义 */
+.coolingReminder {
+    border-left: 3px solid var(--color-success, #22c55e);
+    background: linear-gradient(to right,
+            rgba(34, 197, 94, 0.08),
+            rgba(20, 20, 20, 0.95));
+}
 
-.systemUpdate {}
+/* 系统更新：蓝色语义 */
+.systemUpdate {
+    border-left: 3px solid var(--color-primary, #3b82f6);
+    background: linear-gradient(to right,
+            rgba(59, 130, 246, 0.08),
+            rgba(20, 20, 20, 0.95));
+}
 
 .closeButton {
     position: absolute;
-    top: 6px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
+    top: 2px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
     border: none;
     background: transparent;
     color: var(--text-color, #ffffff);
@@ -70,7 +109,7 @@
 .content {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 6px;
 }
 
 .icon {
@@ -84,21 +123,24 @@
     flex-direction: column;
     gap: 6px;
     flex: 1;
-    min-width: 0; /* 允许在flex容器中收缩并换行 */
+    min-width: 0;
+    /* 允许在flex容器中收缩并换行 */
 }
 
 .title {
-    font-size: 14px;
+    font-family: var(--font-ui, sans-serif);
+    font-size: var(--font-size-sm, 0.85rem);
     font-weight: 600;
 }
 
 .message {
-    font-size: 13px;
+    font-family: var(--font-ui, sans-serif);
+    font-size: var(--font-size-xs, 0.75rem);
     opacity: 0.9;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: anywhere;
-    line-height: 1.4;
+    line-height: 1.3;
 }
 
 .actions {
