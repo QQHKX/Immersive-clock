@@ -14,12 +14,12 @@ export interface ContentSettingsPanelProps {
 
 /**
  * 内容管理分段组件
- * - 金句自动刷新频率
- * - 金句渠道管理
+ * - 语录自动刷新频率
+ * - 语录渠道管理
  */
 /**
  * 内容管理分段组件
- * - 金句自动刷新间隔设置
+ * - 语录自动刷新间隔设置
  * - 频道管理
  */
 export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRegisterSave }) => {
@@ -58,12 +58,12 @@ export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRe
       role="tabpanel"
       aria-labelledby="content"
     >
-      <h3 className={styles.groupTitle}>金句设置</h3>
-      <FormSection title="金句自动刷新">
+      <h3 className={styles.groupTitle}>语录设置</h3>
+      <FormSection title="语录自动刷新">
         <div className={styles.quoteRefreshInfo}>
           <p className={styles.infoText}>当前设置: {formatRefreshIntervalText(draftInterval)}</p>
           <p className={styles.helpText}>
-            调节金句的自动刷新频率，左端为最短间隔30秒，右端为关闭自动刷新。
+            调节语录的自动刷新频率，左端为最短间隔30秒，右端为关闭自动刷新。
           </p>
         </div>
         <FormSlider

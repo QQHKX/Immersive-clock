@@ -1,4 +1,4 @@
-/* 金句渠道管理组件样式 */
+/* 语录渠道管理组件样式 */
 
 .channelManagerInfo {
   margin-bottom: var(--spacing-lg);
@@ -31,8 +31,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .channelList {
@@ -149,7 +154,7 @@
   font-size: 0.85rem !important;
   line-height: 1.2 !important;
   border-radius: 6px !important;
-  
+
   /* 隐藏默认的数字输入框箭头 */
   -webkit-appearance: none;
   -moz-appearance: textfield;
@@ -302,7 +307,7 @@
   font-size: var(--font-size-md);
 }
 
-/* 金句编辑器区域 */
+/* 语录编辑器区域 */
 .editorSection {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);
@@ -374,26 +379,26 @@
     align-items: stretch;
     gap: var(--spacing-sm);
   }
-  
+
   .channelControls {
     justify-content: space-between;
   }
-  
+
   .categoryGrid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: var(--spacing-xs);
   }
-  
+
   .weightControl {
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
   }
-  
+
   .weightInput {
     width: 80px !important;
   }
-  
+
   .quoteItem {
     flex-direction: column;
     align-items: stretch;
@@ -405,11 +410,11 @@
   .channelItem {
     border-width: 2px;
   }
-  
+
   .toggleIconEnabled {
     color: var(--success-color-high-contrast, #00aa00);
   }
-  
+
   .toggleIconDisabled {
     color: var(--text-secondary-high-contrast, #666666);
   }
@@ -420,7 +425,7 @@
   .loadingIcon {
     animation: none;
   }
-  
+
   .channelItem,
   .toggleButton,
   .settingsButton,

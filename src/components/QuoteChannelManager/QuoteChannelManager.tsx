@@ -19,12 +19,13 @@ import {
   EditIcon,
   ResetIcon,
   FileIcon,
+  TrashIcon,
 } from "../Icons";
 
 import styles from "./QuoteChannelManager.module.css";
 
 /**
- * 金句渠道管理组件
+ * 语录渠道管理组件
  * 支持调节各渠道的获取概率权重和独立启用/禁用每个励志短语获取渠道
  */
 export function QuoteChannelManager({
@@ -118,7 +119,7 @@ export function QuoteChannelManager({
    * 更新渠道权重
    */
   const handleUpdateWeight = useCallback((channelId: string, weight: number) => {
-    const clampedWeight = Math.max(1, Math.min(99, weight));
+    const clampedWeight = Math.max(1, Math.min(9999, weight));
     // 更新本地状态
     setChannels((prev) =>
       prev.map((channel) =>
@@ -168,7 +169,7 @@ export function QuoteChannelManager({
   }, []);
 
   /**
-   * 切换本地金句编辑器展开/收起
+   * 切换本地语录编辑器展开/收起
    * @param channelId 渠道ID
    */
   const handleToggleEditorExpanded = useCallback(
@@ -194,7 +195,7 @@ export function QuoteChannelManager({
   }, [loadChannelsFromFiles]);
 
   /**
-   * 导入TXT文件作为自定义金句源
+   * 导入TXT文件作为自定义语录源
    * - 按行分割，过滤空行与超长行
    * - 校验总条目数上限
    */
@@ -223,7 +224,7 @@ export function QuoteChannelManager({
         return;
       }
       if (lines.length > 1000) {
-        setImportError("导入失败：金句条目超过上限（1000条）。");
+        setImportError("导入失败：语录条目超过上限（1000条）。");
         return;
       }
 
@@ -245,7 +246,7 @@ export function QuoteChannelManager({
   }, []);
 
   /**
-   * 从文本域更新金句（每行一个）
+   * 从文本域更新语录（每行一个）
    * @param channelId 渠道ID
    * @param text 文本域内容
    */
@@ -256,7 +257,7 @@ export function QuoteChannelManager({
     const lines = rawLines.map((l) => l.trim()).filter((l) => l.length > 0);
 
     if (lines.length > 1000) {
-      setEditorError("编辑提示：金句条目超过上限（1000行）。");
+      setEditorError("编辑提示：语录条目超过上限（1000行）。");
     } else if (lines.some((l) => l.length > 200)) {
       setEditorError("编辑提示：存在超过200字符的长句，建议适当裁剪。");
     }
@@ -265,7 +266,22 @@ export function QuoteChannelManager({
   }, []);
 
   /**
-   * 恢复该渠道全部金句为系统默认（仅内置源）
+   * 删除自定义语录渠道
+   * 仅支持删除通过TXT导入的自定义渠道（ID以custom-txt-开头）
+   * 删除时同时清理展开状态与编辑草稿
+   */
+  const handleDeleteChannel = useCallback((channelId: string) => {
+    setChannels((prev) => prev.filter((ch) => ch.id !== channelId));
+    setExpandedChannelId((prev) => (prev === channelId ? null : prev));
+    setExpandedEditorChannelId((prev) => (prev === channelId ? null : prev));
+    setEditorDraftMap((prev) => {
+      const { [channelId]: _removed, ...rest } = prev;
+      return rest;
+    });
+  }, []);
+
+  /**
+   * 恢复该渠道全部语录为系统默认（仅内置源）
    * @param channelId 渠道ID
    */
   const handleRestoreDefaultAll = useCallback(
@@ -302,7 +318,7 @@ export function QuoteChannelManager({
 
   if (isLoading) {
     return (
-      <FormSection title="金句渠道管理">
+      <FormSection title="语录渠道管理">
         <div className={styles.loading}>
           <RefreshIcon className={styles.loadingIcon} />
           <span>加载渠道配置中...</span>
@@ -312,9 +328,9 @@ export function QuoteChannelManager({
   }
 
   return (
-    <FormSection title="金句渠道管理">
+    <FormSection title="语录渠道管理">
       <div className={styles.channelManagerInfo}>
-        <p className={styles.infoText}>管理励志金句的获取渠道，调节各渠道的权重和启用状态。</p>
+        <p className={styles.infoText}>管理励志语录的获取渠道，调节各渠道的权重和启用状态。</p>
       </div>
 
       <FormButtonGroup align="right">
@@ -329,8 +345,8 @@ export function QuoteChannelManager({
           variant="secondary"
           onClick={handleImportTxt}
           icon={<FileIcon size={16} />}
-          aria-label="导入TXT金句源"
-          title="导入TXT金句源"
+          aria-label="导入TXT语录源"
+          title="导入TXT语录源"
         >
           导入TXT
         </FormButton>
@@ -369,7 +385,7 @@ export function QuoteChannelManager({
                     onChange={(e) => handleUpdateWeight(channel.id, parseInt(e.target.value) || 1)}
                     variant="number"
                     min={1}
-                    max={99}
+                    max={9999}
                     className={styles.weightInput}
                   />
                 </div>
@@ -408,11 +424,13 @@ export function QuoteChannelManager({
                     onClick={() => handleToggleEditorExpanded(channel.id)}
                     variant="secondary"
                     size="sm"
-                    title="编辑金句"
-                    aria-label="编辑金句"
+                    title="编辑语录"
+                    aria-label="编辑语录"
                     icon={<EditIcon size={16} />}
                   />
                 )}
+
+                {/* 删除按钮移至本地编辑器内部，仅保留头部基础控制 */}
               </div>
             </div>
 
@@ -442,23 +460,37 @@ export function QuoteChannelManager({
                 </div>
               )}
 
-            {/* 本地金句编辑器 */}
+            {/* 本地语录编辑器 */}
             {expandedEditorChannelId === channel.id && !channel.onlineFetch && (
               <div className={styles.editorSection}>
                 <div className={styles.editorHeader}>
-                  <h5 className={styles.editorTitle}>金句编辑器</h5>
-                  <FormButton
-                    variant="secondary"
-                    size="sm"
-                    title="恢复默认（全部）"
-                    aria-label="恢复默认（全部）"
-                    icon={<ResetIcon size={16} />}
-                    disabled={!defaultQuotesMap[channel.id]}
-                    onClick={() => handleRestoreDefaultAll(channel.id)}
-                  />
+                  <h5 className={styles.editorTitle}>语录编辑器</h5>
+                  <div className={styles.quoteActions}>
+                    <FormButton
+                      variant="secondary"
+                      size="sm"
+                      title="恢复默认（全部）"
+                      aria-label="恢复默认（全部）"
+                      icon={<ResetIcon size={16} />}
+                      disabled={!defaultQuotesMap[channel.id]}
+                      onClick={() => handleRestoreDefaultAll(channel.id)}
+                    />
+                    {channel.id.startsWith("custom-txt-") && (
+                      <FormButton
+                        onClick={() => handleDeleteChannel(channel.id)}
+                        variant="danger"
+                        size="sm"
+                        title="删除语录源"
+                        aria-label="删除语录源"
+                        icon={<TrashIcon size={16} />}
+                      >
+                        删除
+                      </FormButton>
+                    )}
+                  </div>
                 </div>
                 <FormTextarea
-                  label="金句文本（每行一个）"
+                  label="语录文本（每行一个）"
                   className={styles.quoteTextarea}
                   value={
                     editorDraftMap[channel.id] ??
@@ -468,7 +500,7 @@ export function QuoteChannelManager({
                   placeholder={
                     "例如：\n保持专注，持续前进。\n小步快跑，积累成塔。\n接受不完美并继续优化。"
                   }
-                  aria-label={`编辑 ${channel.name} 的金句文本，每行一个`}
+                  aria-label={`编辑 ${channel.name} 的语录文本，每行一个`}
                   rows={10}
                 />
                 <div className={styles.importInfo}>
@@ -484,7 +516,7 @@ export function QuoteChannelManager({
                 {(!channel.quotes || channel.quotes.length === 0) && (
                   <div className={styles.importInfo}>
                     <p className={styles.helpText}>
-                      当前渠道暂无金句，可通过“导入TXT”或在上方文本框直接编写。
+                      当前渠道暂无语录，可通过“导入TXT”或在上方文本框直接编写。
                     </p>
                   </div>
                 )}
@@ -496,7 +528,7 @@ export function QuoteChannelManager({
 
       {channels.length === 0 && (
         <div className={styles.emptyState}>
-          <p>未找到任何金句渠道配置</p>
+          <p>未找到任何语录渠道配置</p>
           <FormButton
             variant="primary"
             onClick={handleRefreshChannels}

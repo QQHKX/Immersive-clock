@@ -141,7 +141,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         stdDev: 0,
         smoothed: [] as number[],
         times: [] as number[],
-        rollingDiff: [] as { t: number; v: number }[],
         histogram: [] as { x: number; h: number }[],
       };
     }
@@ -180,16 +179,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     const volatilityIndex = clamp01(0.6 * normAvg + 0.3 * normRms + 0.1 * normStd);
     const score = Math.round(100 * (1 - volatilityIndex));
 
-    // 滚动波动（窗口 10），用于迷你折线图显示
-    const rollW = 10;
-    const rollingDiff: { t: number; v: number }[] = smoothed.map((_, i) => {
-      const s = Math.max(1, i - rollW + 1);
-      const e = i;
-      const slice = diffs.slice(s, e + 1);
-      const v = slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : 0;
-      return { t: times[i], v };
-    });
-
     // 直方图（分辨率 4dB），用于分贝分布展示
     const minDb = 0;
     const maxDb = 80;
@@ -202,7 +191,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     });
     const histogram = hist.map((h, i) => ({ x: minDb + i * bin, h }));
 
-    return { score, avgAbsDiff, rmsDiff, stdDev, smoothed, times, rollingDiff, histogram };
+    return { score, avgAbsDiff, rmsDiff, stdDev, smoothed, times, histogram };
   }, [samplesInPeriod, period]);
 
   // 基于当前时段样本生成 SVG 折线图数据
@@ -522,75 +511,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         {/* 更多统计：保持上部紧凑，将迷你图放在下方两列网格中 */}
         <h4 className={styles.sectionTitle}>更多统计</h4>
         <div className={styles.extraChartsGrid}>
-          {/* 迷你图1：滚动波动（相邻差分的移动平均） */}
-          <div>
-            <div className={styles.miniTitle}>滚动波动（差分均值）</div>
-            {volatility.rollingDiff.length ? (
-              (() => {
-                const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
-                const height = MINI_CHART_HEIGHT;
-                const padding = MINI_CHART_PADDING;
-                const maxV = Math.max(3, Math.max(...volatility.rollingDiff.map((p) => p.v)));
-                const startTs = volatility.times[0];
-                const endTs = volatility.times[volatility.times.length - 1];
-                const span = Math.max(1, endTs - startTs);
-                const mapX = (t: number) =>
-                  padding + ((t - startTs) / span) * (width - padding * 2);
-                const mapY = (v: number) => height - padding - (v / maxV) * (height - padding * 2);
-                const pts = volatility.rollingDiff.map((p) => ({ x: mapX(p.t), y: mapY(p.v) }));
-                const path = pts
-                  .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
-                  .join(" ");
-                const thresholdY1 = mapY(1);
-                const thresholdY2 = mapY(3);
-                return (
-                  <svg
-                    width={width}
-                    height={height}
-                    className={styles.chart}
-                    viewBox={`0 0 ${width} ${height}`}
-                  >
-                    <line
-                      x1={padding}
-                      y1={height - padding}
-                      x2={width - padding}
-                      y2={height - padding}
-                      className={styles.axis}
-                    />
-                    <line
-                      x1={padding}
-                      y1={padding}
-                      x2={padding}
-                      y2={height - padding}
-                      className={styles.axis}
-                    />
-                    {/* 阈值参考线：1dB 与 3dB */}
-                    <line
-                      x1={padding}
-                      y1={thresholdY1}
-                      x2={width - padding}
-                      y2={thresholdY1}
-                      className={styles.threshold}
-                    />
-                    <line
-                      x1={padding}
-                      y1={thresholdY2}
-                      x2={width - padding}
-                      y2={thresholdY2}
-                      className={styles.threshold}
-                    />
-                    <path d={path} className={styles.line} />
-                  </svg>
-                );
-              })()
-            ) : (
-              <div className={styles.empty}>暂无数据</div>
-            )}
-            <div className={styles.chartCaption}>
-              解释：值越低表示曲线越平稳，连续稳定更利于纪律维持。
-            </div>
-          </div>
-
+          
           {/* 迷你图2：分贝直方图 */}
           <div>
             <div className={styles.miniTitle}>分贝分布（4dB 直方图）</div>

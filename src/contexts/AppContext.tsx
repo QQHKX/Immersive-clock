@@ -13,7 +13,7 @@ import { logger } from "../utils/logger";
 import { nowMs } from "../utils/timeSource";
 
 /**
- * 从本地存储加载金句设置状态
+ * 从本地存储加载语录设置状态
  */
 function loadQuoteSettingsState(): QuoteSettingsState {
   try {
@@ -34,7 +34,7 @@ function loadQuoteSettingsState(): QuoteSettingsState {
 }
 
 /**
- * 从本地存储加载金句渠道配置
+ * 从本地存储加载语录渠道配置
  */
 function loadQuoteChannelState(): QuoteChannelState {
   try {
@@ -132,7 +132,7 @@ function loadStudyState(): StudyState {
       // 立即持久化一次，确保后续有基础数据
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(countdownItems));
-      } catch {}
+      } catch { }
     }
 
     const carouselIntervalSec = savedCarouselInterval
@@ -433,7 +433,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(action.payload));
-      } catch {}
+      } catch { }
       return {
         ...state,
         study: itemsUpdatedStudy,

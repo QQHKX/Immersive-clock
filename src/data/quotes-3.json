@@ -1,6 +1,6 @@
 {
   "id": "hitokoto-api",
-  "name": "在线金句",
+  "name": "在线语录",
   "weight": 20,
   "enabled": true,
   "onlineFetch": true,

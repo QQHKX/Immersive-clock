@@ -7,7 +7,7 @@ import { logger } from "../../utils/logger";
 import styles from "./MotivationalQuote.module.css";
 
 /**
- * 励志金句组件
+ * 励志语录组件
  * - 支持多渠道加权随机选择
  * - 支持一言API多分类选择
  * - 修复句子更新时的闪现问题，确保动画从空串开始逐字符显示
@@ -191,7 +191,7 @@ export function MotivationalQuote() {
   }, []);
 
   /**
-   * 统一更新金句逻辑：按权重挑源 -> 获取内容（优先线上，失败回退本地） -> 启动动画
+   * 统一更新语录逻辑：按权重挑源 -> 获取内容（优先线上，失败回退本地） -> 启动动画
    */
   const updateQuote = useCallback(async () => {
     const source = pickWeightedSource();
@@ -267,7 +267,7 @@ export function MotivationalQuote() {
   }, []);
 
   return (
-    <div className={styles.motivationalQuote} onClick={handleClick} title="点击刷新励志金句">
+    <div className={styles.motivationalQuote} onClick={handleClick} title="点击刷新励志语录">
       <div className={`${styles.quoteText} ${isTyping ? styles.typing : ""}`}>
         {isTyping ? displayText : currentQuote}
         {isTyping && <span className={styles.cursor}>|</span>}
