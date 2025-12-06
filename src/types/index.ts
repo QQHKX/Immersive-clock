@@ -100,7 +100,7 @@ export interface StudyDisplaySettings {
   showNoiseMonitor: boolean;
   /** 是否显示倒计时 */
   showCountdown: boolean;
-  /** 是否显示励志金句 */
+  /** 是否显示励志语录 */
   showQuote: boolean;
   /** 是否显示当前时间 */
   showTime: boolean;
@@ -192,14 +192,14 @@ export const HITOKOTO_CATEGORY_LIST: Array<{ key: HitokotoCategory; name: string
 ];
 
 /**
- * 金句数据源配置类型
+ * 语录数据源配置类型
  */
 export interface QuoteSourceConfig {
   /** 数据源ID */
   id: string;
   /** 数据源名称 */
   name: string;
-  /** 权重值 1-99 */
+  /** 权重值 1-9999 */
   weight: number;
   /** 是否启用 */
   enabled: boolean;
@@ -214,7 +214,7 @@ export interface QuoteSourceConfig {
 }
 
 /**
- * 金句渠道管理状态
+ * 语录渠道管理状态
  */
 export interface QuoteChannelState {
   /** 渠道配置列表 */
@@ -240,7 +240,7 @@ export interface HitokotoResponse {
 }
 
 /**
- * 金句设置状态
+ * 语录设置状态
  */
 export interface QuoteSettingsState {
   /** 自动刷新间隔（秒），0表示关闭自动刷新 */
@@ -261,9 +261,9 @@ export interface AppState {
   stopwatch: StopwatchState;
   /** 晚自习状态 */
   study: StudyState;
-  /** 金句渠道管理状态 */
+  /** 语录渠道管理状态 */
   quoteChannels: QuoteChannelState;
-  /** 金句设置状态 */
+  /** 语录设置状态 */
   quoteSettings: QuoteSettingsState;
   /** 公告组件状态 */
   announcement: AnnouncementState;

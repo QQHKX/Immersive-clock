@@ -28,7 +28,7 @@ interface SettingsPanelProps {
 
 /**
  * 设置面板主组件
- * 将基础、天气、监测、金句、关于分区委托给子组件，
+ * 将基础、天气、监测、语录、关于分区委托给子组件，
  * 保留目标年份持久化与选项卡切换逻辑。
  */
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
@@ -40,11 +40,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   >("basic");
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 分区保存注册
-  const basicSaveRef = useRef<() => void>(() => {});
-  const weatherSaveRef = useRef<() => void>(() => {});
-  const monitorSaveRef = useRef<() => void>(() => {});
-  const quotesSaveRef = useRef<() => void>(() => {});
-  const messagesSaveRef = useRef<() => void>(() => {});
+  const basicSaveRef = useRef<() => void>(() => { });
+  const weatherSaveRef = useRef<() => void>(() => { });
+  const monitorSaveRef = useRef<() => void>(() => { });
+  const quotesSaveRef = useRef<() => void>(() => { });
+  const messagesSaveRef = useRef<() => void>(() => { });
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -122,7 +122,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               { key: "basic", label: "基础设置" },
               { key: "weather", label: "天气设置" },
               { key: "monitor", label: "监测设置" },
-              { key: "quotes", label: "金句设置" },
+              { key: "quotes", label: "语录设置" },
               { key: "messages", label: "消息弹窗" },
               { key: "about", label: "关于" },
             ]}
@@ -167,7 +167,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             />
           )}
 
-          {/* 金句设置 */}
+          {/* 语录设置 */}
           {activeCategory === "quotes" && (
             <ContentSettingsPanel
               onRegisterSave={(fn) => {

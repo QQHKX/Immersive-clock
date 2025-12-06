@@ -1,4 +1,4 @@
-/* 金句组件样式 */
+/* 语录组件样式 */
 
 .motivationalQuote {
   display: flex;
@@ -29,7 +29,8 @@
   word-break: break-word;
   overflow-wrap: anywhere;
   transition: color var(--transition-fast);
-  white-space: normal; /* 恢复自动换行，换行符视为空格 */
+  white-space: normal;
+  /* 恢复自动换行，换行符视为空格 */
   /* 多行展示不使用省略号 */
 }
 

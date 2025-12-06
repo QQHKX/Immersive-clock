@@ -188,6 +188,7 @@
   outline-offset: 2px;
   border-radius: 2px;
 }
+
 /* 状态徽标：已校准/未校准指示点 */
 .statusDot {
   width: 8px;
@@ -215,7 +216,7 @@
   font-family: var(--font-ui);
 }
 
-/* 金句刷新设置样式 */
+/* 语录刷新设置样式 */
 .quoteRefreshInfo {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);

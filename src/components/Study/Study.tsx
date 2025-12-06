@@ -106,7 +106,7 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch {}
+    } catch { }
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -340,7 +340,7 @@ export function Study() {
         </div>
       )}
 
-      {/* 右上角：倒计时与励志金句（分别可隐藏） */}
+      {/* 右上角：倒计时与励志语录（分别可隐藏） */}
       {(display.showCountdown || display.showQuote) && (
         <div className={styles.topRight}>
           {display.showCountdown && (
