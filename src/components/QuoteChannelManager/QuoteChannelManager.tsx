@@ -82,11 +82,18 @@ export function QuoteChannelManager({
         setChannels(loadedChannels);
       } else {
         // 合并现有配置和文件配置
-        const mergedChannels = loadedChannels.map((fileChannel) => {
+        const mergedBuiltInChannels = loadedChannels.map((fileChannel) => {
           const existingChannel = state.quoteChannels.channels.find((c) => c.id === fileChannel.id);
           return existingChannel || fileChannel;
         });
-        setChannels(mergedChannels);
+
+        // 找出自定义渠道（不在文件列表中的渠道）
+        const builtInIds = new Set(loadedChannels.map((c) => c.id));
+        const customChannels = state.quoteChannels.channels.filter(
+          (c) => !builtInIds.has(c.id)
+        );
+
+        setChannels([...mergedBuiltInChannels, ...customChannels]);
       }
     } catch (error) {
       logger.error("Failed to load quote channels:", error);
@@ -223,7 +230,7 @@ export function QuoteChannelManager({
       const basename = file.name.replace(/\.[^.]+$/, "");
       const newChannel: QuoteSourceConfig = {
         id: `custom-txt-${Date.now()}`,
-        name: `自定义TXT：${basename}`,
+        name: `自定义语录：${basename}`,
         weight: 10,
         enabled: true,
         onlineFetch: false,
