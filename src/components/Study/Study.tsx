@@ -6,6 +6,7 @@ import { CountdownItem } from "../../types";
 import { formatClock } from "../../utils/formatTime";
 import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
 import { readStudyBackground } from "../../utils/studyBackgroundStorage";
+import { ensureInjectedFonts } from "../../utils/studyFontStorage";
 import { MotivationalQuote } from "../MotivationalQuote";
 import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
@@ -50,7 +51,7 @@ function hexToRgba(hex: string, alpha: number = 1): string {
 }
 
 /**
- * 晚自习组件
+ * 自习组件
  * 显示当前时间和倒计时轮播
  */
 export function Study() {
@@ -94,6 +95,16 @@ export function Study() {
     return () => window.removeEventListener("study-background-updated", handler as EventListener);
   }, []);
 
+  /**
+   * 注入已导入字体（函数级注释：组件挂载时确保本地导入的字体已通过 @font-face 注入到页面）
+   */
+  useEffect(() => {
+    ensureInjectedFonts();
+    const onFontsUpdated = () => ensureInjectedFonts();
+    window.addEventListener("study-fonts-updated", onFontsUpdated as EventListener);
+    return () => window.removeEventListener("study-fonts-updated", onFontsUpdated as EventListener);
+  }, []);
+
   // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
     const scheduleRaw =
@@ -106,7 +117,7 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch { }
+    } catch {}
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -262,7 +273,7 @@ export function Study() {
     return style;
   })();
 
-  /** 构造容器样式（函数级注释：合并背景样式并按晚自习设置覆盖 CSS 字体变量，确保数字与文本分别使用对应的字体家族） */
+  /** 构造容器样式（函数级注释：合并背景样式并按自习设置覆盖 CSS 字体变量，确保数字与文本分别使用对应的字体家族） */
   type ContainerStyle = React.CSSProperties & {
     ["--font-main"]?: string;
     ["--font-ui"]?: string;

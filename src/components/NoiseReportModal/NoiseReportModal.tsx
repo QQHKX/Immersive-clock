@@ -36,7 +36,7 @@ const MINI_CHART_HEIGHT = 120;
 const MINI_CHART_PADDING = 30;
 
 /**
- * 晚自习统计报告弹窗（函数级注释）：
+ * 自习统计报告弹窗（函数级注释）：
  * - 展示当前课时的关键统计（时长、表现、峰值、平均、提醒、吵闹时长）；
  * - 使用带坐标轴的折线图显示噪音走势，包含阈值红虚线与面积填充；
  * - 数据来源统一于噪音采样存储，支持外部覆盖样本用于测试。
@@ -325,7 +325,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${period?.name || "晚自习"} 统计报告`}
+      title={`${period?.name || "自习"} 统计报告`}
       maxWidth="xl"
       footer={
         <FormButtonGroup>

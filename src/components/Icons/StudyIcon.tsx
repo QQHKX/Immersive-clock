@@ -4,7 +4,7 @@ import { IconProps } from "./index";
 
 /**
  * 学习图标组件
- * 用于学习模式和晚自习功能
+ * 用于学习模式和自习功能
  * 引用 public/icons/ui/study.svg 文件
  */
 export const StudyIcon: React.FC<IconProps> = ({

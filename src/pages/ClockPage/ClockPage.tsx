@@ -147,7 +147,7 @@ export function ClockPage() {
     }
   };
 
-  // 全局消息弹窗事件监听：仅在晚自习模式下响应（堆叠显示）
+  // 全局消息弹窗事件监听：仅在自习模式下响应（堆叠显示）
   useEffect(() => {
     const onOpen = (e: Event) => {
       if (mode !== "study") return;
@@ -169,7 +169,7 @@ export function ClockPage() {
     };
   }, [mode]);
 
-  // 模式切换到非晚自习时自动关闭全局弹窗
+  // 模式切换到非自习时自动关闭全局弹窗
   useEffect(() => {
     if (mode !== "study" && globalPopups.length > 0) {
       setGlobalPopups([]);
@@ -193,7 +193,7 @@ export function ClockPage() {
 
       <AuthorInfo onVersionClick={handleVersionClick} />
 
-      {/* 设置按钮 - 只在晚自习模式下显示 */}
+      {/* 设置按钮 - 只在自习模式下显示 */}
       {mode === "study" && (
         <SettingsButton onClick={handleSettingsClick} isVisible={!isModalOpen && !showSettings} />
       )}

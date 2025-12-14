@@ -62,7 +62,7 @@ export interface MarkdownDocument {
  * clock: 时钟模式
  * countdown: 倒计时模式
  * stopwatch: 秒表模式
- * study: 晚自习模式
+ * study: 自习模式
  */
 export type AppMode = "clock" | "countdown" | "stopwatch" | "study";
 
@@ -91,7 +91,7 @@ export interface StopwatchState {
 }
 
 /**
- * 晚自习页面组件显示设置
+ * 自习页面组件显示设置
  */
 export interface StudyDisplaySettings {
   /** 是否显示状态栏 */
@@ -135,7 +135,7 @@ export interface CountdownItem {
 }
 
 /**
- * 晚自习状态接口
+ * 自习状态接口
  */
 export interface StudyState {
   /** 目标高考年份 */
@@ -156,9 +156,9 @@ export interface StudyState {
   digitColor?: string;
   /** 倒计时数字透明度（0-1） */
   digitOpacity?: number;
-  /** 数字字体家族（覆盖晚自习页面的 --font-main） */
+  /** 数字字体家族（覆盖自习页面的 --font-main） */
   numericFontFamily?: string;
-  /** 文本字体家族（覆盖晚自习页面的 --font-ui） */
+  /** 文本字体家族（覆盖自习页面的 --font-ui） */
   textFontFamily?: string;
   // 新增：消息弹窗启用开关
   messagePopupEnabled?: boolean;
@@ -263,7 +263,7 @@ export interface AppState {
   countdown: CountdownState;
   /** 秒表状态 */
   stopwatch: StopwatchState;
-  /** 晚自习状态 */
+  /** 自习状态 */
   study: StudyState;
   /** 语录渠道管理状态 */
   quoteChannels: QuoteChannelState;

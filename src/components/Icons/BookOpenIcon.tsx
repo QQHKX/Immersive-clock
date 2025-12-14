@@ -4,7 +4,7 @@ import { IconProps } from "./index";
 
 /**
  * 书本图标组件
- * 用于晚自习模式
+ * 用于自习模式
  * 引用 public/icons/ui/book-open.svg 文件
  */
 export const BookOpenIcon: React.FC<IconProps> = ({

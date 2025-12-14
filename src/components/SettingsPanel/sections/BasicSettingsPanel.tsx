@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
+import { importFontFile, loadImportedFonts } from "../../../utils/studyFontStorage";
+import { Dropdown } from "../../Dropdown/Dropdown";
 import {
   FormSection,
   FormInput,
@@ -32,7 +34,7 @@ export interface BasicSettingsPanelProps {
 /**
  * 基础设置分段组件
  * - 倒计时类型与目标年份/自定义事件设置
- * - 晚自习组件显示开关（时间始终显示）
+ * - 自习组件显示开关（时间始终显示）
  * - 背景设置
  * - 课表设置入口
  */
@@ -58,7 +60,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   );
   const [digitColor, setDigitColor] = useState<string>(study.digitColor ?? "");
 
-  // 晚自习组件显示草稿（时间始终显示，不提供开关）
+  // 自习组件显示草稿（时间始终显示，不提供开关）
   const defaultDisplay = useMemo(
     () => ({
       showStatusBar: true,
@@ -84,7 +86,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => { });
+  const countdownSaveRef = React.useRef<() => void>(() => {});
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
@@ -93,9 +95,12 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [digitOpacity, setDigitOpacity] = useState<number>(1);
   // 字体设置草稿（来源分段：默认 / 自定义字体）
   const [numericFontMode, setNumericFontMode] = useState<"default" | "custom">("default");
-  const [numericFontCustom, setNumericFontCustom] = useState<string>("");
   const [textFontMode, setTextFontMode] = useState<"default" | "custom">("default");
-  const [textFontCustom, setTextFontCustom] = useState<string>("");
+  const [importedFonts, setImportedFonts] = useState(() => loadImportedFonts());
+  const [numericFontSelected, setNumericFontSelected] = useState<string>("");
+  const [textFontSelected, setTextFontSelected] = useState<string>("");
+  const [fontFile, setFontFile] = useState<File | null>(null);
+  const [fontAlias, setFontAlias] = useState<string>("");
 
   // 打开时优先从本地存储读取上次选择的倒计时模式
   useEffect(() => {
@@ -104,7 +109,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved as "gaokao" | "single" | "multi");
       }
-    } catch { }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -158,16 +163,19 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     }
     setDigitOpacity(typeof study.digitOpacity === "number" ? study.digitOpacity : 1);
     // 初始化字体来源分段（函数级注释：根据当前状态决定使用默认或自定义字体，并填充自定义内容）
-    const initMode = (current: string | undefined): { mode: "default" | "custom"; custom: string } => {
+    const initMode = (
+      current: string | undefined
+    ): { mode: "default" | "custom"; custom: string } => {
       if (!current || current.trim().length === 0) return { mode: "default", custom: "" };
       return { mode: "custom", custom: current };
     };
     const nf = initMode(study.numericFontFamily);
     const tf = initMode(study.textFontFamily);
     setNumericFontMode(nf.mode);
-    setNumericFontCustom(nf.custom);
     setTextFontMode(tf.mode);
-    setTextFontCustom(tf.custom);
+    setImportedFonts(loadImportedFonts());
+    setNumericFontSelected(nf.custom);
+    setTextFontSelected(tf.custom);
   }, [
     study.countdownType,
     study.customName,
@@ -251,16 +259,16 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         localStorage.setItem("countdown-mode", countdownMode);
-      } catch { }
+      } catch {}
 
       // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）
-      const resolveFont = (mode: "default" | "custom", custom: string): string | undefined => {
+      const resolveFont = (mode: "default" | "custom", selected: string): string | undefined => {
         if (mode === "default") return undefined;
-        const v = custom.trim();
+        const v = selected.trim();
         return v.length > 0 ? v : undefined;
       };
-      const nextNumeric = resolveFont(numericFontMode, numericFontCustom);
-      const nextText = resolveFont(textFontMode, textFontCustom);
+      const nextNumeric = resolveFont(numericFontMode, numericFontSelected);
+      const nextText = resolveFont(textFontMode, textFontSelected);
       dispatch({ type: "SET_STUDY_NUMERIC_FONT", payload: nextNumeric });
       dispatch({ type: "SET_STUDY_TEXT_FONT", payload: nextText });
     });
@@ -283,10 +291,57 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     singleTextOpacity,
     dispatch,
     numericFontMode,
-    numericFontCustom,
+    numericFontSelected,
     textFontMode,
-    textFontCustom,
+    textFontSelected,
   ]);
+
+  /** 构建字体选择列表（函数级注释：合并已导入字体与内置字体，供下拉选择使用） */
+  const builtInNumericFonts = useMemo(
+    () => [
+      { label: "Roboto Mono", value: "'Roboto Mono', monospace" },
+      { label: "JetBrains Mono", value: "'JetBrains Mono', monospace" },
+      { label: "Source Code Pro", value: "'Source Code Pro', monospace" },
+      { label: "SFMono-Regular", value: "'SFMono-Regular', monospace" },
+      { label: "Consolas", value: "Consolas, monospace" },
+      { label: "Menlo", value: "Menlo, monospace" },
+      { label: "Cascadia Mono", value: "'Cascadia Mono', monospace" },
+    ],
+    []
+  );
+  const builtInTextFonts = useMemo(
+    () => [
+      { label: "Inter", value: "'Inter', sans-serif" },
+      { label: "Segoe UI", value: "'Segoe UI', sans-serif" },
+      { label: "Microsoft YaHei", value: "'Microsoft YaHei', sans-serif" },
+      { label: "PingFang SC", value: "'PingFang SC', sans-serif" },
+      { label: "Noto Sans SC", value: "'Noto Sans SC', sans-serif" },
+      { label: "Noto Serif SC", value: "'Noto Serif SC', serif" },
+      { label: "Helvetica Neue", value: "'Helvetica Neue', sans-serif" },
+      { label: "Arial", value: "Arial, sans-serif" },
+      { label: "system-ui", value: "system-ui, sans-serif" },
+    ],
+    []
+  );
+
+  /** 导入字体文件（函数级注释：读取所选字体文件为DataURL并保存为指定家族名） */
+  const handleImportFont = async () => {
+    if (!fontFile) {
+      alert("请选择要导入的字体文件（TTF/OTF/WOFF/WOFF2）");
+      return;
+    }
+    const family =
+      (fontAlias && fontAlias.trim()) || fontFile.name.replace(/\.(ttf|otf|woff2?|)$/i, "");
+    try {
+      await importFontFile(fontFile, family);
+      setImportedFonts(loadImportedFonts());
+      alert(`已导入字体：${family}`);
+      setFontFile(null);
+      setFontAlias("");
+    } catch {
+      alert("导入字体失败，请重试");
+    }
+  };
 
   return (
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
@@ -468,7 +523,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       </FormSection>
 
       <FormSection title="显示设置">
-        <p className={styles.helpText}>选择晚自习页面显示的组件（时间始终显示）。</p>
+        <p className={styles.helpText}>选择自习页面显示的组件（时间始终显示）。</p>
         <FormRow gap="sm" align="center">
           <FormCheckbox
             label="状态栏"
@@ -505,7 +560,9 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       </FormSection>
 
       <FormSection title="字体设置">
-        <p className={styles.helpText}>选择字体来源（与背景设置风格一致）。默认继承系统，或指定自定义字体。</p>
+        <p className={styles.helpText}>
+          选择字体来源（与背景设置风格一致）。默认继承系统，或从下拉列表选择自定义字体。
+        </p>
         <FormRow gap="sm" align="center">
           <FormSegmented
             label="数字字体来源"
@@ -517,12 +574,35 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             onChange={(v) => setNumericFontMode(v as "default" | "custom")}
           />
           {numericFontMode === "custom" && (
-            <FormInput
-              label="自定义数字字体"
-              placeholder={`例如："JetBrains Mono", monospace`}
-              value={numericFontCustom}
-              onChange={(e) => setNumericFontCustom(e.target.value)}
-            />
+            <FormRow gap="sm" align="center">
+              <FormInput
+                label="选择已导入或内置字体"
+                placeholder="选择后保存即应用"
+                value={numericFontSelected}
+                onChange={() => {}}
+                style={{ display: "none" }}
+              />
+              <Dropdown
+                placeholder="请选择数字字体"
+                value={numericFontSelected}
+                onChange={(v) => setNumericFontSelected((v as string) || "")}
+                searchable
+                width={280}
+                groups={[
+                  {
+                    label: "—— 已导入 ——",
+                    options:
+                      importedFonts.length > 0
+                        ? importedFonts.map((f) => ({ label: f.family, value: f.family }))
+                        : [{ label: "暂无已导入字体", value: "__none__", disabled: true }],
+                  },
+                  {
+                    label: "—— 内置 ——",
+                    options: builtInNumericFonts,
+                  },
+                ]}
+              />
+            </FormRow>
           )}
         </FormRow>
         <FormRow gap="sm" align="center">
@@ -536,21 +616,61 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             onChange={(v) => setTextFontMode(v as "default" | "custom")}
           />
           {textFontMode === "custom" && (
-            <FormInput
-              label="自定义文本字体"
-              placeholder={`例如："Microsoft YaHei", sans-serif`}
-              value={textFontCustom}
-              onChange={(e) => setTextFontCustom(e.target.value)}
-            />
+            <FormRow gap="sm" align="center">
+              <FormInput
+                label="选择已导入或内置字体"
+                placeholder="选择后保存即应用"
+                value={textFontSelected}
+                onChange={() => {}}
+                style={{ display: "none" }}
+              />
+              <Dropdown
+                placeholder="请选择文本字体"
+                value={textFontSelected}
+                onChange={(v) => setTextFontSelected((v as string) || "")}
+                searchable
+                width={280}
+                groups={[
+                  {
+                    label: "—— 已导入 ——",
+                    options:
+                      importedFonts.length > 0
+                        ? importedFonts.map((f) => ({ label: f.family, value: f.family }))
+                        : [{ label: "暂无已导入字体", value: "__none__", disabled: true }],
+                  },
+                  {
+                    label: "—— 内置 ——",
+                    options: builtInTextFonts,
+                  },
+                ]}
+              />
+            </FormRow>
           )}
         </FormRow>
         <p className={styles.helpText}>如果选择“默认”，将回退到全局字体。</p>
+        <FormRow gap="sm" align="center">
+          <FormInput
+            label="字体别名"
+            type="text"
+            value={fontAlias}
+            onChange={(e) => setFontAlias(e.target.value)}
+            placeholder='例如："JetBrains Mono"'
+          />
+          <input
+            type="file"
+            accept=".ttf,.otf,.woff,.woff2"
+            onChange={(e) => setFontFile(e.target.files?.[0] ?? null)}
+          />
+          <FormButton variant="secondary" onClick={handleImportFont}>
+            导入字体文件
+          </FormButton>
+        </FormRow>
       </FormSection>
 
       {/* 背景设置 */}
       <FormSection title="背景设置">
         <p className={styles.helpText}>
-          选择背景来源，并支持颜色或本地图片。保存后将应用到晚自习页面。
+          选择背景来源，并支持颜色或本地图片。保存后将应用到自习页面。
         </p>
         <FormSegmented
           label="背景来源"
@@ -625,7 +745,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       </FormSection>
 
       <FormSection title="课表设置">
-        <p className={styles.helpText}>在此管理晚自习课程时间段，保存后即时生效。</p>
+        <p className={styles.helpText}>在此管理自习课程时间段，保存后即时生效。</p>
         <FormButtonGroup align="left">
           <FormButton variant="primary" onClick={() => setScheduleOpen(true)}>
             打开课表设置
