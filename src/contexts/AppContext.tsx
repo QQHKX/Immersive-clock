@@ -79,6 +79,8 @@ function loadStudyState(): StudyState {
     const savedMessagePopupEnabled = localStorage.getItem("study-message-popup-enabled");
     const savedWeatherAlertEnabled = localStorage.getItem("study-weather-alert-enabled");
     const savedMinutelyPrecipEnabled = localStorage.getItem("study-minutely-precip-enabled");
+    const savedNumericFont = localStorage.getItem("study-numeric-font");
+    const savedTextFont = localStorage.getItem("study-text-font");
 
     const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
 
@@ -132,7 +134,7 @@ function loadStudyState(): StudyState {
       // 立即持久化一次，确保后续有基础数据
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(countdownItems));
-      } catch {}
+      } catch { }
     }
 
     const carouselIntervalSec = savedCarouselInterval
@@ -161,6 +163,8 @@ function loadStudyState(): StudyState {
       carouselIntervalSec,
       digitColor,
       digitOpacity,
+      numericFontFamily: savedNumericFont || undefined,
+      textFontFamily: savedTextFont || undefined,
       messagePopupEnabled,
       weatherAlertEnabled,
       minutelyPrecipEnabled,
@@ -190,6 +194,8 @@ function loadStudyState(): StudyState {
       carouselIntervalSec: undefined,
       digitColor: undefined,
       digitOpacity: 1,
+      numericFontFamily: undefined,
+      textFontFamily: undefined,
       messagePopupEnabled: false,
       weatherAlertEnabled: false,
       minutelyPrecipEnabled: false,
@@ -433,7 +439,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(action.payload));
-      } catch {}
+      } catch { }
       return {
         ...state,
         study: itemsUpdatedStudy,
@@ -482,6 +488,36 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: digitOpacityUpdatedStudy,
+      };
+
+    case "SET_STUDY_NUMERIC_FONT":
+      const numericFontUpdatedStudy = {
+        ...state.study,
+        numericFontFamily: action.payload || undefined,
+      };
+      if (action.payload && action.payload.trim().length > 0) {
+        localStorage.setItem("study-numeric-font", action.payload);
+      } else {
+        localStorage.removeItem("study-numeric-font");
+      }
+      return {
+        ...state,
+        study: numericFontUpdatedStudy,
+      };
+
+    case "SET_STUDY_TEXT_FONT":
+      const textFontUpdatedStudy = {
+        ...state.study,
+        textFontFamily: action.payload || undefined,
+      };
+      if (action.payload && action.payload.trim().length > 0) {
+        localStorage.setItem("study-text-font", action.payload);
+      } else {
+        localStorage.removeItem("study-text-font");
+      }
+      return {
+        ...state,
+        study: textFontUpdatedStudy,
       };
 
     case "SET_MESSAGE_POPUP_ENABLED":

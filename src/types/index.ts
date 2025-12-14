@@ -156,6 +156,10 @@ export interface StudyState {
   digitColor?: string;
   /** 倒计时数字透明度（0-1） */
   digitOpacity?: number;
+  /** 数字字体家族（覆盖晚自习页面的 --font-main） */
+  numericFontFamily?: string;
+  /** 文本字体家族（覆盖晚自习页面的 --font-ui） */
+  textFontFamily?: string;
   // 新增：消息弹窗启用开关
   messagePopupEnabled?: boolean;
   /** 天气预警弹窗开关 */
@@ -311,6 +315,8 @@ export type AppAction =
   | { type: "SET_CAROUSEL_INTERVAL"; payload: number }
   | { type: "SET_COUNTDOWN_DIGIT_COLOR"; payload: string | undefined }
   | { type: "SET_COUNTDOWN_DIGIT_OPACITY"; payload: number | undefined }
+  | { type: "SET_STUDY_NUMERIC_FONT"; payload: string | undefined }
+  | { type: "SET_STUDY_TEXT_FONT"; payload: string | undefined }
   | { type: "SET_MESSAGE_POPUP_ENABLED"; payload: boolean }
   | { type: "SET_WEATHER_ALERT_ENABLED"; payload: boolean }
   | { type: "SET_MINUTELY_PRECIP_ENABLED"; payload: boolean };

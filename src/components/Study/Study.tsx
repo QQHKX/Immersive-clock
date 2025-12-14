@@ -106,7 +106,7 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch {}
+    } catch { }
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -262,6 +262,22 @@ export function Study() {
     return style;
   })();
 
+  /** 构造容器样式（函数级注释：合并背景样式并按晚自习设置覆盖 CSS 字体变量，确保数字与文本分别使用对应的字体家族） */
+  type ContainerStyle = React.CSSProperties & {
+    ["--font-main"]?: string;
+    ["--font-ui"]?: string;
+  };
+  const containerStyle: ContainerStyle = (() => {
+    const style: ContainerStyle = { ...(backgroundStyle as React.CSSProperties) };
+    if (study.numericFontFamily && study.numericFontFamily.trim().length > 0) {
+      style["--font-main"] = study.numericFontFamily;
+    }
+    if (study.textFontFamily && study.textFontFamily.trim().length > 0) {
+      style["--font-ui"] = study.textFontFamily;
+    }
+    return style;
+  })();
+
   // 手动关闭报告：记录当前课时的关闭标记，避免在窗口内重复弹出
   const handleCloseReport = useCallback(() => {
     if (reportPeriod) {
@@ -331,7 +347,7 @@ export function Study() {
   };
 
   return (
-    <div className={styles.container} style={backgroundStyle}>
+    <div className={styles.container} style={containerStyle}>
       {/* 左上角：状态栏与噪音监测（分别可隐藏） */}
       {(display.showStatusBar || display.showNoiseMonitor) && (
         <div className={styles.topLeft}>
