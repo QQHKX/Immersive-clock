@@ -9,7 +9,7 @@ import styles from "./ModeSelector.module.css";
 
 /**
  * 模式选择器组件
- * 提供时钟、倒计时、秒表、晚自习四种模式的切换
+ * 提供时钟、倒计时、秒表、自习四种模式的切换
  */
 export function ModeSelector() {
   const { mode } = useAppState();
@@ -49,9 +49,9 @@ export function ModeSelector() {
     },
     {
       key: "study" as AppMode,
-      label: "晚自习",
+      label: "自习",
       icon: StudyIcon,
-      description: "晚自习模式",
+      description: "自习模式",
     },
   ];
 

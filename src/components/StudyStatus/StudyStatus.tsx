@@ -10,7 +10,7 @@ interface StudyPeriod {
   id: string;
   startTime: string; // 格式: "HH:MM"
   endTime: string; // 格式: "HH:MM"
-  name: string; // 课程名称，如 "第1节晚自习"
+  name: string; // 课程名称，如 "第1节自习"
 }
 
 // 默认课程表
@@ -19,13 +19,13 @@ const DEFAULT_SCHEDULE: StudyPeriod[] = [
     id: "1",
     startTime: "19:10",
     endTime: "20:20",
-    name: "第1节晚自习",
+    name: "第1节自习",
   },
   {
     id: "2",
     startTime: "20:30",
     endTime: "22:20",
-    name: "第2节晚自习",
+    name: "第2节自习",
   },
 ];
 
@@ -42,8 +42,8 @@ interface StudyStatusProps {
 }
 
 /**
- * 智能晚自习状态管理组件
- * 功能：显示当前晚自习状态和进度条
+ * 智能自习状态管理组件
+ * 功能：显示当前自习状态和进度条
  */
 const StudyStatus: React.FC<StudyStatusProps> = () => {
   const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
@@ -51,7 +51,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     isInClass: false,
     currentPeriod: null,
     progress: 0,
-    statusText: "未在晚自习时间",
+    statusText: "未在自习时间",
   });
 
   /**
@@ -120,12 +120,12 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
       }
     }
 
-    // 不在任何晚自习时间段内
+    // 不在任何自习时间段内
     return {
       isInClass: false,
       currentPeriod: null,
       progress: 0,
-      statusText: "未在晚自习时间",
+      statusText: "未在自习时间",
     };
   }, [schedule, timeStringToDate]);
 

@@ -216,6 +216,23 @@
   font-family: var(--font-ui);
 }
 
+/* 字体选择下拉（复用面板风格） */
+.selectOverride {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 240px;
+  font-family: var(--font-ui);
+}
+
+.selectOverride:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 /* 语录刷新设置样式 */
 .quoteRefreshInfo {
   background: rgba(255, 255, 255, 0.05);
