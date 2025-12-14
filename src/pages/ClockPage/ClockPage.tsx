@@ -6,6 +6,7 @@ import { Clock } from "../../components/Clock/Clock";
 import { Countdown } from "../../components/Countdown/Countdown";
 import { CountdownModal } from "../../components/CountdownModal/CountdownModal";
 import { HUD } from "../../components/HUD/HUD";
+import MessagePopup from "../../components/MessagePopup/MessagePopup";
 import { SettingsButton } from "../../components/SettingsButton";
 import { SettingsPanel } from "../../components/SettingsPanel";
 import { Stopwatch } from "../../components/Stopwatch/Stopwatch";
@@ -13,7 +14,6 @@ import { Study } from "../../components/Study/Study";
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 
 import styles from "./ClockPage.module.css";
-import MessagePopup from "../../components/MessagePopup/MessagePopup";
 
 /**
  * 时钟主页面组件
@@ -26,7 +26,14 @@ export function ClockPage() {
   const prevModeRef = useRef(mode);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
-  const [globalPopups, setGlobalPopups] = useState<Array<{ id: string; type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate"; title: string; message: string }>>([]);
+  const [globalPopups, setGlobalPopups] = useState<
+    Array<{
+      id: string;
+      type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
+      title: string;
+      message: string;
+    }>
+  >([]);
 
   // 跟踪模式变化
   useEffect(() => {
@@ -145,7 +152,9 @@ export function ClockPage() {
     const onOpen = (e: Event) => {
       if (mode !== "study") return;
       const detail = (e as CustomEvent).detail || {};
-      const type = (detail.type as "general" | "weatherAlert" | "coolingReminder" | "systemUpdate") || "general";
+      const type =
+        (detail.type as "general" | "weatherAlert" | "coolingReminder" | "systemUpdate") ||
+        "general";
       const title = (detail.title as string) || "消息提醒";
       const message = (detail.message as string) || "";
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

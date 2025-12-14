@@ -215,7 +215,10 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
   ];
   for (const [url, keys] of sources) {
     try {
-      const data = (await httpGetJson(url, { "User-Agent": "QWeatherTest/1.0" })) as Record<string, unknown>;
+      const data = (await httpGetJson(url, { "User-Agent": "QWeatherTest/1.0" })) as Record<
+        string,
+        unknown
+      >;
       if (keys.length === 1 && keys[0] === "loc") {
         const loc = (data as IpInfoResponse)?.loc;
         if (loc && loc.includes(",")) {
@@ -225,8 +228,18 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
       } else {
         const latRaw = data[keys[0]];
         const lonRaw = data[keys[1]];
-        const latNum = typeof latRaw === "number" ? latRaw : typeof latRaw === "string" ? parseFloat(latRaw) : NaN;
-        const lonNum = typeof lonRaw === "number" ? lonRaw : typeof lonRaw === "string" ? parseFloat(lonRaw) : NaN;
+        const latNum =
+          typeof latRaw === "number"
+            ? latRaw
+            : typeof latRaw === "string"
+              ? parseFloat(latRaw)
+              : NaN;
+        const lonNum =
+          typeof lonRaw === "number"
+            ? lonRaw
+            : typeof lonRaw === "string"
+              ? parseFloat(lonRaw)
+              : NaN;
         if (Number.isFinite(latNum) && Number.isFinite(lonNum)) {
           return { lat: latNum, lon: lonNum };
         }
@@ -291,7 +304,10 @@ export interface MinutelyPrecipResponse {
  * 获取指定坐标的天气预警
  * 使用和风私有域，携带 API Key 与可选 JWT
  */
-export async function fetchWeatherAlertsByCoords(lat: number, lon: number): Promise<WeatherAlertResponse> {
+export async function fetchWeatherAlertsByCoords(
+  lat: number,
+  lon: number
+): Promise<WeatherAlertResponse> {
   const url = `https://${QWEATHER_HOST}/weatheralert/v1/current/${lat.toFixed(2)}/${lon.toFixed(2)}?localTime=true&lang=zh`;
   try {
     const headers: Record<string, string> = {

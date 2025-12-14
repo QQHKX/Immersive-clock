@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-import { buildWeatherFlow, fetchWeatherAlertsByCoords, fetchMinutelyPrecip } from "../../services/weatherService";
-import { logger } from "../../utils/logger";
 import { useAppState } from "../../contexts/AppContext";
+import {
+  buildWeatherFlow,
+  fetchWeatherAlertsByCoords,
+  fetchMinutelyPrecip,
+} from "../../services/weatherService";
+import { logger } from "../../utils/logger";
 
 import styles from "./Weather.module.css";
 
@@ -192,60 +196,99 @@ const Weather: React.FC = () => {
   /**
    * 处理天气预警与降雨提醒
    */
-  const handleAlertsAndPrecip = useCallback(async (coords?: { lat: number; lon: number } | null) => {
-    if (!coords || !study?.messagePopupEnabled) return;
-    const locationParam = `${coords.lon},${coords.lat}`;
-    try {
-      if (study.weatherAlertEnabled) {
-        const alertResp = await fetchWeatherAlertsByCoords(coords.lat, coords.lon);
-        if (!alertResp.error && alertResp.alerts && alertResp.alerts.length > 0 && !alertResp.metadata?.zeroResult) {
-          const first = alertResp.alerts[0];
-          const lastTag = localStorage.getItem("weather.alert.lastTag");
-          if (alertResp.metadata?.tag && alertResp.metadata.tag !== lastTag) {
-            localStorage.setItem("weather.alert.lastTag", alertResp.metadata.tag);
-            const ev = new CustomEvent("messagePopup:open", {
-              detail: {
-                type: "weatherAlert",
-                title: first.headline || (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"),
-                message: first.description || "请注意当前天气预警信息。",
-              },
-            });
-            window.dispatchEvent(ev);
-          }
-        }
-      }
-    } catch (e) {
-      logger.warn("天气预警处理失败:", e);
-    }
-
-    try {
-      if (study.minutelyPrecipEnabled) {
-        const minResp = await fetchMinutelyPrecip(locationParam);
-        if (!minResp.error && minResp.code === "200") {
-          const lastUpdate = localStorage.getItem("weather.minutely.lastUpdateTime");
-          if (minResp.updateTime && minResp.updateTime !== lastUpdate) {
-            localStorage.setItem("weather.minutely.lastUpdateTime", minResp.updateTime);
-            const hasRainSoon = (minResp.minutely || []).some((m) => {
-              const p = m.precip ? parseFloat(m.precip) : 0;
-              return Number.isFinite(p) && p > 0;
-            });
-            if (hasRainSoon) {
+  const handleAlertsAndPrecip = useCallback(
+    async (coords?: { lat: number; lon: number } | null) => {
+      if (!coords || !study?.messagePopupEnabled) return;
+      const locationParam = `${coords.lon},${coords.lat}`;
+      try {
+        if (study.weatherAlertEnabled) {
+          const alertResp = await fetchWeatherAlertsByCoords(coords.lat, coords.lon);
+          if (
+            !alertResp.error &&
+            alertResp.alerts &&
+            alertResp.alerts.length > 0 &&
+            !alertResp.metadata?.zeroResult
+          ) {
+            const {
+              selectLatestAlertsPerStation,
+              buildAlertSignature,
+              normalizeStationKey,
+              readStationRecord,
+              writeStationRecord,
+            } = await import("../../utils/weatherAlert");
+            const latestByStation = selectLatestAlertsPerStation(alertResp.alerts);
+            for (const item of latestByStation) {
+              const stationKey = normalizeStationKey(item.alert.senderName, coords);
+              const signature = buildAlertSignature(item.alert);
+              const record = readStationRecord(stationKey);
+              if (record && record.sig === signature) {
+                continue;
+              }
+              writeStationRecord(stationKey, signature);
               const ev = new CustomEvent("messagePopup:open", {
                 detail: {
                   type: "weatherAlert",
-                  title: "降雨提醒",
-                  message: minResp.summary || "未来两小时可能有降雨，请注意出行。",
+                  title:
+                    item.alert.headline ||
+                    (item.alert.eventType?.name ? `${item.alert.eventType.name}预警` : "天气预警"),
+                  message: item.alert.description || "请注意当前天气预警信息。",
                 },
               });
               window.dispatchEvent(ev);
             }
+            if (latestByStation.length === 0 && alertResp.metadata?.tag) {
+              const lastTag = localStorage.getItem("weather.alert.lastTag");
+              if (alertResp.metadata.tag !== lastTag) {
+                localStorage.setItem("weather.alert.lastTag", alertResp.metadata.tag);
+                const first = alertResp.alerts[0];
+                const ev = new CustomEvent("messagePopup:open", {
+                  detail: {
+                    type: "weatherAlert",
+                    title:
+                      first.headline ||
+                      (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"),
+                    message: first.description || "请注意当前天气预警信息。",
+                  },
+                });
+                window.dispatchEvent(ev);
+              }
+            }
           }
         }
+      } catch (e) {
+        logger.warn("天气预警处理失败:", e);
       }
-    } catch (e) {
-      logger.warn("分钟级降水处理失败:", e);
-    }
-  }, [study]);
+
+      try {
+        if (study.minutelyPrecipEnabled) {
+          const minResp = await fetchMinutelyPrecip(locationParam);
+          if (!minResp.error && minResp.code === "200") {
+            const lastUpdate = localStorage.getItem("weather.minutely.lastUpdateTime");
+            if (minResp.updateTime && minResp.updateTime !== lastUpdate) {
+              localStorage.setItem("weather.minutely.lastUpdateTime", minResp.updateTime);
+              const hasRainSoon = (minResp.minutely || []).some((m) => {
+                const p = m.precip ? parseFloat(m.precip) : 0;
+                return Number.isFinite(p) && p > 0;
+              });
+              if (hasRainSoon) {
+                const ev = new CustomEvent("messagePopup:open", {
+                  detail: {
+                    type: "weatherAlert",
+                    title: "降雨提醒",
+                    message: minResp.summary || "未来两小时可能有降雨，请注意出行。",
+                  },
+                });
+                window.dispatchEvent(ev);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logger.warn("分钟级降水处理失败:", e);
+      }
+    },
+    [study]
+  );
 
   /**
    * 组件挂载时初始化天气数据

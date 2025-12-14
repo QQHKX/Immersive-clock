@@ -90,9 +90,7 @@ export function QuoteChannelManager({
 
         // 找出自定义渠道（不在文件列表中的渠道）
         const builtInIds = new Set(loadedChannels.map((c) => c.id));
-        const customChannels = state.quoteChannels.channels.filter(
-          (c) => !builtInIds.has(c.id)
-        );
+        const customChannels = state.quoteChannels.channels.filter((c) => !builtInIds.has(c.id));
 
         setChannels([...mergedBuiltInChannels, ...customChannels]);
       }

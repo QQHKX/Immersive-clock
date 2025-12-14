@@ -34,7 +34,6 @@ export function info(...args: unknown[]): void {
  * @param args 可变参数
  */
 export function warn(...args: unknown[]): void {
-  // eslint-disable-next-line no-console
   console.warn(...args);
 }
 
@@ -43,7 +42,6 @@ export function warn(...args: unknown[]): void {
  * @param args 可变参数
  */
 export function error(...args: unknown[]): void {
-  // eslint-disable-next-line no-console
   console.error(...args);
 }
 

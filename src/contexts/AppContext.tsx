@@ -132,7 +132,7 @@ function loadStudyState(): StudyState {
       // 立即持久化一次，确保后续有基础数据
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(countdownItems));
-      } catch { }
+      } catch {}
     }
 
     const carouselIntervalSec = savedCarouselInterval
@@ -433,7 +433,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
       try {
         localStorage.setItem("study-countdown-items", JSON.stringify(action.payload));
-      } catch { }
+      } catch {}
       return {
         ...state,
         study: itemsUpdatedStudy,
