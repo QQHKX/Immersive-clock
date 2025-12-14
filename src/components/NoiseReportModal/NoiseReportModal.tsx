@@ -511,7 +511,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         {/* 更多统计：保持上部紧凑，将迷你图放在下方两列网格中 */}
         <h4 className={styles.sectionTitle}>更多统计</h4>
         <div className={styles.extraChartsGrid}>
-          
           {/* 迷你图2：分贝直方图 */}
           <div>
             <div className={styles.miniTitle}>分贝分布（4dB 直方图）</div>

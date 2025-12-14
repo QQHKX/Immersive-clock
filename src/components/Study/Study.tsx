@@ -106,7 +106,7 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch { }
+    } catch {}
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();

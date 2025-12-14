@@ -290,7 +290,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       };
       const Ctor = audioContextCtor.AudioContext || audioContextCtor.webkitAudioContext;
       if (!Ctor) {
-        logger.warn('当前环境不支持 WebAudio');
+        logger.warn("当前环境不支持 WebAudio");
         return;
       }
       const audioContext = new Ctor();

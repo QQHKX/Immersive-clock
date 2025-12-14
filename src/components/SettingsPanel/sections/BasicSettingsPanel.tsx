@@ -84,7 +84,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => { });
+  const countdownSaveRef = React.useRef<() => void>(() => {});
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
@@ -99,7 +99,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved as "gaokao" | "single" | "multi");
       }
-    } catch { }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -233,7 +233,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         localStorage.setItem("countdown-mode", countdownMode);
-      } catch { }
+      } catch {}
     });
   }, [
     onRegisterSave,

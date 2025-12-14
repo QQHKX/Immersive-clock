@@ -21,10 +21,18 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
   const dispatch = useAppDispatch();
 
   const [enabled, setEnabled] = useState<boolean>(!!study.messagePopupEnabled);
-  const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(!!study.weatherAlertEnabled);
-  const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(!!study.minutelyPrecipEnabled);
+  const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(
+    !!study.weatherAlertEnabled
+  );
+  const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(
+    !!study.minutelyPrecipEnabled
+  );
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
-  const [previewData, setPreviewData] = useState<{ type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate"; title: string; message: string } | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
+    title: string;
+    message: string;
+  } | null>(null);
   // 测试按钮通过全局事件触发弹窗，避免设置面板关闭时被卸载
 
   useEffect(() => {
@@ -82,12 +90,15 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
                 detail: {
                   type: "weatherAlert",
                   title: "测试：天气预警",
-                  message:
-                    "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。",
+                  message: "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。",
                 },
               });
               window.dispatchEvent(ev);
-              setPreviewData({ type: "weatherAlert", title: "测试：天气预警", message: "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。" });
+              setPreviewData({
+                type: "weatherAlert",
+                title: "测试：天气预警",
+                message: "这是模拟的天气预警消息。实际使用将展示和风天气预警的标题与描述。",
+              });
               setPreviewOpen(true);
             }}
             disabled={!enabled || !weatherAlertEnabled}
@@ -101,12 +112,15 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
                 detail: {
                   type: "weatherAlert",
                   title: "测试：降雨提醒",
-                  message:
-                    "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。",
+                  message: "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。",
                 },
               });
               window.dispatchEvent(ev);
-              setPreviewData({ type: "weatherAlert", title: "测试：降雨提醒", message: "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。" });
+              setPreviewData({
+                type: "weatherAlert",
+                title: "测试：降雨提醒",
+                message: "这是模拟的降雨提醒。实际使用将根据分钟级降水返回的 summary 展示提示。",
+              });
               setPreviewOpen(true);
             }}
             disabled={!enabled || !minutelyPrecipEnabled}
