@@ -84,13 +84,18 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => {});
+  const countdownSaveRef = React.useRef<() => void>(() => { });
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
   const [singleTextOpacity, setSingleTextOpacity] = useState<number>(1);
   // 全局数字透明度草稿
   const [digitOpacity, setDigitOpacity] = useState<number>(1);
+  // 字体设置草稿（来源分段：默认 / 自定义字体）
+  const [numericFontMode, setNumericFontMode] = useState<"default" | "custom">("default");
+  const [numericFontCustom, setNumericFontCustom] = useState<string>("");
+  const [textFontMode, setTextFontMode] = useState<"default" | "custom">("default");
+  const [textFontCustom, setTextFontCustom] = useState<string>("");
 
   // 打开时优先从本地存储读取上次选择的倒计时模式
   useEffect(() => {
@@ -99,7 +104,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved as "gaokao" | "single" | "multi");
       }
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -152,6 +157,17 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       setSingleTextOpacity(1);
     }
     setDigitOpacity(typeof study.digitOpacity === "number" ? study.digitOpacity : 1);
+    // 初始化字体来源分段（函数级注释：根据当前状态决定使用默认或自定义字体，并填充自定义内容）
+    const initMode = (current: string | undefined): { mode: "default" | "custom"; custom: string } => {
+      if (!current || current.trim().length === 0) return { mode: "default", custom: "" };
+      return { mode: "custom", custom: current };
+    };
+    const nf = initMode(study.numericFontFamily);
+    const tf = initMode(study.textFontFamily);
+    setNumericFontMode(nf.mode);
+    setNumericFontCustom(nf.custom);
+    setTextFontMode(tf.mode);
+    setTextFontCustom(tf.custom);
   }, [
     study.countdownType,
     study.customName,
@@ -160,6 +176,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     defaultDisplay,
     study.countdownItems,
     study.digitOpacity,
+    study.numericFontFamily,
+    study.textFontFamily,
   ]);
 
   // 注册保存动作：统一在父组件保存时派发
@@ -233,7 +251,18 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         localStorage.setItem("countdown-mode", countdownMode);
-      } catch {}
+      } catch { }
+
+      // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）
+      const resolveFont = (mode: "default" | "custom", custom: string): string | undefined => {
+        if (mode === "default") return undefined;
+        const v = custom.trim();
+        return v.length > 0 ? v : undefined;
+      };
+      const nextNumeric = resolveFont(numericFontMode, numericFontCustom);
+      const nextText = resolveFont(textFontMode, textFontCustom);
+      dispatch({ type: "SET_STUDY_NUMERIC_FONT", payload: nextNumeric });
+      dispatch({ type: "SET_STUDY_TEXT_FONT", payload: nextText });
     });
   }, [
     onRegisterSave,
@@ -253,6 +282,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     singleBgOpacity,
     singleTextOpacity,
     dispatch,
+    numericFontMode,
+    numericFontCustom,
+    textFontMode,
+    textFontCustom,
   ]);
 
   return (
@@ -469,6 +502,49 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             onChange={(e) => setDraftDisplay((prev) => ({ ...prev, showDate: e.target.checked }))}
           />
         </FormRow>
+      </FormSection>
+
+      <FormSection title="字体设置">
+        <p className={styles.helpText}>选择字体来源（与背景设置风格一致）。默认继承系统，或指定自定义字体。</p>
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="数字字体来源"
+            value={numericFontMode}
+            options={[
+              { label: "默认", value: "default" },
+              { label: "自定义字体", value: "custom" },
+            ]}
+            onChange={(v) => setNumericFontMode(v as "default" | "custom")}
+          />
+          {numericFontMode === "custom" && (
+            <FormInput
+              label="自定义数字字体"
+              placeholder={`例如："JetBrains Mono", monospace`}
+              value={numericFontCustom}
+              onChange={(e) => setNumericFontCustom(e.target.value)}
+            />
+          )}
+        </FormRow>
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="文本字体来源"
+            value={textFontMode}
+            options={[
+              { label: "默认", value: "default" },
+              { label: "自定义字体", value: "custom" },
+            ]}
+            onChange={(v) => setTextFontMode(v as "default" | "custom")}
+          />
+          {textFontMode === "custom" && (
+            <FormInput
+              label="自定义文本字体"
+              placeholder={`例如："Microsoft YaHei", sans-serif`}
+              value={textFontCustom}
+              onChange={(e) => setTextFontCustom(e.target.value)}
+            />
+          )}
+        </FormRow>
+        <p className={styles.helpText}>如果选择“默认”，将回退到全局字体。</p>
       </FormSection>
 
       {/* 背景设置 */}

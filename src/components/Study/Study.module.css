@@ -80,6 +80,7 @@
   color: var(--accent-color);
   font-weight: 700;
   font-size: 1.2em;
+  font-family: var(--font-main);
 }
 
 .quoteSection {
