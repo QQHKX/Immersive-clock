@@ -187,6 +187,16 @@ immersive-clock/
 
 ---
 
+## 💬 交流与反馈
+
+欢迎加入我们的官方交流群，分享使用心得、反馈 Bug 或提出功能建议。
+
+| QQ 交流群 | 二维码 |
+| :---: | :---: |
+| **965931796** | <img src="public\assets\qq-group.png.jpg" width="200" alt="QQ Group QR Code" /> |
+
+---
+
 ## 🤝 贡献指南
 
 欢迎任何形式的贡献（功能优化、Bug 修复、文档改进等）：
