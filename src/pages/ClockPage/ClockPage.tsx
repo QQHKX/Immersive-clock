@@ -41,6 +41,12 @@ export function ClockPage() {
 
   // 跟踪模式变化
   useEffect(() => {
+    if (prevModeRef.current !== "study" && mode === "study") {
+      const ev = new CustomEvent("weatherMinutelyPrecipRefresh", {
+        detail: { forceApi: false, openIfRain: true },
+      });
+      window.dispatchEvent(ev);
+    }
     prevModeRef.current = mode;
   }, [mode]);
 

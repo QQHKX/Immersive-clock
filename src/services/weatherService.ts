@@ -117,7 +117,6 @@ async function httpGetJson(
   headers?: Record<string, string>,
   timeoutMs = 10000
 ): Promise<unknown> {
-  // 浏览器 fetch 默认支持 gzip/deflate；此处仍按稳健方式处理解码
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -126,13 +125,31 @@ async function httpGetJson(
       signal: controller.signal,
       // 无需携带凭据：当前接口均为公开访问
     });
-    // 优先尝试直接解析 JSON
     const text = await resp.text();
-    try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      return JSON.parse(text) as unknown;
+    const preview = String(text || "")
+      .replace(/\s+/g, " ")
+      .slice(0, 300);
+
+    let parsed: unknown | null = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text) as unknown;
+      } catch {
+        parsed = null;
+      }
     }
+
+    if (!resp.ok) {
+      throw new Error(
+        `HTTP ${resp.status} ${resp.statusText}：${url}${preview ? `｜${preview}` : ""}`
+      );
+    }
+
+    if (parsed == null) {
+      throw new Error(`响应非 JSON：${url}${preview ? `｜${preview}` : ""}`);
+    }
+
+    return parsed;
   } finally {
     clearTimeout(timeout);
   }
@@ -346,12 +363,16 @@ export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPre
 }
 
 export async function geoCityLookup(lat: number, lon: number): Promise<unknown> {
-  const url = `https://geoapi.qweather.com/v2/city/lookup?location=${encodeURIComponent(`${lon},${lat}`)}&key=${encodeURIComponent(QWEATHER_API_KEY)}`;
+  const url = `https://${QWEATHER_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(`${lon},${lat}`)}&lang=zh`;
   try {
-    return await httpGetJson(url, {
+    const headers: Record<string, string> = {
+      "X-QW-Api-Key": QWEATHER_API_KEY,
       "User-Agent": "QWeatherTest/1.0",
       "Accept-Encoding": "gzip, deflate",
-    });
+    };
+    const jwt = import.meta.env.VITE_QWEATHER_JWT;
+    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+    return await httpGetJson(url, headers);
   } catch (e: unknown) {
     return { error: String(e) };
   }

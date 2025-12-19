@@ -85,6 +85,19 @@ const MessagePopupSettingsPanel: React.FC<MessagePopupSettingsPanelProps> = ({
         <FormButtonGroup align="left">
           <FormButton
             variant="secondary"
+            size="sm"
+            onClick={() => {
+              const ev = new CustomEvent("weatherMinutelyPrecipRefresh", {
+                detail: { forceApi: true, openIfRain: false },
+              });
+              window.dispatchEvent(ev);
+            }}
+            disabled={!enabled || !minutelyPrecipEnabled}
+          >
+            刷新降雨数据
+          </FormButton>
+          <FormButton
+            variant="secondary"
             onClick={() => {
               const ev = new CustomEvent("messagePopup:open", {
                 detail: {
