@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-  <a href="https://qqhkx.com">官网</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a> ｜ <a href="https://clock.qqhkx.com">在线体验</a>
+  <a href="https://qqhkx.com">官网</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a> ｜ <a href="https://clock.qqhkx.com">在线体验</a> ｜ <a href="https://qm.qq.com/q/fawykipRhm">QQ 交流群</a>
 </p>
 
 <p align="center">
