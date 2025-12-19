@@ -14,10 +14,12 @@ describe("dropdown utils", () => {
       { label: "Delta", value: "d" },
     ];
     const { groups: g2, options: o2 } = filterOptions(groups, options, "a");
-    expect(g2?.length).toBe(1);
+    expect(g2?.length).toBe(2);
     expect(g2?.[0].options[0].label).toBe("Alpha");
-    expect(o2?.length).toBe(1);
+    expect(g2?.[1].options[0].label).toBe("Beta");
+    expect(o2?.length).toBe(2);
     expect(o2?.[0].label).toBe("Gamma");
+    expect(o2?.[1].label).toBe("Delta");
   });
 
   it("toggleValue single", () => {
