@@ -15,6 +15,10 @@ import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 
 import styles from "./ClockPage.module.css";
 
+const MINUTELY_PRECIP_POPUP_ID = "weather:minutelyPrecip";
+const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
+const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
+
 /**
  * 时钟主页面组件
  * 根据当前模式显示相应的时钟组件，处理HUD显示逻辑
@@ -31,7 +35,7 @@ export function ClockPage() {
       id: string;
       type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
       title: string;
-      message: string;
+      message: React.ReactNode;
     }>
   >([]);
 
@@ -156,11 +160,34 @@ export function ClockPage() {
         (detail.type as "general" | "weatherAlert" | "coolingReminder" | "systemUpdate") ||
         "general";
       const title = (detail.title as string) || "消息提醒";
-      const message = (detail.message as string) || "";
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      setGlobalPopups((prev) => [...prev, { id, type, title, message }]);
+      const message = (detail.message as React.ReactNode) || "";
+      const id = (detail.id as string) || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setGlobalPopups((prev) => {
+        const idx = prev.findIndex((x) => x.id === id);
+        const nextItem = { id, type, title, message };
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = nextItem;
+          return next;
+        }
+        return [...prev, nextItem];
+      });
+      if (id === MINUTELY_PRECIP_POPUP_ID) {
+        try {
+          sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "1");
+        } catch {
+          /* ignore */
+        }
+      }
     };
-    const onClose = () => setGlobalPopups([]);
+    const onClose = () => {
+      setGlobalPopups([]);
+      try {
+        sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
+      } catch {
+        /* ignore */
+      }
+    };
     window.addEventListener("messagePopup:open", onOpen as EventListener);
     window.addEventListener("messagePopup:close", onClose as EventListener);
     return () => {
@@ -173,6 +200,11 @@ export function ClockPage() {
   useEffect(() => {
     if (mode !== "study" && globalPopups.length > 0) {
       setGlobalPopups([]);
+      try {
+        sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
+      } catch {
+        /* ignore */
+      }
     }
   }, [mode, globalPopups.length]);
 
@@ -229,7 +261,17 @@ export function ClockPage() {
             <MessagePopup
               key={p.id}
               isOpen={true}
-              onClose={() => setGlobalPopups((prev) => prev.filter((x) => x.id !== p.id))}
+              onClose={() => {
+                if (p.id === MINUTELY_PRECIP_POPUP_ID) {
+                  try {
+                    sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
+                    sessionStorage.setItem(MINUTELY_PRECIP_POPUP_DISMISSED_KEY, "1");
+                  } catch {
+                    /* ignore */
+                  }
+                }
+                setGlobalPopups((prev) => prev.filter((x) => x.id !== p.id));
+              }}
               type={p.type}
               title={p.title}
               message={p.message}

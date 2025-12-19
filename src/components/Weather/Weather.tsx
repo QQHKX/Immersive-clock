@@ -6,9 +6,180 @@ import {
   fetchWeatherAlertsByCoords,
   fetchMinutelyPrecip,
 } from "../../services/weatherService";
+import type { MinutelyPrecipResponse } from "../../services/weatherService";
 import { logger } from "../../utils/logger";
 
 import styles from "./Weather.module.css";
+
+const MINUTELY_PRECIP_POPUP_ID = "weather:minutelyPrecip";
+const MINUTELY_PRECIP_CACHE_KEY = "weather.minutely.cache.v1";
+const MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY = "weather.minutely.lastApiFetchAt";
+const MINUTELY_PRECIP_POPUP_SHOWN_KEY = "weather.minutely.popupShown";
+const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
+const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
+const MINUTELY_PRECIP_API_INTERVAL_MS = 30 * 60 * 1000;
+const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
+
+type MinutelyPrecipCache = Pick<MinutelyPrecipResponse, "updateTime" | "summary" | "minutely"> & {
+  fetchedAt: number;
+};
+
+function safeParseJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function formatTimestampHm(ms: number): string {
+  const d = new Date(ms);
+  const hh = pad2(d.getHours());
+  const mm = pad2(d.getMinutes());
+  return `${hh}:${mm}`;
+}
+
+function parseTimeMs(iso?: string): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function safeReadSessionFlag(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function safeWriteSessionFlag(key: string, value: boolean): void {
+  try {
+    sessionStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+function computeMinutelyRainStats(cache: MinutelyPrecipCache, nowMs: number) {
+  const list = cache.minutely || [];
+  const baseMs = parseTimeMs(cache.updateTime) ?? cache.fetchedAt ?? nowMs;
+  const items = list
+    .map((m, idx) => {
+      const t = parseTimeMs(m.fxTime) ?? baseMs + idx * 5 * 60 * 1000;
+      const p = m.precip ? Number.parseFloat(m.precip) : 0;
+      const precip = Number.isFinite(p) ? p : 0;
+      return { t, precip };
+    })
+    .sort((a, b) => a.t - b.t);
+
+  const slotMs = 5 * 60 * 1000;
+  const idxNow = (() => {
+    for (let i = items.length - 1; i >= 0; i -= 1) {
+      if (items[i].t <= nowMs) return i;
+    }
+    return -1;
+  })();
+  const currentItem =
+    idxNow >= 0 && nowMs - items[idxNow].t < slotMs ? items[idxNow] : (null as null);
+  const rainingNow = !!currentItem && currentItem.precip > 0;
+
+  const horizon = items.filter((x) => x.t >= nowMs);
+  const horizonWithNow = rainingNow && currentItem ? [currentItem, ...horizon] : horizon;
+  const totalSlots = horizonWithNow.length > 0 ? horizonWithNow.length : items.length;
+  const rainySlots = (horizonWithNow.length > 0 ? horizonWithNow : items).filter(
+    (x) => x.precip > 0
+  );
+  const probability = totalSlots > 0 ? Math.round((rainySlots.length / totalSlots) * 100) : 0;
+
+  if (rainySlots.length === 0) {
+    return {
+      hasRain: false,
+      probability,
+      intensityLabel: "降雨",
+      startInMinutes: null as number | null,
+      durationMinutes: null as number | null,
+      remainingMinutes: null as number | null,
+      expectedAmountMm: 0,
+      summary: "未来两小时暂无降雨。",
+    };
+  }
+
+  if (rainingNow && currentItem && idxNow >= 0) {
+    let segStart = idxNow;
+    while (segStart - 1 >= 0 && items[segStart - 1].precip > 0) segStart -= 1;
+    let segEnd = idxNow;
+    while (segEnd + 1 < items.length && items[segEnd + 1].precip > 0) segEnd += 1;
+
+    const segment = items.slice(segStart, segEnd + 1);
+    const durationMinutes = segment.length > 0 ? segment.length * 5 : 5;
+    const maxPrecip = segment.reduce((mx, x) => Math.max(mx, x.precip), 0);
+    const expectedAmountMm = items.slice(idxNow, segEnd + 1).reduce((sum, x) => sum + x.precip, 0);
+
+    const intensityLabel =
+      maxPrecip < 0.1 ? "小雨" : maxPrecip < 0.5 ? "中雨" : maxPrecip < 1.5 ? "大雨" : "暴雨";
+
+    const segmentEndMs = items[segEnd].t + slotMs;
+    const remainingMinutes = Math.max(0, Math.round((segmentEndMs - nowMs) / 60000));
+
+    const summary = `正在${intensityLabel}，预计${remainingMinutes}分钟后结束。`;
+    return {
+      hasRain: true,
+      probability,
+      intensityLabel,
+      startInMinutes: 0,
+      durationMinutes,
+      remainingMinutes,
+      expectedAmountMm,
+      summary,
+    };
+  }
+
+  const firstRain = rainySlots[0];
+  const startInMinutes = Math.max(0, Math.round((firstRain.t - nowMs) / 60000));
+
+  const seqSource = horizon.length > 0 ? horizon : items;
+  const firstIdx = seqSource.findIndex((x) => x.t === firstRain.t && x.precip > 0);
+  const segment: Array<{ t: number; precip: number }> = [];
+  for (let i = Math.max(0, firstIdx); i < seqSource.length; i += 1) {
+    const x = seqSource[i];
+    if (x.precip > 0) segment.push(x);
+    else if (segment.length > 0) break;
+  }
+
+  const durationMinutes = segment.length > 0 ? segment.length * 5 : 5;
+  const maxPrecip = segment.reduce((mx, x) => Math.max(mx, x.precip), 0);
+  const expectedAmountMm = segment.reduce((sum, x) => sum + x.precip, 0);
+
+  const intensityLabel =
+    maxPrecip < 0.1 ? "小雨" : maxPrecip < 0.5 ? "中雨" : maxPrecip < 1.5 ? "大雨" : "暴雨";
+
+  const lastSegmentItem = segment.length > 0 ? segment[segment.length - 1] : null;
+  const segmentEndMs = ((lastSegmentItem ? lastSegmentItem.t : null) ?? firstRain.t) + slotMs;
+  const remainingMinutes =
+    nowMs >= firstRain.t ? Math.max(0, Math.round((segmentEndMs - nowMs) / 60000)) : null;
+
+  const summary =
+    startInMinutes > 0
+      ? `预计${startInMinutes}分钟后开始${intensityLabel}，持续约${durationMinutes}分钟。`
+      : `正在${intensityLabel}，预计${remainingMinutes ?? durationMinutes}分钟后结束。`;
+
+  return {
+    hasRain: true,
+    probability,
+    intensityLabel,
+    startInMinutes,
+    durationMinutes,
+    remainingMinutes,
+    expectedAmountMm,
+    summary,
+  };
+}
 
 // 天气数据接口
 export interface WeatherData {
@@ -27,6 +198,75 @@ const Weather: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { study } = useAppState();
+
+  const readMinutelyCache = useCallback((): MinutelyPrecipCache | null => {
+    const raw = localStorage.getItem(MINUTELY_PRECIP_CACHE_KEY);
+    return safeParseJson<MinutelyPrecipCache>(raw);
+  }, []);
+
+  const writeMinutelyCache = useCallback((data: MinutelyPrecipResponse, fetchedAt: number) => {
+    const payload: MinutelyPrecipCache = {
+      updateTime: data.updateTime,
+      summary: data.summary,
+      minutely: data.minutely,
+      fetchedAt,
+    };
+    try {
+      localStorage.setItem(MINUTELY_PRECIP_CACHE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const buildMinutelyPopupMessage = useCallback(
+    (
+      cache: MinutelyPrecipCache,
+      opts?: {
+        showUpdatedHint?: boolean;
+      }
+    ): React.ReactNode => {
+      const nowMs = Date.now();
+      const stats = computeMinutelyRainStats(cache, nowMs);
+      const lastUpdateMs = parseTimeMs(cache.updateTime) ?? cache.fetchedAt ?? nowMs;
+      const lastUpdateText = formatTimestampHm(lastUpdateMs);
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div>{opts?.showUpdatedHint ? `${stats.summary}（已更新）` : stats.summary}</div>
+          <div>降雨概率：{stats.probability}%</div>
+          <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>上次更新：{lastUpdateText}</div>
+        </div>
+      );
+    },
+    []
+  );
+
+  const updateMinutelyPopupFromCache = useCallback(
+    (opts?: { showUpdatedHint?: boolean }) => {
+      if (!study?.messagePopupEnabled || !study.minutelyPrecipEnabled) return;
+      if (!safeReadSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY)) return;
+      if (safeReadSessionFlag(MINUTELY_PRECIP_POPUP_DISMISSED_KEY)) return;
+
+      const cache = readMinutelyCache();
+      if (!cache) return;
+      const message = buildMinutelyPopupMessage(cache, { showUpdatedHint: opts?.showUpdatedHint });
+      const ev = new CustomEvent("messagePopup:open", {
+        detail: {
+          id: MINUTELY_PRECIP_POPUP_ID,
+          type: "weatherAlert",
+          title: "降雨提醒",
+          message,
+        },
+      });
+      window.dispatchEvent(ev);
+    },
+    [
+      buildMinutelyPopupMessage,
+      readMinutelyCache,
+      study?.messagePopupEnabled,
+      study?.minutelyPrecipEnabled,
+    ]
+  );
 
   /**
    * 将天气文本映射到图标代码
@@ -261,24 +501,61 @@ const Weather: React.FC = () => {
 
       try {
         if (study.minutelyPrecipEnabled) {
+          updateMinutelyPopupFromCache();
+
+          const nowMs = Date.now();
+          const lastFetchAtRaw = localStorage.getItem(MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY) || "0";
+          const lastFetchAt = Number.parseInt(lastFetchAtRaw, 10);
+          if (
+            Number.isFinite(lastFetchAt) &&
+            lastFetchAt > 0 &&
+            nowMs - lastFetchAt < MINUTELY_PRECIP_API_INTERVAL_MS
+          ) {
+            return;
+          }
+          localStorage.setItem(MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY, String(nowMs));
+
           const minResp = await fetchMinutelyPrecip(locationParam);
           if (!minResp.error && minResp.code === "200") {
-            const lastUpdate = localStorage.getItem("weather.minutely.lastUpdateTime");
-            if (minResp.updateTime && minResp.updateTime !== lastUpdate) {
-              localStorage.setItem("weather.minutely.lastUpdateTime", minResp.updateTime);
-              const hasRainSoon = (minResp.minutely || []).some((m) => {
-                const p = m.precip ? parseFloat(m.precip) : 0;
-                return Number.isFinite(p) && p > 0;
+            const incomingCache: MinutelyPrecipCache = {
+              updateTime: minResp.updateTime,
+              summary: minResp.summary,
+              minutely: minResp.minutely,
+              fetchedAt: nowMs,
+            };
+
+            const existing = readMinutelyCache();
+            const dismissed = safeReadSessionFlag(MINUTELY_PRECIP_POPUP_DISMISSED_KEY);
+            const shown = safeReadSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY);
+            const incomingStats = computeMinutelyRainStats(incomingCache, nowMs);
+
+            if (!existing) {
+              writeMinutelyCache(minResp, nowMs);
+            }
+
+            if (!shown && !dismissed && incomingStats.hasRain) {
+              const message = buildMinutelyPopupMessage(incomingCache);
+              safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY, true);
+              safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY, true);
+              const ev = new CustomEvent("messagePopup:open", {
+                detail: {
+                  id: MINUTELY_PRECIP_POPUP_ID,
+                  type: "weatherAlert",
+                  title: "降雨提醒",
+                  message,
+                },
               });
-              if (hasRainSoon) {
-                const ev = new CustomEvent("messagePopup:open", {
-                  detail: {
-                    type: "weatherAlert",
-                    title: "降雨提醒",
-                    message: minResp.summary || "未来两小时可能有降雨，请注意出行。",
-                  },
-                });
-                window.dispatchEvent(ev);
+              window.dispatchEvent(ev);
+            }
+
+            if (existing) {
+              const existingStats = computeMinutelyRainStats(existing, nowMs);
+              const diffProb = Math.abs(existingStats.probability - incomingStats.probability);
+              if (diffProb >= MINUTELY_PRECIP_DIFF_THRESHOLD_PROB) {
+                writeMinutelyCache(minResp, nowMs);
+                updateMinutelyPopupFromCache({ showUpdatedHint: true });
+              } else {
+                updateMinutelyPopupFromCache();
               }
             }
           }
@@ -287,7 +564,13 @@ const Weather: React.FC = () => {
         logger.warn("分钟级降水处理失败:", e);
       }
     },
-    [study]
+    [
+      buildMinutelyPopupMessage,
+      readMinutelyCache,
+      study,
+      updateMinutelyPopupFromCache,
+      writeMinutelyCache,
+    ]
   );
 
   /**
@@ -298,6 +581,8 @@ const Weather: React.FC = () => {
 
     // 每30分钟更新一次天气数据
     const interval = setInterval(initializeWeather, 30 * 60 * 1000);
+    const localMinutelyInterval = setInterval(() => updateMinutelyPopupFromCache(), 30 * 60 * 1000);
+    const localMinutelyTickInterval = setInterval(() => updateMinutelyPopupFromCache(), 60 * 1000);
 
     // 监听天气刷新事件
     const handleWeatherRefresh = () => {
@@ -313,10 +598,12 @@ const Weather: React.FC = () => {
 
     return () => {
       clearInterval(interval);
+      clearInterval(localMinutelyInterval);
+      clearInterval(localMinutelyTickInterval);
       window.removeEventListener("weatherRefresh", handleWeatherRefresh);
       window.removeEventListener("weatherRefreshDone", onDone as EventListener);
     };
-  }, [initializeWeather, handleAlertsAndPrecip]);
+  }, [initializeWeather, handleAlertsAndPrecip, updateMinutelyPopupFromCache]);
 
   // 加载状态
   if (loading) {

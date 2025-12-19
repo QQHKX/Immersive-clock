@@ -27,7 +27,7 @@ interface MessagePopupProps {
   onClose?: () => void;
   type?: MessageType;
   title?: string;
-  message?: string;
+  message?: React.ReactNode;
   icon?: React.ReactNode;
   actions?: ActionItem[];
   className?: string;
