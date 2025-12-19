@@ -8,6 +8,7 @@ import { Dropdown } from "../../Dropdown/Dropdown";
 import {
   FormSection,
   FormInput,
+  FormFilePicker,
   FormSegmented,
   FormButton,
   FormButtonGroup,
@@ -81,6 +82,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [bgColor, setBgColor] = useState<string>("#121212");
   const [bgAlpha, setBgAlpha] = useState<number>(1);
   const [bgImage, setBgImage] = useState<string | null>(null);
+  const [bgImageFileName, setBgImageFileName] = useState<string>("");
 
   // 课表设置弹窗
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
@@ -124,6 +126,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     if (bg.color) setBgColor(bg.color);
     setBgAlpha(typeof bg.colorAlpha === "number" ? bg.colorAlpha : 1);
     setBgImage(bg.imageDataUrl ?? null);
+    setBgImageFileName("");
 
     // 根据现有 countdownItems 推断模式，并填充单项颜色
     const items = study.countdownItems || [];
@@ -656,10 +659,13 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             onChange={(e) => setFontAlias(e.target.value)}
             placeholder='例如："JetBrains Mono"'
           />
-          <input
-            type="file"
+          <FormFilePicker
+            label="字体文件"
             accept=".ttf,.otf,.woff,.woff2"
-            onChange={(e) => setFontFile(e.target.files?.[0] ?? null)}
+            fileName={fontFile?.name}
+            placeholder="未选择字体文件"
+            buttonText="选择字体文件"
+            onFileChange={(file) => setFontFile(file)}
           />
           <FormButton variant="secondary" onClick={handleImportFont}>
             导入字体文件
@@ -714,12 +720,15 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         {bgType === "image" && (
           <>
             <FormRow gap="sm">
-              <input
-                type="file"
+              <FormFilePicker
+                label="背景图片"
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
+                fileName={bgImageFileName}
+                placeholder="未选择图片"
+                buttonText="选择图片"
+                onFileChange={(file) => {
                   if (!file) return;
+                  setBgImageFileName(file.name);
                   const reader = new FileReader();
                   reader.onload = () => setBgImage(reader.result as string);
                   reader.readAsDataURL(file);

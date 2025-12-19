@@ -1,6 +1,7 @@
 export {
   FormSection,
   FormInput,
+  FormFilePicker,
   FormTextarea,
   FormButton,
   FormButtonGroup,
@@ -15,6 +16,7 @@ export {
 export type {
   FormSectionProps,
   FormInputProps,
+  FormFilePickerProps,
   FormTextareaProps,
   FormButtonProps,
   FormButtonGroupProps,

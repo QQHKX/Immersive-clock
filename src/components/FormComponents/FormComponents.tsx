@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 
 import styles from "./FormComponents.module.css";
 
@@ -51,7 +51,78 @@ export function FormInput({
   );
 }
 
-// 文本域组件
+export interface FormFilePickerProps {
+  label?: string;
+  accept?: string;
+  disabled?: boolean;
+  buttonText?: string;
+  placeholder?: string;
+  fileName?: string;
+  onFileChange?: (file: File | null) => void;
+}
+
+/**
+ * 文件选择组件
+ * 复用统一输入框与按钮样式，隐藏原生 file input
+ */
+export function FormFilePicker({
+  label,
+  accept,
+  disabled,
+  buttonText = "选择文件",
+  placeholder = "未选择文件",
+  fileName,
+  onFileChange,
+}: FormFilePickerProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  /** 触发系统文件选择（函数级注释：通过按钮触发隐藏的 file input 点击） */
+  const openPicker = () => {
+    if (disabled) return;
+    inputRef.current?.click();
+  };
+
+  /** 处理文件选择（函数级注释：读取选择结果并回传 File 实例） */
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0] ?? null;
+    onFileChange?.(file);
+  };
+
+  return (
+    <div className={styles.inputGroup}>
+      {label && <label className={styles.label}>{label}</label>}
+      <div className={styles.filePickerRow}>
+        <input
+          className={`${styles.input} ${styles.filePickerDisplay}`}
+          type="text"
+          readOnly
+          value={fileName ?? ""}
+          placeholder={placeholder}
+          disabled={disabled}
+        />
+        <FormButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={openPicker}
+          disabled={disabled}
+        >
+          {buttonText}
+        </FormButton>
+        <input
+          ref={inputRef}
+          className={styles.filePickerHiddenInput}
+          type="file"
+          accept={accept}
+          onChange={handleChange}
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
+// 文本区域组件
 export interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
