@@ -53,6 +53,21 @@
   margin-bottom: var(--spacing-md, 1rem);
 }
 
+.filePickerRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filePickerDisplay {
+  flex: 1;
+  margin: 0;
+}
+
+.filePickerHiddenInput {
+  display: none;
+}
+
 .label {
   display: block;
   margin-bottom: 0.5rem;
@@ -831,6 +846,11 @@
     flex-direction: column;
     align-items: stretch;
     padding: 0.75rem;
+  }
+
+  .filePickerRow {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .input.time,

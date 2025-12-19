@@ -44,8 +44,6 @@ export function createDropdownStyleText(): string {
 .dd-menu {
   position: absolute;
   z-index: 9999;
-  left: 0;
-  right: 0;
   margin-top: 4px;
   border-radius: 10px;
   background: #1e1e1e;

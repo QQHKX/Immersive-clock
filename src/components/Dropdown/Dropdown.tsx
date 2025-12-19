@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { DropdownProvider, useDropdownContext } from "./DropdownContext";
 import { ensureDropdownStyles } from "./styles";
@@ -13,23 +14,24 @@ function Trigger(props: {
   label: string;
   onClick: () => void;
   id: string;
+  buttonRef: React.RefObject<HTMLButtonElement>;
 }) {
   const { open } = useDropdownContext();
+  const { width, disabled, variant, label, onClick, id, buttonRef } = props;
   return (
     <button
-      id={props.id}
+      ref={buttonRef}
+      id={id}
       type="button"
-      className={`dd-trigger ${props.disabled ? "dd-disabled" : ""} ${
-        props.variant === "ghost" ? "dd-ghost" : ""
-      }`}
-      style={{ width: props.width ? `${props.width}px` : undefined }}
-      onClick={props.onClick}
+      className={`dd-trigger ${disabled ? "dd-disabled" : ""} ${variant === "ghost" ? "dd-ghost" : ""}`}
+      style={{ width: width ? `${width}px` : undefined }}
+      onClick={onClick}
       aria-haspopup="listbox"
       aria-expanded={open}
-      aria-controls={`${props.id}-menu`}
-      disabled={!!props.disabled}
+      aria-controls={`${id}-menu`}
+      disabled={!!disabled}
     >
-      <span>{props.label}</span>
+      <span>{label}</span>
       <span className="dd-caret" />
     </button>
   );
@@ -43,40 +45,100 @@ function Menu(props: {
   searchable?: boolean;
   maxMenuHeight?: number;
   onSelect: (opt: DropdownOption) => void;
+  mode: "single" | "multiple";
+  value: DropdownValue | DropdownValue[] | undefined;
+  triggerRef: React.RefObject<HTMLButtonElement>;
+  portalContainer?: HTMLElement | null;
 }) {
+  const {
+    id,
+    groups,
+    options,
+    searchable,
+    maxMenuHeight,
+    onSelect,
+    mode,
+    value,
+    triggerRef,
+    portalContainer,
+  } = props;
   const { open, setOpen, query, setQuery } = useDropdownContext();
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
-  const filtered = useMemo(
-    () => filterOptions(props.groups, props.options, query),
-    [props.groups, props.options, query]
-  );
+  const filtered = useMemo(() => filterOptions(groups, options, query), [groups, options, query]);
   const hasItems =
     (filtered.groups && filtered.groups.some((g) => g.options.length > 0)) ||
     (filtered.options && filtered.options.length > 0);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (!listRef.current) return;
-      if (e.target instanceof Node && !listRef.current.contains(e.target)) {
-        setOpen(false);
+      const menuEl = listRef.current;
+      const triggerEl = triggerRef.current;
+      if (!menuEl || !triggerEl) return;
+      if (e.target instanceof Node && !menuEl.contains(e.target)) {
+        if (!triggerEl.contains(e.target)) setOpen(false);
       }
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, [setOpen]);
+  }, [triggerRef, setOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    const updatePos = () => {
+      const triggerEl = triggerRef.current;
+      if (!triggerEl) return;
+      const rect = triggerEl.getBoundingClientRect();
+      const preferBelow = true;
+      const gap = 4;
+      const belowSpace = window.innerHeight - rect.bottom;
+      const aboveSpace = rect.top;
+      const placeBelow = preferBelow
+        ? belowSpace >= 120 || belowSpace >= aboveSpace
+        : belowSpace >= aboveSpace;
+      if (placeBelow) {
+        setMenuStyle({
+          position: "fixed",
+          top: rect.bottom + gap,
+          left: rect.left,
+          width: rect.width,
+        });
+      } else {
+        setMenuStyle({
+          position: "fixed",
+          bottom: window.innerHeight - rect.top + gap,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
+    return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
+    };
+  }, [open, triggerRef]);
 
   if (!open) return null;
-  return (
+  const selectedSet = new Set(mode === "multiple" ? (Array.isArray(value) ? value : []) : []);
+  const isSelected = (opt: DropdownOption) => {
+    if (mode === "single") return value === opt.value;
+    return selectedSet.has(opt.value);
+  };
+
+  const content = (
     <div
-      id={`${props.id}-menu`}
+      id={`${id}-menu`}
       role="listbox"
-      aria-multiselectable={false}
+      aria-multiselectable={mode === "multiple" ? true : undefined}
       className="dd-menu"
-      style={{ maxHeight: props.maxMenuHeight ? `${props.maxMenuHeight}px` : undefined }}
+      style={menuStyle}
       ref={listRef}
     >
-      {props.searchable && (
+      {searchable && (
         <div className="dd-search">
           <input
             type="text"
@@ -87,7 +149,7 @@ function Menu(props: {
           />
         </div>
       )}
-      <div className="dd-list" role="presentation">
+      <div className="dd-list" role="presentation" style={{ maxHeight: maxMenuHeight }}>
         {!hasItems && <div className="dd-empty">暂无匹配项</div>}
         {filtered.groups?.map((g, gi) => (
           <React.Fragment key={`g-${gi}`}>
@@ -96,9 +158,11 @@ function Menu(props: {
               <div
                 key={`g-${gi}-o-${oi}`}
                 role="option"
-                aria-selected={false}
-                className={`dd-option ${opt.disabled ? "dd-disabled" : ""}`}
-                onClick={() => !opt.disabled && props.onSelect(opt)}
+                aria-selected={isSelected(opt)}
+                className={`dd-option ${isSelected(opt) ? "dd-active" : ""} ${
+                  opt.disabled ? "dd-disabled" : ""
+                }`}
+                onClick={() => !opt.disabled && onSelect(opt)}
                 tabIndex={0}
               >
                 {opt.label}
@@ -110,9 +174,11 @@ function Menu(props: {
           <div
             key={`o-${oi}`}
             role="option"
-            aria-selected={false}
-            className={`dd-option ${opt.disabled ? "dd-disabled" : ""}`}
-            onClick={() => !opt.disabled && props.onSelect(opt)}
+            aria-selected={isSelected(opt)}
+            className={`dd-option ${isSelected(opt) ? "dd-active" : ""} ${
+              opt.disabled ? "dd-disabled" : ""
+            }`}
+            onClick={() => !opt.disabled && onSelect(opt)}
             tabIndex={0}
           >
             {opt.label}
@@ -121,6 +187,8 @@ function Menu(props: {
       </div>
     </div>
   );
+  const container = portalContainer ?? (typeof document !== "undefined" ? document.body : null);
+  return container ? createPortal(content, container) : content;
 }
 
 /** 下拉菜单主组件（函数级注释：提供上下文与样式注入，支持单选/多选与分组、搜索等功能） */
@@ -157,6 +225,7 @@ export const Dropdown: React.FC<DropdownProps> = (p) => {
 /** 内部包装（函数级注释：处理交互事件与对外 onChange 的协调） */
 function InnerDropdown(p: DropdownProps & { triggerId: string; label: string }) {
   const { open, setOpen, mode, value, setValue } = useDropdownContext();
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const onSelect = (opt: DropdownOption) => {
     const next = toggleValue(mode, value, opt.value);
     setValue(next);
@@ -171,6 +240,7 @@ function InnerDropdown(p: DropdownProps & { triggerId: string; label: string }) 
         disabled={p.disabled}
         variant={p.variant}
         label={p.label}
+        buttonRef={triggerRef}
         onClick={() => !p.disabled && setOpen(!open)}
       />
       <Menu
@@ -180,6 +250,10 @@ function InnerDropdown(p: DropdownProps & { triggerId: string; label: string }) 
         searchable={p.searchable}
         maxMenuHeight={p.maxMenuHeight}
         onSelect={onSelect}
+        mode={mode}
+        value={value}
+        triggerRef={triggerRef}
+        portalContainer={p.portalContainer}
       />
     </div>
   );
