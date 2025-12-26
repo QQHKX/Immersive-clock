@@ -48,7 +48,7 @@
       "deb",
       "rpm"
     ],
-    "icon": "public/apple-touch-icon.png",
+    "icon": "public/favicon.png",
     "category": "Utility",
     "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
