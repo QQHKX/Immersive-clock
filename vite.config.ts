@@ -4,6 +4,8 @@ import path from "path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import electron from "vite-plugin-electron";
+import renderer from "vite-plugin-electron-renderer";
 
 import { versionCachePlugin } from "./src/utils/versionCache";
 
@@ -13,6 +15,12 @@ import { versionCachePlugin } from "./src/utils/versionCache";
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  // 检测是否为 Electron 模式
+  const isElectron = mode === 'electron';
+  
+  console.log('Vite Mode:', mode);
+  console.log('Is Electron:', isElectron);
+  
   // 优先使用环境变量版本；否则回退到 package.json 中的版本号
   const envVersion = (env.VITE_APP_VERSION || "").trim();
   const appVersion: string =
@@ -34,6 +42,41 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      // Electron 插件（仅在 Electron 模式下启用）
+      isElectron && electron([
+        {
+          // 主进程入口文件
+          entry: 'electron/main.ts',
+          onstart(options) {
+            options.startup();
+          },
+          vite: {
+            build: {
+              outDir: 'dist-electron',
+              rollupOptions: {
+                external: ['electron']
+              }
+            }
+          }
+        },
+        {
+          // 预加载脚本
+          entry: 'electron/preload.ts',
+          onstart(options) {
+            // 重新加载页面
+            options.reload();
+          },
+          vite: {
+            build: {
+              outDir: 'dist-electron',
+              rollupOptions: {
+                external: ['electron']
+              }
+            }
+          }
+        }
+      ]),
+      isElectron && renderer(),
       // PWA 插件：启用离线缓存与自动更新
       VitePWA({
         registerType: "autoUpdate",
@@ -125,13 +168,15 @@ export default defineConfig(({ mode }) => {
       }),
       // 版本缓存插件需在 PWA 之后运行，以便处理注入的 webmanifest
       versionCachePlugin(),
-    ],
+    ].filter(Boolean),
     define: {
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
+      "__ENABLE_PWA__": !isElectron,
     },
+    base: isElectron ? './' : '/',
     server: {
       port: 3005,
-      open: true,
+      open: !isElectron,
       // 开发服务器缓存配置
       headers: {
         "Cache-Control": "no-cache",

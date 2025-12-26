@@ -1,0 +1,90 @@
+{
+  "appId": "com.qqhkx.immersive-clock",
+  "productName": "沉浸式时钟",
+  "copyright": "Copyright © 2025 QQHKX",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "public/**/*",
+    "package.json"
+  ],
+  "extraResources": [],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/favicon.ico",
+    "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "沉浸式时钟",
+    "installerIcon": "public/favicon.ico",
+    "uninstallerIcon": "public/favicon.ico",
+    "installerHeaderIcon": "public/favicon.ico",
+    "deleteAppDataOnUninstall": false
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "public/apple-touch-icon.png",
+    "category": "public.app-category.productivity",
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "dmg": {
+    "background": null,
+    "window": {
+      "width": 540,
+      "height": 380
+    },
+    "contents": [
+      {
+        "x": 140,
+        "y": 180
+      },
+      {
+        "x": 400,
+        "y": 180,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  },
+  "linux": {
+    "target": [
+      "AppImage",
+      "deb",
+      "rpm"
+    ],
+    "icon": "public/apple-touch-icon.png",
+    "category": "Utility",
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "publish": null
+}

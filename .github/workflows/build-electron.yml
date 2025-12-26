@@ -1,0 +1,137 @@
+name: Build Electron
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file from secrets
+        run: |
+          $content = @"
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          "@
+          
+          Set-Content -Path .env -Value $content
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+        run: npm run build:electron
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-windows-artifacts
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+          if-no-files-found: warn
+
+  build-mac:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file from secrets
+        run: |
+          cat > .env << EOF
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          EOF
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+        run: npm run build:electron
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos-artifacts
+          path: |
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: warn
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file from secrets
+        run: |
+          cat > .env << EOF
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          EOF
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+        run: npm run build:electron
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-linux-artifacts
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          if-no-files-found: warn

@@ -4,6 +4,13 @@ node_modules
 # 构建输出
 dist
 dist-ssr
+dist-electron
+release
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
 
 # 日志文件
 logs
