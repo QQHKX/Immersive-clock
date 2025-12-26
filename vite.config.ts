@@ -74,6 +74,7 @@ export default defineConfig(({ mode }) => {
                 // 将预加载脚本输出为 CommonJS，以避免在打包后的 preload 中出现 ESM import
                 output: {
                   format: 'cjs',
+                  entryFileNames: '[name].cjs',
                 },
               }
             }
