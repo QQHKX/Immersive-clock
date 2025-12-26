@@ -15,17 +15,14 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -46,68 +43,30 @@ jobs:
           NODE_ENV: production
         run: npm run build:electron
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows NSIS installer
         uses: actions/upload-artifact@v4
         with:
-          name: electron-windows-artifacts
-          path: |
-            release/*.exe
-            release/*.exe.blockmap
+          name: windows-nsis-installer
+          path: release/*-Setup.exe
           if-no-files-found: warn
 
-  build-mac:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Create .env file from secrets
-        run: |
-          cat > .env << EOF
-          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
-          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
-          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
-          EOF
-
-      - name: Build Electron app
-        env:
-          NODE_ENV: production
-        run: npm run build:electron
-
-      - name: Upload macOS artifacts
+      - name: Upload Windows Portable
         uses: actions/upload-artifact@v4
         with:
-          name: electron-macos-artifacts
-          path: |
-            release/*.dmg
-            release/*.zip
+          name: windows-portable
+          path: release/*-Portable.exe
           if-no-files-found: warn
 
   build-linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -126,12 +85,23 @@ jobs:
           NODE_ENV: production
         run: npm run build:electron
 
-      - name: Upload Linux artifacts
+      - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: electron-linux-artifacts
-          path: |
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
+          name: linux-appimage
+          path: release/*.AppImage
+          if-no-files-found: warn
+
+      - name: Upload Linux DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: release/*.deb
+          if-no-files-found: warn
+
+      - name: Upload Linux RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: release/*.rpm
           if-no-files-found: warn

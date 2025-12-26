@@ -17,7 +17,7 @@
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64", "ia32"]
+        "arch": ["x64"]
       },
       {
         "target": "portable",
@@ -42,47 +42,13 @@
   "portable": {
     "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
   },
-  "mac": {
-    "target": [
-      {
-        "target": "dmg",
-        "arch": ["x64", "arm64"]
-      },
-      {
-        "target": "zip",
-        "arch": ["x64", "arm64"]
-      }
-    ],
-    "icon": "public/apple-touch-icon.png",
-    "category": "public.app-category.productivity",
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
-  },
-  "dmg": {
-    "background": null,
-    "window": {
-      "width": 540,
-      "height": 380
-    },
-    "contents": [
-      {
-        "x": 140,
-        "y": 180
-      },
-      {
-        "x": 400,
-        "y": 180,
-        "type": "link",
-        "path": "/Applications"
-      }
-    ]
-  },
   "linux": {
     "target": [
       "AppImage",
       "deb",
       "rpm"
     ],
-    "icon": "public/apple-touch-icon.png",
+    "icon": "public/favicon.ico",
     "category": "Utility",
     "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
