@@ -475,24 +475,36 @@ export async function buildWeatherFlow(): Promise<{
     /* 忽略缓存读取错误 */
   }
 
-  // 缓存缺失或过期时重新定位
-  if (!coords) {
-    // 新定位策略：优先浏览器 Geolocation，其次高德 IP，最后其他 IP 源
+  // 策略调整：如果当前没有缓存，或者缓存不是来自浏览器定位，则尝试浏览器定位
+  // 这样即使有 IP 缓存，也会尝试获取更精确的浏览器定位
+  if (!coords || coordsSource !== "geolocation") {
     const g = await getCoordsViaGeolocation();
     if (g) {
       coords = g;
       coordsSource = "geolocation";
+      // 立即更新缓存，确保高精度定位被保存
+      try {
+        localStorage.setItem("weather.coords.lat", String(coords.lat));
+        localStorage.setItem("weather.coords.lon", String(coords.lon));
+        localStorage.setItem("weather.coords.cachedAt", String(now));
+        if (coordsSource) localStorage.setItem("weather.coords.source", coordsSource);
+      } catch {
+        /* 忽略写入错误 */
+      }
+    }
+  }
+
+  // 如果经过上述步骤仍无坐标（既无缓存也无浏览器定位），则降级到 IP 定位
+  if (!coords) {
+    const a = await getCoordsViaAmapIP();
+    if (a) {
+      coords = a;
+      coordsSource = "amap_ip";
     } else {
-      const a = await getCoordsViaAmapIP();
-      if (a) {
-        coords = a;
-        coordsSource = "amap_ip";
-      } else {
-        const i = await getCoordsViaIP();
-        if (i) {
-          coords = i;
-          coordsSource = "ip";
-        }
+      const i = await getCoordsViaIP();
+      if (i) {
+        coords = i;
+        coordsSource = "ip";
       }
     }
     // 写入坐标缓存

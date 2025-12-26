@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -68,6 +68,15 @@ function createWindow() {
 
 // 当 Electron 完成初始化时创建窗口
 app.whenReady().then(() => {
+  // 配置权限请求处理器：自动允许地理位置权限
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'geolocation') {
+      callback(true); // 允许
+    } else {
+      callback(false); // 其他权限默认拒绝或按需处理
+    }
+  });
+
   createWindow();
 
   app.on('activate', () => {
