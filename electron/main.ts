@@ -1,4 +1,5 @@
 import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
