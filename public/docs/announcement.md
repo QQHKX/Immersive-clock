@@ -40,7 +40,7 @@
 
 欢迎加入官方 QQ 交流群：**965931796**
 
-<img src="..\assets\qq-group.png.jpg" width="200" alt="QQ群二维码" style="display: block; margin: 10px 0;" />
+<img src="./assets/qq-group.png.jpg" width="200" alt="QQ群二维码" style="display: block; margin: 10px 0;" />
 
 ------
 

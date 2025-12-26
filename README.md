@@ -88,7 +88,12 @@
 
 要求：Node.js ≥ 16（推荐 18+），npm ≥ 8
 
+### Web 版本
+
 ```bash
+# 复制 .env 并添加环境变量
+copy .env.example .env
+
 # 安装依赖
 npm install
 
@@ -101,6 +106,24 @@ npm run build
 # 预览构建结果
 npm run preview
 ```
+
+### Electron 桌面版
+
+```bash
+# 复制 .env 并添加环境变量
+cp .env.example .env
+
+# 安装依赖（包含 Electron）
+npm install
+
+# 启动 Electron 开发环境
+npm run dev:electron
+
+# 构建桌面应用
+npm run build:electron
+```
+
+📦 构建完成后，安装包将输出到 `release` 目录。详细说明请参考 [ELECTRON.md](ELECTRON.md)
 
 ---
 

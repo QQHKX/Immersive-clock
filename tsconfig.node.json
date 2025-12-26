@@ -4,10 +4,12 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["node", "vite/client"]
   },
   "include": [
     "vite.config.ts",
-    
+    "versionCache.ts",
+    "src/utils/**/*.ts"
   ]
 }

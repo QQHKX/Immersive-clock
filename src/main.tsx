@@ -1,8 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-// PWA Service Worker 注册（自动更新与离线支持）
-import { registerSW } from "virtual:pwa-register";
 
 import { App } from "./App";
 import { AppContextProvider } from "./contexts/AppContext";
@@ -39,11 +37,10 @@ setTimeout(() => {
   }
 }, 200);
 
-// 注册 Service Worker（生产与开发均启用，devOptions.enabled 已在 VitePWA 中设置）
-if ("serviceWorker" in navigator) {
-  registerSW({
-    immediate: true,
-    onNeedRefresh() {},
-    onOfflineReady() {},
+// 注册 Service Worker（仅在 Web 模式下）
+// @ts-ignore
+if (__ENABLE_PWA__) {
+  import("./pwa-register").then(({ initPWA }) => {
+    initPWA();
   });
 }
