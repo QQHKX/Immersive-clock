@@ -25,8 +25,52 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron
+            ~\AppData\Local\electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Pre-download electron-builder dependencies
+        shell: pwsh
+        run: |
+          # Pre-download NSIS resources with retry
+          $nsisUrl = "https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z"
+          $nsisPath = "$env:LOCALAPPDATA\electron-builder\Cache\nsis\nsis-resources-3.4.1"
+          
+          if (-not (Test-Path $nsisPath)) {
+            New-Item -ItemType Directory -Force -Path $nsisPath | Out-Null
+            
+            $maxAttempts = 5
+            $attempt = 1
+            $downloaded = $false
+            
+            while ($attempt -le $maxAttempts -and -not $downloaded) {
+              Write-Host "Downloading NSIS resources (attempt $attempt of $maxAttempts)..."
+              try {
+                Invoke-WebRequest -Uri $nsisUrl -OutFile "$nsisPath\nsis-resources.7z" -TimeoutSec 300 -MaximumRetryCount 3
+                $downloaded = $true
+                Write-Host "NSIS resources downloaded successfully"
+              } catch {
+                if ($attempt -eq $maxAttempts) {
+                  Write-Host "Warning: Failed to pre-download NSIS resources, will try during build"
+                  break
+                }
+                Write-Host "Download failed, retrying in 5 seconds..."
+                Start-Sleep -Seconds 5
+                $attempt++
+              }
+            }
+          } else {
+            Write-Host "NSIS resources already cached"
+          }
 
       - name: Create .env file from secrets
         run: |
@@ -41,7 +85,29 @@ jobs:
       - name: Build Electron app
         env:
           NODE_ENV: production
-        run: npm run build:electron
+          ELECTRON_BUILDER_CACHE: ${{ runner.temp }}\electron-builder-cache
+          DEBUG: electron-builder
+        run: |
+          # Retry logic for build
+          $maxAttempts = 3
+          $attempt = 1
+          $success = $false
+          
+          while ($attempt -le $maxAttempts -and -not $success) {
+            Write-Host "Build attempt $attempt of $maxAttempts..."
+            try {
+              npm run build:electron
+              $success = $true
+            } catch {
+              if ($attempt -eq $maxAttempts) {
+                throw
+              }
+              Write-Host "Build failed, retrying in 10 seconds..."
+              Start-Sleep -Seconds 10
+              $attempt++
+            }
+          }
+        timeout-minutes: 30
 
       - name: Upload Windows NSIS installer
         uses: actions/upload-artifact@v4
@@ -68,6 +134,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
 
       - name: Install dependencies
         run: npm ci
