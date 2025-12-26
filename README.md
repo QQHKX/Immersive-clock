@@ -91,6 +91,9 @@
 ### Web 版本
 
 ```bash
+# 复制 .env 并添加环境变量
+copy .env.example .env
+
 # 安装依赖
 npm install
 
@@ -107,6 +110,9 @@ npm run preview
 ### Electron 桌面版
 
 ```bash
+# 复制 .env 并添加环境变量
+cp .env.example .env
+
 # 安装依赖（包含 Electron）
 npm install
 
