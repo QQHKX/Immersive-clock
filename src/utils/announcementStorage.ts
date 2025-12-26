@@ -2,6 +2,7 @@
  * 公告本地存储工具函数
  * 用于管理"一周内不再显示"功能的本地存储逻辑
  */
+import { logger } from "./logger";
 
 const STORAGE_KEY = "immersive-clock-announcement";
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 一周的毫秒数
@@ -47,9 +48,7 @@ export const shouldShowAnnouncement = (): boolean => {
 
     return true; // 隐藏期已过，应该显示
   } catch (error) {
-    import("../utils/logger")
-      .then(({ logger }) => logger.error("Error checking announcement visibility:", error))
-      .catch(() => {});
+    logger.error("Error checking announcement visibility:", error);
     return true; // 出错时默认显示
   }
 };
@@ -69,9 +68,7 @@ export const setDontShowForWeek = (): void => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    import("../utils/logger")
-      .then(({ logger }) => logger.error("Error setting announcement hide preference:", error))
-      .catch(() => {});
+    logger.error("Error setting announcement hide preference:", error);
   }
 };
 
@@ -83,9 +80,7 @@ export const clearAnnouncementHidePreference = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    import("../utils/logger")
-      .then(({ logger }) => logger.error("Error clearing announcement hide preference:", error))
-      .catch(() => {});
+    logger.error("Error clearing announcement hide preference:", error);
   }
 };
 
@@ -123,9 +118,7 @@ export const getAnnouncementHideInfo = (): {
       remainingTime,
     };
   } catch (error) {
-    import("../utils/logger")
-      .then(({ logger }) => logger.error("Error getting announcement hide info:", error))
-      .catch(() => {});
+    logger.error("Error getting announcement hide info:", error);
     return {
       isHidden: false,
       hideUntil: null,
