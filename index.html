@@ -34,6 +34,58 @@
     <link rel="alternate" hreflang="x-default" href="https://clock.qqhkx.com/" />
     <!-- 自托管字体：从 public/fonts 加载，减少包体 -->
     <link rel="stylesheet" href="/fonts/fonts.css" />
+    <!-- Electron 路径修复脚本 -->
+    <script>
+      // 在 Electron 中修复所有绝对路径为相对路径
+      window.__fixElectronPaths = function() {
+        // 修复已有的 img 标签
+        document.querySelectorAll('img[src^="/"]').forEach(img => {
+          img.src = '.' + img.src;
+        });
+      };
+      
+      // 页面加载时执行
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.__fixElectronPaths);
+      } else {
+        window.__fixElectronPaths();
+      }
+      
+      // 监听新插入的节点（React 动态创建的）
+      document.addEventListener('DOMContentLoaded', () => {
+        if (document.body) {
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              // 监听 src 属性变化
+              if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+                const src = mutation.target.getAttribute('src');
+                if (src && src.startsWith('/')) {
+                  mutation.target.setAttribute('src', '.' + src);
+                }
+              }
+              // 监听新插入的节点
+              if (mutation.addedNodes) {
+                mutation.addedNodes.forEach((node) => {
+                  if (node.nodeType === 1 && node.tagName === 'IMG') {
+                    const src = node.getAttribute('src');
+                    if (src && src.startsWith('/')) {
+                      node.setAttribute('src', '.' + src);
+                    }
+                  }
+                });
+              }
+            });
+          });
+          
+          observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['src'],
+            subtree: true,
+            childList: true
+          });
+        }
+      });
+    </script>
     <!-- 百度站点验证 -->
     <meta name="baidu-site-verification" content="codeva-DN108xBGRS">
     <meta property="og:image:type" content="image/png" />

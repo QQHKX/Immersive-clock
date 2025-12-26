@@ -8,6 +8,7 @@
   },
   "include": [
     "vite.config.ts",
-    
+    "versionCache.ts",
+    "src/utils/**/*.ts"
   ]
 }

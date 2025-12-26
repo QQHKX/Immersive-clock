@@ -3,6 +3,9 @@ declare module "*.module.css" {
   export default classes;
 }
 
+// 全局类型声明
+declare const __ENABLE_PWA__: boolean;
+
 // Vite 环境变量类型定义
 interface ImportMetaEnv {
   readonly VITE_AMAP_API_KEY: string;
