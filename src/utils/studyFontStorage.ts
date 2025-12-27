@@ -1,6 +1,8 @@
+import { db } from "./db";
+
 /**
  * 学习页面字体存储与注入工具
- * 提供导入TTF/OTF/WOFF/WOFF2字体文件，持久化到本地，并将其以 @font-face 形式注入页面
+ * 提供导入TTF/OTF/WOFF/WOFF2字体文件，持久化到本地(IndexedDB)，并将其以 @font-face 形式注入页面
  */
 export interface ImportedFontMeta {
   /** 唯一ID */
@@ -17,36 +19,52 @@ const STORAGE_KEY = "study-fonts";
 const STYLE_EL_ID = "study-fonts-style";
 
 /**
- * 读取已导入字体列表（函数级注释：从本地存储解析并返回字体元数据列表，格式错误时回退为空）
+ * 迁移旧数据到 IndexedDB
  */
-export function loadImportedFonts(): ImportedFontMeta[] {
+async function migrateFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return;
+    
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.filter(
+      const validFonts = parsed.filter(
         (f) =>
           typeof f?.id === "string" &&
           typeof f?.family === "string" &&
           typeof f?.dataUrl === "string"
-      );
+      ) as ImportedFontMeta[];
+
+      // 逐个写入 DB
+      for (const font of validFonts) {
+        // 避免重复写入（虽然 put 会覆盖，但没必要）
+        const exists = await db.get(font.id);
+        if (!exists) {
+            await db.set(font.id, font);
+        }
+      }
     }
-    return [];
-  } catch {
+    // 迁移成功后移除旧数据
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.error("Migration from LocalStorage failed:", e);
+  }
+}
+
+/**
+ * 读取已导入字体列表（从 IndexedDB 异步读取）
+ */
+export async function loadImportedFonts(): Promise<ImportedFontMeta[]> {
+  try {
+    return await db.getAll<ImportedFontMeta>();
+  } catch (e) {
+    console.error("Failed to load fonts from DB:", e);
     return [];
   }
 }
 
 /**
- * 保存字体列表到本地存储（函数级注释：将字体元数据列表写入 localStorage）
- */
-function saveImportedFonts(list: ImportedFontMeta[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-/**
- * 根据文件名推断字体格式（函数级注释：从扩展名映射到 @font-face 的 format 值）
+ * 根据文件名推断字体格式
  */
 function inferFormatByFilename(name: string): ImportedFontMeta["format"] {
   const lower = name.toLowerCase();
@@ -57,29 +75,46 @@ function inferFormatByFilename(name: string): ImportedFontMeta["format"] {
 }
 
 /**
- * 导入字体文件（函数级注释：读取文件为DataURL并保存为自定义字体，返回新增的字体元数据）
+ * 导入字体文件
  * @param file 字体文件（ttf/otf/woff/woff2）
  * @param family 自定义字体家族名
  */
 export async function importFontFile(file: File, family: string): Promise<ImportedFontMeta> {
   const fmt = inferFormatByFilename(file.name);
   const id = `font_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  
+  // 检查文件大小，IndexedDB 容量较大，但仍建议限制（例如 50MB）
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error("文件过大（超过 50MB），无法导入");
+  }
+
   const dataUrl: string = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = (e) => reject(e);
     reader.readAsDataURL(file);
   });
+
   const meta: ImportedFontMeta = { id, family, dataUrl, format: fmt };
-  const list = loadImportedFonts();
-  list.push(meta);
-  saveImportedFonts(list);
-  window.dispatchEvent(new CustomEvent("study-fonts-updated"));
-  return meta;
+  
+  try {
+    await db.set(id, meta);
+    // 触发更新
+    window.dispatchEvent(new CustomEvent("study-fonts-updated"));
+    
+    // 立即刷新注入
+    const list = await loadImportedFonts();
+    injectFontFaces(list);
+    
+    return meta;
+  } catch (e) {
+    console.error("Failed to save font to DB:", e);
+    throw new Error("导入失败，可能是存储空间不足");
+  }
 }
 
 /**
- * 注入 @font-face 样式（函数级注释：为每个导入字体生成 @font-face 并写入页面 <style>）
+ * 注入 @font-face 样式
  */
 export function injectFontFaces(fonts: ImportedFontMeta[]) {
   let el = document.getElementById(STYLE_EL_ID) as HTMLStyleElement | null;
@@ -98,22 +133,32 @@ export function injectFontFaces(fonts: ImportedFontMeta[]) {
 }
 
 /**
- * 确保已注入字体（函数级注释：从本地存储加载并注入字体，返回注入数量）
+ * 确保已注入字体（异步）
+ * 包含自动迁移逻辑
  */
-export function ensureInjectedFonts(): number {
-  const list = loadImportedFonts();
-  if (typeof document !== "undefined") {
-    injectFontFaces(list);
+export async function ensureInjectedFonts(): Promise<number> {
+  if (typeof document === "undefined") return 0;
+  
+  // 尝试迁移旧数据
+  if (localStorage.getItem(STORAGE_KEY)) {
+    await migrateFromLocalStorage();
   }
+
+  const list = await loadImportedFonts();
+  injectFontFaces(list);
   return list.length;
 }
 
 /**
- * 删除导入字体（函数级注释：按ID移除字体并更新样式）
+ * 删除导入字体（异步）
  */
-export function removeImportedFont(id: string) {
-  const next = loadImportedFonts().filter((f) => f.id !== id);
-  saveImportedFonts(next);
-  injectFontFaces(next);
-  window.dispatchEvent(new CustomEvent("study-fonts-updated"));
+export async function removeImportedFont(id: string) {
+  try {
+    await db.del(id);
+    const next = await loadImportedFonts();
+    injectFontFaces(next);
+    window.dispatchEvent(new CustomEvent("study-fonts-updated"));
+  } catch (e) {
+    console.error("Failed to remove font:", e);
+  }
 }

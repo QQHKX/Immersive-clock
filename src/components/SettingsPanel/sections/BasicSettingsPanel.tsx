@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
-import { importFontFile, loadImportedFonts } from "../../../utils/studyFontStorage";
+import { importFontFile, loadImportedFonts, ImportedFontMeta } from "../../../utils/studyFontStorage";
 import { Dropdown } from "../../Dropdown/Dropdown";
 import {
   FormSection,
@@ -98,7 +98,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   // 字体设置草稿（来源分段：默认 / 自定义字体）
   const [numericFontMode, setNumericFontMode] = useState<"default" | "custom">("default");
   const [textFontMode, setTextFontMode] = useState<"default" | "custom">("default");
-  const [importedFonts, setImportedFonts] = useState(() => loadImportedFonts());
+  const [importedFonts, setImportedFonts] = useState<ImportedFontMeta[]>([]);
   const [numericFontSelected, setNumericFontSelected] = useState<string>("");
   const [textFontSelected, setTextFontSelected] = useState<string>("");
   const [fontFile, setFontFile] = useState<File | null>(null);
@@ -112,6 +112,11 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         setCountdownMode(saved as "gaokao" | "single" | "multi");
       }
     } catch {}
+  }, []);
+
+  // 独立加载字体列表
+  useEffect(() => {
+    loadImportedFonts().then(setImportedFonts);
   }, []);
 
   useEffect(() => {
@@ -176,7 +181,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     const tf = initMode(study.textFontFamily);
     setNumericFontMode(nf.mode);
     setTextFontMode(tf.mode);
-    setImportedFonts(loadImportedFonts());
+    
+    // 异步加载字体列表
+    loadImportedFonts().then(setImportedFonts);
+
     setNumericFontSelected(nf.custom);
     setTextFontSelected(tf.custom);
   }, [
@@ -337,12 +345,13 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       (fontAlias && fontAlias.trim()) || fontFile.name.replace(/\.(ttf|otf|woff2?|)$/i, "");
     try {
       await importFontFile(fontFile, family);
-      setImportedFonts(loadImportedFonts());
+      const fonts = await loadImportedFonts();
+      setImportedFonts(fonts);
       alert(`已导入字体：${family}`);
       setFontFile(null);
       setFontAlias("");
-    } catch {
-      alert("导入字体失败，请重试");
+    } catch (e: any) {
+      alert(`导入字体失败：${e.message || "未知错误"}`);
     }
   };
 
