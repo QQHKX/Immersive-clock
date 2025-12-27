@@ -99,8 +99,10 @@ export function Study() {
    * 注入已导入字体（函数级注释：组件挂载时确保本地导入的字体已通过 @font-face 注入到页面）
    */
   useEffect(() => {
-    ensureInjectedFonts();
-    const onFontsUpdated = () => ensureInjectedFonts();
+    ensureInjectedFonts().catch(console.error);
+    const onFontsUpdated = () => {
+      ensureInjectedFonts().catch(console.error);
+    };
     window.addEventListener("study-fonts-updated", onFontsUpdated as EventListener);
     return () => window.removeEventListener("study-fonts-updated", onFontsUpdated as EventListener);
   }, []);
