@@ -159,18 +159,18 @@
   .bottomSection {
     transition: opacity 0.2s ease;
   }
-  
+
   .hud.visible .topSection,
   .hud.visible .bottomSection,
   .hud.hidden .topSection,
   .hud.hidden .bottomSection {
     animation: none;
   }
-  
+
   .hud.visible {
     animation: none;
   }
-  
+
   .hud.hidden {
     animation: none;
   }

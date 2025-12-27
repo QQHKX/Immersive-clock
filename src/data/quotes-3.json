@@ -5,10 +5,6 @@
   "enabled": true,
   "onlineFetch": true,
   "apiEndpoint": "https://v1.hitokoto.cn/",
-  "hitokotoCategories": [
-    "d",
-    "k",
-    "i"
-  ],
+  "hitokotoCategories": ["d", "k", "i"],
   "quotes": []
 }

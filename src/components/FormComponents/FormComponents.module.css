@@ -29,7 +29,7 @@
 .sectionTitle {
   margin: 0 0 1rem 0;
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 1.1rem;
   font-weight: 600;
   position: relative;
@@ -37,13 +37,13 @@
 }
 
 .sectionTitle::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
   width: 1.5rem;
   height: 2px;
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   border-radius: 1px;
 }
 
@@ -72,7 +72,7 @@
   display: block;
   margin-bottom: 0.5rem;
   color: rgba(255, 255, 255, 0.8);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.9rem;
   font-weight: 500;
   transition: color var(--transition-normal, 0.3s);
@@ -85,7 +85,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--border-radius-md, 8px);
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.95rem;
   line-height: 1.4;
   transition: all var(--transition-normal, 0.3s);
@@ -103,7 +103,7 @@
 }
 
 .input:focus {
-  border-color: var(--accent-color, #03DAC6);
+  border-color: var(--accent-color, #03dac6);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -114,12 +114,11 @@
 }
 
 .input.error {
-  border-color: var(--warning-color, #CF6679);
+  border-color: var(--warning-color, #cf6679);
   background: rgba(207, 102, 121, 0.1);
 }
 
 @keyframes shake {
-
   0%,
   100% {
     transform: translateX(0);
@@ -148,7 +147,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--border-radius-md, 8px);
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.95rem;
   cursor: pointer;
   appearance: none;
@@ -162,7 +161,7 @@
 }
 
 .select:focus {
-  border-color: var(--accent-color, #03DAC6);
+  border-color: var(--accent-color, #03dac6);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -210,7 +209,7 @@
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.9rem;
   font-weight: 400;
   color: var(--text-color, #ffffff);
@@ -219,7 +218,7 @@
 }
 
 .checkboxLabel:hover {
-  color: var(--accent-color, #03DAC6);
+  color: var(--accent-color, #03dac6);
 }
 
 .checkboxInput {
@@ -242,18 +241,18 @@
 }
 
 .checkboxCustom:hover {
-  border-color: var(--accent-color, #03DAC6);
+  border-color: var(--accent-color, #03dac6);
   background: linear-gradient(135deg, rgba(3, 218, 198, 0.1) 0%, rgba(3, 218, 198, 0.05) 100%);
   transform: scale(1.05);
 }
 
-.checkboxInput:checked+.checkboxCustom {
-  background: var(--accent-color, #03DAC6);
-  border-color: var(--accent-color, #03DAC6);
+.checkboxInput:checked + .checkboxCustom {
+  background: var(--accent-color, #03dac6);
+  border-color: var(--accent-color, #03dac6);
 }
 
-.checkboxInput:focus+.checkboxCustom {
-  border-color: var(--accent-color, #03DAC6);
+.checkboxInput:focus + .checkboxCustom {
+  border-color: var(--accent-color, #03dac6);
 }
 
 .checkboxIcon {
@@ -264,11 +263,11 @@
   color: var(--background-color, #121212);
 }
 
-.checkboxInput:checked+.checkboxCustom .checkboxIcon {
+.checkboxInput:checked + .checkboxCustom .checkboxIcon {
   opacity: 1;
 }
 
-.checkboxInput:disabled+.checkboxCustom {
+.checkboxInput:disabled + .checkboxCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -308,7 +307,7 @@
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.9rem;
   font-weight: 400;
   color: var(--text-color, #ffffff);
@@ -317,7 +316,7 @@
 }
 
 .radioLabel:hover {
-  color: var(--accent-color, #03DAC6);
+  color: var(--accent-color, #03dac6);
 }
 
 .radioInput {
@@ -342,7 +341,7 @@
 }
 
 .radioCustom::after {
-  content: '';
+  content: "";
   width: 8px;
   height: 8px;
   background: var(--bg-color, #121212);
@@ -352,25 +351,25 @@
 }
 
 .radioCustom:hover {
-  border-color: var(--accent-color, #03DAC6);
+  border-color: var(--accent-color, #03dac6);
   background: linear-gradient(135deg, rgba(3, 218, 198, 0.1) 0%, rgba(3, 218, 198, 0.05) 100%);
   transform: scale(1.05);
 }
 
-.radioInput:checked+.radioCustom {
-  background: var(--accent-color, #03DAC6);
-  border-color: var(--accent-color, #03DAC6);
+.radioInput:checked + .radioCustom {
+  background: var(--accent-color, #03dac6);
+  border-color: var(--accent-color, #03dac6);
 }
 
-.radioInput:checked+.radioCustom::after {
+.radioInput:checked + .radioCustom::after {
   opacity: 1;
 }
 
-.radioInput:focus+.radioCustom {
-  border-color: var(--accent-color, #03DAC6);
+.radioInput:focus + .radioCustom {
+  border-color: var(--accent-color, #03dac6);
 }
 
-.radioInput:disabled+.radioCustom {
+.radioInput:disabled + .radioCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -418,7 +417,7 @@
 }
 
 .segmentedOptionActive {
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   color: var(--background-color, #121212);
 }
 
@@ -436,7 +435,7 @@
 
 /* 输入变体 */
 .input.time {
-  font-family: var(--font-mono, 'Fira Code', 'Monaco', 'Consolas', monospace);
+  font-family: var(--font-mono, "Fira Code", "Monaco", "Consolas", monospace);
   width: 80px;
   text-align: center;
   letter-spacing: 0.1em;
@@ -449,9 +448,9 @@
 }
 
 .errorText {
-  color: var(--warning-color, #CF6679);
+  color: var(--warning-color, #cf6679);
   font-size: 0.8rem;
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-weight: 500;
   margin-top: 0.25rem;
   display: flex;
@@ -495,14 +494,14 @@
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
   font-weight: 500;
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
 .sliderValue {
-  color: var(--accent-color, #03DAC6);
+  color: var(--accent-color, #03dac6);
   font-size: 1rem;
   font-weight: 600;
-  font-family: var(--font-main, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-main, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
 .slider {
@@ -600,7 +599,7 @@
   display: flex;
   justify-content: space-between;
   margin-top: 0.5rem;
-  font-family: var(--font-main, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-main, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
 }
@@ -612,7 +611,7 @@
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--border-radius-md, 8px);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-weight: 500;
   text-decoration: none;
   user-select: none;
@@ -641,14 +640,14 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--accent-color, #03DAC6);
+  outline: 2px solid var(--accent-color, #03dac6);
   outline-offset: 2px;
 }
 
 /* 按钮变体 */
 .button.primary {
-  background: var(--accent-color, #03DAC6);
-  border-color: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
+  border-color: var(--accent-color, #03dac6);
   color: var(--bg-color, #121212);
 }
 
@@ -669,8 +668,8 @@
 }
 
 .button.danger {
-  background: var(--warning-color, #CF6679);
-  border-color: var(--warning-color, #CF6679);
+  background: var(--warning-color, #cf6679);
+  border-color: var(--warning-color, #cf6679);
   color: var(--text-color, #ffffff);
 }
 
@@ -680,8 +679,8 @@
 }
 
 .button.success {
-  background: #4CAF50;
-  border-color: #4CAF50;
+  background: #4caf50;
+  border-color: #4caf50;
   color: var(--text-color, #ffffff);
 }
 
@@ -766,7 +765,7 @@
 }
 
 /* 按钮组内的按钮间距优化 */
-.buttonGroup .button+.button {
+.buttonGroup .button + .button {
   margin-left: 0;
 }
 

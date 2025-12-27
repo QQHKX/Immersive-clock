@@ -133,7 +133,7 @@
 }
 
 .markdownContent h3 {
-  font-size: 1.0rem;
+  font-size: 1rem;
   /* h3 字体大小与正文区分明显 */
   font-weight: 600;
 }

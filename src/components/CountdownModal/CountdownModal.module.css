@@ -54,7 +54,6 @@
 
 /* 倒计时模态框的响应式调整 */
 @media (max-width: 768px) {
-
   .timeInputs {
     gap: var(--spacing-md);
   }

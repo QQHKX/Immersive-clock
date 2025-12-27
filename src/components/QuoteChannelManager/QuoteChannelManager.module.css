@@ -58,7 +58,7 @@
 }
 
 .channelItem::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -170,7 +170,7 @@
 }
 
 /* 隐藏 Firefox 的数字输入框微调箭头 */
-.weightInput[type=number] {
+.weightInput[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -239,7 +239,7 @@
 }
 
 .categoryTitle::before {
-  content: '🏷️';
+  content: "🏷️";
   font-size: var(--font-size-sm);
 }
 

@@ -31,6 +31,7 @@
 ---
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Features](#features)
 - [Install & Run](#install--run)
@@ -55,16 +56,19 @@ Immersive Clock is a lightweight desktop/web clock app built with React + TypeSc
 ## Features
 
 ### Time Management Modes
+
 - Switch among Clock / Countdown / Stopwatch / Study Mode
 - HUD smart control: show on click or keypress, auto-hide in ~8s
 
 ### Study Dashboard
+
 - Weather with manual refresh
 - Noise monitoring: mic calibration, baseline adjustment, report & history
 - Motivational quotes: channel management and refresh interval
 - Target-year countdown (e.g., National Exam)
 
 ### Performance & UX
+
 - Cache by asset type (images / fonts / audio)
 - PWA: offline, auto updates, desktop install
 - Accessibility (ARIA) and shortcuts (Space / Enter to show HUD)
@@ -132,12 +136,12 @@ Use HTTPS to enable full PWA features. `vercel.json` is provided for one-click i
 
 ## Accessibility
 
-| Shortcut         | Action               |
-|------------------|----------------------|
-| `Space / Enter`  | Show HUD             |
-| `Enter / Esc`    | Confirm / Close modals |
-| Double click time| Open countdown settings |
-| Double tap       | Mobile interaction support |
+| Shortcut          | Action                     |
+| ----------------- | -------------------------- |
+| `Space / Enter`   | Show HUD                   |
+| `Enter / Esc`     | Confirm / Close modals     |
+| Double click time | Open countdown settings    |
+| Double tap        | Mobile interaction support |
 
 ---
 

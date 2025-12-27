@@ -61,7 +61,7 @@
 
 /* 进度条发光效果 */
 .progressFill::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: 0;

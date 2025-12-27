@@ -89,8 +89,8 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     }));
 
     try {
-  // 从 docs 目录加载 Markdown 文件，使用 Vite 的 BASE_URL 以支持 Electron 打包后的相对路径
-  const response = await fetch(`${import.meta.env.BASE_URL}docs/${tabConfig.filename}`);
+      // 从 docs 目录加载 Markdown 文件，使用 Vite 的 BASE_URL 以支持 Electron 打包后的相对路径
+      const response = await fetch(`${import.meta.env.BASE_URL}docs/${tabConfig.filename}`);
       if (!response.ok) {
         throw new Error(`Failed to load ${tabConfig.filename}: ${response.status}`);
       }

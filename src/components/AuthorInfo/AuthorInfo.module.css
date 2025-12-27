@@ -63,7 +63,7 @@
     right: 0;
     font-size: 0.7rem;
   }
-  
+
   .versionNumber {
     padding: 1px 3px;
   }
@@ -75,7 +75,7 @@
     right: 0;
     font-size: 0.65rem;
   }
-  
+
   .versionNumber {
     padding: 1px 2px;
   }
@@ -90,7 +90,7 @@
   .authorInfo:hover {
     color: #ffffff;
   }
-  
+
   .versionNumber:hover {
     background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
@@ -102,19 +102,19 @@
   .versionNumber {
     transition: none;
   }
-  
+
   .versionNumber:hover {
     transform: none;
   }
-  
+
   .versionNumber:active {
     transform: none;
   }
-  
+
   .authorInfo {
     transition: none;
   }
-  
+
   .authorInfo:hover {
     transform: none;
   }

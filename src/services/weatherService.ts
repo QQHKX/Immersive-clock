@@ -48,16 +48,6 @@ interface AmapIpResponse {
   rectangle?: string;
 }
 
-interface IpapiCoResponse {
-  latitude?: number;
-  longitude?: number;
-}
-
-interface IpApiComResponse {
-  lat?: number;
-  lon?: number;
-}
-
 interface IpInfoResponse {
   loc?: string;
 }
