@@ -27,10 +27,6 @@
       "type": "image/png"
     }
   ],
-  "categories": [
-    "utilities",
-    "productivity",
-    "tools"
-  ],
+  "categories": ["utilities", "productivity", "tools"],
   "lang": "zh-CN"
 }

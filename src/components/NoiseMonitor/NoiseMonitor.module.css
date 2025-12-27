@@ -78,7 +78,6 @@
 
 /* 脉冲动画（吵闹状态） */
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -93,7 +92,6 @@
 
 /* 淡入淡出动画（初始化状态） */
 @keyframes fadeInOut {
-
   0%,
   100% {
     opacity: 0.6;
@@ -154,7 +152,6 @@
 
 /* 安静状态呼吸动画 */
 @keyframes breatheQuiet {
-
   0%,
   100% {
     opacity: 0.5;
@@ -169,7 +166,6 @@
 
 /* 吵闹状态呼吸动画 */
 @keyframes breatheNoisy {
-
   0%,
   100% {
     opacity: 0.6;
@@ -186,7 +182,6 @@
 
 /* 错误状态呼吸动画 */
 @keyframes breatheError {
-
   0%,
   100% {
     opacity: 0.5;
@@ -201,7 +196,6 @@
 
 /* 初始化状态呼吸动画 */
 @keyframes breatheInitializing {
-
   0%,
   100% {
     opacity: 0.4;
@@ -216,7 +210,6 @@
 
 /* 校准状态呼吸动画 */
 @keyframes breatheCalibrating {
-
   0%,
   100% {
     opacity: 0.5;

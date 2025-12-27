@@ -12,16 +12,18 @@
 
 /* 背景渐变覆层：与时钟页面保持一致的微弱中心高亮 */
 .container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.02) 0%,
-      rgba(255, 255, 255, 0.01) 50%,
-      transparent 100%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.01) 50%,
+    transparent 100%
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -124,7 +126,6 @@
 
 /* 响应式设计 - 与时钟界面保持一致 */
 @media (max-width: 1024px) {
-
   .topLeft,
   .topRight {
     top: 45px;
@@ -149,7 +150,6 @@
 }
 
 @media (max-width: 768px) {
-
   .topLeft,
   .topRight {
     top: 40px;
@@ -200,7 +200,6 @@
 }
 
 @media (max-width: 480px) {
-
   .topLeft,
   .topRight {
     top: 35px;

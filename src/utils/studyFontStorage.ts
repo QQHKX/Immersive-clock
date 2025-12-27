@@ -25,7 +25,7 @@ async function migrateFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    
+
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       const validFonts = parsed.filter(
@@ -40,7 +40,7 @@ async function migrateFromLocalStorage() {
         // 避免重复写入（虽然 put 会覆盖，但没必要）
         const exists = await db.get(font.id);
         if (!exists) {
-            await db.set(font.id, font);
+          await db.set(font.id, font);
         }
       }
     }
@@ -82,7 +82,7 @@ function inferFormatByFilename(name: string): ImportedFontMeta["format"] {
 export async function importFontFile(file: File, family: string): Promise<ImportedFontMeta> {
   const fmt = inferFormatByFilename(file.name);
   const id = `font_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  
+
   // 检查文件大小，IndexedDB 容量较大，但仍建议限制（例如 50MB）
   if (file.size > 50 * 1024 * 1024) {
     throw new Error("文件过大（超过 50MB），无法导入");
@@ -96,16 +96,16 @@ export async function importFontFile(file: File, family: string): Promise<Import
   });
 
   const meta: ImportedFontMeta = { id, family, dataUrl, format: fmt };
-  
+
   try {
     await db.set(id, meta);
     // 触发更新
     window.dispatchEvent(new CustomEvent("study-fonts-updated"));
-    
+
     // 立即刷新注入
     const list = await loadImportedFonts();
     injectFontFaces(list);
-    
+
     return meta;
   } catch (e) {
     console.error("Failed to save font to DB:", e);
@@ -138,7 +138,7 @@ export function injectFontFaces(fonts: ImportedFontMeta[]) {
  */
 export async function ensureInjectedFonts(): Promise<number> {
   if (typeof document === "undefined") return 0;
-  
+
   // 尝试迁移旧数据
   if (localStorage.getItem(STORAGE_KEY)) {
     await migrateFromLocalStorage();

@@ -502,7 +502,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
           setCurrentVolume(last.v);
           setNoiseStatus(last.s);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };

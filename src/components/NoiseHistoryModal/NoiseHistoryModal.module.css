@@ -6,7 +6,7 @@
 }
 
 .sidebar {
-  border-right: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding-right: 12px;
   display: flex;
   flex-direction: column;
@@ -33,17 +33,17 @@
   gap: 2px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 .timelineItem:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .timelineItem.active {
-  background: rgba(3,218,198,0.15);
+  background: rgba(3, 218, 198, 0.15);
 }
 
 .itemTitle {
@@ -71,7 +71,7 @@
 }
 
 .statItem {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -88,7 +88,7 @@
 }
 
 .chartRow {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   padding: 8px;
 }

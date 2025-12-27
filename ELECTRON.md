@@ -7,10 +7,12 @@
 根据您的操作系统，将生成以下安装包：
 
 ### Windows
+
 - `沉浸式时钟-[版本]-x64-Setup.exe` - 64位安装程序
 - `沉浸式时钟-[版本]-x64-Portable.exe` - 64位便携版
 
 ### Linux
+
 - `沉浸式时钟-[版本]-x64.AppImage` - AppImage 格式
 - `沉浸式时钟-[版本]-amd64.deb` - Debian/Ubuntu 安装包
 - `沉浸式时钟-[版本]-x86_64.rpm` - RedHat/Fedora 安装包

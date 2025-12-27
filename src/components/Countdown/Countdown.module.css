@@ -101,7 +101,6 @@
 
 /* 动画效果 */
 @keyframes warning-pulse {
-
   0%,
   100% {
     transform: scale(1);

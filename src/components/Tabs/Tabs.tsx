@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { LightButton } from "../LightControls/LightControls";
 
@@ -51,6 +51,7 @@ export const Tabs: React.FC<TabsProps> = ({
   const rafIdRef = useRef<number | null>(null);
   const pressTargetIdRef = useRef<string | null>(null);
   const suppressNextClickRef = useRef(false);
+  const wheelTimeoutRef = useRef<number | null>(null);
   const [hasLeft, setHasLeft] = useState(false);
   const [hasRight, setHasRight] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -72,7 +73,7 @@ export const Tabs: React.FC<TabsProps> = ({
   /**
    * 将当前选中项居中到可视区域
    */
-  const centerActiveTab = () => {
+  const centerActiveTab = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
     const activeEl = document.getElementById(activeKey);
@@ -85,7 +86,7 @@ export const Tabs: React.FC<TabsProps> = ({
     } catch {
       container.scrollLeft = clamped;
     }
-  };
+  }, [activeKey]);
 
   /**
    * 应用边界回弹动画
@@ -216,8 +217,12 @@ export const Tabs: React.FC<TabsProps> = ({
       el.scrollLeft += e.deltaY;
       setIsScrolling(true);
       updateEdgeMasks();
-      clearTimeout((onWheel as any)._t);
-      (onWheel as any)._t = setTimeout(() => setIsScrolling(false), 300);
+      if (wheelTimeoutRef.current !== null) {
+        clearTimeout(wheelTimeoutRef.current);
+      }
+      wheelTimeoutRef.current = window.setTimeout(() => {
+        setIsScrolling(false);
+      }, 300);
     }
   };
 
@@ -227,7 +232,7 @@ export const Tabs: React.FC<TabsProps> = ({
 
   useEffect(() => {
     centerActiveTab();
-  }, [activeKey]);
+  }, [activeKey, centerActiveTab]);
 
   useEffect(() => {
     return () => {

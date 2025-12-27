@@ -1,6 +1,6 @@
-import { app, BrowserWindow, session } from 'electron';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { app, BrowserWindow, session } from "electron";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 // ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -17,11 +17,11 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    backgroundColor: '#000000',
-    title: '沉浸式时钟',
+    backgroundColor: "#000000",
+    title: "沉浸式时钟",
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
@@ -33,21 +33,20 @@ function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
     // 生产环境：使用绝对路径加载 index.html
-    const indexPath = path.join(__dirname, '../dist/index.html');
+    const indexPath = path.join(__dirname, "../dist/index.html");
     mainWindow.loadFile(indexPath);
   }
 
   // 窗口关闭时的处理
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 
   // 快捷键支持
-  mainWindow.webContents.on('before-input-event', (event, input) => {
+  mainWindow.webContents.on("before-input-event", (event, input) => {
     // F12 或 Ctrl+Shift+I 打开/关闭开发者工具
-    if (input.type === 'keyDown') {
-      if ((input.key === 'F12') || 
-          (input.control && input.shift && input.key === 'I')) {
+    if (input.type === "keyDown") {
+      if (input.key === "F12" || (input.control && input.shift && input.key === "I")) {
         if (mainWindow) {
           mainWindow.webContents.toggleDevTools();
         }
@@ -57,10 +56,10 @@ function createWindow() {
   });
 
   // 阻止默认的导航行为，增强安全性
-  mainWindow.webContents.on('will-navigate', (event, url) => {
+  mainWindow.webContents.on("will-navigate", (event, url) => {
     const parsedUrl = new URL(url);
     // 只允许在同一域名下导航
-    if (parsedUrl.origin !== process.env.VITE_DEV_SERVER_URL?.replace(/\/$/, '')) {
+    if (parsedUrl.origin !== process.env.VITE_DEV_SERVER_URL?.replace(/\/$/, "")) {
       event.preventDefault();
     }
   });
@@ -70,7 +69,7 @@ function createWindow() {
 app.whenReady().then(() => {
   // 配置权限请求处理器：自动允许地理位置权限
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === 'geolocation') {
+    if (permission === "geolocation") {
       callback(true); // 允许
     } else {
       callback(false); // 其他权限默认拒绝或按需处理
@@ -79,7 +78,7 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     // macOS 下点击 dock 图标时重新创建窗口
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -88,13 +87,13 @@ app.whenReady().then(() => {
 });
 
 // 所有窗口关闭时退出应用（macOS 除外）
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
 // 处理应用退出前的清理工作
-app.on('before-quit', () => {
+app.on("before-quit", () => {
   // 在这里可以添加退出前的清理逻辑
 });

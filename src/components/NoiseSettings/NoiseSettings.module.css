@@ -27,7 +27,7 @@
   fill: var(--text-color, #ffffff);
   opacity: 0.9;
   font-size: 0.75rem;
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
 .gridLine {

@@ -3,7 +3,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
-import { importFontFile, loadImportedFonts, ImportedFontMeta } from "../../../utils/studyFontStorage";
+import {
+  importFontFile,
+  loadImportedFonts,
+  ImportedFontMeta,
+} from "../../../utils/studyFontStorage";
 import { Dropdown } from "../../Dropdown/Dropdown";
 import {
   FormSection,
@@ -181,7 +185,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     const tf = initMode(study.textFontFamily);
     setNumericFontMode(nf.mode);
     setTextFontMode(tf.mode);
-    
+
     // 异步加载字体列表
     loadImportedFonts().then(setImportedFonts);
 
@@ -350,8 +354,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       alert(`已导入字体：${family}`);
       setFontFile(null);
       setFontAlias("");
-    } catch (e: any) {
-      alert(`导入字体失败：${e.message || "未知错误"}`);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : typeof error === "string" ? error : "未知错误";
+      alert(`导入字体失败：${message}`);
     }
   };
 

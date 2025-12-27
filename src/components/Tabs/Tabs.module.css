@@ -35,12 +35,20 @@
 
 .fadeLeft {
   left: 0;
-  background: linear-gradient(to right, var(--hud-background, rgba(20, 20, 20, 0.95)) 0%, rgba(20, 20, 20, 0) 100%);
+  background: linear-gradient(
+    to right,
+    var(--hud-background, rgba(20, 20, 20, 0.95)) 0%,
+    rgba(20, 20, 20, 0) 100%
+  );
 }
 
 .fadeRight {
   right: 0;
-  background: linear-gradient(to left, var(--hud-background, rgba(20, 20, 20, 0.95)) 0%, rgba(20, 20, 20, 0) 100%);
+  background: linear-gradient(
+    to left,
+    var(--hud-background, rgba(20, 20, 20, 0.95)) 0%,
+    rgba(20, 20, 20, 0) 100%
+  );
 }
 
 .hasLeft .fadeLeft {
@@ -81,14 +89,16 @@
   background: transparent;
   border: none;
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.95rem;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  transition: color var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  transition:
+    color var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
 }
 
 .tabButton:hover:not(:disabled) {
@@ -102,13 +112,13 @@
 }
 
 .tabButtonActive.underlinedIndicator::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0.5rem;
   right: 0.5rem;
   bottom: -1px;
   height: 2px;
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   border-radius: 2px;
 }
 
@@ -121,7 +131,7 @@
 }
 
 .pill .tabButtonActive {
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   color: var(--background-color, #121212);
   border-color: transparent;
 }
@@ -141,7 +151,11 @@
   border-bottom: 2px solid transparent;
   font-weight: 500;
   border-radius: var(--border-radius-md);
-  transition: background var(--transition-fast, 0.2s), color var(--transition-fast, 0.2s), border-color var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  transition:
+    background var(--transition-fast, 0.2s),
+    color var(--transition-fast, 0.2s),
+    border-color var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
 }
 
 .announcement .tabButton:hover:not(:disabled) {
@@ -242,7 +256,9 @@
   /* 适度上边距，提升悬浮安全空间 */
   margin-bottom: -1px;
   /* 将标签底部与条带边线贴合 */
-  transition: background var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  transition:
+    background var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
 }
 
 .browser .tabButton:hover:not(:disabled) {
@@ -258,7 +274,7 @@
 }
 
 .browser .tabButton:focus-visible {
-  outline: 2px solid var(--accent-color, #03DAC6);
+  outline: 2px solid var(--accent-color, #03dac6);
   outline-offset: -2px;
 }
 

@@ -6,12 +6,7 @@
     "output": "release",
     "buildResources": "build"
   },
-  "files": [
-    "dist/**/*",
-    "dist-electron/**/*",
-    "public/**/*",
-    "package.json"
-  ],
+  "files": ["dist/**/*", "dist-electron/**/*", "public/**/*", "package.json"],
   "extraResources": [],
   "win": {
     "target": [
@@ -43,11 +38,7 @@
     "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
   },
   "linux": {
-    "target": [
-      "AppImage",
-      "deb",
-      "rpm"
-    ],
+    "target": ["AppImage", "deb", "rpm"],
     "icon": "public/favicon.png",
     "category": "Utility",
     "artifactName": "${productName}-${version}-${arch}.${ext}"
