@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -37,6 +39,13 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Read version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Pre-download electron-builder dependencies
         shell: pwsh
@@ -123,6 +132,34 @@ jobs:
           path: release/*-Portable.exe
           if-no-files-found: warn
 
+      - name: Publish Windows artifacts to GitHub Release (tag push)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Immersive Clock ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*-Setup.exe
+            release/*-Portable.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Windows artifacts to GitHub Release (manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Immersive Clock v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*-Setup.exe
+            release/*-Portable.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -147,6 +184,13 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Read version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create .env file from secrets
         run: |
@@ -181,3 +225,33 @@ jobs:
           name: linux-rpm
           path: release/*.rpm
           if-no-files-found: warn
+
+      - name: Publish Linux artifacts to GitHub Release (tag push)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Immersive Clock ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Linux artifacts to GitHub Release (manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Immersive Clock v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
