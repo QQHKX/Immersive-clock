@@ -20,7 +20,7 @@
       }
     ],
     "icon": "public/favicon.ico",
-    "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    "artifactName": "immersive-clock-${version}-${arch}-Setup.${ext}"
   },
   "nsis": {
     "oneClick": false,
@@ -35,13 +35,13 @@
     "deleteAppDataOnUninstall": false
   },
   "portable": {
-    "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
+    "artifactName": "immersive-clock-${version}-${arch}-Portable.${ext}"
   },
   "linux": {
     "target": ["AppImage", "deb", "rpm"],
     "icon": "public/favicon.png",
     "category": "Utility",
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
+    "artifactName": "immersive-clock-${version}-${arch}.${ext}"
   },
   "publish": null
 }
