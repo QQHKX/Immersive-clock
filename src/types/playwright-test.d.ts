@@ -14,4 +14,3 @@ declare module "@playwright/test" {
 
   export function defineConfig(config: PlaywrightTestConfig): PlaywrightTestConfig;
 }
-

@@ -24,11 +24,34 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
     parseInt(localStorage.getItem("weather.lastSuccessTs") || "0", 10)
   );
 
+  /**
+   * 刷新天气数据（不强制更新地理位置缓存）
+   */
   const handleRefreshWeather = useCallback(() => {
     const weatherRefreshEvent = new CustomEvent("weatherRefresh");
     window.dispatchEvent(weatherRefreshEvent);
     setWeatherRefreshStatus("刷新中");
     localStorage.setItem("weather.refreshStatus", "刷新中");
+  }, []);
+
+  /**
+   * 刷新地理位置：
+   * - 清除本地坐标缓存（包括来源与缓存时间）
+   * - 触发天气刷新事件，重新执行定位与天气获取流程
+   */
+  const handleRefreshLocation = useCallback(() => {
+    try {
+      localStorage.removeItem("weather.coords.lat");
+      localStorage.removeItem("weather.coords.lon");
+      localStorage.removeItem("weather.coords.cachedAt");
+      localStorage.removeItem("weather.coords.source");
+    } catch {
+      // 忽略本地存储异常
+    }
+    setWeatherRefreshStatus("重新定位中");
+    localStorage.setItem("weather.refreshStatus", "重新定位中");
+    const weatherRefreshEvent = new CustomEvent("weatherRefresh");
+    window.dispatchEvent(weatherRefreshEvent);
   }, []);
 
   useEffect(() => {
@@ -153,6 +176,13 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             icon={<RefreshIcon size={16} />}
           >
             刷新天气
+          </FormButton>
+          <FormButton
+            variant="secondary"
+            onClick={handleRefreshLocation}
+            icon={<RefreshIcon size={16} />}
+          >
+            刷新地理位置
           </FormButton>
         </FormButtonGroup>
       </FormSection>

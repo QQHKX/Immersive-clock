@@ -92,7 +92,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => {});
+  const countdownSaveRef = React.useRef<() => void>(() => { });
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
@@ -107,6 +107,9 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [textFontSelected, setTextFontSelected] = useState<string>("");
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [fontAlias, setFontAlias] = useState<string>("");
+  const [systemFonts, setSystemFonts] = useState<{ label: string; value: string }[]>([]);
+  const [systemFontSupported, setSystemFontSupported] = useState<boolean>(false);
+  const [loadingSystemFonts, setLoadingSystemFonts] = useState<boolean>(false);
 
   // 打开时优先从本地存储读取上次选择的倒计时模式
   useEffect(() => {
@@ -115,12 +118,21 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved as "gaokao" | "single" | "multi");
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // 独立加载字体列表
   useEffect(() => {
     loadImportedFonts().then(setImportedFonts);
+  }, []);
+
+  /**
+   * 探测当前环境是否支持本地字体读取（函数级注释：检查浏览器是否提供 queryLocalFonts 接口，用于后续系统字体列表的读取）
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const anyWindow = window as unknown as { queryLocalFonts?: () => Promise<unknown[]> };
+    setSystemFontSupported(typeof anyWindow.queryLocalFonts === "function");
   }, []);
 
   useEffect(() => {
@@ -274,7 +286,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         localStorage.setItem("countdown-mode", countdownMode);
-      } catch {}
+      } catch { }
 
       // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）
       const resolveFont = (mode: "default" | "custom", selected: string): string | undefined => {
@@ -358,6 +370,57 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       const message =
         error instanceof Error ? error.message : typeof error === "string" ? error : "未知错误";
       alert(`导入字体失败：${message}`);
+    }
+  };
+
+  /**
+   * 读取系统已安装字体列表（函数级注释：通过浏览器的 queryLocalFonts 接口请求本机字体家族名，并转换为下拉选项供选择）
+   */
+  const handleLoadSystemFonts = async () => {
+    if (typeof window === "undefined") {
+      alert("当前环境不支持读取系统字体");
+      return;
+    }
+    const anyWindow = window as unknown as {
+      queryLocalFonts?: () => Promise<
+        {
+          family?: string;
+        }[]
+      >;
+    };
+    if (typeof anyWindow.queryLocalFonts !== "function") {
+      alert("当前浏览器不支持直接读取系统字体，请使用导入字体或手动输入字体名称。");
+      return;
+    }
+    try {
+      setLoadingSystemFonts(true);
+      const fonts = await anyWindow.queryLocalFonts();
+      const seen = new Set<string>();
+      const options: { label: string; value: string }[] = [];
+      for (const f of fonts) {
+        const rawFamily = typeof f?.family === "string" ? f.family.trim() : "";
+        if (!rawFamily || seen.has(rawFamily)) continue;
+        seen.add(rawFamily);
+        const safeFamily = rawFamily.replace(/"/g, '\\"');
+        options.push({
+          label: rawFamily,
+          value: `"${safeFamily}"`,
+        });
+      }
+      options.sort((a, b) => a.label.localeCompare(b.label, "zh-Hans-CN"));
+      setSystemFonts(options);
+      if (options.length === 0) {
+        alert("未能从系统中读取到可用字体，请检查浏览器权限设置。");
+      } else {
+        alert(`已读取到 ${options.length} 个系统字体，可在下拉列表中选择。`);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load system fonts:", error);
+      const message =
+        error instanceof Error ? error.message : typeof error === "string" ? error : "未知错误";
+      alert(`读取系统字体失败：${message}`);
+    } finally {
+      setLoadingSystemFonts(false);
     }
   };
 
@@ -579,7 +642,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
 
       <FormSection title="字体设置">
         <p className={styles.helpText}>
-          选择字体来源（与背景设置风格一致）。默认继承系统，或从下拉列表选择自定义字体。
+          选择数字或文本的自定义字体。
         </p>
         <FormRow gap="sm" align="center">
           <FormSegmented
@@ -597,7 +660,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={numericFontSelected}
-                onChange={() => {}}
+                onChange={() => { }}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -613,6 +676,27 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                       importedFonts.length > 0
                         ? importedFonts.map((f) => ({ label: f.family, value: f.family }))
                         : [{ label: "暂无已导入字体", value: "__none__", disabled: true }],
+                  },
+                  {
+                    label: "—— 系统字体（实验性） ——",
+                    options:
+                      systemFonts.length > 0
+                        ? systemFonts
+                        : [
+                          systemFontSupported
+                            ? {
+                              label: loadingSystemFonts
+                                ? "正在读取系统字体..."
+                                : "点击“读取系统字体”按钮后刷新此列表",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            }
+                            : {
+                              label: "当前浏览器不支持系统字体读取",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            },
+                        ],
                   },
                   {
                     label: "—— 内置 ——",
@@ -639,7 +723,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={textFontSelected}
-                onChange={() => {}}
+                onChange={() => { }}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -657,6 +741,27 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                         : [{ label: "暂无已导入字体", value: "__none__", disabled: true }],
                   },
                   {
+                    label: "—— 系统字体（实验性） ——",
+                    options:
+                      systemFonts.length > 0
+                        ? systemFonts
+                        : [
+                          systemFontSupported
+                            ? {
+                              label: loadingSystemFonts
+                                ? "正在读取系统字体..."
+                                : "点击“读取系统字体”按钮后刷新此列表",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            }
+                            : {
+                              label: "当前浏览器不支持系统字体读取",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            },
+                        ],
+                  },
+                  {
                     label: "—— 内置 ——",
                     options: builtInTextFonts,
                   },
@@ -665,27 +770,40 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             </FormRow>
           )}
         </FormRow>
-        <p className={styles.helpText}>如果选择“默认”，将回退到全局字体。</p>
-        <FormRow gap="sm" align="center">
-          <FormInput
-            label="字体别名"
-            type="text"
-            value={fontAlias}
-            onChange={(e) => setFontAlias(e.target.value)}
-            placeholder='例如："JetBrains Mono"'
-          />
-          <FormFilePicker
-            label="字体文件"
-            accept=".ttf,.otf,.woff,.woff2"
-            fileName={fontFile?.name}
-            placeholder="未选择字体文件"
-            buttonText="选择字体文件"
-            onFileChange={(file) => setFontFile(file)}
-          />
-          <FormButton variant="secondary" onClick={handleImportFont}>
-            导入字体文件
-          </FormButton>
-        </FormRow>
+        {(numericFontMode === "custom" || textFontMode === "custom") && (
+          <>
+            <FormRow gap="sm" align="center">
+              <FormInput
+                label="字体别名"
+                type="text"
+                value={fontAlias}
+                onChange={(e) => setFontAlias(e.target.value)}
+                placeholder='例如："JetBrains Mono"'
+              />
+              <FormFilePicker
+                label="字体文件"
+                accept=".ttf,.otf,.woff,.woff2"
+                fileName={fontFile?.name}
+                placeholder="未选择字体文件"
+                buttonText="选择字体文件"
+                onFileChange={(file) => setFontFile(file)}
+              />
+              <FormButton variant="secondary" onClick={handleImportFont}>
+                导入字体文件
+              </FormButton>
+              <FormButton
+                variant="secondary"
+                onClick={handleLoadSystemFonts}
+                disabled={!systemFontSupported || loadingSystemFonts}
+              >
+                {loadingSystemFonts ? "正在读取系统字体..." : "读取系统字体"}
+              </FormButton>
+            </FormRow>
+            <p className={styles.helpText}>
+              系统字体读取基于浏览器 Local Font Access 接口，仅部分 Chromium 浏览器在安全上下文中支持。
+            </p>
+          </>
+        )}
       </FormSection>
 
       {/* 背景设置 */}
