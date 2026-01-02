@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // Type import is safe
+import type { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // Type import is safe
 import { 
   QuoteSourceConfig, 
   StudyDisplaySettings, 
@@ -80,7 +80,7 @@ export interface AppSettings {
   };
 }
 
-const APP_SETTINGS_KEY = "AppSettings";
+export const APP_SETTINGS_KEY = "AppSettings";
 const CURRENT_SETTINGS_VERSION = 1;
 
 const DEFAULT_SETTINGS: AppSettings = {

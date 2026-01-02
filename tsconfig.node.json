@@ -7,5 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["vite.config.ts", "versionCache.ts", "src/utils/**/*.ts"]
+  "include": ["vite.config.ts", "versionCache.ts", "src/utils/versionCache.ts"]
 }
