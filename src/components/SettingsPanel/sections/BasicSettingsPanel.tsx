@@ -23,6 +23,7 @@ import {
 import ScheduleSettings from "../../ScheduleSettings";
 import styles from "../SettingsPanel.module.css";
 
+import { getAppSettings, updateStudySettings } from "../../../utils/appSettings";
 import { CountdownManagerPanel } from "./CountdownManagerPanel";
 
 /**
@@ -111,12 +112,12 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [systemFontSupported, setSystemFontSupported] = useState<boolean>(false);
   const [loadingSystemFonts, setLoadingSystemFonts] = useState<boolean>(false);
 
-  // 打开时优先从本地存储读取上次选择的倒计时模式
+  // 打开时优先从 AppSettings 读取上次选择的倒计时模式
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("countdown-mode");
+      const saved = getAppSettings().study.countdownMode;
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
-        setCountdownMode(saved as "gaokao" | "single" | "multi");
+        setCountdownMode(saved);
       }
     } catch { }
   }, []);
@@ -285,7 +286,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       }
       // 记录最近启用的模式，确保下次打开直接显示
       try {
-        localStorage.setItem("countdown-mode", countdownMode);
+        updateStudySettings({ countdownMode });
       } catch { }
 
       // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）

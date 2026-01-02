@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../../utils/logger";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import type { NoiseControlSettings } from "../../utils/noiseControlSettings";
+import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
 import {
   readNoiseSamples,
   writeNoiseSample,
@@ -26,10 +27,6 @@ type NoiseStatus = "quiet" | "noisy" | "error" | "permission-denied" | "initiali
 const MIN_DECIBELS = -90; // 最小分贝值（频域专用，保留）
 const MAX_DECIBELS = -10; // 最大分贝值（频域专用，保留）
 const BASELINE_DB_DEFAULT = 40; // 默认基线显示分贝
-const BASELINE_RMS_KEY = "noise-monitor-baseline-rms";
-
-// localStorage 键名
-const BASELINE_NOISE_KEY = "noise-monitor-baseline";
 
 interface NoiseMonitorProps {
   // 点击状态文本时触发（安静/吵闹状态下）
@@ -44,14 +41,12 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const [noiseStatus, setNoiseStatus] = useState<NoiseStatus>("initializing");
   const [currentVolume, setCurrentVolume] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
-  // 旧版：保存映射后的 dB 基线；新版：保存 RMS 基线
+  // 从 AppSettings 读取
   const [baselineNoise, setBaselineNoise] = useState<number>(() => {
-    const saved = localStorage.getItem(BASELINE_NOISE_KEY);
-    return saved ? parseFloat(saved) : 0;
-  }); // UI 显示用的基线 dB（新版校准后固定为 40）
+    return getAppSettings().noiseControl.baselineDisplayDb;
+  }); // UI 显示用的基线 dB
   const [baselineRms, setBaselineRms] = useState<number>(() => {
-    const saved = localStorage.getItem(BASELINE_RMS_KEY);
-    return saved ? parseFloat(saved) : 0;
+    return getAppSettings().noiseControl.baselineRms;
   }); // 新版：用于相对 dB 计算的 RMS 基线
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false); // 校准状态
   const [thresholdDb, setThresholdDb] = useState<number>(
@@ -211,11 +206,17 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (rmsSamples.length > 0) {
       const avgRms = rmsSamples.reduce((s, x) => s + x, 0) / rmsSamples.length;
       setBaselineRms(avgRms);
-      localStorage.setItem(BASELINE_RMS_KEY, avgRms.toString());
+      
       // UI 显示基线统一为 40dB
       const manualBaseline = getNoiseControlSettings().baselineDb ?? BASELINE_DB_DEFAULT;
       setBaselineNoise(manualBaseline);
-      localStorage.setItem(BASELINE_NOISE_KEY, manualBaseline.toString());
+      
+      // 更新到 AppSettings
+      updateNoiseSettings({
+        baselineRms: avgRms,
+        baselineDisplayDb: manualBaseline
+      });
+
       logger.info(
         `噪音基准校准完成: baselineRms=${avgRms.toExponential(3)}，显示基线为 ${manualBaseline}dB`
       );

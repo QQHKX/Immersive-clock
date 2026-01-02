@@ -5,6 +5,7 @@
  * - 站点归一化：使用 senderName，缺失时用坐标兜底键
  */
 import type { WeatherAlertResponse } from "../services/weatherService";
+import { readStationAlertRecord, writeStationAlertRecord } from "./weatherStorage";
 
 type AlertItem = NonNullable<WeatherAlertResponse["alerts"]>[number];
 
@@ -76,21 +77,15 @@ export function selectLatestAlertsPerStation(
 
 /**
  * 读取站点最近弹窗记录（函数级注释）
- * - 键：weather.alert.station.<stationKey>
+ * - 键：weather-cache.alerts.<stationKey>
  * - 返回包含签名与时间戳；TTL 12 小时，过期视作无记录
  */
 export function readStationRecord(stationKey: string): { sig?: string; ts?: number } | null {
-  try {
-    const raw = localStorage.getItem(`weather.alert.station.${stationKey}`);
-    if (!raw) return null;
-    const obj = JSON.parse(raw) as { sig?: string; ts?: number };
-    const ts = obj?.ts || 0;
-    const TTL = 12 * 60 * 60 * 1000;
-    if (ts > 0 && Date.now() - ts < TTL) return obj;
-    return null;
-  } catch {
-    return null;
+  const record = readStationAlertRecord(stationKey);
+  if (record) {
+    return { sig: record.sig, ts: record.ts };
   }
+  return null;
 }
 
 /**
@@ -98,10 +93,5 @@ export function readStationRecord(stationKey: string): { sig?: string; ts?: numb
  * - 保存签名与当前时间戳
  */
 export function writeStationRecord(stationKey: string, sig: string): void {
-  try {
-    const payload = JSON.stringify({ sig, ts: Date.now() });
-    localStorage.setItem(`weather.alert.station.${stationKey}`, payload);
-  } catch {
-    /* ignore */
-  }
+  writeStationAlertRecord(stationKey, sig);
 }

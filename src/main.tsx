@@ -4,8 +4,12 @@ import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
 import { AppContextProvider } from "./contexts/AppContext";
+import { initializeStorage } from "./utils/storageInitializer";
 
 import "./styles/global.css";
+
+// Initialize storage before app starts
+initializeStorage();
 
 /**
  * 应用程序入口点

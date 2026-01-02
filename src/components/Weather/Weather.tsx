@@ -7,13 +7,20 @@ import {
   fetchMinutelyPrecip,
 } from "../../services/weatherService";
 import type { MinutelyPrecipResponse } from "../../services/weatherService";
+import {
+  getWeatherCache,
+  updateWeatherNowSnapshot,
+  updateMinutelyCache,
+  getValidMinutely,
+  getValidCoords,
+  updateMinutelyLastFetch,
+  updateAlertTag
+} from "../../utils/weatherStorage";
 import { logger } from "../../utils/logger";
 
 import styles from "./Weather.module.css";
 
 const MINUTELY_PRECIP_POPUP_ID = "weather:minutelyPrecip";
-const MINUTELY_PRECIP_CACHE_KEY = "weather.minutely.cache.v1";
-const MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY = "weather.minutely.lastApiFetchAt";
 const MINUTELY_PRECIP_POPUP_SHOWN_KEY = "weather.minutely.popupShown";
 const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
 const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
@@ -201,21 +208,27 @@ const Weather: React.FC = () => {
   const { study } = useAppState();
 
   const readMinutelyCache = useCallback((): MinutelyPrecipCache | null => {
-    const raw = localStorage.getItem(MINUTELY_PRECIP_CACHE_KEY);
-    return safeParseJson<MinutelyPrecipCache>(raw);
+    const coords = getValidCoords();
+    if (coords) {
+      const location = `${coords.lon.toFixed(2)},${coords.lat.toFixed(2)}`;
+      const data = getValidMinutely(location);
+      if (data) {
+        return {
+          updateTime: data.updateTime,
+          summary: data.summary,
+          minutely: data.minutely,
+          fetchedAt: Date.now(),
+        };
+      }
+    }
+    return null;
   }, []);
 
   const writeMinutelyCache = useCallback((data: MinutelyPrecipResponse, fetchedAt: number) => {
-    const payload: MinutelyPrecipCache = {
-      updateTime: data.updateTime,
-      summary: data.summary,
-      minutely: data.minutely,
-      fetchedAt,
-    };
-    try {
-      localStorage.setItem(MINUTELY_PRECIP_CACHE_KEY, JSON.stringify(payload));
-    } catch {
-      /* ignore */
+    const coords = getValidCoords();
+    if (coords) {
+      const location = `${coords.lon.toFixed(2)},${coords.lat.toFixed(2)}`;
+      updateMinutelyCache(location, data);
     }
   }, []);
 
@@ -311,20 +324,16 @@ const Weather: React.FC = () => {
       }
 
       if (!opts?.forceApi) {
-        const lastFetchAtRaw = localStorage.getItem(MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY) || "0";
-        const lastFetchAt = Number.parseInt(lastFetchAtRaw, 10);
-        if (
-          Number.isFinite(lastFetchAt) &&
-          lastFetchAt > 0 &&
-          nowMs - lastFetchAt < MINUTELY_PRECIP_API_INTERVAL_MS
-        ) {
+        const cache = getWeatherCache();
+        const lastFetchAt = cache.minutely?.lastApiFetchAt || 0;
+        if (lastFetchAt > 0 && nowMs - lastFetchAt < MINUTELY_PRECIP_API_INTERVAL_MS) {
           return;
         }
       }
 
       const minResp = await fetchMinutelyPrecip(locationParam);
       if (minResp.error || minResp.code !== "200") return;
-      localStorage.setItem(MINUTELY_PRECIP_API_LAST_FETCH_AT_KEY, String(nowMs));
+      updateMinutelyLastFetch(nowMs);
 
       const incomingCache: MinutelyPrecipCache = {
         updateTime: minResp.updateTime,
@@ -440,7 +449,21 @@ const Weather: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      localStorage.setItem("weather.refreshStatus", "刷新中");
+      // 尝试回显缓存
+      const cache = getWeatherCache();
+      if (cache.now?.data) {
+        const now = cache.now.data.now;
+        const locationName = cache.location?.city || "未知";
+        if (now) {
+          setWeatherData({
+            temperature: now.temp ?? "",
+            text: now.text ?? "",
+            location: locationName,
+            icon: mapWeatherToIcon(now.text ?? ""),
+          });
+          setLoading(false); // 如果有缓存先显示，后面继续请求更新
+        }
+      }
 
       const result = await buildWeatherFlow();
 
@@ -464,47 +487,8 @@ const Weather: React.FC = () => {
 
       setWeatherData({ temperature, text, location: locationName, icon });
 
-      localStorage.setItem("weather.address", address);
-      localStorage.setItem("weather.lastSuccessTs", String(ts));
-      localStorage.setItem("weather.refreshStatus", "成功");
-      // 额外持久化：坐标与全部实时天气字段
-      if (result.coords) {
-        localStorage.setItem("weather.coords.lat", String(result.coords.lat));
-        localStorage.setItem("weather.coords.lon", String(result.coords.lon));
-        if (result.coordsSource) {
-          localStorage.setItem("weather.coords.source", result.coordsSource);
-        }
-      }
-      if (now) {
-        if (now.obsTime) localStorage.setItem("weather.now.obsTime", now.obsTime);
-        if (now.text) localStorage.setItem("weather.now.text", now.text);
-        if (now.temp != null) localStorage.setItem("weather.now.temp", String(now.temp));
-        if (now.feelsLike != null)
-          localStorage.setItem("weather.now.feelsLike", String(now.feelsLike));
-        if (now.windDir) localStorage.setItem("weather.now.windDir", now.windDir);
-        if (now.windScale != null)
-          localStorage.setItem("weather.now.windScale", String(now.windScale));
-        if (now.windSpeed != null)
-          localStorage.setItem("weather.now.windSpeed", String(now.windSpeed));
-        if (now.humidity != null)
-          localStorage.setItem("weather.now.humidity", String(now.humidity));
-        if (now.pressure != null)
-          localStorage.setItem("weather.now.pressure", String(now.pressure));
-        if (now.precip != null) localStorage.setItem("weather.now.precip", String(now.precip));
-        if (now.vis != null) localStorage.setItem("weather.now.vis", String(now.vis));
-        if (now.cloud != null) localStorage.setItem("weather.now.cloud", String(now.cloud));
-        if (now.dew != null) localStorage.setItem("weather.now.dew", String(now.dew));
-        if (result.weather?.refer?.sources)
-          localStorage.setItem(
-            "weather.refer.sources",
-            (result.weather.refer.sources || []).join(",")
-          );
-        if (result.weather?.refer?.license)
-          localStorage.setItem(
-            "weather.refer.license",
-            (result.weather.refer.license || []).join(",")
-          );
-      }
+      // 持久化实时天气快照
+      updateWeatherNowSnapshot(result.weather);
 
       // 广播刷新完成事件
       const event = new CustomEvent("weatherRefreshDone", {
@@ -522,11 +506,11 @@ const Weather: React.FC = () => {
       logger.error("天气初始化失败:", error);
       setError(error instanceof Error ? error.message : "未知错误");
 
-      localStorage.setItem("weather.refreshStatus", "失败");
+      const cache = getWeatherCache();
       const event = new CustomEvent("weatherRefreshDone", {
         detail: {
           status: "失败",
-          address: localStorage.getItem("weather.address") || "",
+          address: cache.location?.address || "",
           ts: Date.now(),
         },
       });
@@ -580,9 +564,11 @@ const Weather: React.FC = () => {
               window.dispatchEvent(ev);
             }
             if (latestByStation.length === 0 && alertResp.metadata?.tag) {
-              const lastTag = localStorage.getItem("weather.alert.lastTag");
+              const cache = getWeatherCache();
+              const lastTag = cache.alertMetadata?.lastTag;
+
               if (alertResp.metadata.tag !== lastTag) {
-                localStorage.setItem("weather.alert.lastTag", alertResp.metadata.tag);
+                updateAlertTag(alertResp.metadata.tag);
                 const first = alertResp.alerts[0];
                 const ev = new CustomEvent("messagePopup:open", {
                   detail: {
@@ -640,12 +626,11 @@ const Weather: React.FC = () => {
       const forceApi = detail.forceApi === true;
       const openIfRain = detail.openIfRain === true;
       const showUpdatedHint = detail.showUpdatedHint === true;
-      const latRaw = localStorage.getItem("weather.coords.lat");
-      const lonRaw = localStorage.getItem("weather.coords.lon");
-      const lat = latRaw ? Number.parseFloat(latRaw) : NaN;
-      const lon = lonRaw ? Number.parseFloat(lonRaw) : NaN;
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      const locationParam = `${lon},${lat}`;
+
+      const coords = getValidCoords();
+      if (!coords) return;
+
+      const locationParam = `${coords.lon},${coords.lat}`;
       refreshMinutelyPrecip(locationParam, {
         forceApi,
         openIfRain,
