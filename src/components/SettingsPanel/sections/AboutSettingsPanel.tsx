@@ -1,9 +1,11 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 
 import pkg from "../../../../package.json";
 import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
-import { TrashIcon } from "../../Icons";
+import { TrashIcon, SaveIcon, FileIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
+import { getAppSettings, APP_SETTINGS_KEY } from "../../../utils/appSettings";
+
 // 版本建议优先从环境变量（vite.config 注入）读取，回退到 package.json
 const appVersion = import.meta.env.VITE_APP_VERSION;
 
@@ -12,10 +14,12 @@ export interface AboutSettingsPanelProps {
 }
 
 const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
     if (onRegisterSave) {
-      onRegisterSave(() => {});
+      onRegisterSave(() => { });
     }
   }, [onRegisterSave]);
 
@@ -23,6 +27,71 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   const license = pkg.license || "MIT";
   const authorSite = pkg.homepage || "https://qqhkx.com";
   const repoUrl = "https://github.com/QQHKX/immersive-clock";
+
+  /**
+   * 导出设置
+   */
+  const handleExportSettings = useCallback(() => {
+    try {
+      const settings = getAppSettings();
+      const blob = new Blob([JSON.stringify(settings, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "immersive-clock-settings.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("导出设置失败:", err);
+      alert("导出设置失败，请稍后重试。");
+    }
+  }, []);
+
+  /**
+   * 触发文件选择
+   */
+  const handleTriggerImport = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  /**
+   * 导入设置
+   */
+  const handleImportSettings = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 清除 value，以便重复选择同一文件触发 onChange
+    event.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result;
+        if (typeof result !== "string") return;
+
+        const importedSettings = JSON.parse(result);
+
+        // 简单校验：检查是否为对象且包含基本字段
+        if (typeof importedSettings !== "object" || !importedSettings) {
+          throw new Error("无效的设置文件格式");
+        }
+
+        const ok = window.confirm("确定要导入该设置文件吗？这将覆盖当前的配置并刷新页面。");
+        if (!ok) return;
+
+        localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(importedSettings));
+        alert("设置导入成功，页面将刷新。");
+        window.location.reload();
+      } catch (err) {
+        console.error("导入设置失败:", err);
+        alert("导入设置失败：文件格式错误或内容无效。");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
 
   /**
    * 清除所有本地缓存（localStorage）
@@ -65,6 +134,38 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
 
       <FormSection title="使用声明">
         <p className={styles.infoText}>本软件为开源软件，严禁倒卖商用。</p>
+      </FormSection>
+
+      <FormSection title="设置管理">
+        <p className={styles.helpText}>您可以导出当前设置进行备份，或导入之前的设置文件。</p>
+        <FormButtonGroup align="left">
+          <FormButton
+            variant="secondary"
+            size="md"
+            onClick={handleExportSettings}
+            icon={<SaveIcon size={16} />}
+            aria-label="导出设置"
+          >
+            导出设置
+          </FormButton>
+          <FormButton
+            variant="secondary"
+            size="md"
+            onClick={handleTriggerImport}
+            icon={<FileIcon size={16} />}
+            aria-label="导入设置"
+          >
+            导入设置
+          </FormButton>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportSettings}
+            accept=".json"
+            style={{ display: "none" }}
+            aria-hidden="true"
+          />
+        </FormButtonGroup>
       </FormSection>
 
       <FormSection title="缓存与重置">
