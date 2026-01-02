@@ -2,9 +2,9 @@
  * 噪音报告设置存储工具
  * 管理用户的噪音报告相关偏好设置
  */
+import { getAppSettings, updateNoiseSettings } from "./appSettings";
 import { logger } from "./logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
-import { getAppSettings, updateNoiseSettings } from "./appSettings";
 
 /**
  * 噪音报告设置接口

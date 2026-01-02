@@ -2,9 +2,9 @@
  * 噪音控制设置存储工具
  * 管理用户的最大允许噪音级别与手动基准噪音显示值
  */
+import { getAppSettings, updateNoiseSettings } from "./appSettings";
 import { logger } from "./logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
-import { getAppSettings, updateNoiseSettings } from "./appSettings";
 
 // localStorage 键名 (不再使用，保留注释或直接移除)
 // ...
@@ -30,7 +30,7 @@ export function getNoiseControlSettings(): NoiseControlSettings {
 export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>): void {
   try {
     updateNoiseSettings(settings);
-    
+
     const next = getAppSettings().noiseControl;
 
     // 广播：噪音控制设置更新
@@ -86,4 +86,3 @@ export function resetNoiseControlSettings(): void {
     logger.error("重置噪音控制设置失败:", error);
   }
 }
-

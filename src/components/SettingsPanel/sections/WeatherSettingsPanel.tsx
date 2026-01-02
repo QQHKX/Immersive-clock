@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 
+import { getWeatherCache, clearWeatherCache } from "../../../utils/weatherStorage";
 import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
 import { RefreshIcon } from "../../Icons";
-import { getWeatherCache, clearWeatherCache } from "../../../utils/weatherStorage";
 import styles from "../SettingsPanel.module.css";
 
 export interface WeatherSettingsPanelProps {
@@ -88,18 +88,12 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             return source;
           })()}
         </p>
+        <p className={styles.infoText}>街道地址：{cache.location?.address || "未获取"}</p>
+        <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
+        <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
         <p className={styles.infoText}>
-          街道地址：{cache.location?.address || "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          时间：{now?.obsTime || "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          天气：{now?.text || "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          气温：{now?.temp ? `${now.temp}°C` : "未获取"}{" "}
-          体感：{now?.feelsLike ? `${now.feelsLike}°C` : "未获取"}
+          气温：{now?.temp ? `${now.temp}°C` : "未获取"} 体感：
+          {now?.feelsLike ? `${now.feelsLike}°C` : "未获取"}
         </p>
         <p className={styles.infoText}>
           风向：{now?.windDir || "未获取"} 风力：
@@ -107,29 +101,22 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           {now?.windSpeed ? `${now.windSpeed} km/h` : "未获取"}
         </p>
         <p className={styles.infoText}>
-          湿度：{now?.humidity ? `${now.humidity}%` : "未获取"}{" "}
-          气压：{now?.pressure ? `${now.pressure} hPa` : "未获取"}
+          湿度：{now?.humidity ? `${now.humidity}%` : "未获取"} 气压：
+          {now?.pressure ? `${now.pressure} hPa` : "未获取"}
         </p>
         <p className={styles.infoText}>
-          降水：{now?.precip ? `${now.precip} mm` : "未获取"}{" "}
-          能见度：{now?.vis ? `${now.vis} km` : "未获取"}{" "}
-          云量：{now?.cloud || "未获取"}
+          降水：{now?.precip ? `${now.precip} mm` : "未获取"} 能见度：
+          {now?.vis ? `${now.vis} km` : "未获取"} 云量：{now?.cloud || "未获取"}
         </p>
-        <p className={styles.infoText}>
-          露点：{now?.dew || "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          数据源：{refer?.sources ? "QWeather" : "未获取"}
-        </p>
+        <p className={styles.infoText}>露点：{now?.dew || "未获取"}</p>
+        <p className={styles.infoText}>数据源：{refer?.sources ? "QWeather" : "未获取"}</p>
         <p className={styles.infoText}>
           许可：{refer?.license ? "QWeather Developers License" : "未获取"}
         </p>
         <p className={styles.infoText}>刷新状态：{weatherRefreshStatus || "未刷新"}</p>
         <p className={styles.infoText}>
           最后成功时间：
-          {cache.now?.updatedAt
-            ? new Date(cache.now.updatedAt).toLocaleString()
-            : "未成功"}
+          {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleString() : "未成功"}
         </p>
         <FormButtonGroup align="left">
           <FormButton

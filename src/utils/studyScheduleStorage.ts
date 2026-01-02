@@ -30,5 +30,10 @@ export function writeStudySchedule(schedule: StudyPeriod[]): void {
  * 重置课程表为默认值
  */
 export function resetStudySchedule(): void {
-  writeStudySchedule(DEFAULT_SCHEDULE);
+  updateAppSettings((current) => ({
+    study: {
+      ...current.study,
+      schedule: DEFAULT_SCHEDULE,
+    },
+  }));
 }

@@ -4,11 +4,11 @@
 // - 使用和风 GeoAPI 城市查询以获取 Location ID
 // - 通过和风私有域（携带 API KEY 头）获取实时天气
 
-import { 
-  getValidCoords, 
-  updateCoordsCache, 
-  getValidLocation, 
-  updateLocationCache 
+import {
+  getValidCoords,
+  updateCoordsCache,
+  getValidLocation,
+  updateLocationCache,
 } from "../utils/weatherStorage";
 
 export interface Coords {
@@ -452,7 +452,7 @@ export async function buildWeatherFlow(): Promise<{
   // 1. 读取坐标缓存
   let coords: Coords | null = null;
   let coordsSource: string | null = null;
-  
+
   const cachedCoords = getValidCoords();
   if (cachedCoords) {
     coords = { lat: cachedCoords.lat, lon: cachedCoords.lon };
@@ -499,18 +499,18 @@ export async function buildWeatherFlow(): Promise<{
   let addressInfo: AddressInfo | null = null;
 
   const cachedLoc = getValidLocation(coords.lat, coords.lon);
-  
+
   if (cachedLoc) {
     // 命中缓存
     city = cachedLoc.city || null;
     locationId = cachedLoc.locationId || null;
     addressInfo = {
       address: cachedLoc.address,
-      source: cachedLoc.addressSource
+      source: cachedLoc.addressSource,
     };
   } else {
     // 缓存失效，重新查询
-    
+
     // 2.1 城市查询 (GeoAPI)
     const lookup = (await geoCityLookup(coords.lat, coords.lon)) as {
       location?: Array<{ name?: string; id?: string }>;
@@ -534,7 +534,7 @@ export async function buildWeatherFlow(): Promise<{
       city: city || undefined,
       locationId: locationId || undefined,
       address: addressInfo.address,
-      addressSource: addressInfo.source
+      addressSource: addressInfo.source,
     });
   }
 

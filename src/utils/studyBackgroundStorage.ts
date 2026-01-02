@@ -27,26 +27,25 @@ export function saveStudyBackground(settings: StudyBackgroundSettings): void {
 
   if (type === "color" && settings.color && isValidHexColor(settings.color)) {
     newBackground.color = settings.color;
-    newBackground.colorAlpha = typeof settings.colorAlpha === "number"
-        ? Math.max(0, Math.min(1, settings.colorAlpha))
-        : 1;
+    newBackground.colorAlpha =
+      typeof settings.colorAlpha === "number" ? Math.max(0, Math.min(1, settings.colorAlpha)) : 1;
   } else if (type === "image" && settings.imageDataUrl) {
     newBackground.imageDataUrl = settings.imageDataUrl;
   }
 
-  updateAppSettings(current => ({
+  updateAppSettings((current) => ({
     study: {
       ...current.study,
-      background: newBackground
-    }
+      background: newBackground,
+    },
   }));
 }
 
 export function resetStudyBackground(): void {
-  updateAppSettings(current => ({
+  updateAppSettings((current) => ({
     study: {
       ...current.study,
-      background: { type: "default" }
-    }
+      background: { type: "default" },
+    },
   }));
 }

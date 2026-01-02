@@ -95,7 +95,7 @@ export function cleanupReports(nowTs?: number) {
   for (const dateStr of index) {
     const reports = readReportsForDate(dateStr);
     const kept = reports.filter((r) => now - r.savedAt <= RETENTION_MS);
-    
+
     if (kept.length === 0) {
       // 全部已过期，移除该日期对应的存储键
       localStorage.removeItem(REPORTS_PREFIX + dateStr);
@@ -116,7 +116,7 @@ export function cleanupReports(nowTs?: number) {
 export function saveNoiseReport(report: SavedNoiseReport) {
   const dateStr = getDateKey(report.savedAt);
   const index = getIndex();
-  
+
   if (!index.includes(dateStr)) {
     index.push(dateStr);
     index.sort().reverse(); // 将最新日期放在前面，方便按时间倒序遍历
@@ -133,11 +133,11 @@ export function saveNoiseReport(report: SavedNoiseReport) {
   } else {
     reports.push(report);
   }
-  
+
   // 按 savedAt 降序排序，确保当天最新记录排在前面
   reports.sort((a, b) => b.savedAt - a.savedAt);
   writeReportsForDate(dateStr, reports);
-  
+
   // 偶尔触发一次清理逻辑
   if (Math.random() < 0.1) {
     cleanupReports(report.savedAt);
@@ -148,11 +148,11 @@ export function getNoiseReports(): SavedNoiseReport[] {
   cleanupReports();
   const index = getIndex();
   let allReports: SavedNoiseReport[] = [];
-  
+
   for (const dateStr of index) {
     allReports = allReports.concat(readReportsForDate(dateStr));
   }
-  
+
   allReports.sort((a, b) => b.savedAt - a.savedAt);
   return allReports;
 }

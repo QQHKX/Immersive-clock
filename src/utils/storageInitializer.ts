@@ -65,7 +65,7 @@ const LEGACY_KEYS = [
   "weather.refreshStatus",
   "weather.minutely.cache.v1",
   "weather.minutely.lastApiFetchAt",
-  "weather.alert.lastTag"
+  "weather.alert.lastTag",
 ];
 
 export function initializeStorage() {
@@ -80,7 +80,7 @@ export function initializeStorage() {
 
   // 2. 清理历史存储键
   let cleanedCount = 0;
-  LEGACY_KEYS.forEach(key => {
+  LEGACY_KEYS.forEach((key) => {
     if (localStorage.getItem(key) !== null) {
       localStorage.removeItem(key);
       cleanedCount++;
@@ -97,6 +97,6 @@ export function initializeStorage() {
     logger.warn("AppSettings integrity check failed. Resetting...");
     resetAppSettings();
   }
-  
+
   logger.info("Storage initialization complete.");
 }

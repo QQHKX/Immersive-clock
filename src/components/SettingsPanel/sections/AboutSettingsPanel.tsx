@@ -1,10 +1,10 @@
 import React, { useEffect, useCallback, useRef } from "react";
 
 import pkg from "../../../../package.json";
+import { getAppSettings, APP_SETTINGS_KEY } from "../../../utils/appSettings";
 import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
 import { TrashIcon, SaveIcon, FileIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
-import { getAppSettings, APP_SETTINGS_KEY } from "../../../utils/appSettings";
 
 // 版本建议优先从环境变量（vite.config 注入）读取，回退到 package.json
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -19,7 +19,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
     if (onRegisterSave) {
-      onRegisterSave(() => { });
+      onRegisterSave(() => {});
     }
   }, [onRegisterSave]);
 
