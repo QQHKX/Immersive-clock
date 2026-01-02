@@ -16,8 +16,8 @@ export interface NoiseReportPeriod {
 }
 
 interface NoiseSample {
-  t: number; // timestamp
-  v: number; // volume (dB)
+  t: number; // 时间戳
+  v: number; // 音量（dB）
   s: "quiet" | "noisy";
 }
 

@@ -1,4 +1,5 @@
 import { WeatherNow, MinutelyPrecipResponse } from "../services/weatherService";
+
 import { logger } from "./logger";
 
 const STORAGE_KEY = "weather-cache";
@@ -17,7 +18,7 @@ export interface WeatherCache {
     source: string; // 'geolocation' | 'amap_ip' | 'ip'
     updatedAt: number;
   };
-  
+
   // 2. 城市与地址缓存 (依赖坐标)
   location?: {
     city?: string;
@@ -27,13 +28,13 @@ export interface WeatherCache {
     signature: string; // lat,lon 的签名
     updatedAt: number;
   };
-  
+
   // 3. 实时天气快照 (用于回显)
   now?: {
     data: WeatherNow;
     updatedAt: number;
   };
-  
+
   // 4. 分钟级降水缓存
   minutely?: {
     data: MinutelyPrecipResponse;
@@ -43,7 +44,7 @@ export interface WeatherCache {
   };
 
   // 5. 预警去重记录 (Map 结构序列化)
-  alerts?: Record<string, { sig: string; ts: number }>; // key: stationKey
+  alerts?: Record<string, { sig: string; ts: number }>; // 键名为 stationKey
 
   // 6. 预警元数据
   alertMetadata?: {
@@ -67,7 +68,9 @@ export function getWeatherCache(): WeatherCache {
 /**
  * 保存部分天气缓存
  */
-function saveWeatherCache(partial: Partial<WeatherCache> | ((current: WeatherCache) => Partial<WeatherCache>)) {
+function saveWeatherCache(
+  partial: Partial<WeatherCache> | ((current: WeatherCache) => Partial<WeatherCache>)
+) {
   try {
     const current = getWeatherCache();
     const updates = typeof partial === "function" ? partial(current) : partial;
@@ -108,9 +111,11 @@ export function updateLocationCache(
   // 仅当提供了有效数据时才更新，保留旧字段
   saveWeatherCache((current) => {
     const signature = `${lat.toFixed(4)},${lon.toFixed(4)}`;
-    // Fix: Explicitly type fallback object to allow property access
-    const existing = (current.location?.signature === signature ? current.location : {}) as Partial<NonNullable<WeatherCache['location']>>;
-    
+    // 修复：显式为回退对象标注类型，以便安全访问其属性
+    const existing = (current.location?.signature === signature
+      ? current.location
+      : {}) as Partial<NonNullable<WeatherCache["location"]>>;
+
     return {
       location: {
         signature,
@@ -139,7 +144,11 @@ export function updateWeatherNowSnapshot(data: WeatherNow) {
 /**
  * 更新分钟级降水缓存
  */
-export function updateMinutelyCache(location: string, data: MinutelyPrecipResponse, lastApiFetchAt?: number) {
+export function updateMinutelyCache(
+  location: string,
+  data: MinutelyPrecipResponse,
+  lastApiFetchAt?: number
+) {
   saveWeatherCache((current) => {
     return {
       minutely: {
@@ -183,10 +192,7 @@ export function updateAlertTag(tag: string) {
  */
 export function getValidCoords() {
   const cache = getWeatherCache();
-  if (
-    cache.coords &&
-    Date.now() - cache.coords.updatedAt < COORDS_TTL
-  ) {
+  if (cache.coords && Date.now() - cache.coords.updatedAt < COORDS_TTL) {
     return cache.coords;
   }
   return null;
@@ -244,7 +250,7 @@ export function writeStationAlertRecord(stationKey: string, sig: string) {
     // 简单的内存清理：移除过期记录
     const now = Date.now();
     const cleanAlerts: Record<string, { sig: string; ts: number }> = {};
-    
+
     // 保留未过期的
     Object.entries(alerts).forEach(([k, v]) => {
       if (now - v.ts < ALERT_TTL) {
@@ -291,7 +297,7 @@ export function cleanupWeatherCache() {
       const cleanAlerts: Record<string, { sig: string; ts: number }> = {};
       let alertCount = 0;
       let alertChanged = false;
-      
+
       Object.entries(current.alerts).forEach(([k, v]) => {
         if (now - v.ts < ALERT_TTL) {
           cleanAlerts[k] = v;

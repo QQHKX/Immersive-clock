@@ -4,6 +4,7 @@
  * 写入时同时写两个键；读取时优先使用连字符键名，其次驼峰键名。
  */
 import { DEFAULT_SCHEDULE, StudyPeriod } from "../components/StudyStatus/StudyStatus";
+
 import { getAppSettings, updateAppSettings } from "./appSettings";
 
 /**
@@ -17,11 +18,11 @@ export function readStudySchedule(): StudyPeriod[] {
  * 写入课程表
  */
 export function writeStudySchedule(schedule: StudyPeriod[]): void {
-  updateAppSettings(current => ({
+  updateAppSettings((current) => ({
     study: {
       ...current.study,
-      schedule
-    }
+      schedule,
+    },
   }));
 }
 
@@ -31,4 +32,3 @@ export function writeStudySchedule(schedule: StudyPeriod[]): void {
 export function resetStudySchedule(): void {
   writeStudySchedule(DEFAULT_SCHEDULE);
 }
-

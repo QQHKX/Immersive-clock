@@ -8,7 +8,7 @@ import { initializeStorage } from "./utils/storageInitializer";
 
 import "./styles/global.css";
 
-// Initialize storage before app starts
+// 在应用启动前初始化本地存储
 initializeStorage();
 
 /**

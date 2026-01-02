@@ -5,6 +5,7 @@
  * - 站点归一化：使用 senderName，缺失时用坐标兜底键
  */
 import type { WeatherAlertResponse } from "../services/weatherService";
+
 import { readStationAlertRecord, writeStationAlertRecord } from "./weatherStorage";
 
 type AlertItem = NonNullable<WeatherAlertResponse["alerts"]>[number];

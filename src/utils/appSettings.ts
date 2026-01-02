@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import type { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // Type import is safe
+import type { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // 类型导入是安全的
 import { 
   QuoteSourceConfig, 
   StudyDisplaySettings, 
@@ -8,7 +8,7 @@ import {
 } from "../types";
 import { StudyBackgroundType } from "./studyBackgroundStorage";
 
-// Re-define DEFAULT_SCHEDULE to avoid runtime dependency on component file
+// 重新定义 DEFAULT_SCHEDULE，避免在运行时依赖组件文件
 const DEFAULT_SCHEDULE_SETTINGS: StudyPeriod[] = [
   {
     id: "1",
@@ -36,7 +36,7 @@ export interface AppSettings {
     };
     announcement: {
       hideUntil: number;
-      version: string; // Store version to check against current app version
+      version: string; // 存储版本号，用于与当前应用版本进行比对
     };
   };
 
@@ -136,8 +136,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /**
- * Get the full AppSettings object.
- * Returns default settings if not found or error occurs.
+ * 获取完整的 AppSettings 配置对象
+ * 如果不存在或出错则返回默认配置
  */
 export function getAppSettings(): AppSettings {
   try {
@@ -146,10 +146,10 @@ export function getAppSettings(): AppSettings {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(raw);
-    
-    // Simple version check or schema validation could go here
-    // For now, we trust the shape but might merge with default to ensure new fields exist
-    // This deep merge is simplified
+
+    // 可以在此添加简单的版本检查或结构校验逻辑
+    // 目前先信任存储结构，如有新增字段则通过与默认配置合并补齐
+    // 此处的深度合并逻辑做了简化处理
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -164,8 +164,8 @@ export function getAppSettings(): AppSettings {
 }
 
 /**
- * Update AppSettings partially.
- * Performs an atomic read-modify-write (synchronous in localStorage).
+ * 局部更新 AppSettings 配置
+ * 在 localStorage 中执行原子性的读-改-写操作（同步）
  */
 export function updateAppSettings(partial: Partial<AppSettings> | ((current: AppSettings) => Partial<AppSettings>)): void {
   try {
@@ -185,11 +185,11 @@ export function updateAppSettings(partial: Partial<AppSettings> | ((current: App
       version: CURRENT_SETTINGS_VERSION,
     };
 
-    // Deep merge for nested sections if they are provided in partial
-    // Note: The spread above is shallow. We need to handle nested objects if passed partially.
-    // However, usually callers will pass the full nested object or we expect specific updaters.
-    // To be safe, let's handle specific nested merges if 'updates' contains them.
-    
+    // 当 partial 中包含嵌套分区时，对对应分区进行更细粒度的合并
+    // 注意：上方的展开运算是浅拷贝，嵌套对象的部分更新需要单独处理
+    // 通常调用方会传入完整的嵌套对象，或通过专门的更新函数进行修改
+    // 为安全起见，这里在 updates 含有对应分区时再做一次合并
+
     if (updates.general) {
       nextSettings.general = { ...current.general, ...updates.general };
     }
@@ -207,7 +207,7 @@ export function updateAppSettings(partial: Partial<AppSettings> | ((current: App
 }
 
 /**
- * Reset AppSettings to defaults.
+ * 将 AppSettings 重置为默认值
  */
 export function resetAppSettings(): void {
   try {
@@ -222,7 +222,7 @@ export function resetAppSettings(): void {
 }
 
 /**
- * Helper to update a specific section (e.g. study settings)
+ * 帮助方法：更新某个特定分区（例如学习设置）
  */
 export function updateStudySettings(updates: Partial<AppSettings['study']>): void {
   updateAppSettings(current => ({
