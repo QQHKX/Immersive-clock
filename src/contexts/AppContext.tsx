@@ -1,17 +1,9 @@
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 
 import { STOPWATCH_TICK_MS } from "../constants/timer";
-import {
-  AppState,
-  AppAction,
-  StudyState,
-  QuoteChannelState,
-  QuoteSettingsState,
-  CountdownItem,
-} from "../types";
-import { logger } from "../utils/logger";
+import { AppState, AppAction, StudyState, QuoteChannelState, QuoteSettingsState } from "../types";
+import { getAppSettings, updateAppSettings, updateStudySettings } from "../utils/appSettings";
 import { nowMs } from "../utils/timeSource";
-import { getAppSettings, updateAppSettings, updateStudySettings, updateGeneralSettings } from "../utils/appSettings";
 
 /**
  * 从本地存储加载语录设置状态
@@ -58,7 +50,6 @@ function loadStudyState(): StudyState {
     minutelyPrecipEnabled: study.alerts.minutelyPrecip,
   };
 }
-
 
 /**
  * 应用初始状态
@@ -315,14 +306,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         digitColor: action.payload,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           style: {
             ...current.study.style,
-            digitColor: action.payload
-          }
-        }
+            digitColor: action.payload,
+          },
+        },
       }));
       return {
         ...state,
@@ -335,14 +326,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         digitOpacity:
           typeof action.payload === "number" ? Math.max(0, Math.min(1, action.payload)) : 1,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           style: {
             ...current.study.style,
-            digitOpacity: digitOpacityUpdatedStudy.digitOpacity
-          }
-        }
+            digitOpacity: digitOpacityUpdatedStudy.digitOpacity,
+          },
+        },
       }));
       return {
         ...state,
@@ -354,14 +345,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         numericFontFamily: action.payload || undefined,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           style: {
             ...current.study.style,
-            numericFontFamily: action.payload || undefined
-          }
-        }
+            numericFontFamily: action.payload || undefined,
+          },
+        },
       }));
       return {
         ...state,
@@ -373,14 +364,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         textFontFamily: action.payload || undefined,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           style: {
             ...current.study.style,
-            textFontFamily: action.payload || undefined
-          }
-        }
+            textFontFamily: action.payload || undefined,
+          },
+        },
       }));
       return {
         ...state,
@@ -392,14 +383,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         messagePopupEnabled: !!action.payload,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           alerts: {
             ...current.study.alerts,
-            messagePopup: !!action.payload
-          }
-        }
+            messagePopup: !!action.payload,
+          },
+        },
       }));
       return {
         ...state,
@@ -411,14 +402,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         weatherAlertEnabled: !!action.payload,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           alerts: {
             ...current.study.alerts,
-            weatherAlert: !!action.payload
-          }
-        }
+            weatherAlert: !!action.payload,
+          },
+        },
       }));
       return {
         ...state,
@@ -430,14 +421,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state.study,
         minutelyPrecipEnabled: !!action.payload,
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         study: {
           ...current.study,
           alerts: {
             ...current.study.alerts,
-            minutelyPrecip: !!action.payload
-          }
-        }
+            minutelyPrecip: !!action.payload,
+          },
+        },
       }));
       return {
         ...state,
@@ -450,15 +441,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
         lastUpdated: Date.now(),
       };
       // 保存到本地存储
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         general: {
           ...current.general,
           quote: {
             ...current.general.quote,
             channels: action.payload,
-            lastUpdated: Date.now()
-          }
-        }
+            lastUpdated: Date.now(),
+          },
+        },
       }));
       return {
         ...state,
@@ -473,15 +464,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
         channels: updatedChannels,
         lastUpdated: Date.now(),
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         general: {
           ...current.general,
           quote: {
             ...current.general.quote,
             channels: updatedChannels,
-            lastUpdated: Date.now()
-          }
-        }
+            lastUpdated: Date.now(),
+          },
+        },
       }));
       return {
         ...state,
@@ -496,15 +487,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
         channels: weightUpdatedChannels,
         lastUpdated: Date.now(),
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         general: {
           ...current.general,
           quote: {
             ...current.general.quote,
             channels: weightUpdatedChannels,
-            lastUpdated: Date.now()
-          }
-        }
+            lastUpdated: Date.now(),
+          },
+        },
       }));
       return {
         ...state,
@@ -521,15 +512,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
         channels: categoriesUpdatedChannels,
         lastUpdated: Date.now(),
       };
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         general: {
           ...current.general,
           quote: {
             ...current.general.quote,
             channels: categoriesUpdatedChannels,
-            lastUpdated: Date.now()
-          }
-        }
+            lastUpdated: Date.now(),
+          },
+        },
       }));
       return {
         ...state,
@@ -542,14 +533,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         autoRefreshInterval: action.payload,
       };
       // 保存到本地存储
-      updateAppSettings(current => ({
+      updateAppSettings((current) => ({
         general: {
           ...current.general,
           quote: {
             ...current.general.quote,
-            autoRefreshInterval: action.payload
-          }
-        }
+            autoRefreshInterval: action.payload,
+          },
+        },
       }));
       return {
         ...state,

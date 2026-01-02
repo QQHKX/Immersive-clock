@@ -2,7 +2,7 @@
   "name": "immersive-clock",
   "private": true,
   "description": "一款支持时钟、倒计时、秒表与自习模式的轻量时钟应用。",
-  "version": "3.11.10",
+  "version": "3.12.0",
   "author": "QQHKX <contact@qqhkx.com>",
   "homepage": "https://qqhkx.com",
   "license": "MIT",

@@ -7,6 +7,7 @@ import {
   fetchMinutelyPrecip,
 } from "../../services/weatherService";
 import type { MinutelyPrecipResponse } from "../../services/weatherService";
+import { logger } from "../../utils/logger";
 import {
   getWeatherCache,
   updateWeatherNowSnapshot,
@@ -14,9 +15,8 @@ import {
   getValidMinutely,
   getValidCoords,
   updateMinutelyLastFetch,
-  updateAlertTag
+  updateAlertTag,
 } from "../../utils/weatherStorage";
-import { logger } from "../../utils/logger";
 
 import styles from "./Weather.module.css";
 
@@ -31,15 +31,6 @@ const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
 type MinutelyPrecipCache = Pick<MinutelyPrecipResponse, "updateTime" | "summary" | "minutely"> & {
   fetchedAt: number;
 };
-
-function safeParseJson<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -224,7 +215,7 @@ const Weather: React.FC = () => {
     return null;
   }, []);
 
-  const writeMinutelyCache = useCallback((data: MinutelyPrecipResponse, fetchedAt: number) => {
+  const writeMinutelyCache = useCallback((data: MinutelyPrecipResponse, _fetchedAt: number) => {
     const coords = getValidCoords();
     if (coords) {
       const location = `${coords.lon.toFixed(2)},${coords.lat.toFixed(2)}`;

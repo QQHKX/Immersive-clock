@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
+import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
 import { logger } from "../../utils/logger";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import type { NoiseControlSettings } from "../../utils/noiseControlSettings";
-import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
 import {
   readNoiseSamples,
   writeNoiseSample,
@@ -214,7 +214,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       // 更新到 AppSettings
       updateNoiseSettings({
         baselineRms: avgRms,
-        baselineDisplayDb: manualBaseline
+        baselineDisplayDb: manualBaseline,
       });
 
       logger.info(
@@ -375,19 +375,19 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (microphoneRef.current) {
       try {
         microphoneRef.current.disconnect();
-      } catch { }
+      } catch {}
       microphoneRef.current = null;
     }
     if (highpassRef.current) {
       try {
         highpassRef.current.disconnect();
-      } catch { }
+      } catch {}
       highpassRef.current = null;
     }
     if (lowpassRef.current) {
       try {
         lowpassRef.current.disconnect();
-      } catch { }
+      } catch {}
       lowpassRef.current = null;
     }
 

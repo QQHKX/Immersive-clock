@@ -1,11 +1,7 @@
-import { logger } from "./logger";
 import type { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // 类型导入是安全的
-import { 
-  QuoteSourceConfig, 
-  StudyDisplaySettings, 
-  CountdownItem, 
-  HitokotoCategory 
-} from "../types";
+import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem } from "../types";
+
+import { logger } from "./logger";
 import { StudyBackgroundType } from "./studyBackgroundStorage";
 
 // 重新定义 DEFAULT_SCHEDULE，避免在运行时依赖组件文件
@@ -167,12 +163,14 @@ export function getAppSettings(): AppSettings {
  * 局部更新 AppSettings 配置
  * 在 localStorage 中执行原子性的读-改-写操作（同步）
  */
-export function updateAppSettings(partial: Partial<AppSettings> | ((current: AppSettings) => Partial<AppSettings>)): void {
+export function updateAppSettings(
+  partial: Partial<AppSettings> | ((current: AppSettings) => Partial<AppSettings>)
+): void {
   try {
     const current = getAppSettings();
     let updates: Partial<AppSettings>;
-    
-    if (typeof partial === 'function') {
+
+    if (typeof partial === "function") {
       updates = partial(current);
     } else {
       updates = partial;
@@ -224,20 +222,20 @@ export function resetAppSettings(): void {
 /**
  * 帮助方法：更新某个特定分区（例如学习设置）
  */
-export function updateStudySettings(updates: Partial<AppSettings['study']>): void {
-  updateAppSettings(current => ({
-    study: { ...current.study, ...updates }
+export function updateStudySettings(updates: Partial<AppSettings["study"]>): void {
+  updateAppSettings((current) => ({
+    study: { ...current.study, ...updates },
   }));
 }
 
-export function updateGeneralSettings(updates: Partial<AppSettings['general']>): void {
-  updateAppSettings(current => ({
-    general: { ...current.general, ...updates }
+export function updateGeneralSettings(updates: Partial<AppSettings["general"]>): void {
+  updateAppSettings((current) => ({
+    general: { ...current.general, ...updates },
   }));
 }
 
-export function updateNoiseSettings(updates: Partial<AppSettings['noiseControl']>): void {
-  updateAppSettings(current => ({
-    noiseControl: { ...current.noiseControl, ...updates }
+export function updateNoiseSettings(updates: Partial<AppSettings["noiseControl"]>): void {
+  updateAppSettings((current) => ({
+    noiseControl: { ...current.noiseControl, ...updates },
   }));
 }

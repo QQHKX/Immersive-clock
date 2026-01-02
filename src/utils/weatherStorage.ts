@@ -112,9 +112,9 @@ export function updateLocationCache(
   saveWeatherCache((current) => {
     const signature = `${lat.toFixed(4)},${lon.toFixed(4)}`;
     // 修复：显式为回退对象标注类型，以便安全访问其属性
-    const existing = (current.location?.signature === signature
-      ? current.location
-      : {}) as Partial<NonNullable<WeatherCache["location"]>>;
+    const existing = (current.location?.signature === signature ? current.location : {}) as Partial<
+      NonNullable<WeatherCache["location"]>
+    >;
 
     return {
       location: {
@@ -260,7 +260,7 @@ export function writeStationAlertRecord(stationKey: string, sig: string) {
 
     // 添加新记录
     cleanAlerts[stationKey] = { sig, ts: now };
-    
+
     return { alerts: cleanAlerts };
   });
 }
