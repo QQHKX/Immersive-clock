@@ -20,9 +20,9 @@ export function readStudyBackground(): StudyBackgroundSettings {
 
 export function saveStudyBackground(settings: StudyBackgroundSettings): void {
   const type = settings.type ?? "default";
-  
-  // Clean up incompatible fields logic can be done here or just save as is.
-  // To match previous behavior of "cleaning up":
+
+  // 清理不兼容字段的逻辑可以在此处理，或直接原样保存
+  // 为了与之前的“清理”行为保持一致：
   const newBackground: StudyBackgroundSettings = { type };
 
   if (type === "color" && settings.color && isValidHexColor(settings.color)) {
@@ -50,4 +50,3 @@ export function resetStudyBackground(): void {
     }
   }));
 }
-

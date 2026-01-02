@@ -71,14 +71,14 @@ const LEGACY_KEYS = [
 export function initializeStorage() {
   logger.info("Initializing storage...");
 
-  // 1. Check if AppSettings exists
+  // 1. 检查是否存在 AppSettings
   const settings = localStorage.getItem("AppSettings");
   if (!settings) {
     logger.info("AppSettings not found. Creating default settings...");
     resetAppSettings();
   }
 
-  // 2. Clean up legacy keys
+  // 2. 清理历史存储键
   let cleanedCount = 0;
   LEGACY_KEYS.forEach(key => {
     if (localStorage.getItem(key) !== null) {
@@ -91,7 +91,7 @@ export function initializeStorage() {
     logger.info(`Cleaned up ${cleanedCount} legacy storage keys.`);
   }
 
-  // 3. Verify integrity (simple check)
+  // 3. 校验配置完整性（简单检查）
   const currentSettings = getAppSettings();
   if (!currentSettings || !currentSettings.version) {
     logger.warn("AppSettings integrity check failed. Resetting...");

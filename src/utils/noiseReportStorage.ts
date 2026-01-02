@@ -87,7 +87,7 @@ export function cleanupReports(nowTs?: number) {
   const newIndex: string[] = [];
   let changed = false;
 
-  // 1. Clean legacy single key if exists
+  // 1. 清理旧版单一存储键（如存在）
   if (localStorage.getItem("noise-reports")) {
     localStorage.removeItem("noise-reports");
   }
@@ -97,7 +97,7 @@ export function cleanupReports(nowTs?: number) {
     const kept = reports.filter((r) => now - r.savedAt <= RETENTION_MS);
     
     if (kept.length === 0) {
-      // All expired, remove key
+      // 全部已过期，移除该日期对应的存储键
       localStorage.removeItem(REPORTS_PREFIX + dateStr);
       changed = true;
     } else {
@@ -119,7 +119,7 @@ export function saveNoiseReport(report: SavedNoiseReport) {
   
   if (!index.includes(dateStr)) {
     index.push(dateStr);
-    index.sort().reverse(); // Keep recent dates first
+    index.sort().reverse(); // 将最新日期放在前面，方便按时间倒序遍历
     saveIndex(index);
   }
 
@@ -134,11 +134,11 @@ export function saveNoiseReport(report: SavedNoiseReport) {
     reports.push(report);
   }
   
-  // Sort by savedAt descending within the day
+  // 按 savedAt 降序排序，确保当天最新记录排在前面
   reports.sort((a, b) => b.savedAt - a.savedAt);
   writeReportsForDate(dateStr, reports);
   
-  // Trigger cleanup occasionally
+  // 偶尔触发一次清理逻辑
   if (Math.random() < 0.1) {
     cleanupReports(report.savedAt);
   }

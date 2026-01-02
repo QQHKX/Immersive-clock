@@ -206,11 +206,11 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (rmsSamples.length > 0) {
       const avgRms = rmsSamples.reduce((s, x) => s + x, 0) / rmsSamples.length;
       setBaselineRms(avgRms);
-      
+
       // UI 显示基线统一为 40dB
       const manualBaseline = getNoiseControlSettings().baselineDb ?? BASELINE_DB_DEFAULT;
       setBaselineNoise(manualBaseline);
-      
+
       // 更新到 AppSettings
       updateNoiseSettings({
         baselineRms: avgRms,
@@ -375,19 +375,19 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (microphoneRef.current) {
       try {
         microphoneRef.current.disconnect();
-      } catch {}
+      } catch { }
       microphoneRef.current = null;
     }
     if (highpassRef.current) {
       try {
         highpassRef.current.disconnect();
-      } catch {}
+      } catch { }
       highpassRef.current = null;
     }
     if (lowpassRef.current) {
       try {
         lowpassRef.current.disconnect();
-      } catch {}
+      } catch { }
       lowpassRef.current = null;
     }
 
@@ -504,7 +504,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
           setNoiseStatus(last.s);
         }
       } catch {
-        // ignore
+        // 忽略异常，保持当前显示状态
       }
     };
     const unsubscribe = subscribeNoiseSamplesUpdated(applyLastSample);
