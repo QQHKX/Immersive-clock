@@ -4,6 +4,13 @@
 // - 使用和风 GeoAPI 城市查询以获取 Location ID
 // - 通过和风私有域（携带 API KEY 头）获取实时天气
 
+import { 
+  getValidCoords, 
+  updateCoordsCache, 
+  getValidLocation, 
+  updateLocationCache 
+} from "../utils/weatherStorage";
+
 export interface Coords {
   lat: number;
   lon: number;
@@ -334,6 +341,7 @@ export async function fetchWeatherAlertsByCoords(
 /**
  * 获取分钟级降水（未来2小时每5分钟）
  * location 为 "lon,lat"，使用和风私有域
+ * 注意：此函数仅负责 API 请求，不处理缓存。缓存由 weatherStorage 统一管理。
  */
 export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPrecipResponse> {
   const url = `https://${QWEATHER_HOST}/v7/minutely/5m?location=${encodeURIComponent(location)}&lang=zh`;
@@ -345,8 +353,8 @@ export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPre
     };
     const jwt = import.meta.env.VITE_QWEATHER_JWT;
     if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-    const data = await httpGetJson(url, headers);
-    return data as MinutelyPrecipResponse;
+    const data = (await httpGetJson(url, headers)) as MinutelyPrecipResponse;
+    return data;
   } catch (e: unknown) {
     return { error: String(e) } as MinutelyPrecipResponse;
   }
@@ -428,7 +436,7 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
 
 /**
  * 构建天气数据获取流程（函数级注释）：
- * - 优先使用本地缓存的地理坐标与地理反编码结果；缓存有效期为12小时；
+ * - 优先使用本地缓存的地理坐标与地理反编码结果（通过 weatherStorage 管理）；
  * - 缓存失效时按序执行定位：浏览器 Geolocation → 高德 IP → 其他 IP；
  * - 反编码（高德/OSM）与和风城市查询同样进行缓存，避免重复请求；
  * - 始终实时请求和风实时天气（不缓存），以保证数据新鲜。
@@ -441,46 +449,24 @@ export async function buildWeatherFlow(): Promise<{
   addressInfo?: AddressInfo | null;
   weather?: WeatherNow | null;
 }> {
-  const MAX_AGE = 12 * 60 * 60 * 1000; // 12小时缓存
-  const now = Date.now();
-
-  // 读取坐标缓存
+  // 1. 读取坐标缓存
   let coords: Coords | null = null;
   let coordsSource: string | null = null;
-  try {
-    const latStr = localStorage.getItem("weather.coords.lat");
-    const lonStr = localStorage.getItem("weather.coords.lon");
-    const cachedAtStr = localStorage.getItem("weather.coords.cachedAt");
-    const sourceStr = localStorage.getItem("weather.coords.source");
-    const cachedAt = cachedAtStr ? parseInt(cachedAtStr, 10) : 0;
-    if (latStr && lonStr && cachedAt > 0 && now - cachedAt < MAX_AGE) {
-      const lat = parseFloat(latStr);
-      const lon = parseFloat(lonStr);
-      if (Number.isFinite(lat) && Number.isFinite(lon)) {
-        coords = { lat, lon };
-        coordsSource = sourceStr || null;
-      }
-    }
-  } catch {
-    /* 忽略缓存读取错误 */
+  
+  const cachedCoords = getValidCoords();
+  if (cachedCoords) {
+    coords = { lat: cachedCoords.lat, lon: cachedCoords.lon };
+    coordsSource = cachedCoords.source;
   }
 
   // 策略调整：如果当前没有缓存，或者缓存不是来自浏览器定位，则尝试浏览器定位
-  // 这样即使有 IP 缓存，也会尝试获取更精确的浏览器定位
   if (!coords || coordsSource !== "geolocation") {
     const g = await getCoordsViaGeolocation();
     if (g) {
       coords = g;
       coordsSource = "geolocation";
-      // 立即更新缓存，确保高精度定位被保存
-      try {
-        localStorage.setItem("weather.coords.lat", String(coords.lat));
-        localStorage.setItem("weather.coords.lon", String(coords.lon));
-        localStorage.setItem("weather.coords.cachedAt", String(now));
-        if (coordsSource) localStorage.setItem("weather.coords.source", coordsSource);
-      } catch {
-        /* 忽略写入错误 */
-      }
+      // 立即更新缓存
+      updateCoordsCache(coords.lat, coords.lon, coordsSource);
     }
   }
 
@@ -498,15 +484,8 @@ export async function buildWeatherFlow(): Promise<{
       }
     }
     // 写入坐标缓存
-    try {
-      if (coords) {
-        localStorage.setItem("weather.coords.lat", String(coords.lat));
-        localStorage.setItem("weather.coords.lon", String(coords.lon));
-        localStorage.setItem("weather.coords.cachedAt", String(now));
-        if (coordsSource) localStorage.setItem("weather.coords.source", coordsSource);
-      }
-    } catch {
-      /* 忽略写入错误 */
+    if (coords && coordsSource) {
+      updateCoordsCache(coords.lat, coords.lon, coordsSource);
     }
   }
 
@@ -514,75 +493,53 @@ export async function buildWeatherFlow(): Promise<{
     return { coords: null, coordsSource: null };
   }
 
-  // 构造坐标签名，减少浮点抖动导致的误判
-  const coordSig = `${coords.lat.toFixed(4)},${coords.lon.toFixed(4)}`;
-
-  // 城市与 LocationID 缓存
+  // 2. 城市与 LocationID 缓存
   let city: string | null = null;
   let locationId: string | null = null;
-  try {
-    const cityCachedAtStr = localStorage.getItem("weather.city.cachedAt");
-    const citySig = localStorage.getItem("weather.city.sig") || "";
-    const cityCachedAt = cityCachedAtStr ? parseInt(cityCachedAtStr, 10) : 0;
-    if (citySig === coordSig && cityCachedAt > 0 && now - cityCachedAt < MAX_AGE) {
-      city = localStorage.getItem("weather.city");
-      locationId = localStorage.getItem("weather.locationId");
-    } else {
-      const lookup = (await geoCityLookup(coords.lat, coords.lon)) as {
-        location?: Array<{ name?: string; id?: string }>;
-      };
-      if (lookup && Array.isArray(lookup.location) && lookup.location.length > 0) {
-        const first = lookup.location[0];
-        city = first?.name || null;
-        locationId = first?.id || null;
-        try {
-          if (city) localStorage.setItem("weather.city", city);
-          if (locationId) localStorage.setItem("weather.locationId", locationId);
-          localStorage.setItem("weather.city.cachedAt", String(now));
-          localStorage.setItem("weather.city.sig", coordSig);
-        } catch {
-          /* 忽略写入错误 */
-        }
-      }
+  let addressInfo: AddressInfo | null = null;
+
+  const cachedLoc = getValidLocation(coords.lat, coords.lon);
+  
+  if (cachedLoc) {
+    // 命中缓存
+    city = cachedLoc.city || null;
+    locationId = cachedLoc.locationId || null;
+    addressInfo = {
+      address: cachedLoc.address,
+      source: cachedLoc.addressSource
+    };
+  } else {
+    // 缓存失效，重新查询
+    
+    // 2.1 城市查询 (GeoAPI)
+    const lookup = (await geoCityLookup(coords.lat, coords.lon)) as {
+      location?: Array<{ name?: string; id?: string }>;
+    };
+    if (lookup && Array.isArray(lookup.location) && lookup.location.length > 0) {
+      const first = lookup.location[0];
+      city = first?.name || null;
+      locationId = first?.id || null;
     }
-  } catch {
-    /* 忽略读取错误 */
+
+    // 2.2 反向地理编码 (Amap -> OSM)
+    let tmp = await reverseGeocodeAmap(coords.lat, coords.lon);
+    if (!tmp.address) {
+      const fb = await reverseGeocodeOSM(coords.lat, coords.lon);
+      if (fb?.address) tmp = fb;
+    }
+    addressInfo = tmp;
+
+    // 更新缓存
+    updateLocationCache(coords.lat, coords.lon, {
+      city: city || undefined,
+      locationId: locationId || undefined,
+      address: addressInfo.address,
+      addressSource: addressInfo.source
+    });
   }
 
-  // 反向地理编码缓存（详细地址）
-  let addrInfo: AddressInfo | null = null;
-  try {
-    const addrCachedAtStr = localStorage.getItem("weather.address.cachedAt");
-    const addrSig = localStorage.getItem("weather.address.sig") || "";
-    const addrCachedAt = addrCachedAtStr ? parseInt(addrCachedAtStr, 10) : 0;
-    if (addrSig === coordSig && addrCachedAt > 0 && now - addrCachedAt < MAX_AGE) {
-      const address = localStorage.getItem("weather.address") || undefined;
-      const source = localStorage.getItem("weather.address.source") || undefined;
-      addrInfo = { address, source };
-    } else {
-      let tmp = await reverseGeocodeAmap(coords.lat, coords.lon);
-      if (!tmp.address) {
-        const fb = await reverseGeocodeOSM(coords.lat, coords.lon);
-        if (fb?.address) tmp = fb;
-      }
-      addrInfo = tmp;
-      try {
-        if (tmp.address) {
-          localStorage.setItem("weather.address", tmp.address);
-          if (tmp.source) localStorage.setItem("weather.address.source", tmp.source);
-          localStorage.setItem("weather.address.cachedAt", String(now));
-          localStorage.setItem("weather.address.sig", coordSig);
-        }
-      } catch {
-        /* 忽略写入错误 */
-      }
-    }
-  } catch {
-    /* 忽略读取错误 */
-  }
-
-  // 实时天气始终请求最新
+  // 3. 实时天气始终请求最新
   const locationParam = locationId || `${coords.lon},${coords.lat}`;
   const weather = await fetchWeatherNow(locationParam);
-  return { coords, coordsSource, city, locationId, addressInfo: addrInfo, weather };
+  return { coords, coordsSource, city, locationId, addressInfo, weather };
 }

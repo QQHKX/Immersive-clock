@@ -4,9 +4,7 @@
  */
 import { logger } from "./logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
-
-// localStorage 键名
-const AUTO_POPUP_KEY = "noise-report-auto-popup";
+import { getAppSettings, updateNoiseSettings } from "./appSettings";
 
 /**
  * 噪音报告设置接口
@@ -27,15 +25,10 @@ const DEFAULT_SETTINGS: NoiseReportSettings = {
  * @returns 噪音报告设置对象
  */
 export function getNoiseReportSettings(): NoiseReportSettings {
-  try {
-    const autoPopup = localStorage.getItem(AUTO_POPUP_KEY);
-    return {
-      autoPopup: autoPopup !== null ? autoPopup === "true" : DEFAULT_SETTINGS.autoPopup,
-    };
-  } catch (error) {
-    logger.warn("读取噪音报告设置失败:", error);
-    return DEFAULT_SETTINGS;
-  }
+  const autoPopup = getAppSettings().noiseControl.reportAutoPopup;
+  return {
+    autoPopup: autoPopup ?? DEFAULT_SETTINGS.autoPopup,
+  };
 }
 
 /**
@@ -47,9 +40,9 @@ export function saveNoiseReportSettings(settings: Partial<NoiseReportSettings>):
     const currentSettings = getNoiseReportSettings();
     const newSettings = { ...currentSettings, ...settings };
 
-    // 保存各个设置项
+    // 保存设置
     if (settings.autoPopup !== undefined) {
-      localStorage.setItem(AUTO_POPUP_KEY, settings.autoPopup.toString());
+      updateNoiseSettings({ reportAutoPopup: settings.autoPopup });
     }
     // 广播：噪音报告设置更新
     broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, { settings: newSettings });
@@ -79,7 +72,7 @@ export function setAutoPopupSetting(autoPopup: boolean): void {
  */
 export function resetNoiseReportSettings(): void {
   try {
-    localStorage.removeItem(AUTO_POPUP_KEY);
+    updateNoiseSettings({ reportAutoPopup: DEFAULT_SETTINGS.autoPopup });
     broadcastSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, {
       settings: getNoiseReportSettings(),
     });
