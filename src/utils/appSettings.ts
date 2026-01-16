@@ -73,6 +73,7 @@ export interface AppSettings {
     baselineDisplayDb: number;
     baselineRms: number;
     reportAutoPopup: boolean;
+    alertSoundEnabled: boolean;
   };
 }
 
@@ -128,6 +129,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     baselineDisplayDb: 40,
     baselineRms: 0,
     reportAutoPopup: true,
+    alertSoundEnabled: false,
   },
 };
 

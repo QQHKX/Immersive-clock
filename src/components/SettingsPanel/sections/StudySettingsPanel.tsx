@@ -69,6 +69,9 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     initialControl.showRealtimeDb
   );
   const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
+  const [draftAlertSoundEnabled, setDraftAlertSoundEnabled] = useState<boolean>(
+    initialControl.alertSoundEnabled ?? false
+  );
 
   // 初始化噪音设置为草稿
   useEffect(() => {
@@ -82,6 +85,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
     setDraftAvgWindowSec(currentControl.avgWindowSec);
+    setDraftAlertSoundEnabled(currentControl.alertSoundEnabled ?? false);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -260,6 +264,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         baselineDb: draftManualBaselineDb,
         showRealtimeDb: draftShowRealtimeDb,
         avgWindowSec: draftAvgWindowSec,
+        alertSoundEnabled: draftAlertSoundEnabled,
       });
     });
   }, [
@@ -270,6 +275,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     draftMaxNoiseLevel,
     draftShowRealtimeDb,
     draftAvgWindowSec,
+    draftAlertSoundEnabled,
   ]);
 
   // 课表重置功能已迁移到基础设置面板
@@ -322,6 +328,14 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             label="显示实时分贝"
             checked={draftShowRealtimeDb}
             onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
+          />
+        </FormRow>
+
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="超过阈值播放提示音"
+            checked={draftAlertSoundEnabled}
+            onChange={(e) => setDraftAlertSoundEnabled(e.target.checked)}
           />
         </FormRow>
       </FormSection>

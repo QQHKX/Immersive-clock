@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
+import { useAudio } from "../../hooks/useAudio";
 import { logger } from "../../utils/logger";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import type { NoiseControlSettings } from "../../utils/noiseControlSettings";
@@ -27,6 +28,7 @@ type NoiseStatus = "quiet" | "noisy" | "error" | "permission-denied" | "initiali
 const MIN_DECIBELS = -90; // 最小分贝值（频域专用，保留）
 const MAX_DECIBELS = -10; // 最大分贝值（频域专用，保留）
 const BASELINE_DB_DEFAULT = 40; // 默认基线显示分贝
+const NOISY_ALERT_COOLDOWN_MS = 10_000;
 
 interface NoiseMonitorProps {
   // 点击状态文本时触发（安静/吵闹状态下）
@@ -62,6 +64,12 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const [avgWindowSec, setAvgWindowSec] = useState<number>(
     () => getNoiseControlSettings().avgWindowSec
   );
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState<boolean>(
+    () => getNoiseControlSettings().alertSoundEnabled ?? false
+  );
+
+  const [playNoisyAlert] = useAudio("/ding-1.mp3");
+  const playNoisyAlertRef = useRef<(() => void) | null>(playNoisyAlert);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -71,6 +79,10 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
   const initializationCountRef = useRef<number>(0); // 初始化计数器
   const lastPersistTsRef = useRef<number>(0); // 上次持久化采样时间戳
+  const lastNoisyAlertPlayedAtRef = useRef<number>(0);
+  const lastIsNoisyRef = useRef<boolean>(false);
+  const isCalibratingRef = useRef<boolean>(isCalibrating);
+  const alertSoundEnabledRef = useRef<boolean>(alertSoundEnabled);
 
   const highpassRef = useRef<BiquadFilterNode | null>(null);
   const lowpassRef = useRef<BiquadFilterNode | null>(null);
@@ -85,6 +97,18 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
    * 移动设备特殊处理：延长稳定时间
    */
   const getMobileDelay = useCallback(() => (isMobileDevice ? 3000 : 2000), [isMobileDevice]);
+
+  useEffect(() => {
+    playNoisyAlertRef.current = playNoisyAlert;
+  }, [playNoisyAlert]);
+
+  useEffect(() => {
+    isCalibratingRef.current = isCalibrating;
+  }, [isCalibrating]);
+
+  useEffect(() => {
+    alertSoundEnabledRef.current = alertSoundEnabled;
+  }, [alertSoundEnabled]);
 
   /**
    * 计算并平滑显示分贝值（相对 dB：基线定义为 40dB）
@@ -161,6 +185,18 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       setCurrentVolume(avgDb);
       setNoiseStatus(isNoisy ? "noisy" : "quiet");
       lastPersistTsRef.current = now;
+
+      if (alertSoundEnabledRef.current && !isCalibratingRef.current && isNoisy) {
+        const justBecameNoisy = !lastIsNoisyRef.current;
+        const cooldownPassed =
+          !lastNoisyAlertPlayedAtRef.current ||
+          now - lastNoisyAlertPlayedAtRef.current >= NOISY_ALERT_COOLDOWN_MS;
+        if (justBecameNoisy || cooldownPassed) {
+          playNoisyAlertRef.current?.();
+          lastNoisyAlertPlayedAtRef.current = now;
+        }
+      }
+      lastIsNoisyRef.current = isNoisy;
     }
 
     // 继续下一帧分析
@@ -242,12 +278,16 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
           if (typeof s.baselineDb === "number") setDisplayBaselineDb(s.baselineDb);
           if (typeof s.showRealtimeDb === "boolean") setShowRealtimeDb(!!s.showRealtimeDb);
           if (typeof s.avgWindowSec === "number") setAvgWindowSec(Math.max(0.2, s.avgWindowSec));
+          if (typeof s.alertSoundEnabled === "boolean") {
+            setAlertSoundEnabled(!!s.alertSoundEnabled);
+          }
         } catch {
           const s = getNoiseControlSettings();
           setThresholdDb(s.maxLevelDb);
           setDisplayBaselineDb(s.baselineDb);
           setShowRealtimeDb(s.showRealtimeDb);
           setAvgWindowSec(s.avgWindowSec);
+          setAlertSoundEnabled(s.alertSoundEnabled ?? false);
         }
       }
     );
@@ -374,6 +414,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       setDisplayBaselineDb(s.baselineDb ?? BASELINE_DB_DEFAULT);
       setShowRealtimeDb(s.showRealtimeDb);
       setAvgWindowSec(s.avgWindowSec);
+      setAlertSoundEnabled(s.alertSoundEnabled ?? false);
     };
     sync();
     const id = setInterval(sync, 2000);
