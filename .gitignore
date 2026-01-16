@@ -61,3 +61,8 @@ coverage
 dev-dist/
 Thumbs.db
 *.tsbuildinfo
+
+# Playwright 测试报告
+playwright-report/
+test-results/
+blob-report/

@@ -1,0 +1,228 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Read version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build Web
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Package Web dist
+        run: |
+          cd dist
+          zip -r ../immersive-clock-web.zip .
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Immersive Clock v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            immersive-clock-web.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-electron-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron
+            ~\AppData\Local\electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Read version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Pre-download electron-builder dependencies
+        shell: pwsh
+        run: |
+          # Pre-download NSIS resources with retry
+          $nsisUrl = "https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z"
+          $nsisPath = "$env:LOCALAPPDATA\electron-builder\Cache\nsis\nsis-resources-3.4.1"
+          
+          if (-not (Test-Path $nsisPath)) {
+            New-Item -ItemType Directory -Force -Path $nsisPath | Out-Null
+            
+            $maxAttempts = 5
+            $attempt = 1
+            $downloaded = $false
+            
+            while ($attempt -le $maxAttempts -and -not $downloaded) {
+              Write-Host "Downloading NSIS resources (attempt $attempt of $maxAttempts)..."
+              try {
+                Invoke-WebRequest -Uri $nsisUrl -OutFile "$nsisPath\nsis-resources.7z" -TimeoutSec 300 -MaximumRetryCount 3
+                $downloaded = $true
+                Write-Host "NSIS resources downloaded successfully"
+              } catch {
+                if ($attempt -eq $maxAttempts) {
+                  Write-Host "Warning: Failed to pre-download NSIS resources, will try during build"
+                  break
+                }
+                Write-Host "Download failed, retrying in 5 seconds..."
+                Start-Sleep -Seconds 5
+                $attempt++
+              }
+            }
+          } else {
+            Write-Host "NSIS resources already cached"
+          }
+
+      - name: Create .env file from secrets
+        run: |
+          $content = @"
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          "@
+          
+          Set-Content -Path .env -Value $content
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+          ELECTRON_BUILDER_CACHE: ${{ runner.temp }}\electron-builder-cache
+          DEBUG: electron-builder
+        run: |
+          # Retry logic for build
+          $maxAttempts = 3
+          $attempt = 1
+          $success = $false
+          
+          while ($attempt -le $maxAttempts -and -not $success) {
+            Write-Host "Build attempt $attempt of $maxAttempts..."
+            try {
+              npm run build:electron
+              $success = $true
+            } catch {
+              if ($attempt -eq $maxAttempts) {
+                throw
+              }
+              Write-Host "Build failed, retrying in 10 seconds..."
+              Start-Sleep -Seconds 10
+              $attempt++
+            }
+          }
+        timeout-minutes: 30
+
+      - name: Publish Windows artifacts to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Immersive Clock v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*-Setup.exe
+            release/*-Portable.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-electron-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Read version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf-8')).version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create .env file from secrets
+        run: |
+          cat > .env << EOF
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          EOF
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+        run: npm run build:electron
+
+      - name: Publish Linux artifacts to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Immersive Clock v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
