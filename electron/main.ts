@@ -1,4 +1,5 @@
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, protocol, session, systemPreferences } from "electron";
+import fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
@@ -6,10 +7,100 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function mergeChromiumFeatureSwitch(switchName: "enable-features" | "disable-features", add: string) {
+  const current = app.commandLine.getSwitchValue(switchName);
+  const next = current ? `${current},${add}` : add;
+  app.commandLine.appendSwitch(switchName, next);
+}
+
+if (process.platform === "win32") {
+  mergeChromiumFeatureSwitch(
+    "enable-features",
+    "LocationProviderManager:LocationProviderManagerMode/PlatformOnly"
+  );
+  mergeChromiumFeatureSwitch("enable-features", "WinrtGeolocationImplementation");
+}
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "app",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
 // 禁用硬件加速以提高兼容性（可选）
 // app.disableHardwareAcceleration();
 
 let mainWindow: BrowserWindow | null = null;
+
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  const map: Record<string, string> = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".mp3": "audio/mpeg",
+  };
+  return map[ext] || "application/octet-stream";
+}
+
+function createFileResponse(filePath: string): Response {
+  const data = fs.readFileSync(filePath);
+  return new Response(data, {
+    status: 200,
+    headers: {
+      "content-type": getMimeType(filePath),
+    },
+  });
+}
+
+async function registerAppProtocol() {
+  const distDir = path.join(__dirname, "../dist");
+  await protocol.handle("app", async (request) => {
+    try {
+      const url = new URL(request.url);
+      let pathname = decodeURIComponent(url.pathname || "/");
+      if (pathname === "/") pathname = "/index.html";
+
+      let resolvedPath = path.normalize(path.join(distDir, pathname));
+      if (!resolvedPath.startsWith(distDir)) {
+        return new Response("Bad Request", { status: 400 });
+      }
+
+      const hasExt = Boolean(path.extname(resolvedPath));
+      const exists = fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile();
+
+      if (!exists) {
+        if (!hasExt) {
+          resolvedPath = path.join(distDir, "index.html");
+          if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
+            return createFileResponse(resolvedPath);
+          }
+        }
+        return new Response("Not Found", { status: 404 });
+      }
+
+      return createFileResponse(resolvedPath);
+    } catch {
+      return new Response("Internal Server Error", { status: 500 });
+    }
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -32,9 +123,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    // 生产环境：使用绝对路径加载 index.html
-    const indexPath = path.join(__dirname, "../dist/index.html");
-    mainWindow.loadFile(indexPath);
+    mainWindow.loadURL("app://local/index.html");
   }
 
   // 窗口关闭时的处理
@@ -58,23 +147,77 @@ function createWindow() {
   // 阻止默认的导航行为，增强安全性
   mainWindow.webContents.on("will-navigate", (event, url) => {
     const parsedUrl = new URL(url);
-    // 只允许在同一域名下导航
-    if (parsedUrl.origin !== process.env.VITE_DEV_SERVER_URL?.replace(/\/$/, "")) {
+    if (process.env.VITE_DEV_SERVER_URL) {
+      const allowedOrigin = new URL(process.env.VITE_DEV_SERVER_URL).origin;
+      if (parsedUrl.origin !== allowedOrigin) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (parsedUrl.protocol !== "app:") {
       event.preventDefault();
     }
   });
 }
 
 // 当 Electron 完成初始化时创建窗口
-app.whenReady().then(() => {
-  // 配置权限请求处理器：自动允许地理位置权限
-  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === "geolocation") {
-      callback(true); // 允许
-    } else {
-      callback(false); // 其他权限默认拒绝或按需处理
+app.whenReady().then(async () => {
+  await registerAppProtocol();
+
+  /**
+   * 判断是否为“仅音频采集”的 media 权限请求（拒绝视频，以避免意外放行摄像头/屏幕录制）
+   */
+  const isAudioOnlyMediaRequest = (details: unknown): boolean => {
+    const mediaTypes = (details as { mediaTypes?: string[] } | null)?.mediaTypes;
+    if (!Array.isArray(mediaTypes) || mediaTypes.length === 0) {
+      return true;
     }
+    const wantsAudio = mediaTypes.includes("audio");
+    const wantsVideo = mediaTypes.includes("video");
+    return wantsAudio && !wantsVideo;
+  };
+
+  /**
+   * Electron 权限策略：
+   * - 地理位置与“仅音频采集”允许；
+   * - 其他权限默认拒绝（更安全）。
+   */
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === "geolocation") return true;
+    if (permission === "media") return isAudioOnlyMediaRequest(details);
+    return false;
   });
+
+  session.defaultSession.setPermissionRequestHandler(
+    async (webContents, permission, callback, details) => {
+      if (permission === "geolocation") {
+        callback(true);
+        return;
+      }
+
+      if (permission === "media") {
+        if (!isAudioOnlyMediaRequest(details)) {
+          callback(false);
+          return;
+        }
+
+        if (process.platform === "darwin") {
+          try {
+            const granted = await systemPreferences.askForMediaAccess("microphone");
+            callback(Boolean(granted));
+          } catch {
+            callback(false);
+          }
+          return;
+        }
+
+        callback(true);
+        return;
+      }
+
+      callback(false);
+    }
+  );
 
   createWindow();
 

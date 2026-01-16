@@ -482,12 +482,15 @@ const Weather: React.FC = () => {
       updateWeatherNowSnapshot(result.weather);
 
       // 广播刷新完成事件
+      const geoDiag = getWeatherCache().geolocation?.diagnostics || null;
       const event = new CustomEvent("weatherRefreshDone", {
         detail: {
           status: "成功",
           address,
           ts,
           coords: result.coords || null,
+          coordsSource: result.coordsSource || null,
+          geolocationDiagnostics: geoDiag,
           now,
           refer: result.weather?.refer || null,
         },
@@ -503,6 +506,9 @@ const Weather: React.FC = () => {
           status: "失败",
           address: cache.location?.address || "",
           ts: Date.now(),
+          coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
+          coordsSource: cache.coords?.source || null,
+          geolocationDiagnostics: cache.geolocation?.diagnostics || null,
         },
       });
       window.dispatchEvent(event);

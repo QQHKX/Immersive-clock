@@ -254,6 +254,31 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     return off;
   }, []);
 
+  // 订阅：噪音基线（RMS）校准更新，确保设置页保存后无需刷新即可生效
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, (evt: CustomEvent) => {
+      try {
+        const detail = evt.detail as { baselineDb?: unknown; baselineRms?: unknown } | undefined;
+        const nextRms =
+          detail && typeof detail.baselineRms === "number" ? detail.baselineRms : undefined;
+        const nextDb = detail && typeof detail.baselineDb === "number" ? detail.baselineDb : 0;
+        if (typeof nextRms === "number") {
+          setBaselineRms(nextRms);
+          setBaselineNoise(nextRms > 0 ? nextDb : 0);
+        } else {
+          const s = getAppSettings().noiseControl;
+          setBaselineRms(s.baselineRms);
+          setBaselineNoise(s.baselineRms > 0 ? s.baselineDisplayDb : 0);
+        }
+      } catch {
+        const s = getAppSettings().noiseControl;
+        setBaselineRms(s.baselineRms);
+        setBaselineNoise(s.baselineRms > 0 ? s.baselineDisplayDb : 0);
+      }
+    });
+    return off;
+  }, []);
+
   /**
    * 清除校准数据
    * 重置基准噪音值并清除本地存储
@@ -375,19 +400,19 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     if (microphoneRef.current) {
       try {
         microphoneRef.current.disconnect();
-      } catch {}
+      } catch { }
       microphoneRef.current = null;
     }
     if (highpassRef.current) {
       try {
         highpassRef.current.disconnect();
-      } catch {}
+      } catch { }
       highpassRef.current = null;
     }
     if (lowpassRef.current) {
       try {
         lowpassRef.current.disconnect();
-      } catch {}
+      } catch { }
       lowpassRef.current = null;
     }
 
@@ -410,6 +435,17 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
    * 获取状态显示文本
    */
   const getStatusText = useCallback((): string => {
+    /**
+     * 判断是否运行在 Electron 环境（用于给出更贴合的权限提示）
+     */
+    const isElectronRuntime = () => {
+      try {
+        return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+      } catch {
+        return false;
+      }
+    };
+
     if (isCalibrating) {
       return "校准中...";
     }
@@ -420,7 +456,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       case "noisy":
         return "吵闹";
       case "permission-denied":
-        return "需要麦克风权限";
+        return isElectronRuntime() ? "需要麦克风权限（系统设置中允许）" : "需要麦克风权限";
       case "error":
         return "监测失败";
       case "initializing":

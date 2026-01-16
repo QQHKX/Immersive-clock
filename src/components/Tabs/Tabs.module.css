@@ -3,6 +3,8 @@
 .tabs {
   position: relative;
   display: block;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tabsTrack {

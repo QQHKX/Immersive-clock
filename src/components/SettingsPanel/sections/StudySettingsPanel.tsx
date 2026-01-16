@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 
+import { getAppSettings, updateNoiseSettings } from "../../../utils/appSettings";
 import { logger } from "../../../utils/logger";
 import {
   getNoiseControlSettings,
   saveNoiseControlSettings,
 } from "../../../utils/noiseControlSettings";
 import { getNoiseReportSettings, setAutoPopupSetting } from "../../../utils/noiseReportSettings";
-import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../../utils/settingsEvents";
+import { broadcastSettingsEvent, SETTINGS_EVENTS, subscribeSettingsEvent } from "../../../utils/settingsEvents";
 import {
   FormSection,
   FormButton,
@@ -27,9 +28,6 @@ export interface StudySettingsPanelProps {
   onRegisterSave?: (fn: () => void) => void;
 }
 
-const BASELINE_NOISE_KEY = "noise-monitor-baseline";
-const BASELINE_RMS_KEY = "noise-monitor-baseline-rms";
-
 /**
  * 学习功能分段组件
  * - 噪音校准与报告设置
@@ -43,13 +41,15 @@ const BASELINE_RMS_KEY = "noise-monitor-baseline-rms";
  * - 课程表编辑
  */
 export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegisterSave }) => {
+  const [effectiveBaselineRms, setEffectiveBaselineRms] = useState<number>(() => {
+    return getAppSettings().noiseControl.baselineRms ?? 0;
+  });
   const [noiseBaseline, setNoiseBaseline] = useState<number>(() => {
-    const saved = localStorage.getItem(BASELINE_NOISE_KEY);
-    return saved ? parseFloat(saved) : 0;
+    const s = getAppSettings().noiseControl;
+    return s.baselineRms > 0 ? s.baselineDisplayDb : 0;
   });
   const [baselineRms, setBaselineRms] = useState<number>(() => {
-    const savedRms = localStorage.getItem(BASELINE_RMS_KEY);
-    return savedRms ? parseFloat(savedRms) : 0;
+    return getAppSettings().noiseControl.baselineRms ?? 0;
   });
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [calibrationProgress, setCalibrationProgress] = useState<number>(0);
@@ -69,21 +69,22 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
   );
   const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
 
+  const formatRmsValue = useCallback((value: number): string => {
+    return value.toExponential(3);
+  }, []);
+
   // 初始化噪音设置为草稿
   useEffect(() => {
-    const savedDb = localStorage.getItem(BASELINE_NOISE_KEY);
-    const savedRms = localStorage.getItem(BASELINE_RMS_KEY);
-    const savedDbValue = savedDb ? parseFloat(savedDb) : 0;
-    const savedRmsValue = savedRms ? parseFloat(savedRms) : 0;
+    const noiseSettings = getAppSettings().noiseControl;
     const currentControl = getNoiseControlSettings();
-    setNoiseBaseline(
-      savedDbValue > 0 ? savedDbValue : savedRmsValue > 0 ? currentControl.baselineDb : 0
-    );
-    setBaselineRms(savedRmsValue);
+    setEffectiveBaselineRms(noiseSettings.baselineRms ?? 0);
+    setBaselineRms(noiseSettings.baselineRms ?? 0);
+    setNoiseBaseline(noiseSettings.baselineRms > 0 ? noiseSettings.baselineDisplayDb : 0);
     setAutoPopupReport(getNoiseReportSettings().autoPopup);
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
+    setDraftAvgWindowSec(currentControl.avgWindowSec);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -92,6 +93,24 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       setNoiseBaseline(draftManualBaselineDb);
     }
   }, [draftManualBaselineDb, baselineRms]);
+
+  // 订阅“已生效基线”的变更：用于显示当前生效的 RMS（保存后/自动校准后都能实时刷新）
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, (evt: CustomEvent) => {
+      try {
+        const detail = evt.detail as { baselineRms?: unknown } | undefined;
+        const nextRms = detail && typeof detail.baselineRms === "number" ? detail.baselineRms : undefined;
+        if (typeof nextRms === "number") {
+          setEffectiveBaselineRms(nextRms);
+          return;
+        }
+        setEffectiveBaselineRms(getAppSettings().noiseControl.baselineRms ?? 0);
+      } catch {
+        setEffectiveBaselineRms(getAppSettings().noiseControl.baselineRms ?? 0);
+      }
+    });
+    return off;
+  }, []);
 
   const handleClearNoiseBaseline = useCallback(() => {
     if (confirm("确定要清除噪音校准吗？这将重置为未校准状态。")) {
@@ -176,8 +195,18 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       logger.error("校准失败:", error);
       if (error instanceof Error) {
         if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-          setCalibrationError("需要麦克风权限才能进行噪音校准");
-          alert("校准失败：需要麦克风权限才能进行噪音校准");
+          const isElectronRuntime = (() => {
+            try {
+              return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+            } catch {
+              return false;
+            }
+          })();
+          const msg = isElectronRuntime
+            ? "需要麦克风权限才能进行噪音校准（请在系统设置中允许麦克风）"
+            : "需要麦克风权限才能进行噪音校准";
+          setCalibrationError(msg);
+          alert(`校准失败：${msg}`);
         } else {
           setCalibrationError(error.message);
           alert(`校准失败：${error.message}`);
@@ -204,16 +233,22 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     onRegisterSave?.(() => {
       // 噪音基线：统一持久化为 RMS 与显示DB
       if (baselineRms > 0) {
-        localStorage.setItem(BASELINE_RMS_KEY, baselineRms.toString());
-        localStorage.setItem(BASELINE_NOISE_KEY, draftManualBaselineDb.toString());
+        updateNoiseSettings({
+          baselineRms,
+          baselineDisplayDb: draftManualBaselineDb,
+        });
+        setEffectiveBaselineRms(baselineRms);
         // 广播基线更新，便于其他组件立即刷新
         broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, {
           baselineDb: draftManualBaselineDb,
           baselineRms,
         });
       } else {
-        localStorage.removeItem(BASELINE_RMS_KEY);
-        localStorage.removeItem(BASELINE_NOISE_KEY);
+        updateNoiseSettings({
+          baselineRms: 0,
+          baselineDisplayDb: 0,
+        });
+        setEffectiveBaselineRms(0);
         broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, {
           baselineDb: 0,
           baselineRms: 0,
@@ -312,6 +347,9 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             当前校准：{noiseBaseline > 0 ? `${noiseBaseline.toFixed(1)}dB 基准` : "未校准"}
           </p>
           <p className={styles.helpText}>
+            当前生效 RMS：{effectiveBaselineRms > 0 ? formatRmsValue(effectiveBaselineRms) : "未校准"}
+          </p>
+          <p className={styles.helpText}>
             校准会采样约 3 秒的环境声音并计算
             RMS；显示将以上方的“基准噪音显示值”作为基准进行映射，使不同设备下的监测更稳定、更可比较。
           </p>
@@ -358,10 +396,12 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
 
       {/* 背景设置已迁移到基础设置 */}
 
-      <RealTimeNoiseChart />
-      <NoiseStatsSummary />
-
-      {/* 课表设置已迁移到基础设置 */}
+      <FormSection title="实时监控">
+        <RealTimeNoiseChart />
+      </FormSection>
+      <FormSection title="统计数据">
+        <NoiseStatsSummary />
+      </FormSection>
     </div>
   );
 };

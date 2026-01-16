@@ -74,13 +74,49 @@ export const Tabs: React.FC<TabsProps> = ({
    * 将当前选中项居中到可视区域
    */
   const centerActiveTab = useCallback(() => {
+    // 停止当前的惯性滚动
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    velocityRef.current = 0;
+    setIsScrolling(false);
+
     const container = containerRef.current;
     if (!container) return;
-    const activeEl = document.getElementById(activeKey);
+
+    // 在容器内查找 active 元素，避免 ID 冲突
+    // 注意：CSS 选择器中 ID 需要转义，这里改用 querySelector 配合 data-key 更稳健，
+    // 但考虑到目前实现用了 id={item.key}，且 item.key 可能是简单字符串
+    // 我们尝试直接在 children 中找
+    const activeEl = Array.from(container.querySelectorAll('[role="tab"]')).find(
+      (el) => el.getAttribute('id') === activeKey
+    ) as HTMLElement;
+
     if (!activeEl) return;
-    const target = activeEl.offsetLeft + activeEl.offsetWidth / 2 - container.clientWidth / 2;
-    const max = Math.max(0, container.scrollWidth - container.clientWidth);
+
+    // 计算位置
+    const containerWidth = container.clientWidth;
+    const scrollLeft = container.scrollLeft;
+    const elLeft = activeEl.offsetLeft;
+    const elWidth = activeEl.offsetWidth;
+
+    // 检查是否完全在可视区域内（预留 20px 边距）
+    const PADDING = 20;
+    const isFullyVisible =
+      elLeft >= scrollLeft + PADDING &&
+      elLeft + elWidth <= scrollLeft + containerWidth - PADDING;
+
+    if (isFullyVisible) {
+      // 如果已经在可视区域且有余量，不需要滚动
+      return;
+    }
+
+    // 计算居中位置
+    const target = elLeft + elWidth / 2 - containerWidth / 2;
+    const max = Math.max(0, container.scrollWidth - containerWidth);
     const clamped = Math.min(Math.max(0, target), max);
+
     try {
       container.scrollTo({ left: clamped, behavior: "smooth" });
     } catch {
@@ -273,6 +309,7 @@ export const Tabs: React.FC<TabsProps> = ({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onWheel={onWheel}
+      onScroll={updateEdgeMasks}
     >
       <div ref={trackRef} className={styles.tabsTrack}>
         {items.map((item) => {

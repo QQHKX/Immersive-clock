@@ -113,8 +113,6 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
 
   return (
     <div className={styles.settingsGroup} id="about-panel" role="tabpanel" aria-labelledby="about">
-      <h3 className={styles.groupTitle}>关于</h3>
-
       <FormSection title="项目信息">
         <p className={styles.infoText}>版本：v{version}</p>
         <p className={styles.infoText}>版权：{license} License</p>

@@ -9,11 +9,31 @@ import {
   updateCoordsCache,
   getValidLocation,
   updateLocationCache,
+  updateGeolocationDiagnostics,
 } from "../utils/weatherStorage";
 
 export interface Coords {
   lat: number;
   lon: number;
+}
+
+export type GeolocationPermissionState = "granted" | "denied" | "prompt" | "unsupported" | "unknown";
+
+export interface GeolocationDiagnostics {
+  isSupported: boolean;
+  isSecureContext: boolean;
+  permissionState: GeolocationPermissionState;
+  usedHighAccuracy: boolean;
+  timeoutMs: number;
+  maximumAgeMs: number;
+  attemptedAt: number;
+  errorCode?: number;
+  errorMessage?: string;
+}
+
+export interface GeolocationResult {
+  coords: Coords | null;
+  diagnostics: GeolocationDiagnostics;
 }
 
 export interface WeatherNow {
@@ -153,36 +173,138 @@ async function httpGetJson(
 }
 
 /**
+ * 获取浏览器 geolocation 权限状态（尽可能不抛错）
+ */
+async function getGeolocationPermissionState(): Promise<GeolocationPermissionState> {
+  try {
+    if (typeof navigator === "undefined" || !("permissions" in navigator)) {
+      return "unsupported";
+    }
+    const perms = navigator.permissions as unknown as {
+      query: (d: { name: string }) => Promise<{ state?: string }>;
+    };
+    const status = await perms.query({ name: "geolocation" });
+    const state = String(status?.state || "").toLowerCase();
+    if (state === "granted" || state === "denied" || state === "prompt") return state;
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * 通过浏览器原生 Geolocation API 获取坐标与诊断信息
+ */
+export async function getGeolocationResult(options?: {
+  timeoutMs?: number;
+  maximumAgeMs?: number;
+  enableHighAccuracy?: boolean;
+}): Promise<GeolocationResult> {
+  const attemptedAt = Date.now();
+  const isSupported = typeof navigator !== "undefined" && "geolocation" in navigator;
+  const isSecureContext = typeof window !== "undefined" ? Boolean(window.isSecureContext) : false;
+  const permissionState = await getGeolocationPermissionState();
+
+  const timeoutMs = options?.timeoutMs ?? 25000;
+  const maximumAgeMs = options?.maximumAgeMs ?? 60 * 1000;
+  const enableHighAccuracy = options?.enableHighAccuracy ?? true;
+
+  const baseDiagnostics: GeolocationDiagnostics = {
+    isSupported,
+    isSecureContext,
+    permissionState,
+    usedHighAccuracy: enableHighAccuracy,
+    timeoutMs,
+    maximumAgeMs,
+    attemptedAt,
+  };
+
+  if (!isSupported || !isSecureContext) {
+    return { coords: null, diagnostics: baseDiagnostics };
+  }
+
+  const runOnce = (cfg: {
+    enableHighAccuracy: boolean;
+    timeout: number;
+    maximumAge: number;
+  }): Promise<{ coords: Coords | null; error?: GeolocationPositionError }> => {
+    return new Promise((resolve) => {
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos?.coords?.latitude;
+            const lon = pos?.coords?.longitude;
+            if (typeof lat === "number" && typeof lon === "number") {
+              resolve({ coords: { lat, lon } });
+            } else {
+              resolve({ coords: null });
+            }
+          },
+          (err) => resolve({ coords: null, error: err }),
+          cfg
+        );
+      } catch {
+        resolve({ coords: null });
+      }
+    });
+  };
+
+  const first = await runOnce({
+    enableHighAccuracy,
+    timeout: timeoutMs,
+    maximumAge: maximumAgeMs,
+  });
+
+  if (first.coords) {
+    return { coords: first.coords, diagnostics: baseDiagnostics };
+  }
+
+  const firstErrCode = first.error?.code;
+  const firstErrMessage = first.error?.message;
+
+  if (firstErrCode === 1) {
+    return {
+      coords: null,
+      diagnostics: { ...baseDiagnostics, errorCode: firstErrCode, errorMessage: firstErrMessage },
+    };
+  }
+
+  if (enableHighAccuracy) {
+    const second = await runOnce({
+      enableHighAccuracy: false,
+      timeout: Math.min(12000, timeoutMs),
+      maximumAge: maximumAgeMs,
+    });
+    if (second.coords) {
+      return {
+        coords: second.coords,
+        diagnostics: { ...baseDiagnostics, usedHighAccuracy: false },
+      };
+    }
+    return {
+      coords: null,
+      diagnostics: {
+        ...baseDiagnostics,
+        usedHighAccuracy: false,
+        errorCode: second.error?.code ?? firstErrCode,
+        errorMessage: second.error?.message ?? firstErrMessage,
+      },
+    };
+  }
+
+  return {
+    coords: null,
+    diagnostics: { ...baseDiagnostics, errorCode: firstErrCode, errorMessage: firstErrMessage },
+  };
+}
+
+/**
  * 通过浏览器原生 Geolocation API 获取坐标
  * 优先策略：高精度、合理超时；失败（含拒绝授权）返回 null
  */
 export async function getCoordsViaGeolocation(): Promise<Coords | null> {
-  if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-    return null;
-  }
-  return new Promise<Coords | null>((resolve) => {
-    try {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos?.coords?.latitude;
-          const lon = pos?.coords?.longitude;
-          if (typeof lat === "number" && typeof lon === "number") {
-            resolve({ lat, lon });
-          } else {
-            resolve(null);
-          }
-        },
-        () => resolve(null),
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
-    } catch {
-      resolve(null);
-    }
-  });
+  const result = await getGeolocationResult();
+  return result.coords;
 }
 
 /**
@@ -224,7 +346,6 @@ export async function getCoordsViaAmapIP(): Promise<Coords | null> {
 export async function getCoordsViaIP(): Promise<Coords | null> {
   const sources: Array<[string, string[]]> = [
     ["https://ipapi.co/json/", ["latitude", "longitude"]],
-    ["http://ip-api.com/json/", ["lat", "lon"]],
     ["https://ipinfo.io/json", ["loc"]],
   ];
   for (const [url, keys] of sources) {
@@ -461,9 +582,10 @@ export async function buildWeatherFlow(): Promise<{
 
   // 策略调整：如果当前没有缓存，或者缓存不是来自浏览器定位，则尝试浏览器定位
   if (!coords || coordsSource !== "geolocation") {
-    const g = await getCoordsViaGeolocation();
-    if (g) {
-      coords = g;
+    const geo = await getGeolocationResult();
+    updateGeolocationDiagnostics(geo.diagnostics);
+    if (geo.coords) {
+      coords = geo.coords;
       coordsSource = "geolocation";
       // 立即更新缓存
       updateCoordsCache(coords.lat, coords.lon, coordsSource);

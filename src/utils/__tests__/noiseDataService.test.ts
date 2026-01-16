@@ -145,6 +145,30 @@ describe("noiseDataService", () => {
     expect(setSpy).toHaveBeenCalled();
   });
 
+  it("writeNoiseSample 持久化时将 v 四舍五入到两位小数", () => {
+    const sample: NoiseSample = { t: 1, v: 40.161569416498985, s: "quiet" };
+    const trimmed = writeNoiseSample(sample);
+
+    expect(trimmed).toEqual([{ t: 1, v: 40.16, s: "quiet" }]);
+    expect(JSON.parse(localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY) || "[]")).toEqual([
+      { t: 1, v: 40.16, s: "quiet" },
+    ]);
+  });
+
+  it("writeNoiseSample 会在下一次写入时顺带归一化旧数据的 v", () => {
+    localStorage.setItem(
+      NOISE_SAMPLE_STORAGE_KEY,
+      JSON.stringify([{ t: 1, v: 12.34567, s: "quiet" } satisfies NoiseSample])
+    );
+
+    writeNoiseSample({ t: 2, v: 89.9999, s: "noisy" });
+
+    expect(JSON.parse(localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY) || "[]")).toEqual([
+      { t: 1, v: 12.35, s: "quiet" },
+      { t: 2, v: 90, s: "noisy" },
+    ]);
+  });
+
   it("clearNoiseSamples 移除存储并派发更新事件", () => {
     localStorage.setItem(
       NOISE_SAMPLE_STORAGE_KEY,

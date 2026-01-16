@@ -1,4 +1,4 @@
-import { WeatherNow, MinutelyPrecipResponse } from "../services/weatherService";
+import { WeatherNow, MinutelyPrecipResponse, GeolocationDiagnostics } from "../services/weatherService";
 
 import { logger } from "./logger";
 
@@ -16,6 +16,12 @@ export interface WeatherCache {
     lat: number;
     lon: number;
     source: string; // 'geolocation' | 'amap_ip' | 'ip'
+    updatedAt: number;
+  };
+
+  // 1.1 浏览器定位诊断信息（用于排查移动端/Electron 定位失败原因）
+  geolocation?: {
+    diagnostics: GeolocationDiagnostics;
     updatedAt: number;
   };
 
@@ -90,6 +96,18 @@ export function updateCoordsCache(lat: number, lon: number, source: string) {
       lat,
       lon,
       source,
+      updatedAt: Date.now(),
+    },
+  });
+}
+
+/**
+ * 更新浏览器定位诊断信息缓存
+ */
+export function updateGeolocationDiagnostics(diagnostics: GeolocationDiagnostics) {
+  saveWeatherCache({
+    geolocation: {
+      diagnostics,
       updatedAt: Date.now(),
     },
   });
