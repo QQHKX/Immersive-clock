@@ -215,6 +215,10 @@ export interface QuoteSourceConfig {
   hitokotoCategories?: HitokotoCategory[];
   /** 本地语录 */
   quotes?: string[];
+  /** 语录选取模式：随机或顺序（仅本地语录有效） */
+  orderMode?: "random" | "sequential";
+  /** 当前播放索引（仅顺序模式有效） */
+  currentQuoteIndex?: number;
 }
 
 /**
@@ -303,6 +307,11 @@ export type AppAction =
       type: "UPDATE_QUOTE_CHANNEL_CATEGORIES";
       payload: { id: string; categories: HitokotoCategory[] };
     }
+  | {
+      type: "UPDATE_QUOTE_CHANNEL_ORDER_MODE";
+      payload: { id: string; orderMode: "random" | "sequential" };
+    }
+  | { type: "UPDATE_QUOTE_CHANNEL_INDEX"; payload: { id: string; index: number } }
   | { type: "SET_QUOTE_AUTO_REFRESH_INTERVAL"; payload: number }
   | { type: "SHOW_ANNOUNCEMENT" }
   | { type: "HIDE_ANNOUNCEMENT" }

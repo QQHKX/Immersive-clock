@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
-import { useAppState } from "../../contexts/AppContext";
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 import { QuoteSourceConfig, HitokotoResponse } from "../../types";
 import { logger } from "../../utils/logger";
 
@@ -16,6 +16,7 @@ import styles from "./MotivationalQuote.module.css";
  */
 export function MotivationalQuote() {
   const { quoteChannels, quoteSettings } = useAppState();
+  const dispatch = useAppDispatch();
   const [currentQuote, setCurrentQuote] = useState(""); // 完整显示用
   const [displayText, setDisplayText] = useState(""); // 打字动画显示用
   const [isTyping, setIsTyping] = useState(false);
@@ -98,14 +99,37 @@ export function MotivationalQuote() {
   }, [getAvailableChannels]);
 
   /**
-   * 从本地源随机取一句
+   * 从本地源获取一句（支持随机或顺序）
    */
-  const getLocalRandomQuote = useCallback((source: QuoteSourceConfig): string | null => {
-    const list = source.quotes || [];
-    if (!Array.isArray(list) || list.length === 0) return null;
-    const idx = Math.floor(Math.random() * list.length);
-    return list[idx] ?? null;
-  }, []);
+  const getLocalQuote = useCallback(
+    (source: QuoteSourceConfig): string | null => {
+      const list = source.quotes || [];
+      if (!Array.isArray(list) || list.length === 0) return null;
+
+      if (source.orderMode === "sequential") {
+        const currentIndex = source.currentQuoteIndex || 0;
+        // 确保索引在有效范围内
+        const validIndex = currentIndex % list.length;
+        const quote = list[validIndex];
+
+        // 计算下一个索引
+        const nextIndex = (validIndex + 1) % list.length;
+
+        // 分发更新索引 Action
+        dispatch({
+          type: "UPDATE_QUOTE_CHANNEL_INDEX",
+          payload: { id: source.id, index: nextIndex },
+        });
+
+        return quote ?? null;
+      } else {
+        // 默认随机模式
+        const idx = Math.floor(Math.random() * list.length);
+        return list[idx] ?? null;
+      }
+    },
+    [dispatch]
+  );
 
   /**
    * 构建一言API请求URL，支持多分类选择
@@ -208,10 +232,10 @@ export function MotivationalQuote() {
       text = await fetchOnlineQuote(source);
       if (!text) {
         // 线上失败则回退到本地
-        text = getLocalRandomQuote(source);
+        text = getLocalQuote(source);
       }
     } else {
-      text = getLocalRandomQuote(source);
+      text = getLocalQuote(source);
     }
 
     // 兜底
@@ -222,7 +246,7 @@ export function MotivationalQuote() {
     // 先记录完整文本，再启动动画。渲染时会根据 isTyping 决定显示 displayText，避免闪现
     setCurrentQuote(text);
     typewriterEffect(text);
-  }, [fetchOnlineQuote, getLocalRandomQuote, pickWeightedSource, typewriterEffect]);
+  }, [fetchOnlineQuote, getLocalQuote, pickWeightedSource, typewriterEffect]);
 
   /** 手动刷新 */
   const handleClick = useCallback(() => {
@@ -231,9 +255,19 @@ export function MotivationalQuote() {
     }
   }, [isTyping, updateQuote]);
 
+  /**
+   * 使用 ref 保持对最新 updateQuote 的引用，以避免在 useEffect 中直接依赖它。
+   * 尤其是在顺序模式下，updateQuote 会触发 dispatch 更新全局索引，
+   * 进而导致 updateQuote 重新生成，若 useEffect 依赖 updateQuote 则会造成无限循环。
+   */
+  const updateQuoteRef = useRef(updateQuote);
+  useEffect(() => {
+    updateQuoteRef.current = updateQuote;
+  }, [updateQuote]);
+
   /** 初始化与轮训更新 */
   useEffect(() => {
-    void updateQuote();
+    void updateQuoteRef.current();
 
     // 清理之前的自动刷新定时器
     if (autoRefreshTimerRef.current) {
@@ -243,7 +277,7 @@ export function MotivationalQuote() {
     // 如果自动刷新间隔大于等于1800秒，则不设置自动刷新（手动刷新模式）
     if (quoteSettings.autoRefreshInterval < 1800) {
       autoRefreshTimerRef.current = setInterval(() => {
-        void updateQuote();
+        void updateQuoteRef.current();
       }, quoteSettings.autoRefreshInterval * 1000);
     }
 
@@ -252,7 +286,7 @@ export function MotivationalQuote() {
         clearInterval(autoRefreshTimerRef.current);
       }
     };
-  }, [updateQuote, quoteSettings.autoRefreshInterval]);
+  }, [quoteSettings.autoRefreshInterval]);
 
   // 组件卸载时清理定时器
   useEffect(() => {

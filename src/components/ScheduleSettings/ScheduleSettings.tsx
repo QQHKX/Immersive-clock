@@ -65,7 +65,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
       id: Date.now().toString(),
       startTime: "19:00",
       endTime: "20:00",
-      name: `第${schedule.length + 1}节自习`,
+      name: "自定义时段",
     };
     const newSchedule = sortSchedule([...schedule, newPeriod]);
     setSchedule(newSchedule);

@@ -14,6 +14,7 @@ import {
   FormButtonGroup,
   FormCheckbox,
   FormSlider,
+  FormRow,
 } from "../../FormComponents";
 import { VolumeIcon, VolumeMuteIcon } from "../../Icons";
 import NoiseStatsSummary from "../../NoiseSettings/NoiseStatsSummary";
@@ -68,10 +69,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     initialControl.showRealtimeDb
   );
   const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
-
-  const formatRmsValue = useCallback((value: number): string => {
-    return value.toExponential(3);
-  }, []);
 
   // 初始化噪音设置为草稿
   useEffect(() => {
@@ -282,84 +279,115 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       <h3 className={styles.groupTitle}>监测设置</h3>
 
       <FormSection title="噪音控制">
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>
-            自动噪音限制：最大允许 {draftMaxNoiseLevel.toFixed(0)}dB
-          </p>
-          <p className={styles.helpText}>超过该阈值时将判定为“吵闹”，用于提醒与报告统计。</p>
-        </div>
-        <FormSlider
-          label="最大允许噪音级别"
-          value={draftMaxNoiseLevel}
-          min={40}
-          max={80}
-          step={1}
-          onChange={setDraftMaxNoiseLevel}
-          formatValue={(v: number) => `${v.toFixed(0)}dB`}
-          showRange={true}
-          rangeLabels={["40dB", "80dB"]}
-        />
-        <FormCheckbox
-          label="显示实时分贝"
-          checked={draftShowRealtimeDb}
-          onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
-        />
-        <FormSlider
-          label="噪音平均时间窗"
-          value={draftAvgWindowSec}
-          min={0.5}
-          max={10}
-          step={0.5}
-          onChange={setDraftAvgWindowSec}
-          formatValue={(v: number) => `${v.toFixed(1)}秒`}
-          showRange={true}
-          rangeLabels={["0.5秒", "10秒"]}
-        />
-        <p className={styles.helpText}>显示与存储均采用该时间窗的平均值，默认 1 秒。</p>
+        <p className={styles.helpText}>设定环境噪音的判定标准与显示方式。</p>
+
+        <FormRow gap="md" align="start">
+          <div style={{ flex: 1, paddingRight: 15 }}>
+            <FormSlider
+              label="判定阈值"
+              value={draftMaxNoiseLevel}
+              min={40}
+              max={80}
+              step={1}
+              onChange={setDraftMaxNoiseLevel}
+              formatValue={(v: number) => `${v.toFixed(0)}dB`}
+              showRange={true}
+              rangeLabels={["40dB", "80dB"]}
+            />
+            <p className={styles.helpText} style={{ marginTop: 4 }}>
+              环境声音超过此值时视为“吵闹”。
+            </p>
+          </div>
+
+          <div style={{ flex: 1, paddingLeft: 15 }}>
+            <FormSlider
+              label="噪音数值平滑"
+              value={draftAvgWindowSec}
+              min={0.5}
+              max={10}
+              step={0.5}
+              onChange={setDraftAvgWindowSec}
+              formatValue={(v: number) => `${v.toFixed(1)}秒`}
+              showRange={true}
+              rangeLabels={["灵敏", "平缓"]}
+            />
+            <p className={styles.helpText} style={{ marginTop: 4 }}>
+              数值越大，数字跳动越平缓。
+            </p>
+          </div>
+        </FormRow>
+
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="显示实时分贝"
+            checked={draftShowRealtimeDb}
+            onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
+          />
+        </FormRow>
       </FormSection>
 
-      <FormSection title="噪音基准与校准">
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>显示基准：{draftManualBaselineDb.toFixed(0)}dB</p>
-          <p className={styles.helpText}>
-            显示基准用于相对 dB 映射；与校准得到的 RMS 结合后，形成稳定且可比较的分贝显示。
-          </p>
-        </div>
-        <FormSlider
-          label="基准噪音显示值"
-          value={draftManualBaselineDb}
-          min={30}
-          max={60}
-          step={1}
-          onChange={setDraftManualBaselineDb}
-          formatValue={(v: number) => `${v.toFixed(0)}dB`}
-          showRange={true}
-          rangeLabels={["30dB", "60dB"]}
-        />
+      <FormSection title="校准与修正">
+        <p className={styles.helpText}>
+          如果觉得显示的数值偏小或偏大，可拖动滑块调整；或在安静环境下点击校准让数值更准确。
+        </p>
 
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>
-            <span
-              className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
-              aria-label={baselineRms > 0 ? "已校准" : "未校准"}
-              title={baselineRms > 0 ? "已校准" : "未校准"}
-            />
-            当前校准：{noiseBaseline > 0 ? `${noiseBaseline.toFixed(1)}dB 基准` : "未校准"}
-          </p>
-          <p className={styles.helpText}>
-            当前生效 RMS：{effectiveBaselineRms > 0 ? formatRmsValue(effectiveBaselineRms) : "未校准"}
-          </p>
-          <p className={styles.helpText}>
-            校准会采样约 3 秒的环境声音并计算
-            RMS；显示将以上方的“基准噪音显示值”作为基准进行映射，使不同设备下的监测更稳定、更可比较。
-          </p>
-          {isCalibrating && (
-            <p className={styles.helpText} aria-live="polite">
-              正在校准… 进度 {calibrationProgress}% ，请保持环境安静。
-            </p>
-          )}
-          {calibrationError && <p className={styles.errorText}>校准失败：{calibrationError}</p>}
+        {/* 手动构建 Slider 头部以实现自定义布局 */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 4,
+            fontSize: "14px",
+            color: "var(--text-primary)",
+          }}
+        >
+          <span>基准噪音值</span>
+          <span>{draftManualBaselineDb.toFixed(0)}dB</span>
         </div>
+
+        <FormRow gap="md" align="center">
+          <div
+            className={styles.noiseCalibrationInfo}
+            style={{
+              margin: 0,
+              padding: "0 12px",
+              height: "36px", // 与 Slider 轨道区域高度大致匹配
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: "auto",
+              borderRadius: "4px",
+            }}
+          >
+            <p className={styles.infoText} style={{ margin: 0, fontSize: "13px" }}>
+              <span
+                className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
+              />
+              {baselineRms > 0 ? "已校准" : "未校准"}
+              {isCalibrating && ` (${calibrationProgress}%)`}
+            </p>
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <FormSlider
+              // 移除 label 以隐藏内置头部
+              value={draftManualBaselineDb}
+              min={30}
+              max={60}
+              step={1}
+              onChange={setDraftManualBaselineDb}
+              showRange={false}
+              className={styles.compactSlider} // 可选：如果需要微调样式
+            />
+          </div>
+        </FormRow>
+
+        {calibrationError && (
+          <p className={styles.errorText} style={{ marginTop: 8 }}>
+            {calibrationError}
+          </p>
+        )}
+
         <FormButtonGroup align="left">
           <FormButton
             variant="secondary"
@@ -380,18 +408,18 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         </FormButtonGroup>
       </FormSection>
 
-      <FormSection title="噪音报告设置">
-        <FormCheckbox
-          label="自动弹出噪音报告"
-          checked={autoPopupReport}
-          onChange={(e) => {
-            const checked = e.target.checked;
-            setAutoPopupReport(checked);
-          }}
-        />
-        <p className={styles.helpText}>
-          开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。
-        </p>
+      <FormSection title="噪音报告">
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="自动弹出报告"
+            checked={autoPopupReport}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setAutoPopupReport(checked);
+            }}
+          />
+        </FormRow>
+        <p className={styles.helpText}>学习结束后自动显示噪音分析报告。</p>
       </FormSection>
 
       {/* 背景设置已迁移到基础设置 */}

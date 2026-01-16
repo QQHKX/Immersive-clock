@@ -93,7 +93,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => {});
+  const countdownSaveRef = React.useRef<() => void>(() => { });
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
@@ -119,7 +119,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved);
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // 独立加载字体列表
@@ -287,7 +287,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         updateStudySettings({ countdownMode });
-      } catch {}
+      } catch { }
 
       // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）
       const resolveFont = (mode: "default" | "custom", selected: string): string | undefined => {
@@ -659,7 +659,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={numericFontSelected}
-                onChange={() => {}}
+                onChange={() => { }}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -682,20 +682,20 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                       systemFonts.length > 0
                         ? systemFonts
                         : [
-                            systemFontSupported
-                              ? {
-                                  label: loadingSystemFonts
-                                    ? "正在读取系统字体..."
-                                    : "点击“读取系统字体”按钮后刷新此列表",
-                                  value: "__sys_hint__",
-                                  disabled: true,
-                                }
-                              : {
-                                  label: "当前浏览器不支持系统字体读取",
-                                  value: "__sys_hint__",
-                                  disabled: true,
-                                },
-                          ],
+                          systemFontSupported
+                            ? {
+                              label: loadingSystemFonts
+                                ? "正在读取系统字体..."
+                                : "点击“读取系统字体”按钮后刷新此列表",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            }
+                            : {
+                              label: "当前浏览器不支持系统字体读取",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            },
+                        ],
                   },
                   {
                     label: "—— 内置 ——",
@@ -722,7 +722,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={textFontSelected}
-                onChange={() => {}}
+                onChange={() => { }}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -745,20 +745,20 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                       systemFonts.length > 0
                         ? systemFonts
                         : [
-                            systemFontSupported
-                              ? {
-                                  label: loadingSystemFonts
-                                    ? "正在读取系统字体..."
-                                    : "点击“读取系统字体”按钮后刷新此列表",
-                                  value: "__sys_hint__",
-                                  disabled: true,
-                                }
-                              : {
-                                  label: "当前浏览器不支持系统字体读取",
-                                  value: "__sys_hint__",
-                                  disabled: true,
-                                },
-                          ],
+                          systemFontSupported
+                            ? {
+                              label: loadingSystemFonts
+                                ? "正在读取系统字体..."
+                                : "点击“读取系统字体”按钮后刷新此列表",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            }
+                            : {
+                              label: "当前浏览器不支持系统字体读取",
+                              value: "__sys_hint__",
+                              disabled: true,
+                            },
+                        ],
                   },
                   {
                     label: "—— 内置 ——",

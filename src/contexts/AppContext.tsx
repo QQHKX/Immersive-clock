@@ -527,6 +527,56 @@ function appReducer(state: AppState, action: AppAction): AppState {
         quoteChannels: categoriesUpdatedState,
       };
 
+    case "UPDATE_QUOTE_CHANNEL_ORDER_MODE":
+      const orderModeUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id
+          ? { ...channel, orderMode: action.payload.orderMode }
+          : channel
+      );
+      const orderModeUpdatedState = {
+        channels: orderModeUpdatedChannels,
+        lastUpdated: Date.now(),
+      };
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: orderModeUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
+      return {
+        ...state,
+        quoteChannels: orderModeUpdatedState,
+      };
+
+    case "UPDATE_QUOTE_CHANNEL_INDEX":
+      const indexUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id
+          ? { ...channel, currentQuoteIndex: action.payload.index }
+          : channel
+      );
+      const indexUpdatedState = {
+        channels: indexUpdatedChannels,
+        lastUpdated: Date.now(),
+      };
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: indexUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
+      return {
+        ...state,
+        quoteChannels: indexUpdatedState,
+      };
+
     case "SET_QUOTE_AUTO_REFRESH_INTERVAL":
       const newQuoteSettings = {
         ...state.quoteSettings,

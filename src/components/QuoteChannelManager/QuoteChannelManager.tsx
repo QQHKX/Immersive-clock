@@ -10,6 +10,7 @@ import {
   FormButton,
   FormButtonGroup,
   FormCheckbox,
+  FormSegmented,
 } from "../FormComponents";
 import {
   ToggleOffIcon,
@@ -99,7 +100,7 @@ export function QuoteChannelManager({
     } finally {
       setIsLoading(false);
     }
-  }, [state.quoteChannels.channels]);
+  }, [state.quoteChannels.channels.length]); // 仅依赖长度变化，避免频繁更新
 
   /**
    * 切换渠道启用状态
@@ -139,6 +140,24 @@ export function QuoteChannelManager({
       );
     },
     []
+  );
+
+  /**
+   * 更新语录选取模式
+   */
+  const handleUpdateOrderMode = useCallback(
+    (channelId: string, orderMode: "random" | "sequential") => {
+      // 更新本地状态
+      setChannels((prev) =>
+        prev.map((channel) => (channel.id === channelId ? { ...channel, orderMode } : channel))
+      );
+      // 同时分发到全局，因为这不属于"编辑草稿"，而是即时生效的设置
+      dispatch({
+        type: "UPDATE_QUOTE_CHANNEL_ORDER_MODE",
+        payload: { id: channelId, orderMode },
+      });
+    },
+    [dispatch]
   );
 
   /**
@@ -464,6 +483,16 @@ export function QuoteChannelManager({
                 <div className={styles.editorHeader}>
                   <h5 className={styles.editorTitle}>语录编辑器</h5>
                   <div className={styles.quoteActions}>
+                    <FormSegmented
+                      value={channel.orderMode || "random"}
+                      onChange={(val) =>
+                        handleUpdateOrderMode(channel.id, val as "random" | "sequential")
+                      }
+                      options={[
+                        { value: "sequential", label: "顺序" },
+                        { value: "random", label: "随机" },
+                      ]}
+                    />
                     <FormButton
                       variant="secondary"
                       size="sm"
