@@ -12,6 +12,7 @@ import { SettingsPanel } from "../../components/SettingsPanel";
 import { Stopwatch } from "../../components/Stopwatch/Stopwatch";
 import { Study } from "../../components/Study/Study";
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { startTimeSyncManager } from "../../utils/timeSync";
 
 import styles from "./ClockPage.module.css";
 
@@ -49,6 +50,10 @@ export function ClockPage() {
     }
     prevModeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    return startTimeSyncManager();
+  }, []);
 
   /**
    * 处理页面点击事件

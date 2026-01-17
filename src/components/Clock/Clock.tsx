@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 
 import { useTimer } from "../../hooks/useTimer";
 import { formatClock } from "../../utils/formatTime";
+import { getAdjustedDate } from "../../utils/timeSync";
 
 import styles from "./Clock.module.css";
 
@@ -10,13 +11,13 @@ import styles from "./Clock.module.css";
  * 显示当前系统时间，每秒更新一次
  */
 export function Clock() {
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [currentTime, setCurrentTime] = useState<Date>(getAdjustedDate());
 
   /**
    * 更新当前时间
    */
   const updateTime = useCallback(() => {
-    setCurrentTime(new Date());
+    setCurrentTime(getAdjustedDate());
   }, []);
 
   // 使用计时器每秒更新时间

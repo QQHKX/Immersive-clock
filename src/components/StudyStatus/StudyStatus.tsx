@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 import { logger } from "../../utils/logger";
+import { getAdjustedDate } from "../../utils/timeSync";
 import { Weather } from "../Weather";
 
 import styles from "./StudyStatus.module.css";
@@ -59,7 +60,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
    */
   const timeStringToDate = useCallback((timeStr: string): Date => {
     const [hours, minutes] = timeStr.split(":").map(Number);
-    const date = new Date();
+    const date = getAdjustedDate();
     date.setHours(hours, minutes, 0, 0);
     return date;
   }, []);
@@ -68,7 +69,7 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
    * 计算当前状态
    */
   const calculateCurrentStatus = useCallback((): StudyStatusType => {
-    const now = new Date();
+    const now = getAdjustedDate();
     const currentTime = now.getHours() * 60 + now.getMinutes(); // 转换为分钟数便于比较
 
     // 按开始时间排序课程表

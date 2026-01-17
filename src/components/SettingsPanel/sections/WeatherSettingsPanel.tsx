@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 
 import type { GeolocationDiagnostics } from "../../../services/weatherService";
-
 import {
   getWeatherCache,
   clearWeatherCache,

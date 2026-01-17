@@ -7,6 +7,7 @@ import { formatClock } from "../../utils/formatTime";
 import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
 import { readStudyBackground } from "../../utils/studyBackgroundStorage";
 import { ensureInjectedFonts } from "../../utils/studyFontStorage";
+import { getAdjustedDate } from "../../utils/timeSync";
 import { MotivationalQuote } from "../MotivationalQuote";
 import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
@@ -56,7 +57,7 @@ function hexToRgba(hex: string, alpha: number = 1): string {
  */
 export function Study() {
   const { study } = useAppState();
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [currentTime, setCurrentTime] = useState<Date>(getAdjustedDate());
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -77,7 +78,7 @@ export function Study() {
    * 更新时间
    */
   const updateTime = useCallback(() => {
-    setCurrentTime(new Date());
+    setCurrentTime(getAdjustedDate());
   }, []);
 
   // 使用计时器每秒更新时间
@@ -119,14 +120,14 @@ export function Study() {
           schedule = parsed;
         }
       }
-    } catch {}
+    } catch { }
 
-    const now = new Date();
+    const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
     const toDate = (timeStr: string) => {
       const [h, m] = timeStr.split(":").map(Number);
-      const d = new Date();
+      const d = getAdjustedDate();
       d.setHours(h, m, 0, 0);
       return d;
     };
@@ -168,7 +169,7 @@ export function Study() {
   /** 工具函数：计算到指定日期的剩余天数（YYYY-MM-DD） */
   const calcDaysToDate = useCallback((dateStr?: string) => {
     if (!dateStr) return 0;
-    const now = new Date();
+    const now = getAdjustedDate();
     const [y, m, d] = dateStr.split("-").map(Number);
     if (!y || !m || !d) return 0;
     const target = new Date(y, m - 1, d);
@@ -179,7 +180,7 @@ export function Study() {
 
   /** 计算到最近一次高考（6月7日）的剩余天数（函数级注释：根据设置的目标年份计算到6月7日的剩余天数，返回非负整数） */
   const calcDaysToNextGaokao = useCallback(() => {
-    const now = new Date();
+    const now = getAdjustedDate();
     const year = study.targetYear || now.getFullYear();
     const target = new Date(year, 5, 7);
     const diffTime = target.getTime() - now.getTime();
@@ -320,7 +321,7 @@ export function Study() {
     if (item.kind === "gaokao") {
       const rawName = (item.name || "").trim();
       const m = rawName.match(/\b(19|20)\d{2}\b/); // 尝试从名称中提取四位年份
-      const year = m ? parseInt(m[0], 10) : study.targetYear || new Date().getFullYear();
+      const year = m ? parseInt(m[0], 10) : study.targetYear || getAdjustedDate().getFullYear();
       nameText = `${year}高考`;
     } else {
       nameText = item.name && item.name.trim().length > 0 ? item.name!.trim() : "自定义事件";

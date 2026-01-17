@@ -34,6 +34,19 @@ export interface AppSettings {
       hideUntil: number;
       version: string; // 存储版本号，用于与当前应用版本进行比对
     };
+    timeSync: {
+      enabled: boolean;
+      provider: "httpDate" | "timeApi";
+      httpDateUrl: string;
+      timeApiUrl: string;
+      manualOffsetMs: number;
+      offsetMs: number;
+      autoSyncEnabled: boolean;
+      autoSyncIntervalSec: number;
+      lastSyncAt: number;
+      lastRttMs?: number;
+      lastError?: string;
+    };
   };
 
   study: {
@@ -93,6 +106,19 @@ const DEFAULT_SETTINGS: AppSettings = {
       hideUntil: 0,
       version: "",
     },
+    timeSync: {
+      enabled: false,
+      provider: "httpDate",
+      httpDateUrl: "/",
+      timeApiUrl: "",
+      manualOffsetMs: 0,
+      offsetMs: 0,
+      autoSyncEnabled: false,
+      autoSyncIntervalSec: 3600,
+      lastSyncAt: 0,
+      lastRttMs: undefined,
+      lastError: undefined,
+    },
   },
   study: {
     targetYear: new Date().getFullYear() + 1,
@@ -151,7 +177,16 @@ export function getAppSettings(): AppSettings {
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
-      general: { ...DEFAULT_SETTINGS.general, ...parsed.general },
+      general: {
+        ...DEFAULT_SETTINGS.general,
+        ...parsed.general,
+        quote: { ...DEFAULT_SETTINGS.general.quote, ...(parsed.general?.quote || {}) },
+        announcement: {
+          ...DEFAULT_SETTINGS.general.announcement,
+          ...(parsed.general?.announcement || {}),
+        },
+        timeSync: { ...DEFAULT_SETTINGS.general.timeSync, ...(parsed.general?.timeSync || {}) },
+      },
       study: { ...DEFAULT_SETTINGS.study, ...parsed.study },
       noiseControl: { ...DEFAULT_SETTINGS.noiseControl, ...parsed.noiseControl },
     };
@@ -234,6 +269,26 @@ export function updateGeneralSettings(updates: Partial<AppSettings["general"]>):
   updateAppSettings((current) => ({
     general: { ...current.general, ...updates },
   }));
+}
+
+/**
+ * 更新网络校时设置（函数级注释：对 timeSync 进行深合并，避免传入 Partial 时覆盖丢字段）
+ */
+export function updateTimeSyncSettings(
+  updates:
+    | Partial<AppSettings["general"]["timeSync"]>
+    | ((current: AppSettings["general"]["timeSync"]) => Partial<AppSettings["general"]["timeSync"]>)
+): void {
+  updateAppSettings((current) => {
+    const base = current.general.timeSync;
+    const patch = typeof updates === "function" ? updates(base) : updates;
+    return {
+      general: {
+        ...current.general,
+        timeSync: { ...base, ...patch },
+      },
+    };
+  });
 }
 
 export function updateNoiseSettings(updates: Partial<AppSettings["noiseControl"]>): void {

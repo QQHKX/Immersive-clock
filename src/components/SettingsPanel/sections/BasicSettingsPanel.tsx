@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
-import { getAppSettings, updateStudySettings } from "../../../utils/appSettings";
+import { getAppSettings, updateStudySettings, updateTimeSyncSettings } from "../../../utils/appSettings";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
 import {
   importFontFile,
@@ -112,6 +112,15 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [systemFontSupported, setSystemFontSupported] = useState<boolean>(false);
   const [loadingSystemFonts, setLoadingSystemFonts] = useState<boolean>(false);
 
+  const [timeSyncEnabled, setTimeSyncEnabled] = useState<boolean>(false);
+  const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi">("httpDate");
+  const [timeSyncHttpDateUrl, setTimeSyncHttpDateUrl] = useState<string>("/");
+  const [timeSyncApiUrl, setTimeSyncApiUrl] = useState<string>("");
+  const [timeSyncManualOffsetSec, setTimeSyncManualOffsetSec] = useState<number>(0);
+  const [timeSyncAutoEnabled, setTimeSyncAutoEnabled] = useState<boolean>(false);
+  const [timeSyncAutoIntervalMin, setTimeSyncAutoIntervalMin] = useState<number>(60);
+  const [timeSyncStatus, setTimeSyncStatus] = useState(getAppSettings().general.timeSync);
+
   // 打开时优先从 AppSettings 读取上次选择的倒计时模式
   useEffect(() => {
     try {
@@ -120,6 +129,39 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         setCountdownMode(saved);
       }
     } catch { }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = getAppSettings().general.timeSync;
+      setTimeSyncEnabled(!!saved.enabled);
+      setTimeSyncProvider(saved.provider === "timeApi" ? "timeApi" : "httpDate");
+      setTimeSyncHttpDateUrl(typeof saved.httpDateUrl === "string" ? saved.httpDateUrl : "/");
+      setTimeSyncApiUrl(typeof saved.timeApiUrl === "string" ? saved.timeApiUrl : "");
+      setTimeSyncManualOffsetSec(
+        Number.isFinite(saved.manualOffsetMs) ? Math.trunc(saved.manualOffsetMs) / 1000 : 0
+      );
+      setTimeSyncAutoEnabled(!!saved.autoSyncEnabled);
+      setTimeSyncAutoIntervalMin(
+        Number.isFinite(saved.autoSyncIntervalSec) ? Math.max(1, Math.round(saved.autoSyncIntervalSec / 60)) : 60
+      );
+      setTimeSyncStatus(saved);
+    } catch { }
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        setTimeSyncStatus(getAppSettings().general.timeSync);
+      } catch { }
+    };
+    refresh();
+    window.addEventListener("timeSync:updated", refresh as EventListener);
+    window.addEventListener("settingsSaved", refresh as EventListener);
+    return () => {
+      window.removeEventListener("timeSync:updated", refresh as EventListener);
+      window.removeEventListener("settingsSaved", refresh as EventListener);
+    };
   }, []);
 
   // 独立加载字体列表
@@ -299,6 +341,16 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       const nextText = resolveFont(textFontMode, textFontSelected);
       dispatch({ type: "SET_STUDY_NUMERIC_FONT", payload: nextNumeric });
       dispatch({ type: "SET_STUDY_TEXT_FONT", payload: nextText });
+
+      updateTimeSyncSettings((current) => ({
+        enabled: timeSyncEnabled,
+        provider: timeSyncProvider,
+        httpDateUrl: timeSyncHttpDateUrl.trim() || current.httpDateUrl,
+        timeApiUrl: timeSyncApiUrl.trim(),
+        manualOffsetMs: Math.round((Number.isFinite(timeSyncManualOffsetSec) ? timeSyncManualOffsetSec : 0) * 1000),
+        autoSyncEnabled: timeSyncAutoEnabled,
+        autoSyncIntervalSec: Math.max(60, Math.round((Number.isFinite(timeSyncAutoIntervalMin) ? timeSyncAutoIntervalMin : 60) * 60)),
+      }));
     });
   }, [
     onRegisterSave,
@@ -322,6 +374,13 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     numericFontSelected,
     textFontMode,
     textFontSelected,
+    timeSyncEnabled,
+    timeSyncProvider,
+    timeSyncHttpDateUrl,
+    timeSyncApiUrl,
+    timeSyncManualOffsetSec,
+    timeSyncAutoEnabled,
+    timeSyncAutoIntervalMin,
   ]);
 
   /** 构建字体选择列表（函数级注释：合并已导入字体与内置字体，供下拉选择使用） */
@@ -428,6 +487,111 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   return (
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
       {/* 显示设置分区已前移到倒计时设置之前 */}
+
+      <FormSection title="时间与校时">
+        <FormSegmented
+          label="校时来源"
+          value={timeSyncEnabled ? timeSyncProvider : "default"}
+          options={[
+            { label: "默认", value: "default" },
+            { label: "HTTP Date", value: "httpDate" },
+            { label: "时间 API", value: "timeApi" },
+          ]}
+          onChange={(v) => {
+            if (v === "default") {
+              setTimeSyncEnabled(false);
+            } else {
+              setTimeSyncEnabled(true);
+              setTimeSyncProvider(v as "httpDate" | "timeApi");
+            }
+          }}
+        />
+
+        {timeSyncEnabled && (
+          <>
+            {timeSyncProvider === "httpDate" ? (
+              <FormInput
+                label="HTTP Date URL"
+                value={timeSyncHttpDateUrl}
+                placeholder="/"
+                onChange={(e) => setTimeSyncHttpDateUrl(e.target.value)}
+              />
+            ) : (
+              <FormInput
+                label="时间 API URL"
+                value={timeSyncApiUrl}
+                placeholder="https://example.com/time（返回 JSON：epochMs/epochSeconds/unixtime/datetime）"
+                onChange={(e) => setTimeSyncApiUrl(e.target.value)}
+              />
+            )}
+
+            <FormRow gap="sm" align="center">
+              <FormInput
+                label="手动偏移（秒）"
+                type="number"
+                variant="number"
+                step="0.1"
+                value={String(timeSyncManualOffsetSec)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = raw.trim() ? Number(raw) : 0;
+                  setTimeSyncManualOffsetSec(Number.isFinite(n) ? n : 0);
+                }}
+              />
+              <FormCheckbox
+                label="自动校时"
+                checked={timeSyncAutoEnabled}
+                onChange={(e) => setTimeSyncAutoEnabled(e.target.checked)}
+              />
+              <FormInput
+                label="间隔（分钟）"
+                type="number"
+                variant="number"
+                min={1}
+                step={1}
+                value={String(timeSyncAutoIntervalMin)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = raw.trim() ? Number(raw) : 60;
+                  setTimeSyncAutoIntervalMin(Number.isFinite(n) ? n : 60);
+                }}
+              />
+            </FormRow>
+
+            <FormButtonGroup>
+              <FormButton
+                type="button"
+                variant="secondary"
+                onClick={() => window.dispatchEvent(new CustomEvent("timeSync:syncNow"))}
+              >
+                立即校时
+              </FormButton>
+            </FormButtonGroup>
+
+            <p className={styles.infoText}>
+              当前有效偏移（已保存）：
+              {timeSyncStatus?.enabled
+                ? `${Math.trunc((timeSyncStatus.offsetMs || 0) + (timeSyncStatus.manualOffsetMs || 0))} ms`
+                : "未启用"}
+            </p>
+            <p className={styles.infoText}>
+              上次校时（已保存）：
+              {timeSyncStatus?.lastSyncAt
+                ? new Date(timeSyncStatus.lastSyncAt).toLocaleString("zh-CN")
+                : "无"}
+              {typeof timeSyncStatus?.lastRttMs === "number"
+                ? `｜RTT ${timeSyncStatus.lastRttMs} ms`
+                : ""}
+            </p>
+            {timeSyncStatus?.lastError && timeSyncStatus.lastError.trim() && (
+              <p className={styles.helpText}>错误：{timeSyncStatus.lastError}</p>
+            )}
+            <p className={styles.helpText}>
+              提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
+            </p>
+          </>
+        )}
+      </FormSection>
 
       {/* 倒计时设置 */}
       <FormSection title="倒计时设置">

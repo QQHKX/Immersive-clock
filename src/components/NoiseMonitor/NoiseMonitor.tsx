@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
-import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
 import { useAudio } from "../../hooks/useAudio";
+import { getAppSettings, updateNoiseSettings } from "../../utils/appSettings";
 import { logger } from "../../utils/logger";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import type { NoiseControlSettings } from "../../utils/noiseControlSettings";
