@@ -1,7 +1,7 @@
 /**
  * 课程表存储工具
- * 统一管理 study-schedule 与 studySchedule 两个键名的读写，保证兼容性。
- * 写入时同时写两个键；读取时优先使用连字符键名，其次驼峰键名。
+ * 课程表统一使用 AppSettings.study.schedule 持久化。
+ * 旧版本 legacy 键（study-schedule / studySchedule）的迁移与清理由 storageInitializer 负责。
  */
 import { DEFAULT_SCHEDULE, StudyPeriod } from "../components/StudyStatus/StudyStatus";
 

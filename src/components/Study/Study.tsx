@@ -6,6 +6,7 @@ import { CountdownItem } from "../../types";
 import { formatClock } from "../../utils/formatTime";
 import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
 import { readStudyBackground } from "../../utils/studyBackgroundStorage";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { ensureInjectedFonts } from "../../utils/studyFontStorage";
 import { getAdjustedDate } from "../../utils/timeSync";
 import { MotivationalQuote } from "../MotivationalQuote";
@@ -110,16 +111,10 @@ export function Study() {
 
   // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
-    const scheduleRaw =
-      localStorage.getItem("study-schedule") || localStorage.getItem("studySchedule");
     let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
     try {
-      if (scheduleRaw) {
-        const parsed = JSON.parse(scheduleRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          schedule = parsed;
-        }
-      }
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) schedule = data;
     } catch { }
 
     const now = getAdjustedDate();

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 import { logger } from "../../utils/logger";
+import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { getAdjustedDate } from "../../utils/timeSync";
 import { Weather } from "../Weather";
 
@@ -20,13 +22,13 @@ const DEFAULT_SCHEDULE: StudyPeriod[] = [
     id: "1",
     startTime: "19:10",
     endTime: "20:20",
-    name: "自定义时段 1",
+    name: "第1节自习",
   },
   {
     id: "2",
     startTime: "20:30",
     endTime: "22:20",
-    name: "自定义时段 2",
+    name: "第2节自习",
   },
 ];
 
@@ -131,17 +133,14 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
   }, [schedule, timeStringToDate]);
 
   /**
-   * 从localStorage加载课程表
+   * 加载课程表（函数级注释：优先从 AppSettings 读取，读取失败则回退默认课程表）
    */
   const loadSchedule = useCallback(() => {
     try {
-      const savedSchedule = localStorage.getItem("study-schedule");
-      if (savedSchedule) {
-        const parsed = JSON.parse(savedSchedule);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSchedule(parsed);
-          return;
-        }
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) {
+        setSchedule(data);
+        return;
       }
     } catch (error) {
       logger.error("加载课程表失败:", error);
@@ -153,6 +152,8 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
   // 组件初始化时加载课程表
   useEffect(() => {
     loadSchedule();
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => loadSchedule());
+    return off;
   }, [loadSchedule]);
 
   // 每秒更新状态

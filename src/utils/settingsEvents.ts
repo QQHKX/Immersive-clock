@@ -11,6 +11,7 @@ export const SETTINGS_EVENTS = {
   NoiseControlSettingsUpdated: "noiseControlSettingsUpdated",
   NoiseBaselineUpdated: "noiseBaselineUpdated",
   NoiseReportSettingsUpdated: "noiseReportSettingsUpdated",
+  StudyScheduleUpdated: "studyScheduleUpdated",
 } as const;
 
 // 事件名称类型（字符串字面量联合）

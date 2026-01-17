@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 
 import { logger } from "../../utils/logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { readStudySchedule, writeStudySchedule } from "../../utils/studyScheduleStorage";
 import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from "../FormComponents";
 import { PlusIcon, TrashIcon, SaveIcon } from "../Icons";
@@ -38,6 +39,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
     (newSchedule: StudyPeriod[]) => {
       try {
         writeStudySchedule(newSchedule);
+        broadcastSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, { schedule: newSchedule });
         onSave(newSchedule);
       } catch (error) {
         logger.error("保存课程表失败:", error);

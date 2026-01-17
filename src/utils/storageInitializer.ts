@@ -1,4 +1,4 @@
-import { getAppSettings, resetAppSettings } from "./appSettings";
+import { getAppSettings, resetAppSettings, updateStudySettings } from "./appSettings";
 import { logger } from "./logger";
 
 const LEGACY_KEYS = [
@@ -27,8 +27,6 @@ const LEGACY_KEYS = [
   "study-bg-color",
   "study-bg-color-alpha",
   "study-bg-image",
-  "study-schedule",
-  "studySchedule",
   "noise-monitor-baseline",
   "noise-monitor-baseline-rms",
   "noise-report-auto-popup",
@@ -68,17 +66,78 @@ const LEGACY_KEYS = [
   "weather.alert.lastTag",
 ];
 
+type LegacyStudyPeriod = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  name: string;
+};
+
+function isValidLegacyStudyPeriod(value: unknown): value is LegacyStudyPeriod {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.startTime === "string" &&
+    typeof v.endTime === "string" &&
+    typeof v.name === "string"
+  );
+}
+
+function readLegacyStudySchedule(): LegacyStudyPeriod[] | null {
+  try {
+    const raw = localStorage.getItem("study-schedule") ?? localStorage.getItem("studySchedule");
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    if (!parsed.every((p) => isValidLegacyStudyPeriod(p))) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function hasExplicitScheduleInRawAppSettings(rawSettings: string | null): boolean {
+  if (!rawSettings) return false;
+  try {
+    const parsed = JSON.parse(rawSettings) as { study?: { schedule?: unknown } };
+    return Array.isArray(parsed?.study?.schedule);
+  } catch {
+    return false;
+  }
+}
+
 export function initializeStorage() {
   logger.info("Initializing storage...");
 
   // 1. 检查是否存在 AppSettings
-  const settings = localStorage.getItem("AppSettings");
-  if (!settings) {
+  const rawSettings = localStorage.getItem("AppSettings");
+  const explicitScheduleExists = hasExplicitScheduleInRawAppSettings(rawSettings);
+  if (!rawSettings) {
     logger.info("AppSettings not found. Creating default settings...");
     resetAppSettings();
   }
 
-  // 2. 清理历史存储键
+  // 2. 迁移：旧课程表键 -> AppSettings（避免被 legacy 清理误删）
+  if (!explicitScheduleExists) {
+    const legacySchedule = readLegacyStudySchedule();
+    if (legacySchedule) {
+      try {
+        updateStudySettings({ schedule: legacySchedule });
+        localStorage.removeItem("study-schedule");
+        localStorage.removeItem("studySchedule");
+        logger.info("Migrated legacy study schedule to AppSettings.");
+      } catch (error) {
+        logger.warn("Failed to migrate legacy study schedule:", error);
+      }
+    }
+  }
+  if (explicitScheduleExists) {
+    localStorage.removeItem("study-schedule");
+    localStorage.removeItem("studySchedule");
+  }
+
+  // 3. 清理历史存储键
   let cleanedCount = 0;
   LEGACY_KEYS.forEach((key) => {
     if (localStorage.getItem(key) !== null) {
@@ -91,7 +150,7 @@ export function initializeStorage() {
     logger.info(`Cleaned up ${cleanedCount} legacy storage keys.`);
   }
 
-  // 3. 校验配置完整性（简单检查）
+  // 4. 校验配置完整性（简单检查）
   const currentSettings = getAppSettings();
   if (!currentSettings || !currentSettings.version) {
     logger.warn("AppSettings integrity check failed. Resetting...");

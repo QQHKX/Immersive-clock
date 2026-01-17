@@ -3,6 +3,7 @@ import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { FormSection } from "../FormComponents";
 import { DEFAULT_SCHEDULE, StudyPeriod } from "../StudyStatus";
 
@@ -40,20 +41,20 @@ export const NoiseStatsSummary: React.FC = () => {
     return off;
   }, []);
 
+  // 订阅：课表变化，引发统计重新计算
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () =>
+      setTick((t) => t + 1)
+    );
+    return off;
+  }, []);
+
   // 计算当前课程时段（如果存在）
   const getCurrentPeriodRange = useCallback((): { start: Date; end: Date } | null => {
     try {
-      // 支持两种键名，取存在且有效的为准
-      const savedA = localStorage.getItem("study-schedule");
-      const savedB = localStorage.getItem("studySchedule");
       let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
-      if (savedA) {
-        const parsed = JSON.parse(savedA);
-        if (Array.isArray(parsed) && parsed.length > 0) schedule = parsed;
-      } else if (savedB) {
-        const parsed = JSON.parse(savedB);
-        if (Array.isArray(parsed) && parsed.length > 0) schedule = parsed;
-      }
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) schedule = data;
 
       const toDate = (timeStr: string) => {
         const [h, m] = timeStr.split(":").map(Number);
