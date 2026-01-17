@@ -2,15 +2,10 @@
  * 公告本地存储工具函数
  * 用于管理"一周内不再显示"功能的本地存储逻辑
  */
+import { getAppSettings, updateAppSettings } from "./appSettings";
 import { logger } from "./logger";
 
-const STORAGE_KEY = "immersive-clock-announcement";
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 一周的毫秒数
-
-interface AnnouncementStorageData {
-  hideUntil: number; // 隐藏截止时间戳
-  version: string; // 应用版本号
-}
 
 /**
  * 获取当前应用版本号
@@ -18,7 +13,7 @@ interface AnnouncementStorageData {
  */
 const getCurrentVersion = (): string => {
   // 统一从环境变量获取版本号（vite.config 注入）
-  return import.meta.env.VITE_APP_VERSION;
+  return import.meta.env.VITE_APP_VERSION ?? "dev";
 };
 
 /**
@@ -27,12 +22,7 @@ const getCurrentVersion = (): string => {
  */
 export const shouldShowAnnouncement = (): boolean => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return true; // 没有存储记录，应该显示
-    }
-
-    const data: AnnouncementStorageData = JSON.parse(stored);
+    const data = getAppSettings().general.announcement;
     const currentVersion = getCurrentVersion();
     const now = Date.now();
 
@@ -60,13 +50,16 @@ export const setDontShowForWeek = (): void => {
   try {
     const currentVersion = getCurrentVersion();
     const hideUntil = Date.now() + ONE_WEEK_MS;
-
-    const data: AnnouncementStorageData = {
-      hideUntil,
-      version: currentVersion,
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    updateAppSettings((current) => ({
+      general: {
+        ...current.general,
+        announcement: {
+          ...current.general.announcement,
+          hideUntil,
+          version: currentVersion,
+        },
+      },
+    }));
   } catch (error) {
     logger.error("Error setting announcement hide preference:", error);
   }
@@ -78,7 +71,16 @@ export const setDontShowForWeek = (): void => {
  */
 export const clearAnnouncementHidePreference = (): void => {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    updateAppSettings((current) => ({
+      general: {
+        ...current.general,
+        announcement: {
+          ...current.general.announcement,
+          hideUntil: 0,
+          version: "",
+        },
+      },
+    }));
   } catch (error) {
     logger.error("Error clearing announcement hide preference:", error);
   }
@@ -96,25 +98,15 @@ export const getAnnouncementHideInfo = (): {
   remainingTime: number | null;
 } => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return {
-        isHidden: false,
-        hideUntil: null,
-        version: null,
-        remainingTime: null,
-      };
-    }
-
-    const data: AnnouncementStorageData = JSON.parse(stored);
+    const data = getAppSettings().general.announcement;
     const now = Date.now();
     const isHidden = now < data.hideUntil;
     const remainingTime = isHidden ? data.hideUntil - now : null;
 
     return {
       isHidden,
-      hideUntil: new Date(data.hideUntil),
-      version: data.version,
+      hideUntil: data.hideUntil ? new Date(data.hideUntil) : null,
+      version: data.version || null,
       remainingTime,
     };
   } catch (error) {
