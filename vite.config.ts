@@ -70,11 +70,18 @@ export default defineConfig(({ mode }) => {
             vite: {
               build: {
                 outDir: "dist-electron",
+                lib: {
+                  entry: "electron/preload.ts",
+                  formats: ["cjs"],
+                  fileName: () => "preload",
+                },
                 rollupOptions: {
                   external: ["electron"],
                   // 将预加载脚本输出为 CommonJS，以避免在打包后的 preload 中出现 ESM import
                   output: {
                     format: "cjs",
+                    inlineDynamicImports: true,
+                    entryFileNames: "preload.cjs",
                   },
                 },
               },
@@ -198,13 +205,14 @@ export default defineConfig(({ mode }) => {
           // 静态资源文件名配置
           assetFileNames: (assetInfo) => {
             // 根据文件类型设置不同的文件名模式
-            if (/\.(woff|woff2|eot|ttf|otf)$/i.test(assetInfo.name)) {
+            const assetName = assetInfo.name ?? "";
+            if (/\.(woff|woff2|eot|ttf|otf)$/i.test(assetName)) {
               return "fonts/[name]-[hash][extname]";
             }
-            if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
+            if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetName)) {
               return "images/[name]-[hash][extname]";
             }
-            if (/\.(mp3|wav|ogg|m4a)$/i.test(assetInfo.name)) {
+            if (/\.(mp3|wav|ogg|m4a)$/i.test(assetName)) {
               return "audio/[name]-[hash][extname]";
             }
 

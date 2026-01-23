@@ -129,6 +129,12 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     return hasBridge || isElectronUa;
   }, []);
 
+  const ntpAvailable = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const anyWindow = window as unknown as { electronAPI?: { timeSync?: { ntp?: unknown } } };
+    return typeof anyWindow.electronAPI?.timeSync?.ntp === "function";
+  }, []);
+
   const [timeSyncEnabled, setTimeSyncEnabled] = useState<boolean>(false);
   const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi" | "ntp">("httpDate");
   const [timeSyncHttpDateUrl, setTimeSyncHttpDateUrl] = useState<string>("/");
@@ -157,7 +163,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         saved.provider === "timeApi" || saved.provider === "httpDate" || saved.provider === "ntp"
           ? saved.provider
           : "httpDate";
-      const providerAllowed = provider !== "ntp" || isDesktop;
+      const providerAllowed = provider !== "ntp" || ntpAvailable;
 
       setTimeSyncEnabled(!!saved.enabled && providerAllowed);
       setTimeSyncProvider(providerAllowed ? provider : "httpDate");
@@ -174,7 +180,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       );
       setTimeSyncStatus(saved);
     } catch { }
-  }, [isDesktop]);
+  }, [ntpAvailable]);
 
   useEffect(() => {
     const refresh = () => {
@@ -545,7 +551,15 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             { label: "默认", value: "default" },
             { label: "HTTP Date", value: "httpDate" },
             { label: "时间 API", value: "timeApi" },
-            ...(isDesktop ? [{ label: "NTP（桌面端）", value: "ntp" }] : []),
+            ...(isDesktop
+              ? [
+                {
+                  label: "NTP（桌面端）",
+                  value: "ntp",
+                  disabled: !ntpAvailable,
+                },
+              ]
+              : []),
           ]}
           onChange={(v) => {
             if (v === "default") {
@@ -659,13 +673,20 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             {timeSyncStatus?.lastError && timeSyncStatus.lastError.trim() && (
               <p className={styles.helpText}>错误：{timeSyncStatus.lastError}</p>
             )}
+            {isDesktop && !ntpAvailable && (
+              <p className={styles.helpText}>
+                提示：检测到桌面端环境，但 NTP 能力未就绪（preload 未加载到最新版本）；请重新启动桌面端或重新构建桌面端产物。
+              </p>
+            )}
             {timeSyncProvider === "httpDate" && (
               <p className={styles.helpText}>
                 提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
               </p>
             )}
             {timeSyncProvider === "ntp" && (
-              <p className={styles.helpText}>提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截。</p>
+              <p className={styles.helpText}>
+                提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截；若提示“桌面端不可用”，请先重建桌面端产物。
+              </p>
             )}
           </>
         )}

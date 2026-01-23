@@ -40,6 +40,26 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null;
 
+/**
+ * 解析 preload 脚本路径（函数级注释：兼容不同构建环境输出的 preload 扩展名，避免加载到旧产物或加载失败）
+ */
+function resolvePreloadPath(): string {
+  if (process.env.VITE_DEV_SERVER_URL) {
+    const devPreload = path.resolve(process.cwd(), "electron", "preload.dev.cjs");
+    if (fs.existsSync(devPreload) && fs.statSync(devPreload).isFile()) return devPreload;
+  }
+
+  const candidates = ["preload.cjs", "preload.js", "preload.mjs"];
+  for (const name of candidates) {
+    const direct = path.join(__dirname, name);
+    if (fs.existsSync(direct) && fs.statSync(direct).isFile()) return direct;
+
+    const fromCwd = path.resolve(process.cwd(), "dist-electron", name);
+    if (fs.existsSync(fromCwd) && fs.statSync(fromCwd).isFile()) return fromCwd;
+  }
+  return path.join(__dirname, "preload.js");
+}
+
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   const map: Record<string, string> = {
@@ -114,7 +134,7 @@ function createWindow() {
     title: "沉浸式时钟",
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: resolvePreloadPath(),
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
