@@ -159,7 +159,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     showRealtimeDb: true,
     avgWindowSec: 1,
     baselineDisplayDb: 40,
-    baselineRms: 0,
+    baselineRms: 0.000414581087327115,
     reportAutoPopup: true,
     alertSoundEnabled: false,
   },
@@ -176,6 +176,7 @@ export function getAppSettings(): AppSettings {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(raw);
+    const parsedStudy = parsed.study || {};
 
     // 可以在此添加简单的版本检查或结构校验逻辑
     // 目前先信任存储结构，如有新增字段则通过与默认配置合并补齐
@@ -193,7 +194,14 @@ export function getAppSettings(): AppSettings {
         },
         timeSync: { ...DEFAULT_SETTINGS.general.timeSync, ...(parsed.general?.timeSync || {}) },
       },
-      study: { ...DEFAULT_SETTINGS.study, ...parsed.study },
+      study: {
+        ...DEFAULT_SETTINGS.study,
+        ...parsedStudy,
+        display: { ...DEFAULT_SETTINGS.study.display, ...(parsedStudy.display || {}) },
+        style: { ...DEFAULT_SETTINGS.study.style, ...(parsedStudy.style || {}) },
+        alerts: { ...DEFAULT_SETTINGS.study.alerts, ...(parsedStudy.alerts || {}) },
+        background: { ...DEFAULT_SETTINGS.study.background, ...(parsedStudy.background || {}) },
+      },
       noiseControl: { ...DEFAULT_SETTINGS.noiseControl, ...parsed.noiseControl },
     };
   } catch (error) {
@@ -232,10 +240,37 @@ export function updateAppSettings(
     // 为安全起见，这里在 updates 含有对应分区时再做一次合并
 
     if (updates.general) {
-      nextSettings.general = { ...current.general, ...updates.general };
+      const generalUpdates = updates.general;
+      nextSettings.general = {
+        ...current.general,
+        ...generalUpdates,
+        quote: generalUpdates.quote
+          ? { ...current.general.quote, ...generalUpdates.quote }
+          : current.general.quote,
+        announcement: generalUpdates.announcement
+          ? { ...current.general.announcement, ...generalUpdates.announcement }
+          : current.general.announcement,
+        timeSync: generalUpdates.timeSync
+          ? { ...current.general.timeSync, ...generalUpdates.timeSync }
+          : current.general.timeSync,
+      };
     }
     if (updates.study) {
-      nextSettings.study = { ...current.study, ...updates.study };
+      const studyUpdates = updates.study;
+      nextSettings.study = {
+        ...current.study,
+        ...studyUpdates,
+        display: studyUpdates.display
+          ? { ...current.study.display, ...studyUpdates.display }
+          : current.study.display,
+        style: studyUpdates.style ? { ...current.study.style, ...studyUpdates.style } : current.study.style,
+        alerts: studyUpdates.alerts
+          ? { ...current.study.alerts, ...studyUpdates.alerts }
+          : current.study.alerts,
+        background: studyUpdates.background
+          ? { ...current.study.background, ...studyUpdates.background }
+          : current.study.background,
+      };
     }
     if (updates.noiseControl) {
       nextSettings.noiseControl = { ...current.noiseControl, ...updates.noiseControl };

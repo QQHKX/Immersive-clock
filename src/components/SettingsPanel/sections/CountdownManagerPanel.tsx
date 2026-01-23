@@ -2,7 +2,14 @@ import React, { useEffect, useState, useCallback } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
-import { FormRow, FormInput, FormButton, FormButtonGroup, FormSlider } from "../../FormComponents";
+import {
+  FormRow,
+  FormInput,
+  FormButton,
+  FormButtonGroup,
+  FormSlider,
+  FormSegmented,
+} from "../../FormComponents";
 import styles from "../SettingsPanel.module.css";
 
 interface CountdownDraftItem {
@@ -10,6 +17,7 @@ interface CountdownDraftItem {
   kind: "gaokao" | "custom";
   name?: string;
   targetDate?: string; // YYYY-MM-DD
+  styleMode?: "default" | "custom";
   bgColor?: string;
   bgOpacity?: number;
   textColor?: string;
@@ -43,6 +51,17 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
       init.map((it, idx) => ({
         ...it,
         order: idx,
+        styleMode:
+          it.styleMode === "default" || it.styleMode === "custom"
+            ? it.styleMode
+            : (it.bgColor && it.bgColor.trim().length > 0) ||
+                (typeof it.bgOpacity === "number" && it.bgOpacity !== 0) ||
+                (it.textColor && it.textColor.trim().length > 0) ||
+                (typeof it.textOpacity === "number" && it.textOpacity !== 1) ||
+                (it.digitColor && it.digitColor.trim().length > 0) ||
+                typeof it.digitOpacity === "number"
+              ? "custom"
+              : "default",
         bgOpacity: typeof it.bgOpacity === "number" ? it.bgOpacity : 0,
         textOpacity: typeof it.textOpacity === "number" ? it.textOpacity : 1,
         digitColor: it.digitColor,
@@ -55,26 +74,35 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
   useEffect(() => {
     onRegisterSave?.(() => {
       // 重新编号 order 并持久化，确保字段完整且按类型规范
-      const normalized: CountdownItem[] = items.map((it, idx) => ({
-        id: it.id,
-        kind: it.kind,
-        name:
-          it.name && it.name.trim().length > 0
-            ? it.name.trim()
-            : it.kind === "gaokao"
-              ? "高考倒计时"
-              : "自定义事件",
-        targetDate:
-          it.kind === "custom" ? (it.targetDate && it.targetDate.trim()) || "" : undefined,
-        bgColor: it.bgColor && it.bgColor.trim().length > 0 ? it.bgColor.trim() : undefined,
-        bgOpacity: typeof it.bgOpacity === "number" ? it.bgOpacity : 0,
-        textColor: it.textColor && it.textColor.trim().length > 0 ? it.textColor.trim() : undefined,
-        textOpacity: typeof it.textOpacity === "number" ? it.textOpacity : 1,
-        digitColor:
-          it.digitColor && it.digitColor.trim().length > 0 ? it.digitColor.trim() : undefined,
-        digitOpacity: typeof it.digitOpacity === "number" ? it.digitOpacity : undefined,
-        order: idx,
-      }));
+      const normalized: CountdownItem[] = items.map((it, idx) => {
+        const isCustomStyle = (it.styleMode ?? "default") === "custom";
+        return {
+          id: it.id,
+          kind: it.kind,
+          name:
+            it.name && it.name.trim().length > 0
+              ? it.name.trim()
+              : it.kind === "gaokao"
+                ? "高考倒计时"
+                : "自定义事件",
+          targetDate:
+            it.kind === "custom" ? (it.targetDate && it.targetDate.trim()) || "" : undefined,
+          bgColor:
+            isCustomStyle && it.bgColor && it.bgColor.trim().length > 0 ? it.bgColor.trim() : undefined,
+          bgOpacity: isCustomStyle && typeof it.bgOpacity === "number" ? it.bgOpacity : 0,
+          textColor:
+            isCustomStyle && it.textColor && it.textColor.trim().length > 0
+              ? it.textColor.trim()
+              : undefined,
+          textOpacity: isCustomStyle && typeof it.textOpacity === "number" ? it.textOpacity : 1,
+          digitColor:
+            isCustomStyle && it.digitColor && it.digitColor.trim().length > 0
+              ? it.digitColor.trim()
+              : undefined,
+          digitOpacity: isCustomStyle && typeof it.digitOpacity === "number" ? it.digitOpacity : undefined,
+          order: idx,
+        };
+      });
       dispatch({ type: "SET_COUNTDOWN_ITEMS", payload: normalized });
     });
   }, [onRegisterSave, items, dispatch]);
@@ -89,6 +117,7 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
         kind: "custom",
         name: "期末考试",
         targetDate: "",
+        styleMode: "default",
         order: nextOrder,
         bgOpacity: 0,
         textOpacity: 1,
@@ -101,7 +130,15 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
     const nextOrder = items.length;
     setItems([
       ...items,
-      { id, kind: "gaokao", name: "高考倒计时", order: nextOrder, bgOpacity: 0, textOpacity: 1 },
+      {
+        id,
+        kind: "gaokao",
+        name: "高考倒计时",
+        styleMode: "default",
+        order: nextOrder,
+        bgOpacity: 0,
+        textOpacity: 1,
+      },
     ]);
   }, [items]);
 
@@ -184,62 +221,75 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
                     onChange={(e) => updateItem(it.id, { targetDate: e.target.value })}
                   />
                 )}
-
-                <FormInput
-                  label="背景色"
-                  type="color"
-                  value={it.bgColor || "#121212"}
-                  onChange={(e) => updateItem(it.id, { bgColor: e.target.value })}
-                  style={{ width: 36, height: 36, padding: 0 }}
-                />
-                <FormSlider
-                  label="背景透明度"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={typeof it.bgOpacity === "number" ? it.bgOpacity : 0}
-                  onChange={(v) => updateItem(it.id, { bgOpacity: v })}
-                  formatValue={(v) => `${Math.round(v * 100)}%`}
-                />
-                <FormInput
-                  label="文字色"
-                  type="color"
-                  value={it.textColor || "#E0E0E0"}
-                  onChange={(e) => updateItem(it.id, { textColor: e.target.value })}
-                  style={{ width: 36, height: 36, padding: 0 }}
-                />
-                <FormSlider
-                  label="文字透明度"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={typeof it.textOpacity === "number" ? it.textOpacity : 1}
-                  onChange={(v) => updateItem(it.id, { textOpacity: v })}
-                  formatValue={(v) => `${Math.round(v * 100)}%`}
-                />
-                <FormInput
-                  label="数字颜色"
-                  type="color"
-                  value={it.digitColor ?? (study.digitColor || "#03DAC6")}
-                  onChange={(e) => updateItem(it.id, { digitColor: e.target.value })}
-                  style={{ width: 36, height: 36, padding: 0 }}
-                />
-                <FormSlider
-                  label="数字透明度"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={
-                    typeof it.digitOpacity === "number"
-                      ? it.digitOpacity
-                      : typeof study.digitOpacity === "number"
-                        ? study.digitOpacity
-                        : 1
-                  }
-                  onChange={(v) => updateItem(it.id, { digitOpacity: v })}
-                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                <FormSegmented
+                  label="样式"
+                  value={it.styleMode ?? "default"}
+                  options={[
+                    { label: "默认", value: "default" },
+                    { label: "自定义", value: "custom" },
+                  ]}
+                  onChange={(v) => updateItem(it.id, { styleMode: v as "default" | "custom" })}
                 />
               </FormRow>
+
+              {(it.styleMode ?? "default") === "custom" && (
+                <FormRow gap="sm" align="center">
+                  <FormInput
+                    label="背景色"
+                    type="color"
+                    value={it.bgColor || "#121212"}
+                    onChange={(e) => updateItem(it.id, { bgColor: e.target.value })}
+                    style={{ width: 36, height: 36, padding: 0 }}
+                  />
+                  <FormSlider
+                    label="背景透明度"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={typeof it.bgOpacity === "number" ? it.bgOpacity : 0}
+                    onChange={(v) => updateItem(it.id, { bgOpacity: v })}
+                    formatValue={(v) => `${Math.round(v * 100)}%`}
+                  />
+                  <FormInput
+                    label="文字色"
+                    type="color"
+                    value={it.textColor || "#E0E0E0"}
+                    onChange={(e) => updateItem(it.id, { textColor: e.target.value })}
+                    style={{ width: 36, height: 36, padding: 0 }}
+                  />
+                  <FormSlider
+                    label="文字透明度"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={typeof it.textOpacity === "number" ? it.textOpacity : 1}
+                    onChange={(v) => updateItem(it.id, { textOpacity: v })}
+                    formatValue={(v) => `${Math.round(v * 100)}%`}
+                  />
+                  <FormInput
+                    label="数字颜色"
+                    type="color"
+                    value={it.digitColor ?? (study.digitColor || "#03DAC6")}
+                    onChange={(e) => updateItem(it.id, { digitColor: e.target.value })}
+                    style={{ width: 36, height: 36, padding: 0 }}
+                  />
+                  <FormSlider
+                    label="数字透明度"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={
+                      typeof it.digitOpacity === "number"
+                        ? it.digitOpacity
+                        : typeof study.digitOpacity === "number"
+                          ? study.digitOpacity
+                          : 1
+                    }
+                    onChange={(v) => updateItem(it.id, { digitOpacity: v })}
+                    formatValue={(v) => `${Math.round(v * 100)}%`}
+                  />
+                </FormRow>
+              )}
             </div>
           </div>
         ))}

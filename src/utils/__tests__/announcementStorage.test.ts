@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import { setDontShowForWeek, shouldShowAnnouncement } from "../announcementStorage";
+import {
+  clearAnnouncementHidePreference,
+  getAnnouncementHideInfo,
+  setDontShowForWeek,
+  shouldShowAnnouncement,
+} from "../announcementStorage";
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
@@ -80,5 +85,26 @@ describe("announcementStorage", () => {
     vi.spyOn(Date, "now").mockImplementation(() => 1000);
     expect(shouldShowAnnouncement()).toBe(true);
   });
-});
 
+  it("getAnnouncementHideInfo 能返回隐藏状态与剩余时间", () => {
+    const baseNow = 10_000;
+    vi.spyOn(Date, "now").mockImplementation(() => baseNow);
+    setDontShowForWeek();
+
+    vi.spyOn(Date, "now").mockImplementation(() => baseNow + 1234);
+    const info = getAnnouncementHideInfo();
+    expect(info.isHidden).toBe(true);
+    expect(info.hideUntil).not.toBeNull();
+    expect(typeof info.remainingTime).toBe("number");
+    expect((info.remainingTime || 0) > 0).toBe(true);
+  });
+
+  it("clearAnnouncementHidePreference 会清空隐藏设置", () => {
+    vi.spyOn(Date, "now").mockImplementation(() => 1000);
+    setDontShowForWeek();
+    expect(getAnnouncementHideInfo().isHidden).toBe(true);
+
+    clearAnnouncementHidePreference();
+    expect(getAnnouncementHideInfo().isHidden).toBe(false);
+  });
+});

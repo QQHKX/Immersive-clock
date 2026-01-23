@@ -481,22 +481,6 @@ export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPre
   }
 }
 
-export async function geoCityLookup(lat: number, lon: number): Promise<unknown> {
-  const url = `https://${QWEATHER_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(`${lon},${lat}`)}&lang=zh`;
-  try {
-    const headers: Record<string, string> = {
-      "X-QW-Api-Key": QWEATHER_API_KEY,
-      "User-Agent": "QWeatherTest/1.0",
-      "Accept-Encoding": "gzip, deflate",
-    };
-    const jwt = import.meta.env.VITE_QWEATHER_JWT;
-    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-    return await httpGetJson(url, headers);
-  } catch (e: unknown) {
-    return { error: String(e) };
-  }
-}
-
 export async function reverseGeocodeOSM(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
   try {
@@ -556,17 +540,72 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
 }
 
 /**
+ * 从高德反向地理编码响应中提取“城市级名称”（函数级中文注释）。
+ * - 直辖市/部分地区可能 city 为空，此时回退到 district/province。
+ */
+function extractCityFromAmapReverse(raw: unknown): string | null {
+  const data = raw as Partial<AmapReverseResponse> | null | undefined;
+  const comp = data?.regeocode?.addressComponent as
+    | {
+        city?: unknown;
+        district?: unknown;
+        province?: unknown;
+      }
+    | undefined;
+
+  const cityValue = comp?.city;
+  if (typeof cityValue === "string" && cityValue.trim()) return cityValue.trim();
+  if (Array.isArray(cityValue)) {
+    const first = cityValue.find((v) => typeof v === "string" && v.trim());
+    if (typeof first === "string") return first.trim();
+  }
+
+  const district = comp?.district;
+  if (typeof district === "string" && district.trim()) return district.trim();
+
+  const province = comp?.province;
+  if (typeof province === "string" && province.trim()) return province.trim();
+
+  return null;
+}
+
+/**
+ * 从 OSM 反向地理编码地址对象中提取“城市级名称”（函数级中文注释）。
+ */
+function extractCityFromOsmAddress(raw: unknown): string | null {
+  const addr = raw as Partial<OsmAddress> | null | undefined;
+  const city =
+    addr?.city ||
+    addr?.town ||
+    addr?.village ||
+    addr?.county ||
+    addr?.state ||
+    addr?.country;
+  if (typeof city === "string" && city.trim()) return city.trim();
+  return null;
+}
+
+/**
+ * 根据反向地理编码结果抽取城市名（函数级中文注释）。
+ */
+function extractCityFromAddressInfo(info: AddressInfo | null): string | null {
+  if (!info) return null;
+  if (info.source === "Amap") return extractCityFromAmapReverse(info.raw);
+  if (info.source === "OSM") return extractCityFromOsmAddress(info.raw);
+  return null;
+}
+
+/**
  * 构建天气数据获取流程（函数级注释）：
  * - 优先使用本地缓存的地理坐标与地理反编码结果（通过 weatherStorage 管理）；
  * - 缓存失效时按序执行定位：浏览器 Geolocation → 高德 IP → 其他 IP；
- * - 反编码（高德/OSM）与和风城市查询同样进行缓存，避免重复请求；
+ * - 反编码（高德/OSM）进行缓存，避免重复请求；
  * - 始终实时请求和风实时天气（不缓存），以保证数据新鲜。
  */
 export async function buildWeatherFlow(): Promise<{
   coords: Coords | null;
   coordsSource?: string | null;
   city?: string | null;
-  locationId?: string | null;
   addressInfo?: AddressInfo | null;
   weather?: WeatherNow | null;
 }> {
@@ -615,9 +654,8 @@ export async function buildWeatherFlow(): Promise<{
     return { coords: null, coordsSource: null };
   }
 
-  // 2. 城市与 LocationID 缓存
+  // 2. 城市与地址缓存
   let city: string | null = null;
-  let locationId: string | null = null;
   let addressInfo: AddressInfo | null = null;
 
   const cachedLoc = getValidLocation(coords.lat, coords.lon);
@@ -625,7 +663,6 @@ export async function buildWeatherFlow(): Promise<{
   if (cachedLoc) {
     // 命中缓存
     city = cachedLoc.city || null;
-    locationId = cachedLoc.locationId || null;
     addressInfo = {
       address: cachedLoc.address,
       source: cachedLoc.addressSource,
@@ -633,35 +670,25 @@ export async function buildWeatherFlow(): Promise<{
   } else {
     // 缓存失效，重新查询
 
-    // 2.1 城市查询 (GeoAPI)
-    const lookup = (await geoCityLookup(coords.lat, coords.lon)) as {
-      location?: Array<{ name?: string; id?: string }>;
-    };
-    if (lookup && Array.isArray(lookup.location) && lookup.location.length > 0) {
-      const first = lookup.location[0];
-      city = first?.name || null;
-      locationId = first?.id || null;
-    }
-
-    // 2.2 反向地理编码 (Amap -> OSM)
+    // 2. 反向地理编码 (Amap -> OSM)
     let tmp = await reverseGeocodeAmap(coords.lat, coords.lon);
     if (!tmp.address) {
       const fb = await reverseGeocodeOSM(coords.lat, coords.lon);
       if (fb?.address) tmp = fb;
     }
     addressInfo = tmp;
+    city = extractCityFromAddressInfo(addressInfo);
 
     // 更新缓存
     updateLocationCache(coords.lat, coords.lon, {
       city: city || undefined,
-      locationId: locationId || undefined,
       address: addressInfo.address,
       addressSource: addressInfo.source,
     });
   }
 
   // 3. 实时天气始终请求最新
-  const locationParam = locationId || `${coords.lon},${coords.lat}`;
+  const locationParam = `${coords.lon},${coords.lat}`;
   const weather = await fetchWeatherNow(locationParam);
-  return { coords, coordsSource, city, locationId, addressInfo, weather };
+  return { coords, coordsSource, city, addressInfo, weather };
 }

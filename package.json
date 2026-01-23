@@ -2,7 +2,7 @@
   "name": "immersive-clock",
   "private": true,
   "description": "一款支持时钟、倒计时、秒表与自习模式的轻量时钟应用。",
-  "version": "3.12.3",
+  "version": "3.12.4",
   "author": "QQHKX <contact@qqhkx.com>",
   "homepage": "https://qqhkx.com",
   "license": "MIT",
@@ -20,6 +20,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e:install": "playwright install",
+    "pretest:e2e": "node scripts/ensure-playwright.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -31,6 +33,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/marked": "^5.0.2",
     "@types/node": "^24.1.0",
     "@types/react": "^18.0.27",
@@ -48,6 +53,7 @@
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^15.0.0",
+    "jsdom": "^26.0.0",
     "prettier": "^3.3.3",
     "terser": "^5.43.1",
     "typescript": "^5.4.0",
@@ -56,6 +62,7 @@
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
     "vite-plugin-pwa": "^1.0.3",
+    "@vitest/coverage-v8": "^1.6.1",
     "vitest": "^1.6.0",
     "workbox-window": "^7.3.0",
     "@playwright/test": "^1.48.0"

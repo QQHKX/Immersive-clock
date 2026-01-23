@@ -28,7 +28,6 @@ export interface WeatherCache {
   // 2. 城市与地址缓存 (依赖坐标)
   location?: {
     city?: string;
-    locationId?: string;
     address?: string;
     addressSource?: string;
     signature: string; // lat,lon 的签名
@@ -121,7 +120,6 @@ export function updateLocationCache(
   lon: number,
   data: {
     city?: string;
-    locationId?: string;
     address?: string;
     addressSource?: string;
   }
@@ -139,7 +137,6 @@ export function updateLocationCache(
         signature,
         updatedAt: Date.now(),
         city: data.city ?? existing.city,
-        locationId: data.locationId ?? existing.locationId,
         address: data.address ?? existing.address,
         addressSource: data.addressSource ?? existing.addressSource,
       },

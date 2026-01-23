@@ -57,6 +57,19 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     statusText: "未在自习时间",
   });
 
+  const normalizeSchedule = useCallback((input: StudyPeriod[]): StudyPeriod[] => {
+    return input.map((p, index) => {
+      const safeName = typeof p.name === "string" ? p.name.trim() : "";
+      return {
+        ...p,
+        id: String(p.id ?? ""),
+        startTime: String(p.startTime ?? ""),
+        endTime: String(p.endTime ?? ""),
+        name: safeName.length > 0 ? safeName : `自定义时段${index + 1}`,
+      };
+    });
+  }, []);
+
   /**
    * 将时间字符串转换为今天的Date对象
    */
@@ -67,70 +80,77 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     return date;
   }, []);
 
+  const calculateStatusForSchedule = useCallback(
+    (targetSchedule: StudyPeriod[]): StudyStatusType => {
+      const now = getAdjustedDate();
+      const currentTime = now.getHours() * 60 + now.getMinutes(); // 转换为分钟数便于比较
+
+      // 按开始时间排序课程表
+      const sortedSchedule = [...targetSchedule].sort((a, b) => {
+        const timeA = parseInt(a.startTime.replace(":", ""));
+        const timeB = parseInt(b.startTime.replace(":", ""));
+        return timeA - timeB;
+      });
+
+      for (const period of sortedSchedule) {
+        const startTime = timeStringToDate(period.startTime);
+        const endTime = timeStringToDate(period.endTime);
+        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+        const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+        // 检查是否在当前时间段内
+        if (currentTime >= startMinutes && currentTime <= endMinutes) {
+          const totalDuration = endMinutes - startMinutes;
+          const elapsed = currentTime - startMinutes;
+          const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+
+          return {
+            isInClass: true,
+            currentPeriod: period,
+            progress,
+            statusText: period.name,
+          };
+        }
+      }
+
+      // 检查是否在课间休息时间
+      for (let i = 0; i < sortedSchedule.length - 1; i++) {
+        const currentPeriodEnd = timeStringToDate(sortedSchedule[i].endTime);
+        const nextPeriodStart = timeStringToDate(sortedSchedule[i + 1].startTime);
+        const currentEndMinutes = currentPeriodEnd.getHours() * 60 + currentPeriodEnd.getMinutes();
+        const nextStartMinutes = nextPeriodStart.getHours() * 60 + nextPeriodStart.getMinutes();
+
+        if (currentTime > currentEndMinutes && currentTime <= nextStartMinutes) {
+          const totalBreakDuration = nextStartMinutes - currentEndMinutes;
+          const breakElapsed = currentTime - currentEndMinutes;
+          const progress = Math.min(100, Math.max(0, (breakElapsed / totalBreakDuration) * 100));
+
+          return {
+            isInClass: false,
+            currentPeriod: sortedSchedule[i],
+            progress,
+            statusText: `${sortedSchedule[i].name} 下课`,
+          };
+        }
+      }
+
+      // 不在任何自习时间段内
+      return {
+        isInClass: false,
+        currentPeriod: null,
+        progress: 0,
+        statusText: "未在自习时间",
+      };
+    },
+    [timeStringToDate]
+  );
+
   /**
    * 计算当前状态
    */
   const calculateCurrentStatus = useCallback((): StudyStatusType => {
-    const now = getAdjustedDate();
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // 转换为分钟数便于比较
-
-    // 按开始时间排序课程表
-    const sortedSchedule = [...schedule].sort((a, b) => {
-      const timeA = parseInt(a.startTime.replace(":", ""));
-      const timeB = parseInt(b.startTime.replace(":", ""));
-      return timeA - timeB;
-    });
-
-    for (const period of sortedSchedule) {
-      const startTime = timeStringToDate(period.startTime);
-      const endTime = timeStringToDate(period.endTime);
-      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-      const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-
-      // 检查是否在当前时间段内
-      if (currentTime >= startMinutes && currentTime <= endMinutes) {
-        const totalDuration = endMinutes - startMinutes;
-        const elapsed = currentTime - startMinutes;
-        const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-
-        return {
-          isInClass: true,
-          currentPeriod: period,
-          progress,
-          statusText: period.name,
-        };
-      }
-    }
-
-    // 检查是否在课间休息时间
-    for (let i = 0; i < sortedSchedule.length - 1; i++) {
-      const currentPeriodEnd = timeStringToDate(sortedSchedule[i].endTime);
-      const nextPeriodStart = timeStringToDate(sortedSchedule[i + 1].startTime);
-      const currentEndMinutes = currentPeriodEnd.getHours() * 60 + currentPeriodEnd.getMinutes();
-      const nextStartMinutes = nextPeriodStart.getHours() * 60 + nextPeriodStart.getMinutes();
-
-      if (currentTime > currentEndMinutes && currentTime <= nextStartMinutes) {
-        const totalBreakDuration = nextStartMinutes - currentEndMinutes;
-        const breakElapsed = currentTime - currentEndMinutes;
-        const progress = Math.min(100, Math.max(0, (breakElapsed / totalBreakDuration) * 100));
-
-        return {
-          isInClass: false,
-          currentPeriod: sortedSchedule[i],
-          progress,
-          statusText: `${sortedSchedule[i].name} 下课`,
-        };
-      }
-    }
-
-    // 不在任何自习时间段内
-    return {
-      isInClass: false,
-      currentPeriod: null,
-      progress: 0,
-      statusText: "未在自习时间",
-    };
-  }, [schedule, timeStringToDate]);
+    return calculateStatusForSchedule(schedule);
+  }, [schedule, calculateStatusForSchedule]);
 
   /**
    * 加载课程表（函数级注释：优先从 AppSettings 读取，读取失败则回退默认课程表）
@@ -139,7 +159,9 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) {
-        setSchedule(data);
+        const next = normalizeSchedule(data);
+        setSchedule(next);
+        setCurrentStatus(calculateStatusForSchedule(next));
         return;
       }
     } catch (error) {
@@ -147,13 +169,25 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
     }
     // 如果加载失败或没有保存的数据，使用默认课程表
     setSchedule(DEFAULT_SCHEDULE);
-  }, []);
+    setCurrentStatus(calculateStatusForSchedule(DEFAULT_SCHEDULE));
+  }, [normalizeSchedule, calculateStatusForSchedule]);
 
   // 组件初始化时加载课程表
   useEffect(() => {
     loadSchedule();
-    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => loadSchedule());
-    return off;
+    const offSchedule = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => loadSchedule());
+    const offSaved = subscribeSettingsEvent(SETTINGS_EVENTS.SettingsSaved, () => loadSchedule());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "AppSettings" || e.key === "study-schedule" || e.key === "studySchedule") {
+        loadSchedule();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      offSchedule();
+      offSaved();
+      window.removeEventListener("storage", onStorage);
+    };
   }, [loadSchedule]);
 
   // 每秒更新状态

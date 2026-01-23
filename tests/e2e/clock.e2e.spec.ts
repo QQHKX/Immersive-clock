@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 test("首页可以正常加载并展示主时钟界面", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle(/Immersive Clock/i);
+  await expect(page).toHaveTitle(/沉浸式时钟/i);
 
   const main = page.getByRole("main", { name: "时钟应用主界面" });
   await expect(main).toBeVisible();

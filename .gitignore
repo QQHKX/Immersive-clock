@@ -6,6 +6,8 @@ dist
 dist-ssr
 dist-electron
 release
+out
+build
 *.exe
 *.dmg
 *.AppImage
@@ -45,6 +47,7 @@ coverage
 
 # 缓存目录
 .cache
+.npm-cache
 .temp
 .vercel
 
@@ -60,7 +63,9 @@ coverage
 .stylelintcache
 dev-dist/
 Thumbs.db
+desktop.ini
 *.tsbuildinfo
+.history/
 
 # Playwright 测试报告
 playwright-report/

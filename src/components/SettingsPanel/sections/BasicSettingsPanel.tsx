@@ -108,6 +108,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [singleTextOpacity, setSingleTextOpacity] = useState<number>(1);
   // 全局数字透明度草稿
   const [digitOpacity, setDigitOpacity] = useState<number>(1);
+  const [countdownStyleMode, setCountdownStyleMode] = useState<"default" | "custom">("default");
   // 字体设置草稿（来源分段：默认 / 自定义字体）
   const [numericFontMode, setNumericFontMode] = useState<"default" | "custom">("default");
   const [textFontMode, setTextFontMode] = useState<"default" | "custom">("default");
@@ -225,22 +226,33 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     setBgImage(bg.imageDataUrl ?? null);
     setBgImageFileName("");
 
+    const nextDigitColor = study.digitColor ?? "";
+    setDigitColor(nextDigitColor);
+
     // 根据现有 countdownItems 推断模式，并填充单项颜色
     const items = study.countdownItems || [];
+    let nextSingleBgColor = "";
+    let nextSingleTextColor = "";
+    let nextSingleBgOpacity = 0;
+    let nextSingleTextOpacity = 1;
     if (Array.isArray(items) && items.length > 1) {
       setCountdownMode("multi");
-      setSingleBgColor("");
-      setSingleTextColor("");
-      setSingleBgOpacity(0);
-      setSingleTextOpacity(1);
+      setSingleBgColor(nextSingleBgColor);
+      setSingleTextColor(nextSingleTextColor);
+      setSingleBgOpacity(nextSingleBgOpacity);
+      setSingleTextOpacity(nextSingleTextOpacity);
     } else if (Array.isArray(items) && items.length === 1) {
       const it = items[0];
       if (it.kind === "gaokao") {
         setCountdownMode("gaokao");
-        setSingleBgColor(it.bgColor || "");
-        setSingleTextColor(it.textColor || "");
-        setSingleBgOpacity(typeof it.bgOpacity === "number" ? it.bgOpacity : 0);
-        setSingleTextOpacity(typeof it.textOpacity === "number" ? it.textOpacity : 1);
+        nextSingleBgColor = it.bgColor || "";
+        nextSingleTextColor = it.textColor || "";
+        nextSingleBgOpacity = typeof it.bgOpacity === "number" ? it.bgOpacity : 0;
+        nextSingleTextOpacity = typeof it.textOpacity === "number" ? it.textOpacity : 1;
+        setSingleBgColor(nextSingleBgColor);
+        setSingleTextColor(nextSingleTextColor);
+        setSingleBgOpacity(nextSingleBgOpacity);
+        setSingleTextOpacity(nextSingleTextOpacity);
         // 名称可编辑但不需要日期
         setDraftCustomName(it.name || "");
         setDraftCustomDate("");
@@ -248,20 +260,33 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         setCountdownMode("single");
         setDraftCustomName(it.name || study.customName || "");
         setDraftCustomDate(it.targetDate || study.customDate || "");
-        setSingleBgColor(it.bgColor || "");
-        setSingleTextColor(it.textColor || "");
-        setSingleBgOpacity(typeof it.bgOpacity === "number" ? it.bgOpacity : 0);
-        setSingleTextOpacity(typeof it.textOpacity === "number" ? it.textOpacity : 1);
+        nextSingleBgColor = it.bgColor || "";
+        nextSingleTextColor = it.textColor || "";
+        nextSingleBgOpacity = typeof it.bgOpacity === "number" ? it.bgOpacity : 0;
+        nextSingleTextOpacity = typeof it.textOpacity === "number" ? it.textOpacity : 1;
+        setSingleBgColor(nextSingleBgColor);
+        setSingleTextColor(nextSingleTextColor);
+        setSingleBgOpacity(nextSingleBgOpacity);
+        setSingleTextOpacity(nextSingleTextOpacity);
       }
     } else {
       // 兼容旧逻辑：无 items 时用 countdownType 决定模式
       setCountdownMode((study.countdownType ?? "gaokao") === "gaokao" ? "gaokao" : "single");
-      setSingleBgColor("");
-      setSingleTextColor("");
-      setSingleBgOpacity(0);
-      setSingleTextOpacity(1);
+      setSingleBgColor(nextSingleBgColor);
+      setSingleTextColor(nextSingleTextColor);
+      setSingleBgOpacity(nextSingleBgOpacity);
+      setSingleTextOpacity(nextSingleTextOpacity);
     }
-    setDigitOpacity(typeof study.digitOpacity === "number" ? study.digitOpacity : 1);
+    const nextDigitOpacity = typeof study.digitOpacity === "number" ? study.digitOpacity : 1;
+    setDigitOpacity(nextDigitOpacity);
+    const hasCountdownCustomStyle =
+      nextDigitColor.trim().length > 0 ||
+      nextDigitOpacity !== 1 ||
+      nextSingleBgColor.trim().length > 0 ||
+      nextSingleTextColor.trim().length > 0 ||
+      nextSingleBgOpacity !== 0 ||
+      nextSingleTextOpacity !== 1;
+    setCountdownStyleMode(hasCountdownCustomStyle ? "custom" : "default");
     setTimeColorMode(study.timeColor ? "custom" : "default");
     setTimeColor(study.timeColor ?? "#ffffff");
     setDateColorMode(study.dateColor ? "custom" : "default");
@@ -290,6 +315,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     study.display,
     defaultDisplay,
     study.countdownItems,
+    study.digitColor,
     study.digitOpacity,
     study.timeColor,
     study.dateColor,
@@ -318,8 +344,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (countdownMode === "multi") {
         dispatch({ type: "SET_CAROUSEL_INTERVAL", payload: carouselIntervalSec });
       } else {
-        dispatch({ type: "SET_COUNTDOWN_DIGIT_COLOR", payload: digitColor || undefined });
-        dispatch({ type: "SET_COUNTDOWN_DIGIT_OPACITY", payload: digitOpacity });
+        dispatch({
+          type: "SET_COUNTDOWN_DIGIT_COLOR",
+          payload: countdownStyleMode === "custom" ? digitColor || undefined : undefined,
+        });
+        dispatch({
+          type: "SET_COUNTDOWN_DIGIT_OPACITY",
+          payload: countdownStyleMode === "custom" ? digitOpacity : 1,
+        });
       }
       dispatch({
         type: "SET_STUDY_TIME_COLOR",
@@ -346,10 +378,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             id: "gaokao-default",
             kind: "gaokao",
             name: "高考倒计时",
-            bgColor: singleBgColor || undefined,
-            bgOpacity: singleBgOpacity,
-            textColor: singleTextColor || undefined,
-            textOpacity: singleTextOpacity,
+            bgColor: countdownStyleMode === "custom" ? singleBgColor || undefined : undefined,
+            bgOpacity: countdownStyleMode === "custom" ? singleBgOpacity : 0,
+            textColor: countdownStyleMode === "custom" ? singleTextColor || undefined : undefined,
+            textOpacity: countdownStyleMode === "custom" ? singleTextOpacity : 1,
             order: 0,
           },
         ];
@@ -361,10 +393,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             kind: "custom",
             name: (draftCustomName && draftCustomName.trim()) || "自定义事件",
             targetDate: (draftCustomDate && draftCustomDate.trim()) || "",
-            bgColor: singleBgColor || undefined,
-            bgOpacity: singleBgOpacity,
-            textColor: singleTextColor || undefined,
-            textOpacity: singleTextOpacity,
+            bgColor: countdownStyleMode === "custom" ? singleBgColor || undefined : undefined,
+            bgOpacity: countdownStyleMode === "custom" ? singleBgOpacity : 0,
+            textColor: countdownStyleMode === "custom" ? singleTextColor || undefined : undefined,
+            textOpacity: countdownStyleMode === "custom" ? singleTextOpacity : 1,
             order: 0,
           },
         ];
@@ -410,6 +442,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     carouselIntervalSec,
     digitColor,
     digitOpacity,
+    countdownStyleMode,
     timeColorMode,
     timeColor,
     dateColorMode,
@@ -543,155 +576,6 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
       {/* 显示设置分区已前移到倒计时设置之前 */}
 
-      <FormSection title="时间与校时">
-        <FormSegmented
-          label="校时来源"
-          value={timeSyncEnabled ? timeSyncProvider : "default"}
-          options={[
-            { label: "默认", value: "default" },
-            { label: "HTTP Date", value: "httpDate" },
-            { label: "时间 API", value: "timeApi" },
-            ...(isDesktop
-              ? [
-                {
-                  label: "NTP（桌面端）",
-                  value: "ntp",
-                  disabled: !ntpAvailable,
-                },
-              ]
-              : []),
-          ]}
-          onChange={(v) => {
-            if (v === "default") {
-              setTimeSyncEnabled(false);
-            } else {
-              setTimeSyncEnabled(true);
-              setTimeSyncProvider(v as "httpDate" | "timeApi" | "ntp");
-            }
-          }}
-        />
-
-        {timeSyncEnabled && (
-          <>
-            {timeSyncProvider === "httpDate" ? (
-              <FormInput
-                label="HTTP Date URL"
-                value={timeSyncHttpDateUrl}
-                placeholder="/"
-                onChange={(e) => setTimeSyncHttpDateUrl(e.target.value)}
-              />
-            ) : timeSyncProvider === "timeApi" ? (
-              <FormInput
-                label="时间 API URL"
-                value={timeSyncApiUrl}
-                placeholder="https://example.com/time（返回 JSON：epochMs/epochSeconds/unixtime/datetime）"
-                onChange={(e) => setTimeSyncApiUrl(e.target.value)}
-              />
-            ) : (
-              <FormRow gap="sm" align="center">
-                <FormInput
-                  label="NTP Host"
-                  value={timeSyncNtpHost}
-                  placeholder="pool.ntp.org"
-                  onChange={(e) => setTimeSyncNtpHost(e.target.value)}
-                />
-                <FormInput
-                  label="端口"
-                  type="number"
-                  variant="number"
-                  min={1}
-                  max={65535}
-                  step={1}
-                  value={String(timeSyncNtpPort)}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    const n = raw.trim() ? Number(raw) : 123;
-                    setTimeSyncNtpPort(Number.isFinite(n) ? Math.trunc(n) : 123);
-                  }}
-                />
-              </FormRow>
-            )}
-
-            <FormRow gap="sm" align="center">
-              <FormInput
-                label="手动偏移（秒）"
-                type="number"
-                variant="number"
-                step="0.1"
-                value={String(timeSyncManualOffsetSec)}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  const n = raw.trim() ? Number(raw) : 0;
-                  setTimeSyncManualOffsetSec(Number.isFinite(n) ? n : 0);
-                }}
-              />
-              <FormCheckbox
-                label="自动校时"
-                checked={timeSyncAutoEnabled}
-                onChange={(e) => setTimeSyncAutoEnabled(e.target.checked)}
-              />
-              <FormInput
-                label="间隔（分钟）"
-                type="number"
-                variant="number"
-                min={1}
-                step={1}
-                value={String(timeSyncAutoIntervalMin)}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  const n = raw.trim() ? Number(raw) : 60;
-                  setTimeSyncAutoIntervalMin(Number.isFinite(n) ? n : 60);
-                }}
-              />
-            </FormRow>
-
-            <FormButtonGroup>
-              <FormButton
-                type="button"
-                variant="secondary"
-                onClick={() => window.dispatchEvent(new CustomEvent("timeSync:syncNow"))}
-              >
-                立即校时
-              </FormButton>
-            </FormButtonGroup>
-
-            <p className={styles.infoText}>
-              当前有效偏移（已保存）：
-              {timeSyncStatus?.enabled
-                ? `${Math.trunc((timeSyncStatus.offsetMs || 0) + (timeSyncStatus.manualOffsetMs || 0))} ms`
-                : "未启用"}
-            </p>
-            <p className={styles.infoText}>
-              上次校时（已保存）：
-              {timeSyncStatus?.lastSyncAt
-                ? new Date(timeSyncStatus.lastSyncAt).toLocaleString("zh-CN")
-                : "无"}
-              {typeof timeSyncStatus?.lastRttMs === "number"
-                ? `｜RTT ${timeSyncStatus.lastRttMs} ms`
-                : ""}
-            </p>
-            {timeSyncStatus?.lastError && timeSyncStatus.lastError.trim() && (
-              <p className={styles.helpText}>错误：{timeSyncStatus.lastError}</p>
-            )}
-            {isDesktop && !ntpAvailable && (
-              <p className={styles.helpText}>
-                提示：检测到桌面端环境，但 NTP 能力未就绪（preload 未加载到最新版本）；请重新启动桌面端或重新构建桌面端产物。
-              </p>
-            )}
-            {timeSyncProvider === "httpDate" && (
-              <p className={styles.helpText}>
-                提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
-              </p>
-            )}
-            {timeSyncProvider === "ntp" && (
-              <p className={styles.helpText}>
-                提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截；若提示“桌面端不可用”，请先重建桌面端产物。
-              </p>
-            )}
-          </>
-        )}
-      </FormSection>
-
       {/* 倒计时设置 */}
       <FormSection title="倒计时设置">
         <FormSegmented
@@ -738,55 +622,70 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 step={1}
                 placeholder="例如 2026"
               />
-              <FormInput
-                label="背景色"
-                type="color"
-                value={singleBgColor || "#121212"}
-                onChange={(e) => setSingleBgColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="背景透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={singleBgOpacity}
-                onChange={(v) => setSingleBgOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
-              />
-              <FormInput
-                label="文字色"
-                type="color"
-                value={singleTextColor || "#E0E0E0"}
-                onChange={(e) => setSingleTextColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="文字透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={singleTextOpacity}
-                onChange={(v) => setSingleTextOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
-              />
-              <FormInput
-                label="数字颜色"
-                type="color"
-                value={digitColor || "#03DAC6"}
-                onChange={(e) => setDigitColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="数字透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={digitOpacity}
-                onChange={(v) => setDigitOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
+            </FormRow>
+            <FormRow gap="sm" align="center">
+              <FormSegmented
+                label="样式"
+                value={countdownStyleMode}
+                options={[
+                  { label: "默认", value: "default" },
+                  { label: "自定义", value: "custom" },
+                ]}
+                onChange={(v) => setCountdownStyleMode(v as "default" | "custom")}
               />
             </FormRow>
+            {countdownStyleMode === "custom" && (
+              <FormRow gap="sm" align="center">
+                <FormInput
+                  label="背景色"
+                  type="color"
+                  value={singleBgColor || "#121212"}
+                  onChange={(e) => setSingleBgColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="背景透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={singleBgOpacity}
+                  onChange={(v) => setSingleBgOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+                <FormInput
+                  label="文字色"
+                  type="color"
+                  value={singleTextColor || "#E0E0E0"}
+                  onChange={(e) => setSingleTextColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="文字透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={singleTextOpacity}
+                  onChange={(v) => setSingleTextOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+                <FormInput
+                  label="数字颜色"
+                  type="color"
+                  value={digitColor || "#03DAC6"}
+                  onChange={(e) => setDigitColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="数字透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={digitOpacity}
+                  onChange={(v) => setDigitOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+              </FormRow>
+            )}
           </>
         )}
 
@@ -806,55 +705,68 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
               onChange={(e) => setDraftCustomDate(e.target.value)}
             />
             <FormRow gap="sm" align="center">
-              <FormInput
-                label="背景色"
-                type="color"
-                value={singleBgColor || "#121212"}
-                onChange={(e) => setSingleBgColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="背景透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={singleBgOpacity}
-                onChange={(v) => setSingleBgOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
-              />
-              <FormInput
-                label="文字色"
-                type="color"
-                value={singleTextColor || "#E0E0E0"}
-                onChange={(e) => setSingleTextColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="文字透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={singleTextOpacity}
-                onChange={(v) => setSingleTextOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
-              />
-              <FormInput
-                label="数字颜色"
-                type="color"
-                value={digitColor || "#03DAC6"}
-                onChange={(e) => setDigitColor(e.target.value)}
-                style={{ width: 36, height: 36, padding: 0 }}
-              />
-              <FormSlider
-                label="数字透明度"
-                min={0}
-                max={1}
-                step={0.01}
-                value={digitOpacity}
-                onChange={(v) => setDigitOpacity(v)}
-                formatValue={(v) => `${Math.round(v * 100)}%`}
+              <FormSegmented
+                label="样式"
+                value={countdownStyleMode}
+                options={[
+                  { label: "默认", value: "default" },
+                  { label: "自定义", value: "custom" },
+                ]}
+                onChange={(v) => setCountdownStyleMode(v as "default" | "custom")}
               />
             </FormRow>
+            {countdownStyleMode === "custom" && (
+              <FormRow gap="sm" align="center">
+                <FormInput
+                  label="背景色"
+                  type="color"
+                  value={singleBgColor || "#121212"}
+                  onChange={(e) => setSingleBgColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="背景透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={singleBgOpacity}
+                  onChange={(v) => setSingleBgOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+                <FormInput
+                  label="文字色"
+                  type="color"
+                  value={singleTextColor || "#E0E0E0"}
+                  onChange={(e) => setSingleTextColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="文字透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={singleTextOpacity}
+                  onChange={(v) => setSingleTextOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+                <FormInput
+                  label="数字颜色"
+                  type="color"
+                  value={digitColor || "#03DAC6"}
+                  onChange={(e) => setDigitColor(e.target.value)}
+                  style={{ width: 36, height: 36, padding: 0 }}
+                />
+                <FormSlider
+                  label="数字透明度"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={digitOpacity}
+                  onChange={(v) => setDigitOpacity(v)}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+              </FormRow>
+            )}
           </>
         )}
 
@@ -1188,6 +1100,155 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                   </FormButton>
                 </FormRow>
               </>
+            )}
+          </>
+        )}
+      </FormSection>
+
+      <FormSection title="时间与校时">
+        <FormSegmented
+          label="校时来源"
+          value={timeSyncEnabled ? timeSyncProvider : "default"}
+          options={[
+            { label: "默认", value: "default" },
+            { label: "HTTP Date", value: "httpDate" },
+            { label: "时间 API", value: "timeApi" },
+            ...(isDesktop
+              ? [
+                {
+                  label: "NTP（桌面端）",
+                  value: "ntp",
+                  disabled: !ntpAvailable,
+                },
+              ]
+              : []),
+          ]}
+          onChange={(v) => {
+            if (v === "default") {
+              setTimeSyncEnabled(false);
+            } else {
+              setTimeSyncEnabled(true);
+              setTimeSyncProvider(v as "httpDate" | "timeApi" | "ntp");
+            }
+          }}
+        />
+
+        {timeSyncEnabled && (
+          <>
+            {timeSyncProvider === "httpDate" ? (
+              <FormInput
+                label="HTTP Date URL"
+                value={timeSyncHttpDateUrl}
+                placeholder="/"
+                onChange={(e) => setTimeSyncHttpDateUrl(e.target.value)}
+              />
+            ) : timeSyncProvider === "timeApi" ? (
+              <FormInput
+                label="时间 API URL"
+                value={timeSyncApiUrl}
+                placeholder="https://example.com/time（返回 JSON：epochMs/epochSeconds/unixtime/datetime）"
+                onChange={(e) => setTimeSyncApiUrl(e.target.value)}
+              />
+            ) : (
+              <FormRow gap="sm" align="center">
+                <FormInput
+                  label="NTP Host"
+                  value={timeSyncNtpHost}
+                  placeholder="pool.ntp.org"
+                  onChange={(e) => setTimeSyncNtpHost(e.target.value)}
+                />
+                <FormInput
+                  label="端口"
+                  type="number"
+                  variant="number"
+                  min={1}
+                  max={65535}
+                  step={1}
+                  value={String(timeSyncNtpPort)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const n = raw.trim() ? Number(raw) : 123;
+                    setTimeSyncNtpPort(Number.isFinite(n) ? Math.trunc(n) : 123);
+                  }}
+                />
+              </FormRow>
+            )}
+
+            <FormRow gap="sm" align="center">
+              <FormInput
+                label="手动偏移（秒）"
+                type="number"
+                variant="number"
+                step="0.1"
+                value={String(timeSyncManualOffsetSec)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = raw.trim() ? Number(raw) : 0;
+                  setTimeSyncManualOffsetSec(Number.isFinite(n) ? n : 0);
+                }}
+              />
+              <FormCheckbox
+                label="自动校时"
+                checked={timeSyncAutoEnabled}
+                onChange={(e) => setTimeSyncAutoEnabled(e.target.checked)}
+              />
+              <FormInput
+                label="间隔（分钟）"
+                type="number"
+                variant="number"
+                min={1}
+                step={1}
+                value={String(timeSyncAutoIntervalMin)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = raw.trim() ? Number(raw) : 60;
+                  setTimeSyncAutoIntervalMin(Number.isFinite(n) ? n : 60);
+                }}
+              />
+            </FormRow>
+
+            <FormButtonGroup>
+              <FormButton
+                type="button"
+                variant="secondary"
+                onClick={() => window.dispatchEvent(new CustomEvent("timeSync:syncNow"))}
+              >
+                立即校时
+              </FormButton>
+            </FormButtonGroup>
+
+            <p className={styles.infoText}>
+              当前有效偏移（已保存）：
+              {timeSyncStatus?.enabled
+                ? `${Math.trunc((timeSyncStatus.offsetMs || 0) + (timeSyncStatus.manualOffsetMs || 0))} ms`
+                : "未启用"}
+            </p>
+            <p className={styles.infoText}>
+              上次校时（已保存）：
+              {timeSyncStatus?.lastSyncAt
+                ? new Date(timeSyncStatus.lastSyncAt).toLocaleString("zh-CN")
+                : "无"}
+              {typeof timeSyncStatus?.lastRttMs === "number"
+                ? `｜RTT ${timeSyncStatus.lastRttMs} ms`
+                : ""}
+            </p>
+            {timeSyncStatus?.lastError && timeSyncStatus.lastError.trim() && (
+              <p className={styles.helpText}>错误：{timeSyncStatus.lastError}</p>
+            )}
+            {isDesktop && !ntpAvailable && (
+              <p className={styles.helpText}>
+                提示：检测到桌面端环境，但 NTP 能力未就绪（preload 未加载到最新版本）；请重新启动桌面端或重新构建桌面端产物。
+              </p>
+            )}
+            {timeSyncProvider === "httpDate" && (
+              <p className={styles.helpText}>
+                提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
+              </p>
+            )}
+            {timeSyncProvider === "ntp" && (
+              <p className={styles.helpText}>
+                提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截；若提示“桌面端不可用”，请先重建桌面端产物。
+              </p>
             )}
           </>
         )}

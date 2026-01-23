@@ -42,7 +42,6 @@ interface NoiseMonitorProps {
 const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const [noiseStatus, setNoiseStatus] = useState<NoiseStatus>("initializing");
   const [currentVolume, setCurrentVolume] = useState<number>(0);
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
   // 从 AppSettings 读取
   const [baselineNoise, setBaselineNoise] = useState<number>(() => {
     return getAppSettings().noiseControl.baselineDisplayDb;
@@ -68,7 +67,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     () => getNoiseControlSettings().alertSoundEnabled ?? false
   );
 
-  const [playNoisyAlert] = useAudio("/ding-1.mp3");
+  const [playNoisyAlert] = useAudio("/ding-2.mp3");
   const playNoisyAlertRef = useRef<(() => void) | null>(playNoisyAlert);
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -76,7 +75,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const autoCalibrationTriggeredRef = useRef<boolean>(false); // 防止重复自动校准
   const initializationCountRef = useRef<number>(0); // 初始化计数器
   const lastPersistTsRef = useRef<number>(0); // 上次持久化采样时间戳
   const lastNoisyAlertPlayedAtRef = useRef<number>(0);
@@ -87,16 +85,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
   const highpassRef = useRef<BiquadFilterNode | null>(null);
   const lowpassRef = useRef<BiquadFilterNode | null>(null);
   const windowSamplesRef = useRef<{ t: number; v: number }[]>([]);
-
-  // 检测是否为移动设备
-  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
-  /**
-   * 移动设备特殊处理：延长稳定时间
-   */
-  const getMobileDelay = useCallback(() => (isMobileDevice ? 3000 : 2000), [isMobileDevice]);
 
   useEffect(() => {
     playNoisyAlertRef.current = playNoisyAlert;
@@ -207,7 +195,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
    * 校准基准噪音水平
    * 在安静环境下运行3秒，计算平均噪音水平作为基准
    */
-  const calibrateBaseline = useCallback(async () => {
+  const _calibrateBaseline = useCallback(async () => {
     if (!analyserRef.current || isCalibrating) {
       logger.debug("校准条件不满足：", {
         hasAnalyser: !!analyserRef.current,
@@ -347,7 +335,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
       });
 
       streamRef.current = stream;
-      setHasPermission(true);
 
       // 创建音频上下文
       const audioContextCtor = window as unknown as {
@@ -433,27 +420,26 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
 
     // 已移除状态防抖相关定时器与挂起状态
 
-    // 重置自动校准和初始化状态
-    autoCalibrationTriggeredRef.current = false;
+    // 重置初始化状态
     initializationCountRef.current = 0;
 
     // 断开音频连接
     if (microphoneRef.current) {
       try {
         microphoneRef.current.disconnect();
-      } catch { }
+      } catch {}
       microphoneRef.current = null;
     }
     if (highpassRef.current) {
       try {
         highpassRef.current.disconnect();
-      } catch { }
+      } catch {}
       highpassRef.current = null;
     }
     if (lowpassRef.current) {
       try {
         lowpassRef.current.disconnect();
-      } catch { }
+      } catch {}
       lowpassRef.current = null;
     }
 
@@ -589,40 +575,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onStatusClick }) => {
     applyLastSample();
     return unsubscribe;
   }, []);
-
-  // 自动校准：当音频监测初始化完成且没有保存的校准数据时自动开始校准
-  useEffect(() => {
-    // 更严格的条件检查，防止重复触发
-    if (
-      (noiseStatus === "quiet" || noiseStatus === "noisy") &&
-      baselineRms === 0 &&
-      !isCalibrating &&
-      !autoCalibrationTriggeredRef.current &&
-      hasPermission &&
-      analyserRef.current &&
-      initializationCountRef.current <= 1 // 限制初始化次数
-    ) {
-      logger.debug("检测到首次使用，自动开始校准...", { isMobileDevice });
-      autoCalibrationTriggeredRef.current = true; // 标记已触发自动校准
-
-      // 根据设备类型调整延迟时间
-      const delay = getMobileDelay();
-      setTimeout(() => {
-        if (!isCalibrating && baselineRms === 0) {
-          logger.debug("延迟校准开始，设备类型：", isMobileDevice ? "移动设备" : "桌面设备");
-          calibrateBaseline();
-        }
-      }, delay);
-    }
-  }, [
-    noiseStatus,
-    baselineRms,
-    isCalibrating,
-    hasPermission,
-    calibrateBaseline,
-    getMobileDelay,
-    isMobileDevice,
-  ]);
 
   return (
     <div className={styles.noiseMonitor}>

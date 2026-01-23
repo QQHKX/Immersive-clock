@@ -9,6 +9,7 @@ describe("weatherService", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   afterEach(() => {
@@ -86,5 +87,92 @@ describe("weatherService", () => {
     expect(coords).not.toBeNull();
     expect(coords?.lat).toBeCloseTo(31.2);
     expect(coords?.lon).toBeCloseTo(121.5);
+  });
+
+  it("buildWeatherFlow 不再请求 GeoAPI，并可从反编码提取城市名", async () => {
+    vi.stubEnv("VITE_QWEATHER_API_HOST", "api.example.com");
+    vi.stubEnv("VITE_QWEATHER_API_KEY", "test-qweather-key");
+    vi.stubEnv("VITE_AMAP_API_KEY", "test-amap-key");
+
+    if (!globalThis.localStorage) {
+      const store = new Map<string, string>();
+      globalThis.localStorage = {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+        removeItem: (key: string) => void store.delete(key),
+        clear: () => void store.clear(),
+        key: (index: number) => Array.from(store.keys())[index] ?? null,
+        get length() {
+          return store.size;
+        },
+      } as unknown as Storage;
+    }
+
+    localStorage.setItem(
+      "weather-cache",
+      JSON.stringify({
+        coords: {
+          lat: 31.2,
+          lon: 121.5,
+          source: "geolocation",
+          updatedAt: Date.now(),
+        },
+      })
+    );
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/geo/v2/")) {
+        return Promise.reject(new Error(`GeoAPI should not be called: ${url}`));
+      }
+
+      if (url.startsWith("https://restapi.amap.com/v3/geocode/regeo?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () =>
+            JSON.stringify({
+              status: "1",
+              regeocode: {
+                formatted_address: "中国 上海市 浦东新区",
+                addressComponent: {
+                  city: "上海市",
+                  district: "浦东新区",
+                  province: "上海市",
+                },
+              },
+            }),
+        });
+      }
+
+      if (url.startsWith("https://api.example.com/v7/weather/now?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () =>
+            JSON.stringify({
+              code: "200",
+              now: { text: "晴", temp: "25" },
+            }),
+        });
+      }
+
+      return Promise.reject(new Error(`unexpected url: ${url}`));
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { buildWeatherFlow } = await import("../weatherService");
+    const result = await buildWeatherFlow();
+
+    expect(result.coords).not.toBeNull();
+    expect(result.city).toBe("上海市");
+    expect(result.weather?.code).toBe("200");
+
+    const calledUrls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(calledUrls.some((u) => u.includes("/geo/v2/"))).toBe(false);
+    expect(calledUrls.some((u) => u.includes("/v7/weather/now"))).toBe(true);
+    expect(calledUrls.some((u) => u.includes("location=121.5%2C31.2"))).toBe(true);
   });
 });

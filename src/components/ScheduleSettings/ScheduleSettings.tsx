@@ -131,14 +131,21 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
    * 保存并关闭
    */
   const handleSave = useCallback(() => {
+    const trimmedSchedule = schedule.map((p) => ({
+      ...p,
+      name: typeof p.name === "string" ? p.name.trim() : "",
+    }));
     // 验证所有时间段
-    const validSchedule = schedule.filter((period) => isValidPeriod(period));
+    const validSchedule = trimmedSchedule.filter((period) => isValidPeriod(period));
     if (validSchedule.length === 0) {
       alert("请至少添加一个有效的时间段");
       return;
     }
 
-    const sortedSchedule = sortSchedule(validSchedule);
+    const sortedSchedule = sortSchedule(validSchedule).map((p, index) => ({
+      ...p,
+      name: p.name && p.name.trim().length > 0 ? p.name.trim() : `自定义时段${index + 1}`,
+    }));
     setSchedule(sortedSchedule);
     saveSchedule(sortedSchedule);
     onClose();

@@ -11,7 +11,6 @@ import { Tabs } from "../Tabs/Tabs";
 import AboutSettingsPanel from "./sections/AboutSettingsPanel";
 import BasicSettingsPanel from "./sections/BasicSettingsPanel";
 import ContentSettingsPanel from "./sections/ContentSettingsPanel";
-import MessagePopupSettingsPanel from "./sections/MessagePopupSettingsPanel";
 import StudySettingsPanel from "./sections/StudySettingsPanel";
 import WeatherSettingsPanel from "./sections/WeatherSettingsPanel";
 import styles from "./SettingsPanel.module.css";
@@ -36,7 +35,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const dispatch = useAppDispatch();
 
   const [activeCategory, setActiveCategory] = useState<
-    "basic" | "weather" | "monitor" | "quotes" | "messages" | "about"
+    "basic" | "weather" | "monitor" | "quotes" | "about"
   >("basic");
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 分区保存注册
@@ -44,7 +43,6 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const weatherSaveRef = useRef<() => void>(() => {});
   const monitorSaveRef = useRef<() => void>(() => {});
   const quotesSaveRef = useRef<() => void>(() => {});
-  const messagesSaveRef = useRef<() => void>(() => {});
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -67,7 +65,6 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       weatherSaveRef.current?.();
       monitorSaveRef.current?.();
       quotesSaveRef.current?.();
-      messagesSaveRef.current?.();
     } catch (e) {
       logger.error("保存分区设置失败:", e);
       alert("保存设置时出现错误，请重试");
@@ -123,13 +120,12 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               { key: "weather", label: "天气设置" },
               { key: "monitor", label: "监测设置" },
               { key: "quotes", label: "语录设置" },
-              { key: "messages", label: "消息弹窗" },
               { key: "about", label: "关于" },
             ]}
             activeKey={activeCategory}
             onChange={(key) =>
               setActiveCategory(
-                key as "basic" | "weather" | "monitor" | "quotes" | "messages" | "about"
+                key as "basic" | "weather" | "monitor" | "quotes" | "about"
               )
             }
             variant="announcement"
@@ -172,15 +168,6 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             <ContentSettingsPanel
               onRegisterSave={(fn) => {
                 quotesSaveRef.current = fn;
-              }}
-            />
-          )}
-
-          {/* 消息弹窗设置 */}
-          {activeCategory === "messages" && (
-            <MessagePopupSettingsPanel
-              onRegisterSave={(fn) => {
-                messagesSaveRef.current = fn;
               }}
             />
           )}
