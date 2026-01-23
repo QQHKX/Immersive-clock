@@ -65,6 +65,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     study.carouselIntervalSec ?? 6
   );
   const [digitColor, setDigitColor] = useState<string>(study.digitColor ?? "");
+  const [timeColorMode, setTimeColorMode] = useState<"default" | "custom">(
+    study.timeColor ? "custom" : "default"
+  );
+  const [timeColor, setTimeColor] = useState<string>(study.timeColor ?? "#ffffff");
+  const [dateColorMode, setDateColorMode] = useState<"default" | "custom">(
+    study.dateColor ? "custom" : "default"
+  );
+  const [dateColor, setDateColor] = useState<string>(study.dateColor ?? "#bbbbbb");
 
   // 自习组件显示草稿（时间始终显示，不提供开关）
   const defaultDisplay = useMemo(
@@ -112,10 +120,21 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [systemFontSupported, setSystemFontSupported] = useState<boolean>(false);
   const [loadingSystemFonts, setLoadingSystemFonts] = useState<boolean>(false);
 
+  const isDesktop = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const anyWindow = window as unknown as { electronAPI?: { platform?: string } };
+    const hasBridge = typeof anyWindow.electronAPI?.platform === "string";
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const isElectronUa = /\bElectron\b/i.test(ua);
+    return hasBridge || isElectronUa;
+  }, []);
+
   const [timeSyncEnabled, setTimeSyncEnabled] = useState<boolean>(false);
-  const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi">("httpDate");
+  const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi" | "ntp">("httpDate");
   const [timeSyncHttpDateUrl, setTimeSyncHttpDateUrl] = useState<string>("/");
   const [timeSyncApiUrl, setTimeSyncApiUrl] = useState<string>("");
+  const [timeSyncNtpHost, setTimeSyncNtpHost] = useState<string>("pool.ntp.org");
+  const [timeSyncNtpPort, setTimeSyncNtpPort] = useState<number>(123);
   const [timeSyncManualOffsetSec, setTimeSyncManualOffsetSec] = useState<number>(0);
   const [timeSyncAutoEnabled, setTimeSyncAutoEnabled] = useState<boolean>(false);
   const [timeSyncAutoIntervalMin, setTimeSyncAutoIntervalMin] = useState<number>(60);
@@ -134,10 +153,18 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   useEffect(() => {
     try {
       const saved = getAppSettings().general.timeSync;
-      setTimeSyncEnabled(!!saved.enabled);
-      setTimeSyncProvider(saved.provider === "timeApi" ? "timeApi" : "httpDate");
+      const provider =
+        saved.provider === "timeApi" || saved.provider === "httpDate" || saved.provider === "ntp"
+          ? saved.provider
+          : "httpDate";
+      const providerAllowed = provider !== "ntp" || isDesktop;
+
+      setTimeSyncEnabled(!!saved.enabled && providerAllowed);
+      setTimeSyncProvider(providerAllowed ? provider : "httpDate");
       setTimeSyncHttpDateUrl(typeof saved.httpDateUrl === "string" ? saved.httpDateUrl : "/");
       setTimeSyncApiUrl(typeof saved.timeApiUrl === "string" ? saved.timeApiUrl : "");
+      setTimeSyncNtpHost(typeof saved.ntpHost === "string" ? saved.ntpHost : "pool.ntp.org");
+      setTimeSyncNtpPort(Number.isFinite(saved.ntpPort) ? Math.trunc(saved.ntpPort) : 123);
       setTimeSyncManualOffsetSec(
         Number.isFinite(saved.manualOffsetMs) ? Math.trunc(saved.manualOffsetMs) / 1000 : 0
       );
@@ -147,7 +174,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       );
       setTimeSyncStatus(saved);
     } catch { }
-  }, []);
+  }, [isDesktop]);
 
   useEffect(() => {
     const refresh = () => {
@@ -229,6 +256,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       setSingleTextOpacity(1);
     }
     setDigitOpacity(typeof study.digitOpacity === "number" ? study.digitOpacity : 1);
+    setTimeColorMode(study.timeColor ? "custom" : "default");
+    setTimeColor(study.timeColor ?? "#ffffff");
+    setDateColorMode(study.dateColor ? "custom" : "default");
+    setDateColor(study.dateColor ?? "#bbbbbb");
     // 初始化字体来源分段（函数级注释：根据当前状态决定使用默认或自定义字体，并填充自定义内容）
     const initMode = (
       current: string | undefined
@@ -254,6 +285,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     defaultDisplay,
     study.countdownItems,
     study.digitOpacity,
+    study.timeColor,
+    study.dateColor,
     study.numericFontFamily,
     study.textFontFamily,
   ]);
@@ -282,6 +315,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         dispatch({ type: "SET_COUNTDOWN_DIGIT_COLOR", payload: digitColor || undefined });
         dispatch({ type: "SET_COUNTDOWN_DIGIT_OPACITY", payload: digitOpacity });
       }
+      dispatch({
+        type: "SET_STUDY_TIME_COLOR",
+        payload: timeColorMode === "custom" ? timeColor : undefined,
+      });
+      dispatch({
+        type: "SET_STUDY_DATE_COLOR",
+        payload: dateColorMode === "custom" ? dateColor : undefined,
+      });
       // 保存背景设置
       saveStudyBackground({
         type: bgType,
@@ -347,6 +388,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         provider: timeSyncProvider,
         httpDateUrl: timeSyncHttpDateUrl.trim() || current.httpDateUrl,
         timeApiUrl: timeSyncApiUrl.trim(),
+        ntpHost: timeSyncNtpHost.trim() || current.ntpHost,
+        ntpPort: Math.max(1, Math.min(65535, Math.trunc(timeSyncNtpPort || 123))),
         manualOffsetMs: Math.round((Number.isFinite(timeSyncManualOffsetSec) ? timeSyncManualOffsetSec : 0) * 1000),
         autoSyncEnabled: timeSyncAutoEnabled,
         autoSyncIntervalSec: Math.max(60, Math.round((Number.isFinite(timeSyncAutoIntervalMin) ? timeSyncAutoIntervalMin : 60) * 60)),
@@ -361,6 +404,10 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     carouselIntervalSec,
     digitColor,
     digitOpacity,
+    timeColorMode,
+    timeColor,
+    dateColorMode,
+    dateColor,
     bgType,
     bgColor,
     bgAlpha,
@@ -378,6 +425,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     timeSyncProvider,
     timeSyncHttpDateUrl,
     timeSyncApiUrl,
+    timeSyncNtpHost,
+    timeSyncNtpPort,
     timeSyncManualOffsetSec,
     timeSyncAutoEnabled,
     timeSyncAutoIntervalMin,
@@ -496,13 +545,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             { label: "默认", value: "default" },
             { label: "HTTP Date", value: "httpDate" },
             { label: "时间 API", value: "timeApi" },
+            ...(isDesktop ? [{ label: "NTP（桌面端）", value: "ntp" }] : []),
           ]}
           onChange={(v) => {
             if (v === "default") {
               setTimeSyncEnabled(false);
             } else {
               setTimeSyncEnabled(true);
-              setTimeSyncProvider(v as "httpDate" | "timeApi");
+              setTimeSyncProvider(v as "httpDate" | "timeApi" | "ntp");
             }
           }}
         />
@@ -516,13 +566,36 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 placeholder="/"
                 onChange={(e) => setTimeSyncHttpDateUrl(e.target.value)}
               />
-            ) : (
+            ) : timeSyncProvider === "timeApi" ? (
               <FormInput
                 label="时间 API URL"
                 value={timeSyncApiUrl}
                 placeholder="https://example.com/time（返回 JSON：epochMs/epochSeconds/unixtime/datetime）"
                 onChange={(e) => setTimeSyncApiUrl(e.target.value)}
               />
+            ) : (
+              <FormRow gap="sm" align="center">
+                <FormInput
+                  label="NTP Host"
+                  value={timeSyncNtpHost}
+                  placeholder="pool.ntp.org"
+                  onChange={(e) => setTimeSyncNtpHost(e.target.value)}
+                />
+                <FormInput
+                  label="端口"
+                  type="number"
+                  variant="number"
+                  min={1}
+                  max={65535}
+                  step={1}
+                  value={String(timeSyncNtpPort)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const n = raw.trim() ? Number(raw) : 123;
+                    setTimeSyncNtpPort(Number.isFinite(n) ? Math.trunc(n) : 123);
+                  }}
+                />
+              </FormRow>
             )}
 
             <FormRow gap="sm" align="center">
@@ -586,9 +659,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             {timeSyncStatus?.lastError && timeSyncStatus.lastError.trim() && (
               <p className={styles.helpText}>错误：{timeSyncStatus.lastError}</p>
             )}
-            <p className={styles.helpText}>
-              提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
-            </p>
+            {timeSyncProvider === "httpDate" && (
+              <p className={styles.helpText}>
+                提示：跨域读取 HTTP Date 需要服务端配置 Expose-Headers: Date；建议同源或自建接口。
+              </p>
+            )}
+            {timeSyncProvider === "ntp" && (
+              <p className={styles.helpText}>提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截。</p>
+            )}
           </>
         )}
       </FormSection>
@@ -802,6 +880,50 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             checked={!!draftDisplay.showDate}
             onChange={(e) => setDraftDisplay((prev) => ({ ...prev, showDate: e.target.checked }))}
           />
+        </FormRow>
+      </FormSection>
+
+      <FormSection title="时间与日期颜色">
+        <p className={styles.helpText}>为自习页面中央时间与日期单独设置颜色（默认跟随主题）。</p>
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="时间颜色"
+            value={timeColorMode}
+            options={[
+              { label: "默认", value: "default" },
+              { label: "自定义", value: "custom" },
+            ]}
+            onChange={(v) => setTimeColorMode(v as "default" | "custom")}
+          />
+          {timeColorMode === "custom" && (
+            <FormInput
+              label="选择颜色"
+              type="color"
+              value={timeColor || "#ffffff"}
+              onChange={(e) => setTimeColor(e.target.value)}
+              style={{ width: 36, height: 36, padding: 0 }}
+            />
+          )}
+        </FormRow>
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="日期颜色"
+            value={dateColorMode}
+            options={[
+              { label: "默认", value: "default" },
+              { label: "自定义", value: "custom" },
+            ]}
+            onChange={(v) => setDateColorMode(v as "default" | "custom")}
+          />
+          {dateColorMode === "custom" && (
+            <FormInput
+              label="选择颜色"
+              type="color"
+              value={dateColor || "#bbbbbb"}
+              onChange={(e) => setDateColor(e.target.value)}
+              style={{ width: 36, height: 36, padding: 0 }}
+            />
+          )}
         </FormRow>
       </FormSection>
 

@@ -1,7 +1,7 @@
 import { getAppSettings, updateTimeSyncSettings } from "./appSettings";
 import { logger } from "./logger";
 
-export type TimeSyncProvider = "httpDate" | "timeApi";
+export type TimeSyncProvider = "httpDate" | "timeApi" | "ntp";
 
 export interface TimeSyncSampleResult {
   offsetMs: number;
@@ -124,8 +124,26 @@ async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
 async function measureOffsetOnce(options: {
   provider: TimeSyncProvider;
   url: string;
+  port?: number;
   timeoutMs: number;
 }): Promise<TimeSyncSampleResult> {
+  if (options.provider === "ntp") {
+    const anyWindow = window as unknown as {
+      electronAPI?: {
+        timeSync?: {
+          ntp?: (req: { host: string; port?: number; timeoutMs?: number }) => Promise<TimeSyncSampleResult>;
+        };
+      };
+    };
+    const ntp = anyWindow.electronAPI?.timeSync?.ntp;
+    if (typeof ntp !== "function") {
+      throw new Error("NTP 校时仅桌面端可用");
+    }
+    const host = String(options.url || "").trim();
+    if (!host) throw new Error("请先配置 NTP Host");
+    return await ntp({ host, port: options.port, timeoutMs: options.timeoutMs });
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
 
@@ -203,6 +221,7 @@ export function getAdjustedDate(settings = getTimeSyncSettings()): Date {
 export async function syncTime(options?: {
   provider?: TimeSyncProvider;
   url?: string;
+  port?: number;
   samples?: number;
   timeoutMs?: number;
 }): Promise<TimeSyncRunResult> {
@@ -210,17 +229,23 @@ export async function syncTime(options?: {
   const provider = options?.provider ?? settings.provider;
   const url =
     (options?.url ?? "").trim() ||
-    (provider === "httpDate" ? settings.httpDateUrl : settings.timeApiUrl).trim();
+    (provider === "httpDate"
+      ? settings.httpDateUrl
+      : provider === "timeApi"
+        ? settings.timeApiUrl
+        : settings.ntpHost
+    ).trim();
   if (!url) {
     throw new Error("请先配置校时 URL");
   }
 
   const samples = clampInt(options?.samples ?? 3, 1, 9);
   const timeoutMs = clampInt(options?.timeoutMs ?? 8000, 1000, 30000);
+  const port = provider === "ntp" ? options?.port ?? settings.ntpPort : undefined;
 
   const results: TimeSyncSampleResult[] = [];
   for (let i = 0; i < samples; i++) {
-    results.push(await measureOffsetOnce({ provider, url, timeoutMs }));
+    results.push(await measureOffsetOnce({ provider, url, port, timeoutMs }));
   }
 
   const sortedByRtt = [...results].sort((a, b) => a.rttMs - b.rttMs);
@@ -270,12 +295,18 @@ export function startTimeSyncManager(): () => void {
     if (stopped || isSyncing) return;
     const s = getTimeSyncSettings();
     if (!s.enabled) return;
-    const url = (s.provider === "httpDate" ? s.httpDateUrl : s.timeApiUrl).trim();
+    const url = (
+      s.provider === "httpDate"
+        ? s.httpDateUrl
+        : s.provider === "timeApi"
+          ? s.timeApiUrl
+          : s.ntpHost
+    ).trim();
     if (!url) return;
 
     isSyncing = true;
     try {
-      const r = await syncTime({ provider: s.provider, url });
+      const r = await syncTime({ provider: s.provider, url, port: s.provider === "ntp" ? s.ntpPort : undefined });
       updateTimeSyncSettings({
         offsetMs: r.offsetMs,
         lastSyncAt: Date.now(),

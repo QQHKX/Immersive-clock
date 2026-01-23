@@ -6,8 +6,8 @@ import { CountdownItem } from "../../types";
 import { formatClock } from "../../utils/formatTime";
 import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
 import { readStudyBackground } from "../../utils/studyBackgroundStorage";
-import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { ensureInjectedFonts } from "../../utils/studyFontStorage";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { getAdjustedDate } from "../../utils/timeSync";
 import { MotivationalQuote } from "../MotivationalQuote";
 import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
@@ -391,8 +391,20 @@ export function Study() {
 
       {/* 居中：时间始终显示，日期可隐藏 */}
       <div className={styles.centerTime}>
-        <div className={styles.currentTime}>{timeString}</div>
-        {display.showDate && <div className={styles.currentDate}>{dateString}</div>}
+        <div
+          className={styles.currentTime}
+          style={study.timeColor ? { color: study.timeColor } : undefined}
+        >
+          {timeString}
+        </div>
+        {display.showDate && (
+          <div
+            className={styles.currentDate}
+            style={study.dateColor ? { color: study.dateColor } : undefined}
+          >
+            {dateString}
+          </div>
+        )}
       </div>
 
       {/* 噪音报告弹窗 */}

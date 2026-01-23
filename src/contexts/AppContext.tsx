@@ -45,6 +45,8 @@ function loadStudyState(): StudyState {
     digitOpacity: study.style.digitOpacity,
     numericFontFamily: study.style.numericFontFamily,
     textFontFamily: study.style.textFontFamily,
+    timeColor: study.style.timeColor,
+    dateColor: study.style.dateColor,
     messagePopupEnabled: study.alerts.messagePopup,
     weatherAlertEnabled: study.alerts.weatherAlert,
     minutelyPrecipEnabled: study.alerts.minutelyPrecip,
@@ -376,6 +378,44 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: textFontUpdatedStudy,
+      };
+
+    case "SET_STUDY_TIME_COLOR":
+      const timeColorUpdatedStudy = {
+        ...state.study,
+        timeColor: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            timeColor: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: timeColorUpdatedStudy,
+      };
+
+    case "SET_STUDY_DATE_COLOR":
+      const dateColorUpdatedStudy = {
+        ...state.study,
+        dateColor: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            dateColor: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: dateColorUpdatedStudy,
       };
 
     case "SET_MESSAGE_POPUP_ENABLED":

@@ -3,6 +3,8 @@ import fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
+import { registerTimeSyncIpc } from "./ipc/registerTimeSyncIpc";
+
 // ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -163,6 +165,7 @@ function createWindow() {
 // 当 Electron 完成初始化时创建窗口
 app.whenReady().then(async () => {
   await registerAppProtocol();
+  registerTimeSyncIpc();
 
   /**
    * 判断是否为“仅音频采集”的 media 权限请求（拒绝视频，以避免意外放行摄像头/屏幕录制）
