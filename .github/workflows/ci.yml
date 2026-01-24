@@ -43,7 +43,7 @@ jobs:
         with:
           name: web-build
           path: immersive-clock-web.zip
-          if-no-files-found: warn
+          if-no-files-found: error
 
   build-electron-windows:
     runs-on: windows-latest
@@ -129,6 +129,7 @@ jobs:
             Write-Host "Build attempt $attempt of $maxAttempts..."
             try {
               npm run build:electron
+              npm run pack:electron
               $success = $true
             } catch {
               if ($attempt -eq $maxAttempts) {
@@ -141,19 +142,34 @@ jobs:
           }
         timeout-minutes: 30
 
+      - name: Verify Windows artifacts
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "release")) {
+            throw "release directory not found"
+          }
+
+          $setupFiles = Get-ChildItem -Path "release" -Filter "*-Setup.exe" -File -ErrorAction SilentlyContinue
+          $portableFiles = Get-ChildItem -Path "release" -Filter "*-Portable.exe" -File -ErrorAction SilentlyContinue
+
+          if (($setupFiles.Count + $portableFiles.Count) -eq 0) {
+            Get-ChildItem -Path "release" -Force | Format-Table -AutoSize | Out-String | Write-Host
+            throw "No Windows installer files found in release/"
+          }
+
       - name: Upload Windows NSIS installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-nsis-installer
           path: release/*-Setup.exe
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload Windows Portable
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable
           path: release/*-Portable.exe
-          if-no-files-found: warn
+          if-no-files-found: error
 
   build-electron-linux:
     runs-on: ubuntu-latest
@@ -191,25 +207,44 @@ jobs:
       - name: Build Electron app
         env:
           NODE_ENV: production
-        run: npm run build:electron
+        run: |
+          npm run build:electron
+          npm run pack:electron
+
+      - name: Verify Linux artifacts
+        shell: bash
+        run: |
+          if [ ! -d "release" ]; then
+            echo "release directory not found"
+            exit 1
+          fi
+
+          ls -la release
+
+          shopt -s nullglob
+          files=(release/*.AppImage release/*.deb release/*.rpm)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Linux artifacts found in release/"
+            exit 1
+          fi
 
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
           path: release/*.AppImage
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload Linux DEB
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
           path: release/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload Linux RPM
         uses: actions/upload-artifact@v4
         with:
           name: linux-rpm
           path: release/*.rpm
-          if-no-files-found: warn
+          if-no-files-found: error

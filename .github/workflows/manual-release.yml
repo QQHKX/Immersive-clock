@@ -47,6 +47,7 @@ jobs:
           name: Immersive Clock v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
           files: |
             immersive-clock-web.zip
         env:
@@ -143,6 +144,7 @@ jobs:
             Write-Host "Build attempt $attempt of $maxAttempts..."
             try {
               npm run build:electron
+              npm run pack:electron
               $success = $true
             } catch {
               if ($attempt -eq $maxAttempts) {
@@ -155,6 +157,21 @@ jobs:
           }
         timeout-minutes: 30
 
+      - name: Verify Windows artifacts
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "release")) {
+            throw "release directory not found"
+          }
+
+          $setupFiles = Get-ChildItem -Path "release" -Filter "*-Setup.exe" -File -ErrorAction SilentlyContinue
+          $portableFiles = Get-ChildItem -Path "release" -Filter "*-Portable.exe" -File -ErrorAction SilentlyContinue
+
+          if (($setupFiles.Count + $portableFiles.Count) -eq 0) {
+            Get-ChildItem -Path "release" -Force | Format-Table -AutoSize | Out-String | Write-Host
+            throw "No Windows installer files found in release/"
+          }
+
       - name: Publish Windows artifacts to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -162,6 +179,7 @@ jobs:
           name: Immersive Clock v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
           files: |
             release/*-Setup.exe
             release/*-Portable.exe
@@ -211,7 +229,26 @@ jobs:
       - name: Build Electron app
         env:
           NODE_ENV: production
-        run: npm run build:electron
+        run: |
+          npm run build:electron
+          npm run pack:electron
+
+      - name: Verify Linux artifacts
+        shell: bash
+        run: |
+          if [ ! -d "release" ]; then
+            echo "release directory not found"
+            exit 1
+          fi
+
+          ls -la release
+
+          shopt -s nullglob
+          files=(release/*.AppImage release/*.deb release/*.rpm)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Linux artifacts found in release/"
+            exit 1
+          fi
 
       - name: Publish Linux artifacts to GitHub Release
         uses: softprops/action-gh-release@v1
@@ -220,6 +257,7 @@ jobs:
           name: Immersive Clock v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
           files: |
             release/*.AppImage
             release/*.deb

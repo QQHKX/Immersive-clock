@@ -13,6 +13,7 @@
     "dev:electron": "vite --mode electron",
     "build": "vite build && node scripts/postbuild.mjs",
     "build:electron": "node --input-type=module -e \"import fs from 'fs'; fs.rmSync('dist-electron',{ recursive:true, force:true });\" && vite build --mode electron && node scripts/postbuild-electron.mjs",
+    "dist:electron": "npm run build:electron && npm run pack:electron",
     "pack:electron": "electron-builder",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",
