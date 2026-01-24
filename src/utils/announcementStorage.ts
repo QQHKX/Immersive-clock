@@ -5,7 +5,7 @@
 import { getAppSettings, updateAppSettings } from "./appSettings";
 import { logger } from "./logger";
 
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 一周的毫秒数
+const ONE_FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000; // 15天的毫秒数
 
 /**
  * 获取当前应用版本号
@@ -44,12 +44,12 @@ export const shouldShowAnnouncement = (): boolean => {
 };
 
 /**
- * 设置一周内不再显示公告
+ * 设置15天内不再显示公告
  */
 export const setDontShowForWeek = (): void => {
   try {
     const currentVersion = getCurrentVersion();
-    const hideUntil = Date.now() + ONE_WEEK_MS;
+    const hideUntil = Date.now() + ONE_FIFTEEN_DAYS_MS;
     updateAppSettings((current) => ({
       general: {
         ...current.general,
@@ -67,7 +67,7 @@ export const setDontShowForWeek = (): void => {
 
 /**
  * 清除公告隐藏设置
- * @remarks 调试与重置辅助：清空“一周内不再显示”偏好。
+ * @remarks 调试与重置辅助：清空"15天内不再显示"偏好。
  */
 export const clearAnnouncementHidePreference = (): void => {
   try {

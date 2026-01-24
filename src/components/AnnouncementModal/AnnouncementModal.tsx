@@ -49,7 +49,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   // 当前激活的选项卡
   const [activeTab, setActiveTab] = useState<AnnouncementTab>(initialTab);
   const containerRef = useRef<HTMLDivElement>(null);
-  // 是否勾选"一周内不再显示"
+  // 是否勾选"15天内不再显示"
   const [dontShowAgain, setDontShowAgain] = useState(false);
   // Markdown文档状态
   const [documents, setDocuments] = useState<Record<AnnouncementTab, MarkdownDocument>>({
@@ -173,7 +173,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         <div className={styles.footer}>
           <div className={styles.checkboxContainer}>
             <FormCheckbox
-              label="一周内不再显示"
+              label="15天内不再显示"
               checked={dontShowAgain}
               onChange={(e) => setDontShowAgain(e.target.checked)}
             />
