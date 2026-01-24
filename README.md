@@ -165,8 +165,8 @@ npm run preview
 
 **Electron 端构建：**
 ```bash
-# 构建桌面安装包（输出至 release 目录）
-npm run build:electron
+# 构建并打包桌面安装包（输出至 release 目录）
+npm run dist:electron
 ```
 
 **运行测试：**
