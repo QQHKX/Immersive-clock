@@ -8,7 +8,7 @@
 
 **技术栈：**
 
-- React 18.2.0 + TypeScript 5.4.0
+- React 18.2.0 + TypeScript 5.4.0 + React Router 6
 - Vite 4.1.0 构建工具
 - PWA 支持（vite-plugin-pwa）
 - Electron 桌面应用支持
@@ -64,8 +64,67 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 
 **测试文件位置：**
 
-- 单元测试：`src/**/__tests__/*.test.ts(x)`
+- 单元测试：`src/**/__tests__/*.test.ts(x)` 或同目录 `*.test.ts`
 - 端到端测试：`tests/e2e/*.e2e.spec.ts`
+
+---
+
+## 项目架构与核心机制
+
+### 目录结构与职责
+
+| 目录/文件              | 角色       | 关键职责                                                                     |
+| ---------------------- | ---------- | ---------------------------------------------------------------------------- |
+| `electron/`            | 桌面端核心 | `main.ts`(主进程/协议/权限), `preload.ts`(预加载)                            |
+| `src/main.tsx`         | Web 入口   | 应用挂载、PWA Service Worker 注册                                            |
+| `src/App.tsx`          | 路由容器   | 路由配置、全局公告弹窗容器                                                   |
+| `src/pages/ClockPage/` | 主控页面   | 模式切换逻辑、全局弹窗堆叠管理、HUD 显隐控制                                 |
+| `src/contexts/`        | 状态核心   | `AppContext`(运行时状态), `appReducer`(状态转换逻辑)                         |
+| `src/components/`      | UI 组件库  | `Modal`(统一模态), `FormComponents`, `LightControls`                         |
+| `src/hooks/`           | 逻辑复用   | `useTimer`(高精度计时), `useAudio`(音效), `useBattery`                       |
+| `src/utils/`           | 工具与服务 | `appSettings.ts`(配置管理), `timeSync.ts`(校时), `noiseDataService.ts`(噪音) |
+
+### 关键 Utils 模块
+
+- **`appSettings.ts`**: 统一配置管理中心（CRUD/持久化）
+- **`timeSync.ts`**: 网络校时与本地偏移管理，统一"当前时间"来源
+- **`noiseDataService.ts`**: 噪音采集、存储 (LocalStorage) 与事件分发
+- **`db.ts`**: IndexedDB 封装，用于存储大体积数据（如自定义字体）
+- **`announcementStorage.ts`**: 公告版本控制与已读状态管理
+
+### 混合应用架构（Electron + PWA）
+
+项目同时支持 Web (PWA) 和 Desktop (Electron) 运行模式。
+
+**Electron 集成：**
+
+- 协议：注册 `app://` 自定义协议加载本地资源，支持 SPA 路由
+- 权限：自动允许 `geolocation`；`media` 权限仅允许音频采集（拒绝视频以防隐私泄露）
+- 安全：拦截非 `app://` 和非开发服务器的导航请求
+
+**PWA：**
+
+- 集成 `vite-plugin-pwa`，提供离线缓存与桌面安装能力
+- 离线策略：核心静态资源采用 CacheFirst；文档（`/docs/*.md`）采用 NetworkFirst 并设定 24 小时过期
+
+### 噪音监测系统
+
+- **数据流**：Web Audio API (AudioContext) -> 实时 RMS/dB 计算 -> `noiseDataService`
+- **存储策略**：采用**滑动窗口**机制，在 `localStorage` 中存储最近 24 小时的样本 (`NoiseSample[]`)
+- **解耦设计**：采集服务与 UI 完全解耦，通过 `window.dispatchEvent` 触发 `noise-samples-updated` 事件驱动图表更新
+- **提示音提醒**：当平均 dB 超过阈值且在设置中开启时播放提示音（默认关闭）
+
+### 事件总线
+
+组件间解耦通信依赖自定义事件 (`window.dispatchEvent`)。
+
+| 事件名                  | 触发源                 | 监听者          | 作用                           |
+| ----------------------- | ---------------------- | --------------- | ------------------------------ |
+| `settingsSaved`         | SettingsPanel          | 业务组件        | 通知配置已变更（如刷新语录源） |
+| `noise-samples-updated` | noiseDataService       | NoiseChart      | 通知噪音历史数据已更新         |
+| `timeSync:syncNow`      | SettingsPanel/用户操作 | timeSync 管理器 | 触发一次立即校时               |
+| `timeSync:updated`      | timeSync 管理器        | SettingsPanel   | 通知校时状态已更新（刷新显示） |
+| `storage`               | 浏览器                 | AppContext      | 多标签页状态同步（部分实现）   |
 
 ---
 
@@ -102,8 +161,9 @@ import styles from "./Clock.module.css";
 - 在 `src/types/index.ts` 中定义所有类型，或使用同目录下的 `.d.ts` 文件
 - 公共函数使用显式返回类型
 - 使用严格 TypeScript（tsconfig 中 `strict: true`）
-- 避免使用 `any`（警告级别）- 使用适当的类型或 `unknown`
+- **避免使用 `any`**（警告级别）- 使用适当的类型或 `unknown`
 - 对象形状使用接口，联合类型/基本类型使用类型
+- **禁止单字母变量**，使用有语义的变量名
 
 **命名约定：**
 
@@ -154,15 +214,52 @@ export function useTimer(callback: () => void, isActive: boolean, interval: numb
 
 - 仅使用函数式组件（不使用类组件）
 - 导出命名函数：`export function Clock() { ... }`
-- 使用 CSS Modules 进行样式处理（`.module.css`）
+- 使用 CSS Modules 进行样式处理（`.module.css`），CSS 变量位于 `src/styles/variables.css`
 - 添加 `aria-*` 属性以提高无障碍性
 - 使用语义化 HTML（`main`、`section` 等）
 
 **状态管理：**
 
 - 通过 Context + Reducer 管理全局状态（`src/contexts/AppContext.tsx`）
+- 运行时状态与持久化配置分离：
+  - **运行时状态**：AppContext + Reducer（模式切换、倒计时运行等）
+  - **持久化配置**：`appSettings.ts`（用户偏好设置）
 - 动作在 `src/types/index.ts` 中定义为可辨识联合类型
-- 本地存储工具在 `src/utils/` 目录
+
+### UI 组件规范
+
+**表单与按钮统一：**
+
+优先使用 `src/components/FormComponents` 下的统一组件：
+
+- **按钮**：`FormButton`（支持 `variant`、`size`、`icon`、`loading`）
+- **输入**：`FormInput`（支持 `variant="time"/"number"`）、复选框：`FormCheckbox`、单选：`FormRadio`、分段选择：`FormSegmented`
+
+**按钮变体规范：**
+
+- `primary`：主行动或确认（如模态框确认）
+- `secondary`：一般次级操作
+- `danger`：不可逆或破坏性操作
+- `success`：正向结果或成功动作
+- `ghost`（透明）：用于底部控制栏与工具栏等非强调操作，去除背景与边框，仅保留轻微悬浮动效；**不要用于主行动按钮**
+
+**尺寸规范：** `sm`/`md`/`lg`，底部控制栏与工具栏默认使用 `sm`
+
+**非表单控件：**
+
+为非表单类按钮（如 `Tabs`、`ModeSelector`）使用 `src/components/LightControls/LightButton` 进行轻量封装：
+
+- `Tabs`：`role="tablist"`，按钮 `role="tab"` 与 `aria-selected`
+- 工具栏：容器 `role="toolbar"`，图标按钮提供 `aria-label`
+
+**设置面板 UI 规范：**
+
+- 使用 `FormSection` 组件进行内容分组（**禁止**裸写 `div` 作为主要分组容器）
+- 使用 `FormRow` 组件进行水平排列（`gap="sm"` 或 `gap="md"`，`align="center"`）
+- **禁止**在子页面内部使用 `h1`, `h2`, `h3` 等标题标签作为页面主标题（页面标题由父级 Tabs 负责）
+- 子页面内部仅使用 `FormSection` 的 `title` 属性作为区块标题
+- 说明文本：使用 `p` 标签配合 `className={styles.helpText}`
+- 状态信息：使用 `p` 标签配合 `className={styles.infoText}`
 
 ### 错误处理
 
@@ -202,99 +299,125 @@ try {
 
 ---
 
-## 测试指南
+## 数据持久化规范
 
-### 单元测试（Vitest）
+### 存储分层选择
 
-**结构：**
+**1) AppSettings（首选：用户偏好/配置）**
 
-```typescript
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+- 适用：设置面板可编辑、需要长期持久化、需要类型约束的配置
+- 位置：`src/utils/appSettings.ts`
+- 要求：
+  - 新增字段必须在 `AppSettings` 接口与默认值 `DEFAULT_SETTINGS` 中补齐
+  - 更新必须通过 `updateAppSettings / updateStudySettings / updateGeneralSettings / updateNoiseSettings / updateTimeSyncSettings` 等封装写入
 
-import { debug, info, warn, error, logger } from "../logger";
+**2) localStorage（轻量缓存/分片数据）**
 
-describe("logger", () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>;
+- 适用：非关键配置、可重建/可过期的数据（如天气缓存、噪音采样、按日分片的报告）
+- 推荐做法：
+  - 使用独立的 `src/utils/*Storage.ts` 或 `src/utils/*Service.ts` 管理读写与校验
+  - 对分片数据使用统一前缀（例如 `noise-reports.<date>`），并提供清理策略函数（例如保留 7 天）
 
-  beforeEach(() => {
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  });
+**3) IndexedDB（大体积/二进制/文件）**
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+- 适用：字体文件、Blob、体积较大的结构化数据
+- 位置：`src/utils/db.ts`，以及具体业务封装（如 `src/utils/studyFontStorage.ts`）
 
-  it("warn 调用 console.warn", () => {
-    warn("test");
-    expect(warnSpy).toHaveBeenCalled();
-  });
-});
-```
+### 键名与结构约定
 
-**最佳实践：**
+- **统一入口**：配置类优先进入 `AppSettings`，避免新增散落的 localStorage 配置键
+- **命名要求**：
+  - localStorage 键必须"可读 + 可归类"，避免短、泛、无前缀的键名
+  - 动态键必须有固定前缀，例如：`noise-reports.<YYYY-MM-DD>`
+- **类型与校验**：
+  - 读取 localStorage 时必须做 `JSON.parse` try/catch，并校验结构（数组/字段类型等）
+  - 读取 AppSettings 时可依赖 `getAppSettings()` 的默认值合并
 
-- 全面测试工具函数、服务和 Hook
-- React 测试使用 `jsdom` 环境
-- 模拟外部 API 和浏览器 API
-- 目标覆盖率 80%（vitest.config.ts 中的阈值）
+### 迁移与兼容策略
 
-### 端到端测试（Playwright）
-
-**结构：**
-
-```typescript
-import { test, expect } from "@playwright/test";
-
-test("首页加载并显示时钟", async ({ page }) => {
-  await page.goto("/");
-  await expect(page).toHaveTitle(/沉浸式时钟/i);
-
-  const main = page.getByRole("main", { name: "时钟应用主界面" });
-  await expect(main).toBeVisible();
-});
-```
-
-**最佳实践：**
-
-- 测试关键用户流程（模式切换、设置持久化）
-- 使用语义选择器（role、label）而非 CSS 选择器
-- 自动在 http://127.0.0.1:3005 启动开发服务器
-- 本地开发在 msedge 运行，CI 中运行 chromium/firefox/webkit
+- **先迁移再清理**：旧键数据必须先迁入新体系（通常为 AppSettings 或新键），验证成功后才能删除旧键
+- **禁止误清理**：仍可能被读取/写入的键 **不得** 放入 `LEGACY_KEYS`
+- **迁移应尽量幂等**：多次执行不应破坏数据
+- 推荐迁移流程：
+  1. 在 `src/utils/storageInitializer.ts` 中新增迁移逻辑
+  2. 迁移条件建议使用"raw AppSettings 中是否显式存在对应字段"判断
+  3. 迁移成功后删除旧键（`removeItem`）
+  4. 旧键确认不再被任何代码路径读取后，才加入 `LEGACY_KEYS`
+  5. 为迁移增加 Vitest 单测覆盖典型场景
 
 ---
 
-## 文件结构和约定
+## 测试指南
 
+### 测试策略
+
+- **优先写 Vitest 单测**：当新增/修改逻辑函数、数据处理、格式化、存储迁移、网络请求封装等"纯逻辑"能力
+- **组件级测试用 Vitest + Testing Library**：验证组件的渲染/受控输入/按钮点击等局部交互
+- **优先写 Playwright E2E**：当新增/修改用户可见行为（交互、键盘/触控、设置面板联动、页面跳转、渲染结果）或需要依赖浏览器能力（布局、焦点、事件、媒体、PWA 等）
+- **回归修复必须补测试**：修复 bug 时，优先补一个能稳定复现旧问题的用例（先红后绿）
+
+### Vitest 单元测试
+
+**运行：**
+
+```bash
+npm run test                # 运行所有单测
+npm test -- path/to/file    # 运行单个测试文件
+npm run test:coverage       # 生成覆盖率报告
 ```
-src/
-├── components/       # UI 组件（Clock、HUD、Modal 等）
-├── contexts/         # 全局状态（AppContext with reducer）
-├── hooks/            # 自定义 Hook（useTimer、useAudio 等）
-├── pages/            # 页面容器
-├── services/         # 外部 API 服务（天气等）
-├── types/            # TypeScript 类型定义
-├── utils/            # 工具函数和存储助手
-└── styles/           # 全局 CSS 变量
+
+**编写规范：**
+
+- 采用 **AAA**（Arrange/Act/Assert）结构：准备 → 执行 → 断言
+- 每个用例只验证一个核心行为；复杂场景拆成多个 `it`
+- 避免脆弱断言（如依赖随机数、当前时间、网络波动）
+- 模块 mock 使用 `vi.mock()`，并在 `beforeEach/afterEach` 中重置
+- 异步测试优先用 `await` 明确等待
+
+**覆盖率期望：**
+
+- `src/utils/**/*`、`src/services/**/*`、`src/hooks/**/*`
+- 阈值：lines/functions/statements 80%，branches 70%
+
+### Playwright 端到端测试
+
+**运行：**
+
+```bash
+npm run test:e2e            # 运行所有 E2E
+npm run test:e2e -- tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 ```
 
-**命名：**
+**编写规范：**
 
-- 组件文件：`ComponentName.tsx` + `ComponentName.module.css`
-- 测试文件：`fileName.test.ts`（单元测试）、`fileName.e2e.spec.ts`（端到端测试）
-- 桶导出：公共 API 使用 `index.ts`
+- 默认启动 `npm run dev`，baseURL 为 `http://127.0.0.1:3005`
+- 选择器稳定性优先：优先使用语义化定位（如 `getByRole`、可访问名称）
+- 每个用例只覆盖一个关键用户路径；复杂流程拆成多个用例
+
+**本地开发：**
+
+- 默认使用系统 Edge（避免自动下载 Playwright 浏览器）
+- 可视化运行：`npm run test:e2e -- --headed`
+- 如需使用 chromium/firefox/webkit，设置 `PW_BUNDLED_BROWSERS=1` 后运行
+
+### 测试地图
+
+项目维护了测试地图 `docs/testing-map.md`，用于快速定位"功能 → 用例"。新增/修改功能并新增/调整用例时，请同步更新测试地图。
 
 ---
 
 ## 常用模式
 
-### 存储
+### 配置管理
 
 ```typescript
-// 使用 src/utils/ 中的工具
-export function loadSettings(): Settings {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : DEFAULT_SETTINGS;
-}
+import { getAppSettings, updateStudySettings } from "@/utils/appSettings";
+
+// 读取配置
+const settings = getAppSettings();
+
+// 局部更新
+updateStudySettings({ targetYear: 2026 });
 ```
 
 ### 日志记录
@@ -315,6 +438,18 @@ import { getAdjustedDate } from "@/utils/timeSync";
 const now = getAdjustedDate(); // 使用此方法而非 new Date()
 ```
 
+### 高精度计时器
+
+```typescript
+import { useTimer } from "@/hooks/useTimer";
+
+const callback = useCallback(() => {
+  // 每次触发的逻辑
+}, []);
+
+useTimer(callback, isActive, 1000); // 1秒间隔
+```
+
 ---
 
 ## 重要注意事项
@@ -323,18 +458,27 @@ const now = getAdjustedDate(); // 使用此方法而非 new Date()
 2. **JSX 中导入 React：** 不需要（React 18 自动支持）
 3. **导入排序：** 关键 - 使用 `npm run lint:fix` 自动修复
 4. **未使用变量：** 加 `_` 前缀或修复（警告级别）
-5. **PWA 缓存：** 版本缓存插件处理资源版本控制
+5. **PWA 缓存：** 版本缓存插件处理资源版本化（`?v=<version>`）
 6. **Electron 模式：** 使用 `--mode electron` 进行 Electron 构建
+7. **避免使用 `any`：** TypeScript 优先，使用适当的类型或 `unknown`
+8. **禁止单字母变量：** 使用有语义的变量名
+9. **AGENTS.md 同步：** 任何涉及项目架构、技术规范或核心逻辑的变更，**必须**同步更新 `AGENTS.md` 中的对应章节
 
 ---
 
-## 环境变量
+## 环境变量与版本管理
 
 从 `.env.example` 创建 `.env`：
 
 ```bash
 VITE_APP_VERSION=3.12.4  # 如未设置，自动从 package.json 读取
 ```
+
+**版本注入：**
+
+- 运行时版本：通过 `import.meta.env.VITE_APP_VERSION` 注入
+- Manifest 统一：`index.html` 使用 `<link rel="manifest" href="/manifest.json" />`
+- 参数注入：页面链接的 `manifest.json`、`.webmanifest` 及 `favicon.svg` 均追加 `?v=<version>`
 
 ---
 
@@ -347,6 +491,7 @@ VITE_APP_VERSION=3.12.4  # 如未设置，自动从 package.json 读取
 | 运行单个端到端测试 | `npx playwright test tests/e2e/file.e2e.spec.ts`      |
 | 修复代码检查问题   | `npm run lint:fix`                                    |
 | 覆盖率报告         | `npm run test:coverage`（打开 `coverage/index.html`） |
+| 本地开发可视化测试 | `npm run test:e2e -- --headed`                        |
 
 ---
 
@@ -355,3 +500,4 @@ VITE_APP_VERSION=3.12.4  # 如未设置，自动从 package.json 读取
 - [README.md](README.md) - 完整项目文档
 - [docs/usage.zh-CN.md](docs/usage.zh-CN.md) - 用户指南（中文）
 - [docs/faq.zh-CN.md](docs/faq.zh-CN.md) - 常见问题（中文）
+- [docs/testing-map.md](docs/testing-map.md) - 测试地图
