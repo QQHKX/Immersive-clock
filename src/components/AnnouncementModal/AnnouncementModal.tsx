@@ -32,6 +32,12 @@ const ANNOUNCEMENT_TABS: AnnouncementTabConfig[] = [
     filename: "changelog.md",
     icon: "📝",
   },
+  {
+    key: "feedback",
+    title: "意见反馈",
+    iframeSrc: "https://wj.qq.com/s2/25666249/lj9p/",
+    icon: "💬",
+  },
 ];
 
 /**
@@ -46,16 +52,25 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   onClose,
   initialTab = "announcement",
 }) => {
+  type MarkdownAnnouncementTab = Exclude<AnnouncementTab, "feedback">;
+
   // 当前激活的选项卡
   const [activeTab, setActiveTab] = useState<AnnouncementTab>(initialTab);
   const containerRef = useRef<HTMLDivElement>(null);
   // 是否勾选"一周内不再显示"
   const [dontShowAgain, setDontShowAgain] = useState(false);
   // Markdown文档状态
-  const [documents, setDocuments] = useState<Record<AnnouncementTab, MarkdownDocument>>({
+  const [documents, setDocuments] = useState<Record<MarkdownAnnouncementTab, MarkdownDocument>>({
     announcement: { content: "", loading: true, filename: "announcement.md" },
     changelog: { content: "", loading: true, filename: "changelog.md" },
   });
+
+  /**
+   * 判断当前选项卡是否为 Markdown 类型
+   * @param tab - 当前选项卡
+   */
+  const isMarkdownTab = (tab: AnnouncementTab): tab is MarkdownAnnouncementTab =>
+    tab === "announcement" || tab === "changelog";
 
   /**
    * 渲染Markdown内容为HTML
@@ -79,9 +94,9 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
    * 加载选项卡内容
    * @param tab - 要加载的选项卡
    */
-  const loadDocument = async (tab: AnnouncementTab) => {
+  const loadDocument = async (tab: MarkdownAnnouncementTab) => {
     const tabConfig = ANNOUNCEMENT_TABS.find((t) => t.key === tab);
-    if (!tabConfig) return;
+    if (!tabConfig || !("filename" in tabConfig)) return;
 
     setDocuments((prev) => ({
       ...prev,
@@ -132,9 +147,11 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
    */
   const handleTabChange = (tab: AnnouncementTab) => {
     setActiveTab(tab);
-    // 如果文档还未加载，则加载它
-    if (!documents[tab].content && !documents[tab].loading) {
-      loadDocument(tab);
+    if (isMarkdownTab(tab)) {
+      // 如果文档还未加载，则加载它
+      if (!documents[tab].content && !documents[tab].loading) {
+        loadDocument(tab);
+      }
     }
   };
 
@@ -152,13 +169,13 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
 
   // 组件挂载时加载初始选项卡的文档
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isMarkdownTab(activeTab)) {
       loadDocument(activeTab);
     }
   }, [isOpen, activeTab]);
 
   // 获取当前文档
-  const currentDocument = documents[activeTab];
+  const currentDocument = isMarkdownTab(activeTab) ? documents[activeTab] : undefined;
   const currentTabConfig = ANNOUNCEMENT_TABS.find((t) => t.key === activeTab);
 
   return (
@@ -200,16 +217,45 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         />
 
         {/* 内容区域 */}
-        <div className={styles.content}>
-          {currentDocument.loading ? (
+        <div className={`${styles.content} ${activeTab === "feedback" ? styles.contentIframe : ""}`}>
+          {activeTab === "feedback" && currentTabConfig && "iframeSrc" in currentTabConfig ? (
+            <div className={styles.iframeContainer}>
+              <div className={styles.iframeViewport}>
+                <iframe
+                  id="idy_frame"
+                  title="意见反馈（腾讯问卷）"
+                  src={currentTabConfig.iframeSrc}
+                  width="100%"
+                  height="100%"
+                  loading="lazy"
+                  className={styles.feedbackIframe}
+                  allowFullScreen
+                  sandbox="allow-same-origin allow-scripts allow-modals allow-downloads allow-forms allow-popups"
+                />
+                <div className={styles.scrollbarMaskY} aria-hidden />
+                <div className={styles.scrollbarMaskX} aria-hidden />
+              </div>
+              <div className={styles.iframeFallback}>
+                <a href={currentTabConfig.iframeSrc} target="_blank" rel="noreferrer">
+                  无法加载？点击在新窗口打开问卷
+                </a>
+              </div>
+            </div>
+          ) : currentDocument?.loading ? (
             <div className={styles.loading}>
               <div className={styles.loadingSpinner}></div>
               <p>正在加载{currentTabConfig?.title}...</p>
             </div>
-          ) : currentDocument.error ? (
+          ) : currentDocument?.error ? (
             <div className={styles.error}>
               <p>加载失败：{currentDocument.error}</p>
-              <FormButton onClick={() => loadDocument(activeTab)} variant="secondary" size="sm">
+              <FormButton
+                onClick={() => {
+                  if (isMarkdownTab(activeTab)) loadDocument(activeTab);
+                }}
+                variant="secondary"
+                size="sm"
+              >
                 重试
               </FormButton>
             </div>
@@ -217,7 +263,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             <div
               className={styles.markdownContent}
               dangerouslySetInnerHTML={{
-                __html: currentDocument.content ? renderMarkdown(currentDocument.content) : "",
+                __html: currentDocument?.content ? renderMarkdown(currentDocument.content) : "",
               }}
             />
           )}

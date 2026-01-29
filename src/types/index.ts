@@ -1,21 +1,32 @@
 /**
  * 公告选项卡类型
  */
-export type AnnouncementTab = "announcement" | "changelog";
+export type AnnouncementTab = "announcement" | "changelog" | "feedback";
 
 /**
  * 公告选项卡配置接口
  */
-export interface AnnouncementTabConfig {
-  /** 选项卡标识 */
-  key: AnnouncementTab;
-  /** 显示标题 */
-  title: string;
-  /** 对应的Markdown文件名 */
-  filename: string;
-  /** 图标（可选） */
-  icon?: string;
-}
+export type AnnouncementTabConfig =
+  | {
+      /** 选项卡标识 */
+      key: "announcement" | "changelog";
+      /** 显示标题 */
+      title: string;
+      /** 对应的Markdown文件名 */
+      filename: string;
+      /** 图标（可选） */
+      icon?: string;
+    }
+  | {
+      /** 选项卡标识 */
+      key: "feedback";
+      /** 显示标题 */
+      title: string;
+      /** 内嵌页面链接 */
+      iframeSrc: string;
+      /** 图标（可选） */
+      icon?: string;
+    };
 
 /**
  * 公告组件状态接口
