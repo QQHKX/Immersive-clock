@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 /**
  * 初始化测试运行环境（函数级注释）：
@@ -30,4 +30,3 @@ function setupTestingEnvironment() {
 }
 
 setupTestingEnvironment();
-

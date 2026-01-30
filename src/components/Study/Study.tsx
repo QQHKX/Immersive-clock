@@ -115,7 +115,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch { }
+    } catch {}
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();

@@ -70,7 +70,11 @@ describe("weatherStorage", () => {
 
   it("位置缓存按 signature 命中，并在同签名下保留旧字段", () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
-    updateLocationCache(31.20009, 121.50001, { city: "上海", address: "A 路 1 号", addressSource: "amap" });
+    updateLocationCache(31.20009, 121.50001, {
+      city: "上海",
+      address: "A 路 1 号",
+      addressSource: "amap",
+    });
 
     vi.spyOn(Date, "now").mockReturnValue(1100);
     updateLocationCache(31.20008, 121.50002, { city: "上海市" });

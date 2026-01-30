@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
 import { CountdownItem } from "../../../types";
-import { getAppSettings, updateStudySettings, updateTimeSyncSettings } from "../../../utils/appSettings";
+import {
+  getAppSettings,
+  updateStudySettings,
+  updateTimeSyncSettings,
+} from "../../../utils/appSettings";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
 import {
   importFontFile,
@@ -101,7 +105,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
 
   // 子分区保存注册
-  const countdownSaveRef = React.useRef<() => void>(() => { });
+  const countdownSaveRef = React.useRef<() => void>(() => {});
 
   // 单事件颜色透明度草稿
   const [singleBgOpacity, setSingleBgOpacity] = useState<number>(0);
@@ -137,7 +141,9 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   }, []);
 
   const [timeSyncEnabled, setTimeSyncEnabled] = useState<boolean>(false);
-  const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi" | "ntp">("httpDate");
+  const [timeSyncProvider, setTimeSyncProvider] = useState<"httpDate" | "timeApi" | "ntp">(
+    "httpDate"
+  );
   const [timeSyncHttpDateUrl, setTimeSyncHttpDateUrl] = useState<string>("/");
   const [timeSyncApiUrl, setTimeSyncApiUrl] = useState<string>("");
   const [timeSyncNtpHost, setTimeSyncNtpHost] = useState<string>("pool.ntp.org");
@@ -154,7 +160,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved);
       }
-    } catch { }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -177,17 +183,19 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       );
       setTimeSyncAutoEnabled(!!saved.autoSyncEnabled);
       setTimeSyncAutoIntervalMin(
-        Number.isFinite(saved.autoSyncIntervalSec) ? Math.max(1, Math.round(saved.autoSyncIntervalSec / 60)) : 60
+        Number.isFinite(saved.autoSyncIntervalSec)
+          ? Math.max(1, Math.round(saved.autoSyncIntervalSec / 60))
+          : 60
       );
       setTimeSyncStatus(saved);
-    } catch { }
+    } catch {}
   }, [ntpAvailable]);
 
   useEffect(() => {
     const refresh = () => {
       try {
         setTimeSyncStatus(getAppSettings().general.timeSync);
-      } catch { }
+      } catch {}
     };
     refresh();
     window.addEventListener("timeSync:updated", refresh as EventListener);
@@ -408,7 +416,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       // 记录最近启用的模式，确保下次打开直接显示
       try {
         updateStudySettings({ countdownMode });
-      } catch { }
+      } catch {}
 
       // 保存字体设置（函数级注释：根据选择与自定义输入计算最终的 font-family 并派发到全局状态）
       const resolveFont = (mode: "default" | "custom", selected: string): string | undefined => {
@@ -428,9 +436,14 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
         timeApiUrl: timeSyncApiUrl.trim(),
         ntpHost: timeSyncNtpHost.trim() || current.ntpHost,
         ntpPort: Math.max(1, Math.min(65535, Math.trunc(timeSyncNtpPort || 123))),
-        manualOffsetMs: Math.round((Number.isFinite(timeSyncManualOffsetSec) ? timeSyncManualOffsetSec : 0) * 1000),
+        manualOffsetMs: Math.round(
+          (Number.isFinite(timeSyncManualOffsetSec) ? timeSyncManualOffsetSec : 0) * 1000
+        ),
         autoSyncEnabled: timeSyncAutoEnabled,
-        autoSyncIntervalSec: Math.max(60, Math.round((Number.isFinite(timeSyncAutoIntervalMin) ? timeSyncAutoIntervalMin : 60) * 60)),
+        autoSyncIntervalSec: Math.max(
+          60,
+          Math.round((Number.isFinite(timeSyncAutoIntervalMin) ? timeSyncAutoIntervalMin : 60) * 60)
+        ),
       }));
     });
   }, [
@@ -878,7 +891,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={numericFontSelected}
-                onChange={() => { }}
+                onChange={() => {}}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -901,20 +914,20 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                       systemFonts.length > 0
                         ? systemFonts
                         : [
-                          systemFontSupported
-                            ? {
-                              label: loadingSystemFonts
-                                ? "正在读取系统字体..."
-                                : "点击“读取系统字体”按钮后刷新此列表",
-                              value: "__sys_hint__",
-                              disabled: true,
-                            }
-                            : {
-                              label: "当前浏览器不支持系统字体读取",
-                              value: "__sys_hint__",
-                              disabled: true,
-                            },
-                        ],
+                            systemFontSupported
+                              ? {
+                                  label: loadingSystemFonts
+                                    ? "正在读取系统字体..."
+                                    : "点击“读取系统字体”按钮后刷新此列表",
+                                  value: "__sys_hint__",
+                                  disabled: true,
+                                }
+                              : {
+                                  label: "当前浏览器不支持系统字体读取",
+                                  value: "__sys_hint__",
+                                  disabled: true,
+                                },
+                          ],
                   },
                   {
                     label: "—— 内置 ——",
@@ -941,7 +954,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                 label="选择已导入或内置字体"
                 placeholder="选择后保存即应用"
                 value={textFontSelected}
-                onChange={() => { }}
+                onChange={() => {}}
                 style={{ display: "none" }}
               />
               <Dropdown
@@ -964,20 +977,20 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
                       systemFonts.length > 0
                         ? systemFonts
                         : [
-                          systemFontSupported
-                            ? {
-                              label: loadingSystemFonts
-                                ? "正在读取系统字体..."
-                                : "点击“读取系统字体”按钮后刷新此列表",
-                              value: "__sys_hint__",
-                              disabled: true,
-                            }
-                            : {
-                              label: "当前浏览器不支持系统字体读取",
-                              value: "__sys_hint__",
-                              disabled: true,
-                            },
-                        ],
+                            systemFontSupported
+                              ? {
+                                  label: loadingSystemFonts
+                                    ? "正在读取系统字体..."
+                                    : "点击“读取系统字体”按钮后刷新此列表",
+                                  value: "__sys_hint__",
+                                  disabled: true,
+                                }
+                              : {
+                                  label: "当前浏览器不支持系统字体读取",
+                                  value: "__sys_hint__",
+                                  disabled: true,
+                                },
+                          ],
                   },
                   {
                     label: "—— 内置 ——",
@@ -1115,12 +1128,12 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             { label: "时间 API", value: "timeApi" },
             ...(isDesktop
               ? [
-                {
-                  label: "NTP（桌面端）",
-                  value: "ntp",
-                  disabled: !ntpAvailable,
-                },
-              ]
+                  {
+                    label: "NTP（桌面端）",
+                    value: "ntp",
+                    disabled: !ntpAvailable,
+                  },
+                ]
               : []),
           ]}
           onChange={(v) => {
@@ -1237,7 +1250,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             )}
             {isDesktop && !ntpAvailable && (
               <p className={styles.helpText}>
-                提示：检测到桌面端环境，但 NTP 能力未就绪（preload 未加载到最新版本）；请重新启动桌面端或重新构建桌面端产物。
+                提示：检测到桌面端环境，但 NTP 能力未就绪（preload
+                未加载到最新版本）；请重新启动桌面端或重新构建桌面端产物。
               </p>
             )}
             {timeSyncProvider === "httpDate" && (
@@ -1247,7 +1261,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
             )}
             {timeSyncProvider === "ntp" && (
               <p className={styles.helpText}>
-                提示：NTP 使用 UDP/123，可能会被防火墙或网络策略拦截；若提示“桌面端不可用”，请先重建桌面端产物。
+                提示：NTP 使用
+                UDP/123，可能会被防火墙或网络策略拦截；若提示“桌面端不可用”，请先重建桌面端产物。
               </p>
             )}
           </>

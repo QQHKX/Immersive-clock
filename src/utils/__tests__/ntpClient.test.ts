@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
+
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const { dnsLookupMock, createSocketMock } = vi.hoisted(() => ({
   dnsLookupMock: vi.fn(),
@@ -71,7 +72,9 @@ describe("ntpClient", () => {
     const socket = new FakeSocket();
     createSocketMock.mockReturnValue(socket);
 
-    vi.spyOn(Date, "now").mockImplementationOnce(() => 1000).mockImplementationOnce(() => 1100);
+    vi.spyOn(Date, "now")
+      .mockImplementationOnce(() => 1000)
+      .mockImplementationOnce(() => 1100);
 
     const res = await queryNtpOnce({ host: "pool.ntp.org", port: 123, timeoutMs: 2000 });
 
@@ -87,7 +90,12 @@ describe("ntpClient", () => {
     dnsLookupMock.mockResolvedValue({ address: "1.2.3.4" });
 
     const socket = new FakeSocket();
-    socket.send = (_buf: Buffer, _port: number, _address: string, cb: (err?: Error | null) => void) => {
+    socket.send = (
+      _buf: Buffer,
+      _port: number,
+      _address: string,
+      cb: (err?: Error | null) => void
+    ) => {
       cb(null);
     };
     createSocketMock.mockReturnValue(socket);

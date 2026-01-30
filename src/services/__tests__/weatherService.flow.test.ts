@@ -26,7 +26,8 @@ type FetchResponseLike = {
 /** weatherService 单元测试（函数级注释：覆盖 buildWeatherFlow 与多定位/反编码分支） */
 describe("weatherService - flow", () => {
   const originalFetch = globalThis.fetch;
-  const originalIsSecureContext = (window as unknown as { isSecureContext?: boolean }).isSecureContext;
+  const originalIsSecureContext = (window as unknown as { isSecureContext?: boolean })
+    .isSecureContext;
   const originalGeolocation = (navigator as unknown as { geolocation?: unknown }).geolocation;
   const originalPermissions = (navigator as unknown as { permissions?: unknown }).permissions;
 
@@ -46,12 +47,23 @@ describe("weatherService - flow", () => {
       value: originalIsSecureContext,
       configurable: true,
     });
-    Object.defineProperty(navigator, "geolocation", { value: originalGeolocation, configurable: true });
-    Object.defineProperty(navigator, "permissions", { value: originalPermissions, configurable: true });
+    Object.defineProperty(navigator, "geolocation", {
+      value: originalGeolocation,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, "permissions", {
+      value: originalPermissions,
+      configurable: true,
+    });
   });
 
   it("buildWeatherFlow：命中坐标与位置缓存，仅请求实时天气", async () => {
-    weatherStorageMocks.getValidCoords.mockReturnValue({ lat: 31.2, lon: 121.5, source: "ip", updatedAt: 1 });
+    weatherStorageMocks.getValidCoords.mockReturnValue({
+      lat: 31.2,
+      lon: 121.5,
+      source: "ip",
+      updatedAt: 1,
+    });
     weatherStorageMocks.getValidLocation.mockReturnValue({
       signature: "31.2000,121.5000",
       updatedAt: 1,
@@ -136,7 +148,11 @@ describe("weatherService - flow", () => {
     const res = await buildWeatherFlow();
 
     expect(weatherStorageMocks.updateGeolocationDiagnostics).toHaveBeenCalledTimes(1);
-    expect(weatherStorageMocks.updateCoordsCache).toHaveBeenCalledWith(31.21, 121.51, "geolocation");
+    expect(weatherStorageMocks.updateCoordsCache).toHaveBeenCalledWith(
+      31.21,
+      121.51,
+      "geolocation"
+    );
     expect(weatherStorageMocks.updateLocationCache).toHaveBeenCalledTimes(1);
     expect(res.coordsSource).toBe("geolocation");
     expect(res.city).toBe("上海市");
@@ -144,7 +160,12 @@ describe("weatherService - flow", () => {
   });
 
   it("buildWeatherFlow：反编码 Amap 失败时回退 OSM", async () => {
-    weatherStorageMocks.getValidCoords.mockReturnValue({ lat: 31.2, lon: 121.5, source: "geolocation", updatedAt: 1 });
+    weatherStorageMocks.getValidCoords.mockReturnValue({
+      lat: 31.2,
+      lon: 121.5,
+      source: "geolocation",
+      updatedAt: 1,
+    });
     weatherStorageMocks.getValidLocation.mockReturnValue(null);
 
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
@@ -306,7 +327,13 @@ describe("weatherService - flow", () => {
         statusText: "OK",
         text: async () =>
           JSON.stringify({
-            address: { road: "A 路", house_number: "1", neighbourhood: "N", city: "Shanghai", country: "CN" },
+            address: {
+              road: "A 路",
+              house_number: "1",
+              neighbourhood: "N",
+              city: "Shanghai",
+              country: "CN",
+            },
             display_name: "display-1",
           }),
       } satisfies FetchResponseLike);
@@ -417,7 +444,11 @@ describe("weatherService - flow", () => {
     });
 
     const { getGeolocationResult } = await import("../weatherService");
-    const res = await getGeolocationResult({ enableHighAccuracy: true, timeoutMs: 1000, maximumAgeMs: 0 });
+    const res = await getGeolocationResult({
+      enableHighAccuracy: true,
+      timeoutMs: 1000,
+      maximumAgeMs: 0,
+    });
     expect(res.coords).toEqual({ lat: 31.2, lon: 121.5 });
     expect(res.diagnostics.usedHighAccuracy).toBe(false);
   });
@@ -469,7 +500,9 @@ describe("weatherService - flow", () => {
     const { fetchWeatherNow } = await import("../weatherService");
     await fetchWeatherNow("121.5,31.2");
 
-    const headers = (fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> } | undefined)?.headers;
+    const headers = (
+      fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> } | undefined
+    )?.headers;
     expect(headers?.Authorization).toBe("Bearer jwt-token");
   });
 

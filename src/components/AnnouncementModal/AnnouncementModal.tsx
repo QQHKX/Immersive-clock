@@ -217,7 +217,9 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         />
 
         {/* 内容区域 */}
-        <div className={`${styles.content} ${activeTab === "feedback" ? styles.contentIframe : ""}`}>
+        <div
+          className={`${styles.content} ${activeTab === "feedback" ? styles.contentIframe : ""}`}
+        >
           {activeTab === "feedback" && currentTabConfig && "iframeSrc" in currentTabConfig ? (
             <div className={styles.iframeContainer}>
               <div className={styles.iframeViewport}>

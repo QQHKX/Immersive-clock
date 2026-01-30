@@ -62,10 +62,11 @@ describe("storageInitializer - study schedule migration", () => {
   });
 
   it("当 AppSettings 已显式保存课表时，不覆盖但会清理 legacy 键", () => {
-    const appSettingsSchedule = [
-      { id: "x", startTime: "19:00", endTime: "20:00", name: "晚自习" },
-    ];
-    localStorage.setItem("AppSettings", JSON.stringify({ study: { schedule: appSettingsSchedule } }));
+    const appSettingsSchedule = [{ id: "x", startTime: "19:00", endTime: "20:00", name: "晚自习" }];
+    localStorage.setItem(
+      "AppSettings",
+      JSON.stringify({ study: { schedule: appSettingsSchedule } })
+    );
     localStorage.setItem(
       "studySchedule",
       JSON.stringify([{ id: "legacy", startTime: "01:00", endTime: "02:00", name: "旧数据" }])
@@ -81,4 +82,3 @@ describe("storageInitializer - study schedule migration", () => {
     expect(schedule).toEqual(appSettingsSchedule);
   });
 });
-

@@ -10,7 +10,9 @@ export async function dismissBlockingModals(page: Page) {
 
   const clickCloseIfVisible = async () => {
     try {
-      const closeButtonInDialog = systemAnnouncementDialog.getByRole("button", { name: "关闭模态框" });
+      const closeButtonInDialog = systemAnnouncementDialog.getByRole("button", {
+        name: "关闭模态框",
+      });
       if (await closeButtonInDialog.isVisible()) {
         await closeButtonInDialog.click();
         return;

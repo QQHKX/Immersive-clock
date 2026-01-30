@@ -125,7 +125,9 @@ describe("timeSync", () => {
       })
     );
 
-    vi.spyOn(Date, "now").mockImplementationOnce(() => 1000).mockImplementationOnce(() => 1200);
+    vi.spyOn(Date, "now")
+      .mockImplementationOnce(() => 1000)
+      .mockImplementationOnce(() => 1200);
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -153,7 +155,9 @@ describe("timeSync", () => {
     );
 
     const serverEpochMs = 8000;
-    vi.spyOn(Date, "now").mockImplementationOnce(() => 1000).mockImplementationOnce(() => 1100);
+    vi.spyOn(Date, "now")
+      .mockImplementationOnce(() => 1000)
+      .mockImplementationOnce(() => 1100);
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

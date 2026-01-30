@@ -1,4 +1,8 @@
-import { WeatherNow, MinutelyPrecipResponse, GeolocationDiagnostics } from "../services/weatherService";
+import {
+  WeatherNow,
+  MinutelyPrecipResponse,
+  GeolocationDiagnostics,
+} from "../services/weatherService";
 
 import { logger } from "./logger";
 

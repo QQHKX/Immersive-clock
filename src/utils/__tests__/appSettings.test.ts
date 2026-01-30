@@ -120,4 +120,3 @@ describe("appSettings", () => {
     expect(s.study.background.colorAlpha).toBe(0.8);
   });
 });
-

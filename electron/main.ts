@@ -9,7 +9,10 @@ import { registerTimeSyncIpc } from "./ipc/registerTimeSyncIpc";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function mergeChromiumFeatureSwitch(switchName: "enable-features" | "disable-features", add: string) {
+function mergeChromiumFeatureSwitch(
+  switchName: "enable-features" | "disable-features",
+  add: string
+) {
   const current = app.commandLine.getSwitchValue(switchName);
   const next = current ? `${current},${add}` : add;
   app.commandLine.appendSwitch(switchName, next);
@@ -205,11 +208,13 @@ app.whenReady().then(async () => {
    * - 地理位置与“仅音频采集”允许；
    * - 其他权限默认拒绝（更安全）。
    */
-  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-    if (permission === "geolocation") return true;
-    if (permission === "media") return isAudioOnlyMediaRequest(details);
-    return false;
-  });
+  session.defaultSession.setPermissionCheckHandler(
+    (webContents, permission, requestingOrigin, details) => {
+      if (permission === "geolocation") return true;
+      if (permission === "media") return isAudioOnlyMediaRequest(details);
+      return false;
+    }
+  );
 
   session.defaultSession.setPermissionRequestHandler(
     async (webContents, permission, callback, details) => {

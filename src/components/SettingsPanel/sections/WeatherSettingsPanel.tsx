@@ -61,13 +61,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       dispatch({ type: "SET_WEATHER_ALERT_ENABLED", payload: weatherAlertEnabled });
       dispatch({ type: "SET_MINUTELY_PRECIP_ENABLED", payload: minutelyPrecipEnabled });
     });
-  }, [
-    onRegisterSave,
-    dispatch,
-    messagePopupEnabled,
-    weatherAlertEnabled,
-    minutelyPrecipEnabled,
-  ]);
+  }, [onRegisterSave, dispatch, messagePopupEnabled, weatherAlertEnabled, minutelyPrecipEnabled]);
 
   const now = cache.now?.data.now;
   const refer = cache.now?.data.refer;
@@ -131,8 +125,9 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
         <p className={styles.infoText}>
           定位诊断：
           {geoDiag
-            ? `安全上下文=${geoDiag.isSecureContext ? "是" : "否"} 权限=${geoDiag.permissionState}${geoDiag.errorCode ? ` 错误码=${geoDiag.errorCode}` : ""
-            }${geoDiag.errorMessage ? ` 原因=${geoDiag.errorMessage}` : ""}`
+            ? `安全上下文=${geoDiag.isSecureContext ? "是" : "否"} 权限=${geoDiag.permissionState}${
+                geoDiag.errorCode ? ` 错误码=${geoDiag.errorCode}` : ""
+              }${geoDiag.errorMessage ? ` 原因=${geoDiag.errorMessage}` : ""}`
             : "未获取"}
         </p>
         {geoHint ? <p className={styles.infoText}>{geoHint}</p> : null}

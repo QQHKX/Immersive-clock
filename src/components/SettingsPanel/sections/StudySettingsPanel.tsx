@@ -7,7 +7,11 @@ import {
   saveNoiseControlSettings,
 } from "../../../utils/noiseControlSettings";
 import { getNoiseReportSettings, setAutoPopupSetting } from "../../../utils/noiseReportSettings";
-import { broadcastSettingsEvent, SETTINGS_EVENTS, subscribeSettingsEvent } from "../../../utils/settingsEvents";
+import {
+  broadcastSettingsEvent,
+  SETTINGS_EVENTS,
+  subscribeSettingsEvent,
+} from "../../../utils/settingsEvents";
 import {
   FormSection,
   FormButton,
@@ -100,7 +104,8 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, (evt: CustomEvent) => {
       try {
         const detail = evt.detail as { baselineRms?: unknown } | undefined;
-        const nextRms = detail && typeof detail.baselineRms === "number" ? detail.baselineRms : undefined;
+        const nextRms =
+          detail && typeof detail.baselineRms === "number" ? detail.baselineRms : undefined;
         if (typeof nextRms === "number") {
           setEffectiveBaselineRms(nextRms);
           return;

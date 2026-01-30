@@ -175,7 +175,9 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
   // 组件初始化时加载课程表
   useEffect(() => {
     loadSchedule();
-    const offSchedule = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => loadSchedule());
+    const offSchedule = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () =>
+      loadSchedule()
+    );
     const offSaved = subscribeSettingsEvent(SETTINGS_EVENTS.SettingsSaved, () => loadSchedule());
     const onStorage = (e: StorageEvent) => {
       if (e.key === "AppSettings" || e.key === "study-schedule" || e.key === "studySchedule") {

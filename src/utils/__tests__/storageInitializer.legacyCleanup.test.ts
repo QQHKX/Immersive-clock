@@ -57,4 +57,3 @@ describe("storageInitializer - legacy cleanup", () => {
     expect(localStorage.getItem("AppSettings")).not.toBeNull();
   });
 });
-

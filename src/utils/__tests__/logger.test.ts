@@ -44,4 +44,3 @@ describe("logger", () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 });
-

@@ -90,7 +90,7 @@ export const Tabs: React.FC<TabsProps> = ({
     // 但考虑到目前实现用了 id={item.key}，且 item.key 可能是简单字符串
     // 我们尝试直接在 children 中找
     const activeEl = Array.from(container.querySelectorAll('[role="tab"]')).find(
-      (el) => el.getAttribute('id') === activeKey
+      (el) => el.getAttribute("id") === activeKey
     ) as HTMLElement;
 
     if (!activeEl) return;
@@ -104,8 +104,7 @@ export const Tabs: React.FC<TabsProps> = ({
     // 检查是否完全在可视区域内（预留 20px 边距）
     const PADDING = 20;
     const isFullyVisible =
-      elLeft >= scrollLeft + PADDING &&
-      elLeft + elWidth <= scrollLeft + containerWidth - PADDING;
+      elLeft >= scrollLeft + PADDING && elLeft + elWidth <= scrollLeft + containerWidth - PADDING;
 
     if (isFullyVisible) {
       // 如果已经在可视区域且有余量，不需要滚动

@@ -73,8 +73,8 @@ function parseNtpResponse(options: { response: Buffer; t4LocalMs: number }): Ntp
   const t3 = ntpTimestampToUnixEpochMs(transmit.seconds, transmit.fraction);
   const t4 = Math.trunc(options.t4LocalMs);
 
-  const delayMs = (t4 - t1) - (t3 - t2);
-  const offsetMs = ((t2 - t1) + (t3 - t4)) / 2;
+  const delayMs = t4 - t1 - (t3 - t2);
+  const offsetMs = (t2 - t1 + (t3 - t4)) / 2;
 
   return {
     offsetMs: Math.round(offsetMs),
@@ -152,4 +152,3 @@ export async function queryNtpOnce(options: NtpQueryOptions): Promise<NtpQueryRe
     });
   });
 }
-

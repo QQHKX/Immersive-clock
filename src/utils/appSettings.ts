@@ -263,7 +263,9 @@ export function updateAppSettings(
         display: studyUpdates.display
           ? { ...current.study.display, ...studyUpdates.display }
           : current.study.display,
-        style: studyUpdates.style ? { ...current.study.style, ...studyUpdates.style } : current.study.style,
+        style: studyUpdates.style
+          ? { ...current.study.style, ...studyUpdates.style }
+          : current.study.style,
         alerts: studyUpdates.alerts
           ? { ...current.study.alerts, ...studyUpdates.alerts }
           : current.study.alerts,

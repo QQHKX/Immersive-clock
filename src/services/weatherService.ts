@@ -17,7 +17,12 @@ export interface Coords {
   lon: number;
 }
 
-export type GeolocationPermissionState = "granted" | "denied" | "prompt" | "unsupported" | "unknown";
+export type GeolocationPermissionState =
+  | "granted"
+  | "denied"
+  | "prompt"
+  | "unsupported"
+  | "unknown";
 
 export interface GeolocationDiagnostics {
   isSupported: boolean;
@@ -575,12 +580,7 @@ function extractCityFromAmapReverse(raw: unknown): string | null {
 function extractCityFromOsmAddress(raw: unknown): string | null {
   const addr = raw as Partial<OsmAddress> | null | undefined;
   const city =
-    addr?.city ||
-    addr?.town ||
-    addr?.village ||
-    addr?.county ||
-    addr?.state ||
-    addr?.country;
+    addr?.city || addr?.town || addr?.village || addr?.county || addr?.state || addr?.country;
   if (typeof city === "string" && city.trim()) return city.trim();
   return null;
 }

@@ -91,6 +91,7 @@
 通过 PWA (Progressive Web App) 技术，您可以像原生应用一样安装本时钟，享受**离线使用**、**桌面图标启动**和**自动更新**的体验，且无需下载庞大的安装包。
 
 **安装步骤：**
+
 1. 使用 Chrome 或 Edge 浏览器访问 [https://clock.qqhkx.com](https://clock.qqhkx.com)。
 2. 点击浏览器地址栏右侧的 **"安装 Immersive Clock"** 图标（通常是一个带有加号的小显示器图标）。
 3. 确认安装后，应用将以独立窗口运行，并自动在桌面/开始菜单生成图标。
@@ -146,12 +147,14 @@ npm install
 ### 3. 开发模式运行
 
 **启动 Web 开发服务器：**
+
 ```bash
 npm run dev
 # 访问 http://localhost:3005
 ```
 
 **启动 Electron 开发环境：**
+
 ```bash
 npm run dev:electron
 ```
@@ -159,6 +162,7 @@ npm run dev:electron
 ### 4. 生产构建与测试
 
 **Web 端构建：**
+
 ```bash
 # 构建生产版本
 npm run build
@@ -168,12 +172,14 @@ npm run preview
 ```
 
 **Electron 端构建：**
+
 ```bash
 # 构建并打包桌面安装包（输出至 release 目录）
 npm run dist:electron
 ```
 
 **运行测试：**
+
 ```bash
 # 单元测试 (Vitest)
 npm run test
@@ -305,11 +311,12 @@ immersive-clock/
 
 欢迎加入我们的官方交流群，分享使用心得、反馈 Bug 或提出功能建议。
 
-也可以通过以下方式进行反馈（建议附上复现步骤与截图/录屏，方便快速定位）：  
-- QQ 群内直接反馈： [https://qm.qq.com/q/fawykipRhm](https://qm.qq.com/q/fawykipRhm)  
-- GitHub Issues： [https://github.com/QQHKX/immersive-clock/issues](https://github.com/QQHKX/immersive-clock/issues)  
-- 应用内反馈：点击右下角“版本号”打开公告弹窗 → 切到「意见反馈」  
-- 直接问卷链接： [https://wj.qq.com/s2/25666249/lj9p/](https://wj.qq.com/s2/25666249/lj9p/)  
+也可以通过以下方式进行反馈（建议附上复现步骤与截图/录屏，方便快速定位）：
+
+- QQ 群内直接反馈： [https://qm.qq.com/q/fawykipRhm](https://qm.qq.com/q/fawykipRhm)
+- GitHub Issues： [https://github.com/QQHKX/immersive-clock/issues](https://github.com/QQHKX/immersive-clock/issues)
+- 应用内反馈：点击右下角“版本号”打开公告弹窗 → 切到「意见反馈」
+- 直接问卷链接： [https://wj.qq.com/s2/25666249/lj9p/](https://wj.qq.com/s2/25666249/lj9p/)
 
 |   QQ 交流群   |                                     二维码                                      |
 | :-----------: | :-----------------------------------------------------------------------------: |

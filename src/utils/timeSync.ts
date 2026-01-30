@@ -131,7 +131,11 @@ async function measureOffsetOnce(options: {
     const anyWindow = window as unknown as {
       electronAPI?: {
         timeSync?: {
-          ntp?: (req: { host: string; port?: number; timeoutMs?: number }) => Promise<TimeSyncSampleResult>;
+          ntp?: (req: {
+            host: string;
+            port?: number;
+            timeoutMs?: number;
+          }) => Promise<TimeSyncSampleResult>;
         };
       };
     };
@@ -241,7 +245,7 @@ export async function syncTime(options?: {
 
   const samples = clampInt(options?.samples ?? 3, 1, 9);
   const timeoutMs = clampInt(options?.timeoutMs ?? 8000, 1000, 30000);
-  const port = provider === "ntp" ? options?.port ?? settings.ntpPort : undefined;
+  const port = provider === "ntp" ? (options?.port ?? settings.ntpPort) : undefined;
 
   const results: TimeSyncSampleResult[] = [];
   for (let i = 0; i < samples; i++) {
@@ -306,7 +310,11 @@ export function startTimeSyncManager(): () => void {
 
     isSyncing = true;
     try {
-      const r = await syncTime({ provider: s.provider, url, port: s.provider === "ntp" ? s.ntpPort : undefined });
+      const r = await syncTime({
+        provider: s.provider,
+        url,
+        port: s.provider === "ntp" ? s.ntpPort : undefined,
+      });
       updateTimeSyncSettings({
         offsetMs: r.offsetMs,
         lastSyncAt: Date.now(),

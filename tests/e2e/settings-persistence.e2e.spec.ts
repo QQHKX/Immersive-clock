@@ -16,7 +16,10 @@ test("设置持久化：修改目标年份并保存", async ({ page }) => {
 
   await dialog.getByRole("button", { name: "高考" }).click();
 
-  const targetYearInput = dialog.locator('label:has-text("目标年份")').locator("..").locator("input");
+  const targetYearInput = dialog
+    .locator('label:has-text("目标年份")')
+    .locator("..")
+    .locator("input");
   await targetYearInput.fill("2029");
 
   await dialog.getByRole("button", { name: "保存" }).click();

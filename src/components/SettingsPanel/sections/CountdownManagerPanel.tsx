@@ -88,7 +88,9 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
           targetDate:
             it.kind === "custom" ? (it.targetDate && it.targetDate.trim()) || "" : undefined,
           bgColor:
-            isCustomStyle && it.bgColor && it.bgColor.trim().length > 0 ? it.bgColor.trim() : undefined,
+            isCustomStyle && it.bgColor && it.bgColor.trim().length > 0
+              ? it.bgColor.trim()
+              : undefined,
           bgOpacity: isCustomStyle && typeof it.bgOpacity === "number" ? it.bgOpacity : 0,
           textColor:
             isCustomStyle && it.textColor && it.textColor.trim().length > 0
@@ -99,7 +101,8 @@ export const CountdownManagerPanel: React.FC<CountdownManagerPanelProps> = ({ on
             isCustomStyle && it.digitColor && it.digitColor.trim().length > 0
               ? it.digitColor.trim()
               : undefined,
-          digitOpacity: isCustomStyle && typeof it.digitOpacity === "number" ? it.digitOpacity : undefined,
+          digitOpacity:
+            isCustomStyle && typeof it.digitOpacity === "number" ? it.digitOpacity : undefined,
           order: idx,
         };
       });

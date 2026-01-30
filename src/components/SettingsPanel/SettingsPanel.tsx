@@ -124,9 +124,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             ]}
             activeKey={activeCategory}
             onChange={(key) =>
-              setActiveCategory(
-                key as "basic" | "weather" | "monitor" | "quotes" | "about"
-              )
+              setActiveCategory(key as "basic" | "weather" | "monitor" | "quotes" | "about")
             }
             variant="announcement"
             size="md"

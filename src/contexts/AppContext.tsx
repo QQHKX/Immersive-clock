@@ -81,6 +81,11 @@ const initialState: AppState = {
 };
 
 /**
+ * 导出用于测试的默认状态
+ */
+export const getInitialState = (): AppState => initialState;
+
+/**
  * 应用状态减速器
  * @param state 当前状态
  * @param action 动作
@@ -704,3 +709,8 @@ export function useAppDispatch(): React.Dispatch<AppAction> {
 export function useAppContext(): [AppState, React.Dispatch<AppAction>] {
   return [useAppState(), useAppDispatch()];
 }
+
+/**
+ * 导出 Reducer 以便测试使用
+ */
+export { appReducer };
