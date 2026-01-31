@@ -22,11 +22,17 @@
 }
 
 .versionNumber {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 2px 4px;
   border-radius: 4px;
   user-select: none;
+  display: inline-block;
 }
 
 .versionNumber:hover {

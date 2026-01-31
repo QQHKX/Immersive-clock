@@ -168,7 +168,8 @@ export function Countdown() {
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
-        aria-label="双击或双触设置倒计时时间"
+        aria-label={`倒计时时间：${timeString}。双击或双触设置倒计时时间`}
+        aria-live="polite"
         style={{
           touchAction: "manipulation",
         }}

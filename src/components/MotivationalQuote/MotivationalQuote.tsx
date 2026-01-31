@@ -301,10 +301,23 @@ export function MotivationalQuote() {
   }, []);
 
   return (
-    <div className={styles.motivationalQuote} onClick={handleClick} title="点击刷新励志语录">
-      <div className={`${styles.quoteText} ${isTyping ? styles.typing : ""}`}>
+    <div
+      className={styles.motivationalQuote}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      title="点击刷新励志语录"
+      role="button"
+      tabIndex={0}
+      aria-label="励志语录，点击刷新"
+    >
+      <div className={`${styles.quoteText} ${isTyping ? styles.typing : ""}`} aria-live="polite">
         {isTyping ? displayText : currentQuote}
-        {isTyping && <span className={styles.cursor}>|</span>}
+        {isTyping && <span className={styles.cursor} aria-hidden="true">|</span>}
       </div>
     </div>
   );

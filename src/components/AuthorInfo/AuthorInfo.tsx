@@ -26,11 +26,17 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
   };
 
   return (
-    <div className={styles.authorInfo}>
+    <aside className={styles.authorInfo}>
       <div className={styles.version}>
-        <span className={styles.versionNumber} onClick={handleVersionClick} title="点击查看公告">
+        <button
+          className={styles.versionNumber}
+          onClick={handleVersionClick}
+          title="点击查看公告"
+          type="button"
+          aria-label={`版本 v${appVersion}，点击查看更新公告`}
+        >
           v{appVersion}
-        </span>
+        </button>
         {" by "}
         <a
           href="https://qqhkx.com"
@@ -41,6 +47,6 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
           qqhkx
         </a>
       </div>
-    </div>
+    </aside>
   );
 }

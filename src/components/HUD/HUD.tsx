@@ -14,9 +14,10 @@ export function HUD() {
   const { isHudVisible } = useAppState();
 
   return (
-    <div
+    <section
       className={`${styles.hud} ${isHudVisible ? styles.visible : styles.hidden}`}
       aria-hidden={!isHudVisible}
+      aria-label="HUD 控制面板"
     >
       <div className={styles.hudContent}>
         <div className={styles.topSection}>
@@ -27,6 +28,6 @@ export function HUD() {
           <ControlBar />
         </div>
       </div>
-    </div>
+    </section>
   );
 }

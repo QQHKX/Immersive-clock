@@ -33,10 +33,12 @@ export function Clock() {
 
   return (
     <div className={styles.clock}>
-      <div className={styles.time} aria-live="polite">
+      <div className={styles.time} aria-live="polite" aria-label={`当前时间：${timeString}`}>
         {timeString}
       </div>
-      <div className={styles.date}>{dateString}</div>
+      <div className={styles.date} aria-label={`当前日期：${dateString}`}>
+        {dateString}
+      </div>
     </div>
   );
 }
