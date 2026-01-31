@@ -2,11 +2,21 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node", "vite/client", "vite-plugin-pwa/client"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node",
+      "vite/client",
+      "vite-plugin-pwa/client"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@testing-library/react": ["node_modules/@testing-library/react/types/index.d.ts"]
+      "@testing-library/react": [
+        "node_modules/@testing-library/react/types/index.d.ts"
+      ]
     },
     "module": "ESNext",
     "skipLibCheck": true,
@@ -22,5 +32,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
