@@ -100,38 +100,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Pre-download electron-builder dependencies
+      - name: Cleanup broken NSIS cache
         shell: pwsh
         run: |
-          # Pre-download NSIS resources with retry
-          $nsisUrl = "https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z"
-          $nsisPath = "$env:LOCALAPPDATA\electron-builder\Cache\nsis\nsis-resources-3.4.1"
-          
-          if (-not (Test-Path $nsisPath)) {
-            New-Item -ItemType Directory -Force -Path $nsisPath | Out-Null
-            
-            $maxAttempts = 5
-            $attempt = 1
-            $downloaded = $false
-            
-            while ($attempt -le $maxAttempts -and -not $downloaded) {
-              Write-Host "Downloading NSIS resources (attempt $attempt of $maxAttempts)..."
-              try {
-                Invoke-WebRequest -Uri $nsisUrl -OutFile "$nsisPath\nsis-resources.7z" -TimeoutSec 300 -MaximumRetryCount 3
-                $downloaded = $true
-                Write-Host "NSIS resources downloaded successfully"
-              } catch {
-                if ($attempt -eq $maxAttempts) {
-                  Write-Host "Warning: Failed to pre-download NSIS resources, will try during build"
-                  break
-                }
-                Write-Host "Download failed, retrying in 5 seconds..."
-                Start-Sleep -Seconds 5
-                $attempt++
-              }
-            }
-          } else {
-            Write-Host "NSIS resources already cached"
+          $nsisResourcesDir = Join-Path $env:LOCALAPPDATA "electron-builder\Cache\nsis\nsis-resources-3.4.1"
+          $wrongArchive = Join-Path $nsisResourcesDir "nsis-resources.7z"
+
+          if (Test-Path $wrongArchive) {
+            Write-Host "Detected legacy/broken NSIS resources cache ($wrongArchive). Removing $nsisResourcesDir to force re-download."
+            Remove-Item -Recurse -Force $nsisResourcesDir
           }
 
       - name: Create .env file from secrets
