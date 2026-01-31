@@ -8,11 +8,18 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: "22"
+
 jobs:
-  build-web:
+  lint-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,11 +28,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test
+
+  build-web:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build Web
         env:
@@ -47,6 +76,7 @@ jobs:
 
   build-electron-windows:
     runs-on: windows-latest
+    if: github.event_name == 'push'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -54,8 +84,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
 
       - name: Cache electron-builder
         uses: actions/cache@v4
@@ -68,7 +98,7 @@ jobs:
             ${{ runner.os }}-electron-builder-
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Pre-download electron-builder dependencies
         shell: pwsh
@@ -117,28 +147,34 @@ jobs:
       - name: Build Electron app
         env:
           NODE_ENV: production
-          ELECTRON_BUILDER_CACHE: ${{ runner.temp }}\electron-builder-cache
           DEBUG: electron-builder
         run: |
-          # Retry logic for build
           $maxAttempts = 3
-          $attempt = 1
-          $success = $false
-          
-          while ($attempt -le $maxAttempts -and -not $success) {
+
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host "Build attempt $attempt of $maxAttempts..."
-            try {
-              npm run build:electron
-              npm run pack:electron
-              $success = $true
-            } catch {
+
+            npm run build:electron
+            if ($LASTEXITCODE -ne 0) {
               if ($attempt -eq $maxAttempts) {
-                throw
+                throw "build:electron failed after $maxAttempts attempts"
               }
-              Write-Host "Build failed, retrying in 10 seconds..."
+              Write-Host "build:electron failed, retrying in 10 seconds..."
               Start-Sleep -Seconds 10
-              $attempt++
+              continue
             }
+
+            npm run pack:electron
+            if ($LASTEXITCODE -eq 0) {
+              break
+            }
+
+            if ($attempt -eq $maxAttempts) {
+              throw "pack:electron failed after $maxAttempts attempts"
+            }
+
+            Write-Host "pack:electron failed, retrying in 10 seconds..."
+            Start-Sleep -Seconds 10
           }
         timeout-minutes: 30
 
@@ -173,6 +209,7 @@ jobs:
 
   build-electron-linux:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -180,8 +217,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
 
       - name: Cache electron-builder
         uses: actions/cache@v4
@@ -194,7 +231,7 @@ jobs:
             ${{ runner.os }}-electron-builder-
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Create .env file from secrets
         run: |

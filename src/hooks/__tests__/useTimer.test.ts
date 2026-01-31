@@ -8,23 +8,33 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useTimer, useHighFrequencyTimer, useAccumulatingTimer } from "../useTimer";
 
 describe("useTimer", () => {
-  let rafCallbacks: Array<() => void> = [];
+  let rafCallbacks: Map<number, () => void>;
   let rafId = 0;
+  let now = 0;
+
+  /**
+   * 运行当前队列里“最早注册”的一次 requestAnimationFrame 回调
+   */
+  const runNextRaf = () => {
+    const entries = Array.from(rafCallbacks.entries());
+    expect(entries.length).toBeGreaterThan(0);
+    const [id, fn] = entries[0];
+    rafCallbacks.delete(id);
+    fn();
+  };
 
   beforeEach(() => {
-    rafCallbacks = [];
-    rafId = 0;
+    rafCallbacks = new Map();
+    rafId = 1;
+    now = 1;
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
-      rafCallbacks.push(() => cb(performance.now()));
-      return id as unknown as number;
+      rafCallbacks.set(id, () => cb(now));
+      return id;
     });
 
     vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-      const index = rafCallbacks.findIndex((_, idx) => idx === (id as number));
-      if (index !== -1) {
-        rafCallbacks.splice(index, 1);
-      }
+      rafCallbacks.delete(id as number);
     });
 
     vi.useFakeTimers();
@@ -41,13 +51,15 @@ describe("useTimer", () => {
 
     expect(callback).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(100);
-    rafCallbacks[0]();
+    runNextRaf();
+
+    now += 100;
+    runNextRaf();
 
     expect(callback).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(100);
-    rafCallbacks[1]();
+    now += 100;
+    runNextRaf();
 
     expect(callback).toHaveBeenCalledTimes(2);
   });
@@ -56,8 +68,7 @@ describe("useTimer", () => {
     const callback = vi.fn();
     renderHook(() => useTimer(callback, false, 100));
 
-    rafCallbacks.forEach((cb) => cb());
-
+    expect(rafCallbacks.size).toBe(0);
     expect(callback).not.toHaveBeenCalled();
   });
 
@@ -69,20 +80,10 @@ describe("useTimer", () => {
 
     expect(callback).not.toHaveBeenCalled();
 
-    rafCallbacks[0]();
+    runNextRaf();
 
-    expect(callback).toHaveBeenCalledTimes(1);
-
-    const newRafCallbacks: Array<() => void> = [];
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
-      const id = rafId++;
-      newRafCallbacks.push(() => cb(performance.now()));
-      return id as unknown as number;
-    });
-
-    rafCallbacks = newRafCallbacks;
-
-    rafCallbacks[0]();
+    now += 250;
+    runNextRaf();
 
     expect(callback).toHaveBeenCalledTimes(2);
   });
@@ -91,7 +92,7 @@ describe("useTimer", () => {
     const callback = vi.fn();
     const { unmount } = renderHook(() => useTimer(callback, true, 100));
 
-    expect(rafCallbacks.length).toBeGreaterThan(0);
+    expect(rafCallbacks.size).toBeGreaterThan(0);
 
     unmount();
 
@@ -102,60 +103,69 @@ describe("useTimer", () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    const { rerender } = renderHook(({ callback }) => useTimer(callback, true, 100), {
+    const { rerender } = renderHook(({ callback }: { callback: () => void }) => useTimer(callback, true, 100), {
       initialProps: { callback: callback1 },
     });
 
-    rafCallbacks.forEach((cb) => cb());
-    expect(callback1).toHaveBeenCalled();
+    runNextRaf();
+    now += 100;
+    runNextRaf();
+    expect(callback1).toHaveBeenCalledTimes(1);
 
     rerender({ callback: callback2 });
 
-    rafCallbacks = [];
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
-      const id = rafId++;
-      rafCallbacks.push(() => cb(performance.now()));
-      return id as unknown as number;
-    });
-
-    rafCallbacks.forEach((cb) => cb());
-    expect(callback2).toHaveBeenCalled();
+    now += 100;
+    runNextRaf();
+    expect(callback2).toHaveBeenCalledTimes(1);
   });
 
   it("间隔更新时应该使用新的间隔", () => {
     const callback = vi.fn();
-    const { rerender } = renderHook(({ interval }) => useTimer(callback, true, interval), {
+    const { rerender } = renderHook(({ interval }: { interval: number }) => useTimer(callback, true, interval), {
       initialProps: { interval: 100 },
     });
 
-    rafCallbacks[0]();
+    runNextRaf();
+    now += 100;
+    runNextRaf();
     expect(callback).toHaveBeenCalledTimes(1);
 
     rerender({ interval: 200 });
 
-    rafCallbacks[1]();
+    now += 200;
+    runNextRaf();
     expect(callback).toHaveBeenCalledTimes(2);
   });
 });
 
 describe("useHighFrequencyTimer", () => {
-  let rafCallbacks: Array<() => void> = [];
+  let rafCallbacks: Map<number, () => void>;
   let rafId = 0;
+  let now = 0;
+
+  /**
+   * 运行当前队列里“最早注册”的一次 requestAnimationFrame 回调
+   */
+  const runNextRaf = () => {
+    const entries = Array.from(rafCallbacks.entries());
+    expect(entries.length).toBeGreaterThan(0);
+    const [id, fn] = entries[0];
+    rafCallbacks.delete(id);
+    fn();
+  };
 
   beforeEach(() => {
-    rafCallbacks = [];
-    rafId = 0;
+    rafCallbacks = new Map();
+    rafId = 1;
+    now = 1;
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
-      rafCallbacks.push(() => cb(performance.now()));
-      return id as unknown as number;
+      rafCallbacks.set(id, () => cb(now));
+      return id;
     });
 
     vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-      const index = rafCallbacks.findIndex((_, idx) => idx === (id as number));
-      if (index !== -1) {
-        rafCallbacks.splice(index, 1);
-      }
+      rafCallbacks.delete(id as number);
     });
 
     vi.useFakeTimers();
@@ -170,30 +180,41 @@ describe("useHighFrequencyTimer", () => {
     const callback = vi.fn();
     renderHook(() => useHighFrequencyTimer(callback, true));
 
-    rafCallbacks[0]();
-
+    runNextRaf();
+    now += 10;
+    runNextRaf();
     expect(callback).toHaveBeenCalled();
   });
 });
 
 describe("useAccumulatingTimer", () => {
-  let rafCallbacks: Array<() => void> = [];
+  let rafCallbacks: Map<number, () => void>;
   let rafId = 0;
+  let now = 0;
+
+  /**
+   * 运行当前队列里“最早注册”的一次 requestAnimationFrame 回调
+   */
+  const runNextRaf = () => {
+    const entries = Array.from(rafCallbacks.entries());
+    expect(entries.length).toBeGreaterThan(0);
+    const [id, fn] = entries[0];
+    rafCallbacks.delete(id);
+    fn();
+  };
 
   beforeEach(() => {
-    rafCallbacks = [];
-    rafId = 0;
+    rafCallbacks = new Map();
+    rafId = 1;
+    now = 1;
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
-      rafCallbacks.push(() => cb(performance.now()));
-      return id as unknown as number;
+      rafCallbacks.set(id, () => cb(now));
+      return id;
     });
 
     vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-      const index = rafCallbacks.findIndex((_, idx) => idx === (id as number));
-      if (index !== -1) {
-        rafCallbacks.splice(index, 1);
-      }
+      rafCallbacks.delete(id as number);
     });
 
     vi.useFakeTimers();
@@ -208,10 +229,13 @@ describe("useAccumulatingTimer", () => {
     const callback = vi.fn();
     renderHook(() => useAccumulatingTimer(callback, true, 100));
 
-    rafCallbacks[0]();
+    runNextRaf();
+    now += 100;
+    runNextRaf();
     expect(callback).toHaveBeenCalledWith(1);
 
-    rafCallbacks[1]();
+    now += 100;
+    runNextRaf();
     expect(callback).toHaveBeenCalledWith(1);
   });
 });
