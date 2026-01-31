@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 
 import {
   AnnouncementModalProps,
@@ -69,8 +69,11 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
    * 判断当前选项卡是否为 Markdown 类型
    * @param tab - 当前选项卡
    */
-  const isMarkdownTab = (tab: AnnouncementTab): tab is MarkdownAnnouncementTab =>
-    tab === "announcement" || tab === "changelog";
+  const isMarkdownTab = useCallback(
+    (tab: AnnouncementTab): tab is MarkdownAnnouncementTab =>
+      tab === "announcement" || tab === "changelog",
+    []
+  );
 
   /**
    * 渲染Markdown内容为HTML
@@ -94,7 +97,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
    * 加载选项卡内容
    * @param tab - 要加载的选项卡
    */
-  const loadDocument = async (tab: MarkdownAnnouncementTab) => {
+  const loadDocument = useCallback(async (tab: MarkdownAnnouncementTab) => {
     const tabConfig = ANNOUNCEMENT_TABS.find((t) => t.key === tab);
     if (!tabConfig || !("filename" in tabConfig)) return;
 
@@ -128,7 +131,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         },
       }));
     }
-  };
+  }, []);
 
   /**
    * 处理关闭弹窗
@@ -172,7 +175,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     if (isOpen && isMarkdownTab(activeTab)) {
       loadDocument(activeTab);
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, isMarkdownTab, loadDocument]);
 
   // 获取当前文档
   const currentDocument = isMarkdownTab(activeTab) ? documents[activeTab] : undefined;

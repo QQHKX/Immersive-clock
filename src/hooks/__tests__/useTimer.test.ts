@@ -103,9 +103,12 @@ describe("useTimer", () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    const { rerender } = renderHook(({ callback }: { callback: () => void }) => useTimer(callback, true, 100), {
-      initialProps: { callback: callback1 },
-    });
+    const { rerender } = renderHook(
+      ({ callback }: { callback: () => void }) => useTimer(callback, true, 100),
+      {
+        initialProps: { callback: callback1 },
+      }
+    );
 
     runNextRaf();
     now += 100;
@@ -121,9 +124,12 @@ describe("useTimer", () => {
 
   it("间隔更新时应该使用新的间隔", () => {
     const callback = vi.fn();
-    const { rerender } = renderHook(({ interval }: { interval: number }) => useTimer(callback, true, interval), {
-      initialProps: { interval: 100 },
-    });
+    const { rerender } = renderHook(
+      ({ interval }: { interval: number }) => useTimer(callback, true, interval),
+      {
+        initialProps: { interval: 100 },
+      }
+    );
 
     runNextRaf();
     now += 100;

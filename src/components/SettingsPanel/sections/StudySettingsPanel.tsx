@@ -46,7 +46,7 @@ export interface StudySettingsPanelProps {
  * - 课程表编辑
  */
 export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegisterSave }) => {
-  const [effectiveBaselineRms, setEffectiveBaselineRms] = useState<number>(() => {
+  const [_effectiveBaselineRms, setEffectiveBaselineRms] = useState<number>(() => {
     return getAppSettings().noiseControl.baselineRms ?? 0;
   });
   const [noiseBaseline, setNoiseBaseline] = useState<number>(() => {

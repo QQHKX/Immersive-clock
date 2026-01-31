@@ -317,7 +317,11 @@ export function MotivationalQuote() {
     >
       <div className={`${styles.quoteText} ${isTyping ? styles.typing : ""}`} aria-live="polite">
         {isTyping ? displayText : currentQuote}
-        {isTyping && <span className={styles.cursor} aria-hidden="true">|</span>}
+        {isTyping && (
+          <span className={styles.cursor} aria-hidden="true">
+            |
+          </span>
+        )}
       </div>
     </div>
   );

@@ -45,6 +45,11 @@ export function QuoteChannelManager({
   const [editorError, setEditorError] = useState<string | null>(null);
   const [editorDraftMap, setEditorDraftMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const quoteChannelsRef = useRef(state.quoteChannels.channels);
+
+  useEffect(() => {
+    quoteChannelsRef.current = state.quoteChannels.channels;
+  }, [state.quoteChannels.channels]);
 
   /**
    * 从数据文件加载渠道配置
@@ -80,18 +85,19 @@ export function QuoteChannelManager({
       setDefaultQuotesMap(defaults);
 
       // 如果全局状态中没有渠道配置，则初始化到本地草稿
-      if (state.quoteChannels.channels.length === 0) {
+      const existingChannels = quoteChannelsRef.current;
+      if (existingChannels.length === 0) {
         setChannels(loadedChannels);
       } else {
         // 合并现有配置和文件配置
         const mergedBuiltInChannels = loadedChannels.map((fileChannel) => {
-          const existingChannel = state.quoteChannels.channels.find((c) => c.id === fileChannel.id);
+          const existingChannel = existingChannels.find((c) => c.id === fileChannel.id);
           return existingChannel || fileChannel;
         });
 
         // 找出自定义渠道（不在文件列表中的渠道）
         const builtInIds = new Set(loadedChannels.map((c) => c.id));
-        const customChannels = state.quoteChannels.channels.filter((c) => !builtInIds.has(c.id));
+        const customChannels = existingChannels.filter((c) => !builtInIds.has(c.id));
 
         setChannels([...mergedBuiltInChannels, ...customChannels]);
       }
@@ -100,7 +106,7 @@ export function QuoteChannelManager({
     } finally {
       setIsLoading(false);
     }
-  }, [state.quoteChannels.channels.length]); // 仅依赖长度变化，避免频繁更新
+  }, []);
 
   /**
    * 切换渠道启用状态
