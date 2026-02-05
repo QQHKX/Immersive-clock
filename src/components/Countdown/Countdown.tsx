@@ -159,9 +159,8 @@ export function Countdown() {
   return (
     <div className={styles.countdown}>
       <div
-        className={`${styles.time} ${isWarning ? styles.warning : ""} ${
-          isFinished ? styles.finished : ""
-        } ${styles.clickable}`}
+        className={`${styles.time} ${isWarning ? styles.warning : ""} ${isFinished ? styles.finished : ""
+          } ${styles.clickable}`}
         onDoubleClick={handleTimeDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

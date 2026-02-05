@@ -40,25 +40,6 @@ export function ClockPage() {
     }>
   >([]);
 
-  // 动态更新页面标题
-  useEffect(() => {
-    const baseTitle = "沉浸式时钟";
-    const modeNames: Record<string, string> = {
-      clock: "时钟",
-      countdown: "倒计时",
-      stopwatch: "秒表",
-      study: "自习模式",
-    };
-
-    const modeName = modeNames[mode] || "时钟";
-    document.title = `${modeName} | ${baseTitle}`;
-
-    // 组件卸载时恢复原标题
-    return () => {
-      document.title = baseTitle;
-    };
-  }, [mode]);
-
   // 跟踪模式变化
   useEffect(() => {
     if (prevModeRef.current !== "study" && mode === "study") {
