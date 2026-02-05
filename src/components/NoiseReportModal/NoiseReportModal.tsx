@@ -21,6 +21,11 @@ interface NoiseSample {
   s: "quiet" | "noisy";
 }
 
+export interface NoiseSampleForScore {
+  t: number;
+  v: number;
+}
+
 interface NoiseReportModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,6 +39,102 @@ const CHART_HEIGHT = 160;
 const CHART_PADDING = 36;
 const MINI_CHART_HEIGHT = 120;
 const MINI_CHART_PADDING = 30;
+
+/**
+ * 计算分位数（函数级中文注释）：
+ * - 输入需为已排序数组（升序）；
+ * - 使用线性插值获得更平滑的分位数结果；
+ * - p 取值范围 [0,1]，越大代表越靠近高位。
+ */
+function quantileSorted(sorted: number[], p: number): number {
+  if (!sorted.length) return 0;
+  const pp = Math.max(0, Math.min(1, p));
+  if (sorted.length === 1) return sorted[0];
+  const idx = (sorted.length - 1) * pp;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  const w = idx - lo;
+  return sorted[lo] * (1 - w) + sorted[hi] * w;
+}
+
+/**
+ * 计算晚自习“纪律评分”（函数级中文注释）：
+ * - 目标：在设备不同/校准偏移/误校准导致整体 dB 平移时，仍保持评分稳定；
+ * - 方法：用分布的鲁棒阈值（Tukey 上界）识别“噪音冲击”，并综合冲击占比、冲击次数与冲击强度；
+ * - 特性：若所有分贝整体加/减常数，分位数阈值同步平移，超阈判定与超出量基本不变。
+ */
+export function computeDisciplineScore(
+  period: NoiseReportPeriod | null,
+  samplesInPeriod: NoiseSampleForScore[]
+): {
+  score?: number;
+  dynThreshold: number;
+  impactCount: number;
+  impactDurationMs: number;
+  impactRatio: number;
+  p95: number;
+} {
+  if (!period || samplesInPeriod.length < 2) {
+    return {
+      score: undefined,
+      dynThreshold: 0,
+      impactCount: 0,
+      impactDurationMs: 0,
+      impactRatio: 0,
+      p95: 0,
+    };
+  }
+
+  const values = samplesInPeriod.map((s) => s.v).filter((v) => Number.isFinite(v));
+  if (values.length < 2) {
+    return {
+      score: undefined,
+      dynThreshold: 0,
+      impactCount: 0,
+      impactDurationMs: 0,
+      impactRatio: 0,
+      p95: 0,
+    };
+  }
+
+  const sorted = values.slice().sort((a, b) => a - b);
+  const p25 = quantileSorted(sorted, 0.25);
+  const p50 = quantileSorted(sorted, 0.5);
+  const p75 = quantileSorted(sorted, 0.75);
+  const p95 = quantileSorted(sorted, 0.95);
+  const iqr = Math.max(1, p75 - p25);
+  const upperFence = p75 + 1.5 * iqr;
+  const dynThreshold = Math.max(upperFence, p50 + 6);
+
+  const totalDurationMs = Math.max(1, period.end.getTime() - period.start.getTime());
+  let impactDurationMs = 0;
+  let impactCount = 0;
+
+  for (let i = 1; i < samplesInPeriod.length; i++) {
+    const prev = samplesInPeriod[i - 1];
+    const cur = samplesInPeriod[i];
+    const dt = Math.max(0, cur.t - prev.t);
+    const anyImpact = prev.v > dynThreshold || cur.v > dynThreshold;
+    if (anyImpact) impactDurationMs += dt;
+    const risingEdge = prev.v <= dynThreshold && cur.v > dynThreshold;
+    if (risingEdge) impactCount += 1;
+  }
+
+  const impactRatio = Math.max(0, Math.min(1, impactDurationMs / totalDurationMs));
+  const minutes = totalDurationMs / 60_000;
+  const impactPerMin = minutes > 0 ? impactCount / minutes : 0;
+  const intensity = Math.max(0, p95 - dynThreshold);
+
+  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+  const timePenalty = clamp01(impactRatio / 0.2);
+  const countPenalty = clamp01(impactPerMin / 6);
+  const intensityPenalty = clamp01(intensity / 10);
+  const penalty = 0.5 * timePenalty + 0.3 * countPenalty + 0.2 * intensityPenalty;
+  const score = Math.max(0, Math.min(100, Math.round(100 * (1 - penalty))));
+
+  return { score, dynThreshold, impactCount, impactDurationMs, impactRatio, p95 };
+}
 
 /**
  * 自习统计报告弹窗（函数级注释）：
@@ -124,75 +225,33 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
   }, [samplesInPeriod, period]);
 
   /**
-   * 波动性评分计算（函数级中文注释）：
-   * - 目标：减少校准阈值对评价的影响，关注“连续噪音的波动性/变异性”；
-   * - 方法：对分贝序列做移动平均平滑，基于相邻差分的平均绝对值与均方根，以及整体标准差综合为“波动指数”；
-   * - 归一化：采用经验常量（absDiff≈3dB、rms≈3.5dB、std≈6dB）归一化到 [0,1]；
-   * - 评分：score = 100 * (1 - volatilityIndex)，越平滑分数越高；
-   * - 额外输出：滚动波动曲线与直方图数据用于下方迷你图展示。
+   * 纪律评分计算结果（函数级中文注释）：
+   * - 以“噪音冲击”衡量晚自习纪律：冲击占比、冲击次数与冲击强度；
+   * - 使用相对阈值（分位数/上界）降低不同设备与误校准带来的影响。
    */
-  const volatility = useMemo(() => {
-    const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
-    if (!period || samplesInPeriod.length < 2) {
-      return {
-        score: undefined as number | undefined,
-        avgAbsDiff: 0,
-        rmsDiff: 0,
-        stdDev: 0,
-        smoothed: [] as number[],
-        times: [] as number[],
-        histogram: [] as { x: number; h: number }[],
-      };
-    }
+  const discipline = useMemo(() => {
+    return computeDisciplineScore(period, samplesInPeriod);
+  }, [period, samplesInPeriod]);
 
-    // 提取原始值与时间戳
-    const values = samplesInPeriod.map((s) => s.v);
-    const times = samplesInPeriod.map((s) => s.t);
+  /**
+   * 分贝直方图数据（函数级中文注释）：
+   * - 目的：展示该时段分贝值的整体分布，便于快速感知“集中/分散”；\n+   * - 使用 4dB 作为分箱粒度，保持可读性；\n+   * - 数据直接来源于该时段样本，不参与评分计算。
+   */
+  const histogram = useMemo(() => {
+    const values = samplesInPeriod.map((s) => s.v).filter((v) => Number.isFinite(v));
+    if (!values.length) return [] as { x: number; h: number }[];
 
-    // 移动平均平滑（窗口 5）
-    const k = 5;
-    const half = Math.floor(k / 2);
-    const smoothed: number[] = values.map((_, i) => {
-      const start = Math.max(0, i - half);
-      const end = Math.min(values.length - 1, i + half);
-      const slice = values.slice(start, end + 1);
-      const sum = slice.reduce((a, b) => a + b, 0);
-      return sum / slice.length;
-    });
-
-    // 相邻差分
-    const diffs: number[] = smoothed.map((v, i) => (i === 0 ? 0 : Math.abs(v - smoothed[i - 1])));
-    const count = Math.max(1, diffs.length - 1);
-    const avgAbsDiff = diffs.reduce((a, b) => a + b, 0) / count;
-    const rmsDiff = Math.sqrt(diffs.reduce((a, b) => a + b * b, 0) / count);
-
-    // 标准差
-    const mean = smoothed.reduce((a, b) => a + b, 0) / smoothed.length;
-    const stdDev = Math.sqrt(
-      smoothed.reduce((a, b) => a + (b - mean) * (b - mean), 0) / Math.max(1, smoothed.length)
-    );
-
-    // 归一化到 [0,1]，经验常量保证与校准无关
-    const normAvg = clamp01(avgAbsDiff / 3);
-    const normRms = clamp01(rmsDiff / 3.5);
-    const normStd = clamp01(stdDev / 6);
-    const volatilityIndex = clamp01(0.6 * normAvg + 0.3 * normRms + 0.1 * normStd);
-    const score = Math.round(100 * (1 - volatilityIndex));
-
-    // 直方图（分辨率 4dB），用于分贝分布展示
     const minDb = 0;
     const maxDb = 80;
     const bin = 4;
     const binCount = Math.ceil((maxDb - minDb) / bin);
     const hist = new Array(binCount).fill(0);
-    smoothed.forEach((v) => {
+    values.forEach((v) => {
       const idx = Math.max(0, Math.min(binCount - 1, Math.floor((v - minDb) / bin)));
       hist[idx] += 1;
     });
-    const histogram = hist.map((h, i) => ({ x: minDb + i * bin, h }));
-
-    return { score, avgAbsDiff, rmsDiff, stdDev, smoothed, times, histogram };
-  }, [samplesInPeriod, period]);
+    return hist.map((h, i) => ({ x: minDb + i * bin, h }));
+  }, [samplesInPeriod]);
 
   // 基于当前时段样本生成 SVG 折线图数据
   const chart = useMemo(() => {
@@ -244,11 +303,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
 
   // 综合评价：根据提醒次数与吵闹时长给出等级
   const gradeText = useMemo(() => {
-    const s = volatility.score ?? 0;
+    const s = discipline.score ?? 0;
     if (s >= 85) return "优秀";
     if (s >= 70) return "良好";
     return "待改进";
-  }, [volatility.score]);
+  }, [discipline.score]);
 
   /**
    * 统一展示文本（函数级中文注释）：
@@ -256,50 +315,36 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
    * - 当分数不可用时仅显示等级文本，保持简洁。
    */
   const gradeDisplay = useMemo(() => {
-    return typeof volatility.score === "number"
-      ? `${volatility.score} 分（${gradeText}）`
+    return typeof discipline.score === "number"
+      ? `${discipline.score} 分（${gradeText}）`
       : gradeText;
-  }, [volatility.score, gradeText]);
+  }, [discipline.score, gradeText]);
 
   /**
    * 更多统计计算（函数级中文注释）：
    * - 目的：为“更多统计”区提供实用且直观的图表数据；
    * - 包含：
    *   1) 安静占比圆环图（按吵闹时长与总时长计算百分比）；
-   *   2) 分贝箱线图（min/Q1/median/Q3/max，基于平滑后的分贝序列）；
-   *   3) 提醒密度条形图（按时间分箱统计阈值触发次数）。
+   *   2) 提醒密度条形图（按时间分箱统计“冲击阈值”上升沿次数）。
    */
   const extraStats = useMemo(() => {
     const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
     const totalMs =
       stats.durationMs || (period ? period.end.getTime() - period.start.getTime() : 0);
-    const noisyMs = stats.noisyDurationMs;
-    const quietPercent = totalMs > 0 ? clamp01((totalMs - noisyMs) / totalMs) : 0;
+    const impactMs = discipline.impactDurationMs;
+    const quietPercent = totalMs > 0 ? clamp01((totalMs - impactMs) / totalMs) : 0;
 
-    const arr = volatility.smoothed.length ? volatility.smoothed.slice().sort((a, b) => a - b) : [];
-    const pct = (p: number) => {
-      if (!arr.length) return 0;
-      const idx = Math.min(arr.length - 1, Math.max(0, Math.round(p * (arr.length - 1))));
-      return arr[idx];
-    };
-    const min = arr.length ? arr[0] : 0;
-    const max = arr.length ? arr[arr.length - 1] : 0;
-    const q1 = pct(0.25);
-    const median = pct(0.5);
-    const q3 = pct(0.75);
-
-    // 提醒密度：将阈值上升沿按时间分为 6 桶
+    // 冲击密度：将冲击阈值上升沿按时间分为 6 桶
     const binCount = 6;
     const bins = new Array(binCount).fill(0);
-    if (period && volatility.times.length) {
+    if (period && discipline.dynThreshold > 0) {
       const startTs = period.start.getTime();
       const endTs = period.end.getTime();
       const span = Math.max(1, endTs - startTs);
-      const threshold = getThreshold();
       for (let i = 1; i < samplesInPeriod.length; i++) {
         const prev = samplesInPeriod[i - 1];
         const cur = samplesInPeriod[i];
-        if (prev.v <= threshold && cur.v > threshold) {
+        if (prev.v <= discipline.dynThreshold && cur.v > discipline.dynThreshold) {
           const t = cur.t;
           const idx = Math.min(
             binCount - 1,
@@ -310,13 +355,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       }
     }
 
-    return { quietPercent, min, q1, median, q3, max, alertBins: bins };
+    return { quietPercent, impactBins: bins };
   }, [
     stats.durationMs,
-    stats.noisyDurationMs,
     period,
-    volatility.smoothed,
-    volatility.times.length,
+    discipline.dynThreshold,
+    discipline.impactDurationMs,
     samplesInPeriod,
   ]);
 
@@ -359,12 +403,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
             <div className={styles.statValue}>{stats.avg.toFixed(1)} dB</div>
           </div>
           <div className={styles.statItem}>
-            <div className={styles.statLabel}>提醒</div>
-            <div className={styles.statValue}>{stats.transitions}</div>
+            <div className={styles.statLabel}>冲击</div>
+            <div className={styles.statValue}>{discipline.impactCount}</div>
           </div>
           <div className={styles.statItem}>
-            <div className={styles.statLabel}>吵闹</div>
-            <div className={styles.statValue}>{formatDurationCn(stats.noisyDurationMs)}</div>
+            <div className={styles.statLabel}>冲击时长</div>
+            <div className={styles.statValue}>{formatDurationCn(discipline.impactDurationMs)}</div>
           </div>
         </div>
 
@@ -506,6 +550,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         <div className={styles.chartHint}>
           统计范围：
           {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "无"}
+          {typeof discipline.score === "number" && discipline.dynThreshold > 0
+            ? `；评分参考阈值（相对）：${discipline.dynThreshold.toFixed(1)} dB`
+            : ""}
         </div>
 
         {/* 更多统计：保持上部紧凑，将迷你图放在下方两列网格中 */}
@@ -514,14 +561,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
           {/* 迷你图2：分贝直方图 */}
           <div>
             <div className={styles.miniTitle}>分贝分布（4dB 直方图）</div>
-            {volatility.histogram.length ? (
+            {histogram.length ? (
               (() => {
                 const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
                 const height = MINI_CHART_HEIGHT;
                 const padding = MINI_CHART_PADDING;
-                const maxH = Math.max(1, Math.max(...volatility.histogram.map((b) => b.h)));
-                const barW = (width - padding * 2) / volatility.histogram.length;
-                const bars = volatility.histogram.map((b, i) => {
+                const maxH = Math.max(1, Math.max(...histogram.map((b) => b.h)));
+                const barW = (width - padding * 2) / histogram.length;
+                const bars = histogram.map((b, i) => {
                   const x = padding + i * barW;
                   const h = (b.h / maxH) * (height - padding * 2);
                   const y = height - padding - h;
@@ -620,113 +667,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
             </div>
           </div>
 
-          {/* 迷你图4：分贝箱线图（平滑序列） */}
+          {/* 迷你图4：冲击密度条形图 */}
           <div>
-            <div className={styles.miniTitle}>分贝箱线图（平滑数据）</div>
-            {volatility.smoothed.length ? (
-              (() => {
-                const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
-                const height = 140;
-                const padding = 30;
-                const minDb = 0;
-                const maxDb = 80;
-                const mapX = (v: number) =>
-                  padding + ((v - minDb) / (maxDb - minDb)) * (width - padding * 2);
-                const yMid = height / 2;
-                const xMin = mapX(extraStats.min);
-                const xQ1 = mapX(extraStats.q1);
-                const xMedian = mapX(extraStats.median);
-                const xQ3 = mapX(extraStats.q3);
-                const xMax = mapX(extraStats.max);
-                const boxH = 24;
-                return (
-                  <svg
-                    width={width}
-                    height={height}
-                    className={styles.chart}
-                    viewBox={`0 0 ${width} ${height}`}
-                  >
-                    {/* 轴线 */}
-                    <line
-                      x1={padding}
-                      y1={yMid}
-                      x2={width - padding}
-                      y2={yMid}
-                      className={styles.axis}
-                    />
-                    {/* 胡须与最值 */}
-                    <line
-                      x1={xMin}
-                      y1={yMid - 12}
-                      x2={xMin}
-                      y2={yMid + 12}
-                      className={styles.boxWhisker}
-                    />
-                    <line
-                      x1={xMax}
-                      y1={yMid - 12}
-                      x2={xMax}
-                      y2={yMid + 12}
-                      className={styles.boxWhisker}
-                    />
-                    <line x1={xMin} y1={yMid} x2={xQ1} y2={yMid} className={styles.boxLine} />
-                    <line x1={xQ3} y1={yMid} x2={xMax} y2={yMid} className={styles.boxLine} />
-                    {/* 箱体与中位线 */}
-                    <rect
-                      x={xQ1}
-                      y={yMid - boxH / 2}
-                      width={Math.max(1, xQ3 - xQ1)}
-                      height={boxH}
-                      className={styles.boxRect}
-                    />
-                    <line
-                      x1={xMedian}
-                      y1={yMid - boxH / 2}
-                      x2={xMedian}
-                      y2={yMid + boxH / 2}
-                      className={styles.boxMedian}
-                    />
-                    {/* 标签 */}
-                    <text x={xMin} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
-                      {extraStats.min.toFixed(1)}
-                    </text>
-                    <text x={xQ1} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
-                      {extraStats.q1.toFixed(1)}
-                    </text>
-                    <text
-                      x={xMedian}
-                      y={yMid + boxH + 12}
-                      textAnchor="middle"
-                      className={styles.tickLabel}
-                    >
-                      {extraStats.median.toFixed(1)}
-                    </text>
-                    <text x={xQ3} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
-                      {extraStats.q3.toFixed(1)}
-                    </text>
-                    <text x={xMax} y={yMid + boxH} textAnchor="middle" className={styles.tickLabel}>
-                      {extraStats.max.toFixed(1)}
-                    </text>
-                  </svg>
-                );
-              })()
-            ) : (
-              <div className={styles.empty}>暂无数据</div>
-            )}
-            <div className={styles.chartCaption}>
-              解释：箱体越窄代表分贝波动集中，稳定性更好；中位线偏低代表整体更安静。
-            </div>
-          </div>
-
-          {/* 迷你图5：提醒密度条形图 */}
-          <div>
-            <div className={styles.miniTitle}>提醒密度（按时段分箱）</div>
+            <div className={styles.miniTitle}>冲击密度（按时段分箱）</div>
             {period ? (
               (() => {
                 const width = Math.max(320, Math.floor(chartWidth / 2) - 10);
                 const height = 140;
                 const padding = 30;
-                const bars = extraStats.alertBins;
+                const bars = extraStats.impactBins;
                 const maxV = Math.max(1, Math.max(...bars));
                 const barW = (width - padding * 2) / bars.length;
                 const items = bars.map((v, i) => {
@@ -773,7 +722,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
               <div className={styles.empty}>暂无数据</div>
             )}
             <div className={styles.chartCaption}>
-              解释：柱形越高表示该时间段提醒更密集，可针对性加强管理。
+              解释：柱形越高表示该时间段噪音冲击更密集，可针对性加强管理。
             </div>
           </div>
         </div>

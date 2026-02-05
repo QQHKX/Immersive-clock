@@ -5,10 +5,16 @@ import {
   cleanupWeatherCache,
   getWeatherCache,
   getValidCoords,
+  getValidDaily3d,
+  getValidAirQuality,
+  getValidAstronomySun,
   getValidLocation,
   getValidMinutely,
   readStationAlertRecord,
   updateCoordsCache,
+  updateDaily3dCache,
+  updateAirQualityCache,
+  updateAstronomySunCache,
   updateGeolocationDiagnostics,
   updateLocationCache,
   updateMinutelyCache,
@@ -138,6 +144,20 @@ describe("weatherStorage", () => {
     expect(cache.geolocation?.diagnostics?.permissionState).toBe("granted");
   });
 
+  it("三日预报/空气质量/日出日落缓存按 TTL 生效，超时后失效", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    updateDaily3dCache("121.5,31.2", { code: "200", daily: [{ fxDate: "2026-02-06" }] });
+    updateAirQualityCache(31.2, 121.5, { indexes: [{ name: "AQI", aqi: 50 }] });
+    updateAstronomySunCache("121.5,31.2", "20260206", { code: "200", sunrise: "06:58", sunset: "17:58" });
+
+    expect(getValidDaily3d("121.5,31.2")?.code).toBe("200");
+    expect(getValidAirQuality(31.2, 121.5)?.indexes?.[0]?.aqi).toBe(50);
+    expect(getValidAstronomySun("121.5,31.2", "20260206")?.sunrise).toBe("06:58");
+
+    vi.spyOn(Date, "now").mockReturnValue(1000 + 12 * 60 * 60 * 1000 + 1);
+    expect(getValidAstronomySun("121.5,31.2", "20260206")).toBeNull();
+  });
+
   it("cleanupWeatherCache 会清理过期的坐标/位置/分钟级降水与预警记录", () => {
     localStorage.setItem(
       "weather-cache",
@@ -145,6 +165,9 @@ describe("weatherStorage", () => {
         coords: { lat: 1, lon: 2, source: "ip", updatedAt: 0 },
         location: { signature: "1.0000,2.0000", updatedAt: 0, city: "X", address: "Y" },
         minutely: { location: "2,1", data: { code: "200" }, updatedAt: 0, lastApiFetchAt: 0 },
+        daily3d: { location: "2,1", data: { code: "200" }, updatedAt: 0 },
+        airQuality: { signature: "1.00,2.00", data: { indexes: [] }, updatedAt: 0 },
+        astronomySun: { location: "2,1", date: "20260206", data: { code: "200" }, updatedAt: 0 },
         alerts: {
           "station-old": { sig: "a", ts: 0 },
         },
@@ -158,6 +181,9 @@ describe("weatherStorage", () => {
     expect(cache.coords).toBeUndefined();
     expect(cache.location).toBeUndefined();
     expect(cache.minutely).toBeUndefined();
+    expect(cache.daily3d).toBeUndefined();
+    expect(cache.airQuality).toBeUndefined();
+    expect(cache.astronomySun).toBeUndefined();
     expect(cache.alerts).toBeUndefined();
   });
 

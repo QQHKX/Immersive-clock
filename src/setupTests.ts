@@ -13,8 +13,10 @@ function setupTestingEnvironment() {
     cleanup();
   });
 
-  if (!("matchMedia" in window)) {
-    window.matchMedia = ((query: string) => {
+  const win = globalThis as unknown as Window & typeof globalThis;
+
+  if (!("matchMedia" in win)) {
+    (win as any).matchMedia = (query: string): MediaQueryList => {
       return {
         matches: false,
         media: query,
@@ -24,8 +26,8 @@ function setupTestingEnvironment() {
         addEventListener: () => {},
         removeEventListener: () => {},
         dispatchEvent: () => false,
-      };
-    }) as unknown as typeof window.matchMedia;
+      } as MediaQueryList;
+    };
   }
 }
 

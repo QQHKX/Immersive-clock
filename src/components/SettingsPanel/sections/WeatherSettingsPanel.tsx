@@ -1,8 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppState } from "../../../contexts/AppContext";
+import { getAppSettings, updateGeneralSettings } from "../../../utils/appSettings";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../../utils/settingsEvents";
 import { getWeatherCache } from "../../../utils/weatherStorage";
-import { FormSection, FormButton, FormButtonGroup, FormCheckbox } from "../../FormComponents";
+import {
+  FormSection,
+  FormButton,
+  FormButtonGroup,
+  FormCheckbox,
+  FormRow,
+  FormSegmented,
+  FormInput,
+} from "../../FormComponents";
 import { RefreshIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
 
@@ -20,6 +30,8 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   const dispatch = useAppDispatch();
   const [cache, setCache] = useState(() => getWeatherCache());
   const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [lastRefreshError, setLastRefreshError] = useState<string>("");
   const [messagePopupEnabled, setMessagePopupEnabled] = useState<boolean>(
     !!study.messagePopupEnabled
   );
@@ -29,6 +41,29 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   const [minutelyPrecipEnabled, setMinutelyPrecipEnabled] = useState<boolean>(
     !!study.minutelyPrecipEnabled
   );
+
+  const initialWeatherSettings = getAppSettings().general.weather;
+  const [autoRefreshIntervalMin, setAutoRefreshIntervalMin] = useState<number>(() => {
+    const v = Number(initialWeatherSettings.autoRefreshIntervalMin);
+    return Number.isFinite(v) ? v : 30;
+  });
+  const [locationMode, setLocationMode] = useState<"auto" | "manual">(
+    initialWeatherSettings.locationMode === "manual" ? "manual" : "auto"
+  );
+  const [manualType, setManualType] = useState<"city" | "coords">(
+    initialWeatherSettings.manualLocation?.type === "coords" ? "coords" : "city"
+  );
+  const [manualCityName, setManualCityName] = useState<string>(() => {
+    return String(initialWeatherSettings.manualLocation?.cityName || "");
+  });
+  const [manualLat, setManualLat] = useState<string>(() => {
+    const v = initialWeatherSettings.manualLocation?.lat;
+    return typeof v === "number" && Number.isFinite(v) ? String(v) : "";
+  });
+  const [manualLon, setManualLon] = useState<string>(() => {
+    const v = initialWeatherSettings.manualLocation?.lon;
+    return typeof v === "number" && Number.isFinite(v) ? String(v) : "";
+  });
 
   const refreshDisplayData = useCallback(() => {
     setCache(getWeatherCache());
@@ -41,6 +76,8 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
     const weatherRefreshEvent = new CustomEvent("weatherRefresh");
     window.dispatchEvent(weatherRefreshEvent);
     setWeatherRefreshStatus("刷新中");
+    setIsRefreshing(true);
+    setLastRefreshError("");
   }, []);
 
   useEffect(() => {
@@ -48,6 +85,8 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const detail = (e as CustomEvent).detail || {};
       const status = detail.status || "";
       setWeatherRefreshStatus(status);
+      setIsRefreshing(false);
+      setLastRefreshError(String(detail.errorMessage || ""));
       refreshDisplayData();
     };
     window.addEventListener("weatherRefreshDone", onDone as EventListener);
@@ -60,8 +99,54 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       dispatch({ type: "SET_MESSAGE_POPUP_ENABLED", payload: messagePopupEnabled });
       dispatch({ type: "SET_WEATHER_ALERT_ENABLED", payload: weatherAlertEnabled });
       dispatch({ type: "SET_MINUTELY_PRECIP_ENABLED", payload: minutelyPrecipEnabled });
+
+      const roundedInterval = Math.round(Number(autoRefreshIntervalMin));
+      const intervalOptions = [15, 30, 60];
+      const normalizedInterval = intervalOptions.includes(roundedInterval) ? roundedInterval : 30;
+
+      const manualLocation =
+        manualType === "coords"
+          ? {
+              type: "coords" as const,
+              lat: Number.isFinite(Number.parseFloat(manualLat))
+                ? Number.parseFloat(manualLat)
+                : undefined,
+              lon: Number.isFinite(Number.parseFloat(manualLon))
+                ? Number.parseFloat(manualLon)
+                : undefined,
+            }
+          : {
+              type: "city" as const,
+              cityName: String(manualCityName || "").trim(),
+            };
+
+      updateGeneralSettings({
+        weather: {
+          autoRefreshIntervalMin: normalizedInterval,
+          locationMode,
+          manualLocation,
+        },
+      });
+
+      broadcastSettingsEvent(SETTINGS_EVENTS.WeatherSettingsUpdated, {
+        autoRefreshIntervalMin: normalizedInterval,
+        locationMode,
+        manualLocation,
+      });
     });
-  }, [onRegisterSave, dispatch, messagePopupEnabled, weatherAlertEnabled, minutelyPrecipEnabled]);
+  }, [
+    onRegisterSave,
+    dispatch,
+    messagePopupEnabled,
+    weatherAlertEnabled,
+    minutelyPrecipEnabled,
+    autoRefreshIntervalMin,
+    locationMode,
+    manualType,
+    manualCityName,
+    manualLat,
+    manualLon,
+  ]);
 
   const now = cache.now?.data.now;
   const refer = cache.now?.data.refer;
@@ -104,34 +189,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
         />
       </FormSection>
 
-      <FormSection title="天气信息">
-        <p className={styles.infoText}>
-          定位坐标：
-          {cache.coords
-            ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}`
-            : "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          定位方式：
-          {(() => {
-            const source = cache.coords?.source;
-            if (!source) return "未获取";
-            if (source === "geolocation") return "浏览器定位";
-            if (source === "amap_ip") return "高德IP定位";
-            if (source === "ip") return "公共IP定位";
-            return source;
-          })()}
-        </p>
-        <p className={styles.infoText}>
-          定位诊断：
-          {geoDiag
-            ? `安全上下文=${geoDiag.isSecureContext ? "是" : "否"} 权限=${geoDiag.permissionState}${
-                geoDiag.errorCode ? ` 错误码=${geoDiag.errorCode}` : ""
-              }${geoDiag.errorMessage ? ` 原因=${geoDiag.errorMessage}` : ""}`
-            : "未获取"}
-        </p>
-        {geoHint ? <p className={styles.infoText}>{geoHint}</p> : null}
-        <p className={styles.infoText}>街道地址：{cache.location?.address || "未获取"}</p>
+      <FormSection title="实时天气">
         <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
         <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
         <p className={styles.infoText}>
@@ -147,25 +205,225 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           湿度：{now?.humidity ? `${now.humidity}%` : "未获取"} 气压：
           {now?.pressure ? `${now.pressure} hPa` : "未获取"}
         </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+          {(() => {
+            const humidity = now?.humidity ? Number.parseFloat(String(now.humidity)) : NaN;
+            if (!Number.isFinite(humidity)) return null;
+            const ratio = Math.min(1, Math.max(0, humidity / 100));
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 64, opacity: 0.85, fontSize: "0.75rem" }}>湿度</div>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.12)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.round(ratio * 100)}%`,
+                      height: "100%",
+                      background: "rgba(255,255,255,0.55)",
+                    }}
+                  />
+                </div>
+                <div style={{ width: 48, textAlign: "right", opacity: 0.85, fontSize: "0.75rem" }}>
+                  {Math.round(humidity)}%
+                </div>
+              </div>
+            );
+          })()}
+          {(() => {
+            const pressure = now?.pressure ? Number.parseFloat(String(now.pressure)) : NaN;
+            if (!Number.isFinite(pressure)) return null;
+            const ratio = Math.min(1, Math.max(0, (pressure - 900) / 200));
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 64, opacity: 0.85, fontSize: "0.75rem" }}>气压</div>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.12)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.round(ratio * 100)}%`,
+                      height: "100%",
+                      background: "rgba(255,255,255,0.55)",
+                    }}
+                  />
+                </div>
+                <div style={{ width: 72, textAlign: "right", opacity: 0.85, fontSize: "0.75rem" }}>
+                  {Math.round(pressure)} hPa
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
         <p className={styles.infoText}>
-          降水：{now?.precip ? `${now.precip} mm` : "未获取"} 能见度：
-          {now?.vis ? `${now.vis} km` : "未获取"} 云量：{now?.cloud || "未获取"}
+          日出/日落：
+          {cache.astronomySun?.data?.sunrise && cache.astronomySun?.data?.sunset
+            ? `${cache.astronomySun.data.sunrise} / ${cache.astronomySun.data.sunset}`
+            : "未获取"}
         </p>
-        <p className={styles.infoText}>露点：{now?.dew || "未获取"}</p>
+
+        <p className={styles.infoText}>
+          空气质量：
+          {(() => {
+            const idx = cache.airQuality?.data?.indexes?.[0];
+            if (!idx) return "未获取";
+            const pollutant = idx.primaryPollutant?.code ? ` 主污染物=${idx.primaryPollutant.code}` : "";
+            return `${idx.name || "AQI"}=${String(idx.aqi ?? "")} ${idx.category || ""}${pollutant}`;
+          })()}
+        </p>
+
+        <p className={styles.infoText}>
+          三日预报：
+          {(() => {
+            const daily = cache.daily3d?.data?.daily;
+            if (!daily || daily.length === 0) return "未获取";
+            const brief = daily
+              .slice(0, 3)
+              .map((d) => `${d.fxDate || ""} ${d.textDay || ""} ${d.tempMin || ""}~${d.tempMax || ""}°C`)
+              .join(" ｜ ");
+            return brief;
+          })()}
+        </p>
+      </FormSection>
+
+      <FormSection title="地理位置">
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="定位方式"
+            value={locationMode}
+            options={[
+              { label: "自动", value: "auto" },
+              { label: "手动", value: "manual" },
+            ]}
+            onChange={(v) => setLocationMode(v as "auto" | "manual")}
+          />
+        </FormRow>
+
+        {locationMode === "manual" ? (
+          <>
+            <FormRow gap="sm" align="center">
+              <FormSegmented
+                label="手动类型"
+                value={manualType}
+                options={[
+                  { label: "城市", value: "city" },
+                  { label: "经纬度", value: "coords" },
+                ]}
+                onChange={(v) => setManualType(v as "city" | "coords")}
+              />
+            </FormRow>
+            {manualType === "city" ? (
+              <FormInput
+                label="城市名称"
+                value={manualCityName}
+                onChange={(e) => setManualCityName(e.target.value)}
+                placeholder="例如：北京"
+              />
+            ) : (
+              <FormRow gap="sm" align="center">
+                <FormInput
+                  label="纬度"
+                  value={manualLat}
+                  onChange={(e) => setManualLat(e.target.value)}
+                  placeholder="例如：39.90"
+                  variant="number"
+                />
+                <FormInput
+                  label="经度"
+                  value={manualLon}
+                  onChange={(e) => setManualLon(e.target.value)}
+                  placeholder="例如：116.40"
+                  variant="number"
+                />
+              </FormRow>
+            )}
+            <p className={styles.helpText}>保存后生效；手动定位将优先于浏览器定位与 IP 定位。</p>
+          </>
+        ) : null}
+
+        <p className={styles.infoText}>
+          当前坐标：
+          {cache.coords ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}` : "未获取"}
+        </p>
+        <p className={styles.infoText}>
+          当前来源：
+          {(() => {
+            const source = cache.coords?.source;
+            if (!source) return "未获取";
+            if (source === "geolocation") return "浏览器定位";
+            if (source === "amap_ip") return "高德IP定位";
+            if (source === "ip") return "公共IP定位";
+            if (source === "manual_city") return "手动城市";
+            if (source === "manual_coords") return "手动经纬度";
+            return source;
+          })()}
+        </p>
+        <p className={styles.infoText}>街道地址：{cache.location?.address || "未获取"}</p>
+        <p className={styles.infoText}>
+          定位诊断：
+          {geoDiag
+            ? `安全上下文=${geoDiag.isSecureContext ? "是" : "否"} 权限=${geoDiag.permissionState}${
+                geoDiag.errorCode ? ` 错误码=${geoDiag.errorCode}` : ""
+              }${geoDiag.errorMessage ? ` 原因=${geoDiag.errorMessage}` : ""}`
+            : "未获取"}
+        </p>
+        {geoHint ? <p className={styles.infoText}>{geoHint}</p> : null}
+        {!geoDiag ? null : (
+          <>
+            {!geoDiag.isSecureContext ? (
+              <p className={styles.infoText}>建议：在 HTTPS/安全上下文下使用浏览器定位（部分环境下 HTTP 会被限制）。</p>
+            ) : null}
+            {geoDiag.permissionState === "denied" ? (
+              <p className={styles.infoText}>建议：检查系统/浏览器位置权限是否已允许。</p>
+            ) : null}
+          </>
+        )}
+      </FormSection>
+
+      <FormSection title="服务状态">
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="自动刷新"
+            value={String(Math.round(autoRefreshIntervalMin))}
+            options={[
+              { label: "15min", value: "15" },
+              { label: "30min", value: "30" },
+              { label: "1h", value: "60" },
+            ]}
+            onChange={(v) => setAutoRefreshIntervalMin(Number(v))}
+          />
+        </FormRow>
         <p className={styles.infoText}>数据源：{refer?.sources ? "QWeather" : "未获取"}</p>
         <p className={styles.infoText}>
           许可：{refer?.license ? "QWeather Developers License" : "未获取"}
         </p>
-        <p className={styles.infoText}>刷新状态：{weatherRefreshStatus || "未刷新"}</p>
         <p className={styles.infoText}>
           最后成功时间：
           {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleString() : "未成功"}
+        </p>
+        <p className={styles.infoText}>
+          刷新状态：{weatherRefreshStatus || "未刷新"}
+          {lastRefreshError ? `（${lastRefreshError}）` : ""}
         </p>
         <FormButtonGroup align="left">
           <FormButton
             variant="secondary"
             onClick={handleRefreshWeather}
             icon={<RefreshIcon size={16} />}
+            loading={isRefreshing}
           >
             刷新天气
           </FormButton>

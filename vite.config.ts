@@ -17,6 +17,16 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   // 检测是否为 Electron 模式
   const isElectron = mode === "electron";
+  const isTest = mode === "test";
+
+  const forceLocalhostIpPlugin = () => {
+    return {
+      name: "force-localhost-ip",
+      config(config: { server?: { host?: string } }) {
+        config.server = { ...(config.server || {}), host: "127.0.0.1" };
+      },
+    };
+  };
 
   console.log("Vite Mode:", mode);
   console.log("Is Electron:", isElectron);
@@ -41,7 +51,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      react(),
+      forceLocalhostIpPlugin(),
+      react({ fastRefresh: !isTest }),
       // Electron 插件（仅在 Electron 模式下启用）
       isElectron &&
         electron([
@@ -89,95 +100,88 @@ export default defineConfig(({ mode }) => {
           },
         ]),
       isElectron && renderer(),
-      // PWA 插件：启用离线缓存与自动更新
-      VitePWA({
-        registerType: "autoUpdate",
-        includeAssets: ["favicon.svg", "apple-touch-icon.png", "og-image.png"],
-        workbox: {
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,woff}"],
-          navigateFallback: "/index.html",
-          // 扩大离线导航覆盖范围，匹配所有同源路径
-          navigateFallbackAllowlist: [/^\/.*$/],
-          // 防止静态文件（如 sitemap.xml、robots.txt 等）被导航回退到 SPA
-          navigateFallbackDenylist: [
-            /\.(xml|txt|webmanifest|json|ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|eot|ttf|otf)$/,
-          ],
-          // 忽略版本缓存插件添加的 v 查询参数，避免预缓存匹配失效
-          ignoreURLParametersMatching: [/^v$/],
-          runtimeCaching: [
-            {
-              // 缓存本地字体文件（内置自托管）
-              urlPattern: /\/fonts\/.*\.(woff2?|ttf|otf|eot)$/i,
-              handler: "CacheFirst",
-              options: {
-                cacheName: "local-webfonts",
-                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
-                cacheableResponse: { statuses: [0, 200] },
+      !isTest &&
+        VitePWA({
+          registerType: "autoUpdate",
+          includeAssets: ["favicon.svg", "apple-touch-icon.png", "og-image.png"],
+          workbox: {
+            globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,woff}"],
+            navigateFallback: "/index.html",
+            navigateFallbackAllowlist: [/^\/.*$/],
+            navigateFallbackDenylist: [
+              /\.(xml|txt|webmanifest|json|ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|eot|ttf|otf)$/,
+            ],
+            ignoreURLParametersMatching: [/^v$/],
+            runtimeCaching: [
+              {
+                urlPattern: /\/fonts\/.*\.(woff2?|ttf|otf|eot)$/i,
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "local-webfonts",
+                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                  cacheableResponse: { statuses: [0, 200] },
+                },
               },
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "image",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "images-cache",
-                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
+              {
+                urlPattern: ({ request }) => request.destination === "image",
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "images-cache",
+                  expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
+                },
               },
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "font",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "fonts-cache",
-                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              {
+                urlPattern: ({ request }) => request.destination === "font",
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "fonts-cache",
+                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                },
               },
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "audio",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "audio-cache",
-                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 2 },
+              {
+                urlPattern: ({ request }) => request.destination === "audio",
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "audio-cache",
+                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 2 },
+                },
               },
-            },
-            {
-              // 公告与日志 Markdown 文档离线缓存
-              urlPattern: /\/docs\/.*\.md$/,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "docs-cache",
-                expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
+              {
+                urlPattern: /\/docs\/.*\.md$/,
+                handler: "NetworkFirst",
+                options: {
+                  cacheName: "docs-cache",
+                  expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
+                },
               },
-            },
-          ],
-        },
-        devOptions: {
-          enabled: true,
-        },
-        // 复用现有 public/manifest.json
-        manifest: (() => {
-          try {
-            const manifestRaw = fs.readFileSync(
-              path.resolve(process.cwd(), "public/manifest.json"),
-              "utf-8"
-            );
-            const manifest = JSON.parse(manifestRaw);
-            // 使用环境变量覆盖版本字段
-            manifest.version = appVersion;
-            return manifest;
-          } catch (e) {
-            return {
-              name: "Immersive Clock",
-              short_name: "Clock",
-              start_url: "/",
-              display: "standalone",
-              background_color: "#ffffff",
-              theme_color: "#000000",
-              icons: [],
-              version: appVersion,
-            };
-          }
-        })(),
-      }),
+            ],
+          },
+          devOptions: {
+            enabled: true,
+          },
+          manifest: (() => {
+            try {
+              const manifestRaw = fs.readFileSync(
+                path.resolve(process.cwd(), "public/manifest.json"),
+                "utf-8"
+              );
+              const manifest = JSON.parse(manifestRaw);
+              manifest.version = appVersion;
+              return manifest;
+            } catch (e) {
+              return {
+                name: "Immersive Clock",
+                short_name: "Clock",
+                start_url: "/",
+                display: "standalone",
+                background_color: "#ffffff",
+                theme_color: "#000000",
+                icons: [],
+                version: appVersion,
+              };
+            }
+          })(),
+        }),
       // 版本缓存插件需在 PWA 之后运行，以便处理注入的 webmanifest
       versionCachePlugin(),
     ].filter(Boolean),
@@ -187,8 +191,10 @@ export default defineConfig(({ mode }) => {
     },
     base: isElectron ? "./" : "/",
     server: {
+      host: "127.0.0.1",
       port: 3005,
       open: !isElectron,
+      hmr: isTest ? false : undefined,
       // 开发服务器缓存配置
       headers: {
         "Cache-Control": "no-cache",

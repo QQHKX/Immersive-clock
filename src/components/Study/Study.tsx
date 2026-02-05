@@ -14,7 +14,7 @@ import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
 import NoiseReportModal, { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
 import StudyStatus from "../StudyStatus";
-import { DEFAULT_SCHEDULE, StudyPeriod } from "../StudyStatus/StudyStatus";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 
 import styles from "./Study.module.css";
 

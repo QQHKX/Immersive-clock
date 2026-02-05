@@ -82,6 +82,30 @@ describe("weatherService - flow", () => {
           text: async () => JSON.stringify({ code: "200", now: { text: "晴" } }),
         } satisfies FetchResponseLike);
       }
+      if (url.includes("/v7/weather/3d?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", daily: [] }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/astronomy/sun?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", sunrise: "06:58", sunset: "17:58" }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ indexes: [] }),
+        } satisfies FetchResponseLike);
+      }
       return Promise.reject(new Error(`unexpected url: ${url}`));
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -93,7 +117,100 @@ describe("weatherService - flow", () => {
     expect(res.coordsSource).toBe("ip");
     expect(res.city).toBe("上海");
     expect(res.addressInfo?.address).toBe("A 路 1 号");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("buildWeatherFlow：手动城市定位会调用 GeoAPI 并跳过浏览器定位", async () => {
+    weatherStorageMocks.getValidCoords.mockReturnValue(null);
+    weatherStorageMocks.getValidLocation.mockReturnValue(null);
+
+    localStorage.setItem(
+      "AppSettings",
+      JSON.stringify({
+        version: 1,
+        modifiedAt: 1,
+        general: {
+          weather: {
+            autoRefreshIntervalMin: 30,
+            locationMode: "manual",
+            manualLocation: { type: "city", cityName: "北京" },
+          },
+        },
+      })
+    );
+
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/geo/v2/city/lookup?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () =>
+            JSON.stringify({
+              code: "200",
+              location: [{ name: "北京", lat: "39.90", lon: "116.40" }],
+            }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("restapi.amap.com/v3/geocode/regeo")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () =>
+            JSON.stringify({
+              status: "1",
+              regeocode: {
+                formatted_address: "北京市 东城区",
+                addressComponent: { city: "北京市", province: "北京市" },
+              },
+            }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/weather/now?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", now: { text: "晴" } }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/weather/3d?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", daily: [] }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/astronomy/sun?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", sunrise: "06:58", sunset: "17:58" }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ indexes: [] }),
+        } satisfies FetchResponseLike);
+      }
+      return Promise.reject(new Error(`unexpected url: ${url}`));
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { buildWeatherFlow } = await import("../weatherService");
+    const res = await buildWeatherFlow();
+
+    expect(res.coords).toEqual({ lat: 39.9, lon: 116.4 });
+    expect(res.coordsSource).toBe("manual_city");
+    expect(weatherStorageMocks.updateCoordsCache).toHaveBeenCalledWith(39.9, 116.4, "manual_city");
+    expect(weatherStorageMocks.updateGeolocationDiagnostics).not.toHaveBeenCalled();
   });
 
   it("buildWeatherFlow：无坐标缓存时优先浏览器定位并缓存，再反编码与拉取实时天气", async () => {
@@ -138,6 +255,30 @@ describe("weatherService - flow", () => {
           status: 200,
           statusText: "OK",
           text: async () => JSON.stringify({ code: "200", now: { text: "多云" } }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/weather/3d?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", daily: [] }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/astronomy/sun?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", sunrise: "06:58", sunset: "17:58" }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ indexes: [] }),
         } satisfies FetchResponseLike);
       }
       return Promise.reject(new Error(`unexpected url: ${url}`));
@@ -196,6 +337,30 @@ describe("weatherService - flow", () => {
           status: 200,
           statusText: "OK",
           text: async () => JSON.stringify({ code: "200", now: { text: "小雨" } }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/weather/3d?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", daily: [] }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/astronomy/sun?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", sunrise: "06:58", sunset: "17:58" }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ indexes: [] }),
         } satisfies FetchResponseLike);
       }
       return Promise.reject(new Error(`unexpected url: ${url}`));

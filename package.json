@@ -30,7 +30,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-feather": "^2.0.10",
-    "react-router-dom": "^6.8.1"
+    "react-router-dom": "^6.8.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
@@ -63,8 +64,8 @@
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
     "vite-plugin-pwa": "^1.0.3",
-    "@vitest/coverage-v8": "^1.6.1",
-    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^0.34.6",
+    "vitest": "^0.34.6",
     "workbox-window": "^7.3.0",
     "@playwright/test": "^1.48.0"
   }

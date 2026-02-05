@@ -3,34 +3,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { logger } from "../../utils/logger";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 import { getAdjustedDate } from "../../utils/timeSync";
 import { Weather } from "../Weather";
 
 import styles from "./StudyStatus.module.css";
-
-// 课程时间段接口
-interface StudyPeriod {
-  id: string;
-  startTime: string; // 格式: "HH:MM"
-  endTime: string; // 格式: "HH:MM"
-  name: string; // 课程名称，如 "第1节自习"
-}
-
-// 默认课程表
-const DEFAULT_SCHEDULE: StudyPeriod[] = [
-  {
-    id: "1",
-    startTime: "19:10",
-    endTime: "20:20",
-    name: "第1节自习",
-  },
-  {
-    id: "2",
-    startTime: "20:30",
-    endTime: "22:20",
-    name: "第2节自习",
-  },
-];
 
 // 当前状态类型
 type StudyStatusType = {
@@ -225,5 +202,3 @@ const StudyStatus: React.FC<StudyStatusProps> = () => {
 };
 
 export default StudyStatus;
-export type { StudyPeriod };
-export { DEFAULT_SCHEDULE };

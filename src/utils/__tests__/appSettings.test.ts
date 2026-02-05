@@ -71,6 +71,22 @@ describe("appSettings", () => {
     expect(s.study.display.showDate).toBe(true);
   });
 
+  it("getAppSettings 能对 general.weather 做合并并补齐默认字段", () => {
+    localStorage.setItem(
+      APP_SETTINGS_KEY,
+      JSON.stringify({
+        general: {
+          weather: { autoRefreshIntervalMin: 60 },
+        },
+      })
+    );
+
+    const s = getAppSettings();
+    expect(s.general.weather.autoRefreshIntervalMin).toBe(60);
+    expect(s.general.weather.locationMode).toBe("auto");
+    expect(s.general.weather.manualLocation.type).toBe("city");
+  });
+
   it("updateTimeSyncSettings 会深合并 timeSync，避免覆盖丢字段", () => {
     localStorage.setItem(
       APP_SETTINGS_KEY,

@@ -1,24 +1,9 @@
-import type { StudyPeriod } from "../components/StudyStatus/StudyStatus"; // 类型导入是安全的
+import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem } from "../types";
+import { DeepPartial } from "../types/utilityTypes";
 
 import { logger } from "./logger";
 import { StudyBackgroundType } from "./studyBackgroundStorage";
-
-// 重新定义 DEFAULT_SCHEDULE，避免在运行时依赖组件文件
-const DEFAULT_SCHEDULE_SETTINGS: StudyPeriod[] = [
-  {
-    id: "1",
-    startTime: "19:10",
-    endTime: "20:20",
-    name: "第1节自习",
-  },
-  {
-    id: "2",
-    startTime: "20:30",
-    endTime: "22:20",
-    name: "第2节自习",
-  },
-];
 
 export interface AppSettings {
   version: number;
@@ -33,6 +18,17 @@ export interface AppSettings {
     announcement: {
       hideUntil: number;
       version: string; // 存储版本号，用于与当前应用版本进行比对
+    };
+    weather: {
+      autoRefreshIntervalMin: number;
+      locationMode: "auto" | "manual";
+      manualLocation: {
+        type: "city" | "coords";
+        cityName?: string;
+        lat?: number;
+        lon?: number;
+        resolved?: { city?: string; lat: number; lon: number };
+      };
     };
     timeSync: {
       enabled: boolean;
@@ -110,6 +106,14 @@ const DEFAULT_SETTINGS: AppSettings = {
       hideUntil: 0,
       version: "",
     },
+    weather: {
+      autoRefreshIntervalMin: 30,
+      locationMode: "auto",
+      manualLocation: {
+        type: "city",
+        cityName: "",
+      },
+    },
     timeSync: {
       enabled: false,
       provider: "httpDate",
@@ -148,7 +152,7 @@ const DEFAULT_SETTINGS: AppSettings = {
       weatherAlert: false,
       minutelyPrecip: false,
     },
-    schedule: DEFAULT_SCHEDULE_SETTINGS,
+    schedule: DEFAULT_SCHEDULE,
     background: {
       type: "default",
     },
@@ -192,6 +196,7 @@ export function getAppSettings(): AppSettings {
           ...DEFAULT_SETTINGS.general.announcement,
           ...(parsed.general?.announcement || {}),
         },
+        weather: { ...DEFAULT_SETTINGS.general.weather, ...(parsed.general?.weather || {}) },
         timeSync: { ...DEFAULT_SETTINGS.general.timeSync, ...(parsed.general?.timeSync || {}) },
       },
       study: {
@@ -215,11 +220,13 @@ export function getAppSettings(): AppSettings {
  * 在 localStorage 中执行原子性的读-改-写操作（同步）
  */
 export function updateAppSettings(
-  partial: Partial<AppSettings> | ((current: AppSettings) => Partial<AppSettings>)
+  partial:
+    | DeepPartial<AppSettings>
+    | ((current: AppSettings) => DeepPartial<AppSettings>)
 ): void {
   try {
     const current = getAppSettings();
-    let updates: Partial<AppSettings>;
+    let updates: DeepPartial<AppSettings>;
 
     if (typeof partial === "function") {
       updates = partial(current);
@@ -229,7 +236,6 @@ export function updateAppSettings(
 
     const nextSettings: AppSettings = {
       ...current,
-      ...updates,
       modifiedAt: Date.now(),
       version: CURRENT_SETTINGS_VERSION,
     };
@@ -243,13 +249,38 @@ export function updateAppSettings(
       const generalUpdates = updates.general;
       nextSettings.general = {
         ...current.general,
-        ...generalUpdates,
         quote: generalUpdates.quote
           ? { ...current.general.quote, ...generalUpdates.quote }
           : current.general.quote,
         announcement: generalUpdates.announcement
           ? { ...current.general.announcement, ...generalUpdates.announcement }
           : current.general.announcement,
+        weather: generalUpdates.weather
+          ? {
+              ...current.general.weather,
+              ...generalUpdates.weather,
+              manualLocation: generalUpdates.weather.manualLocation
+                ? {
+                    ...current.general.weather.manualLocation,
+                    ...generalUpdates.weather.manualLocation,
+                    type:
+                      generalUpdates.weather.manualLocation.type ??
+                      current.general.weather.manualLocation.type,
+                    resolved:
+                      generalUpdates.weather.manualLocation.resolved &&
+                      generalUpdates.weather.manualLocation.resolved.lat != null &&
+                      generalUpdates.weather.manualLocation.resolved.lon != null
+                        ? {
+                            ...current.general.weather.manualLocation.resolved,
+                            ...generalUpdates.weather.manualLocation.resolved,
+                            lat: generalUpdates.weather.manualLocation.resolved.lat,
+                            lon: generalUpdates.weather.manualLocation.resolved.lon,
+                          }
+                        : current.general.weather.manualLocation.resolved,
+                  }
+                : current.general.weather.manualLocation,
+            }
+          : current.general.weather,
         timeSync: generalUpdates.timeSync
           ? { ...current.general.timeSync, ...generalUpdates.timeSync }
           : current.general.timeSync,
@@ -259,16 +290,25 @@ export function updateAppSettings(
       const studyUpdates = updates.study;
       nextSettings.study = {
         ...current.study,
-        ...studyUpdates,
+        targetYear: studyUpdates.targetYear ?? current.study.targetYear,
+        countdownType: studyUpdates.countdownType ?? current.study.countdownType,
+        countdownMode: studyUpdates.countdownMode ?? current.study.countdownMode,
+        customCountdown: studyUpdates.customCountdown
+          ? { ...current.study.customCountdown, ...studyUpdates.customCountdown }
+          : current.study.customCountdown,
         display: studyUpdates.display
           ? { ...current.study.display, ...studyUpdates.display }
           : current.study.display,
+        countdownItems: studyUpdates.countdownItems ?? current.study.countdownItems,
+        carouselIntervalSec:
+          studyUpdates.carouselIntervalSec ?? current.study.carouselIntervalSec,
         style: studyUpdates.style
           ? { ...current.study.style, ...studyUpdates.style }
           : current.study.style,
         alerts: studyUpdates.alerts
           ? { ...current.study.alerts, ...studyUpdates.alerts }
           : current.study.alerts,
+        schedule: studyUpdates.schedule ?? current.study.schedule,
         background: studyUpdates.background
           ? { ...current.study.background, ...studyUpdates.background }
           : current.study.background,
@@ -302,16 +342,16 @@ export function resetAppSettings(): void {
 /**
  * 帮助方法：更新某个特定分区（例如学习设置）
  */
-export function updateStudySettings(updates: Partial<AppSettings["study"]>): void {
-  updateAppSettings((current) => ({
-    study: { ...current.study, ...updates },
-  }));
+export function updateStudySettings(updates: DeepPartial<AppSettings["study"]>): void {
+  updateAppSettings({
+    study: updates,
+  });
 }
 
-export function updateGeneralSettings(updates: Partial<AppSettings["general"]>): void {
-  updateAppSettings((current) => ({
-    general: { ...current.general, ...updates },
-  }));
+export function updateGeneralSettings(updates: DeepPartial<AppSettings["general"]>): void {
+  updateAppSettings({
+    general: updates,
+  });
 }
 
 /**
@@ -334,7 +374,7 @@ export function updateTimeSyncSettings(
   });
 }
 
-export function updateNoiseSettings(updates: Partial<AppSettings["noiseControl"]>): void {
+export function updateNoiseSettings(updates: DeepPartial<AppSettings["noiseControl"]>): void {
   updateAppSettings((current) => ({
     noiseControl: { ...current.noiseControl, ...updates },
   }));

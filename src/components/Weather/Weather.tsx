@@ -8,6 +8,8 @@ import {
 } from "../../services/weatherService";
 import type { MinutelyPrecipResponse } from "../../services/weatherService";
 import { logger } from "../../utils/logger";
+import { getAppSettings } from "../../utils/appSettings";
+import { SETTINGS_EVENTS, subscribeSettingsEvent } from "../../utils/settingsEvents";
 import {
   getWeatherCache,
   updateWeatherNowSnapshot,
@@ -16,6 +18,9 @@ import {
   getValidCoords,
   updateMinutelyLastFetch,
   updateAlertTag,
+  updateDaily3dCache,
+  updateAirQualityCache,
+  updateAstronomySunCache,
 } from "../../utils/weatherStorage";
 
 import styles from "./Weather.module.css";
@@ -25,12 +30,23 @@ const MINUTELY_PRECIP_POPUP_SHOWN_KEY = "weather.minutely.popupShown";
 const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
 const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
 const MINUTELY_PRECIP_MANUAL_REFRESH_EVENT = "weatherMinutelyPrecipRefresh";
-const MINUTELY_PRECIP_API_INTERVAL_MS = 30 * 60 * 1000;
 const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
 
 type MinutelyPrecipCache = Pick<MinutelyPrecipResponse, "updateTime" | "summary" | "minutely"> & {
   fetchedAt: number;
 };
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function formatDateYYYYMMDD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -197,6 +213,21 @@ const Weather: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { study } = useAppState();
+  const [autoRefreshIntervalMin, setAutoRefreshIntervalMin] = useState<number>(() => {
+    return clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180);
+  });
+
+  useEffect(() => {
+    const updateInterval = () => {
+      setAutoRefreshIntervalMin(clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180));
+    };
+    const offSaved = subscribeSettingsEvent(SETTINGS_EVENTS.SettingsSaved, updateInterval);
+    const offWeather = subscribeSettingsEvent(SETTINGS_EVENTS.WeatherSettingsUpdated, updateInterval);
+    return () => {
+      offSaved();
+      offWeather();
+    };
+  }, []);
 
   const readMinutelyCache = useCallback((): MinutelyPrecipCache | null => {
     const coords = getValidCoords();
@@ -285,6 +316,7 @@ const Weather: React.FC = () => {
       if (!study?.messagePopupEnabled || !study.minutelyPrecipEnabled) return;
 
       const nowMs = Date.now();
+      const minutelyApiIntervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
 
       const openPopupIfEligible = (cache: MinutelyPrecipCache) => {
         if (!opts?.openIfRain) return;
@@ -317,7 +349,7 @@ const Weather: React.FC = () => {
       if (!opts?.forceApi) {
         const cache = getWeatherCache();
         const lastFetchAt = cache.minutely?.lastApiFetchAt || 0;
-        if (lastFetchAt > 0 && nowMs - lastFetchAt < MINUTELY_PRECIP_API_INTERVAL_MS) {
+        if (lastFetchAt > 0 && nowMs - lastFetchAt < minutelyApiIntervalMs) {
           return;
         }
       }
@@ -362,6 +394,7 @@ const Weather: React.FC = () => {
       }
     },
     [
+      autoRefreshIntervalMin,
       buildMinutelyPopupMessage,
       readMinutelyCache,
       study?.messagePopupEnabled,
@@ -480,6 +513,16 @@ const Weather: React.FC = () => {
 
       // 持久化实时天气快照
       updateWeatherNowSnapshot(result.weather);
+      const locationParam = `${result.coords.lon},${result.coords.lat}`;
+      if (result.daily3d && !result.daily3d.error) {
+        updateDaily3dCache(locationParam, result.daily3d);
+      }
+      if (result.astronomySun && !result.astronomySun.error) {
+        updateAstronomySunCache(locationParam, formatDateYYYYMMDD(new Date()), result.astronomySun);
+      }
+      if (result.airQuality && !result.airQuality.error) {
+        updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
+      }
 
       // 广播刷新完成事件
       const geoDiag = getWeatherCache().geolocation?.diagnostics || null;
@@ -493,17 +536,22 @@ const Weather: React.FC = () => {
           geolocationDiagnostics: geoDiag,
           now,
           refer: result.weather?.refer || null,
+          daily3d: result.daily3d || null,
+          astronomySun: result.astronomySun || null,
+          airQuality: result.airQuality || null,
         },
       });
       window.dispatchEvent(event);
     } catch (error) {
       logger.error("天气初始化失败:", error);
-      setError(error instanceof Error ? error.message : "未知错误");
+      const errorMessage = error instanceof Error ? error.message : "未知错误";
+      setError(errorMessage);
 
       const cache = getWeatherCache();
       const event = new CustomEvent("weatherRefreshDone", {
         detail: {
           status: "失败",
+          errorMessage,
           address: cache.location?.address || "",
           ts: Date.now(),
           coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
@@ -607,9 +655,9 @@ const Weather: React.FC = () => {
   useEffect(() => {
     initializeWeather();
 
-    // 每30分钟更新一次天气数据
-    const interval = setInterval(initializeWeather, 30 * 60 * 1000);
-    const localMinutelyInterval = setInterval(() => updateMinutelyPopupFromCache(), 30 * 60 * 1000);
+    const intervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
+    const interval = setInterval(initializeWeather, intervalMs);
+    const localMinutelyInterval = setInterval(() => updateMinutelyPopupFromCache(), intervalMs);
     const localMinutelyTickInterval = setInterval(() => updateMinutelyPopupFromCache(), 60 * 1000);
 
     // 监听天气刷新事件
@@ -656,6 +704,7 @@ const Weather: React.FC = () => {
       window.removeEventListener("weatherRefreshDone", onDone as EventListener);
     };
   }, [
+    autoRefreshIntervalMin,
     initializeWeather,
     handleAlertsAndPrecip,
     refreshMinutelyPrecip,

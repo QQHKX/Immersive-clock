@@ -2,6 +2,9 @@ import {
   WeatherNow,
   MinutelyPrecipResponse,
   GeolocationDiagnostics,
+  WeatherDaily3dResponse,
+  AstronomySunResponse,
+  AirQualityCurrentResponse,
 } from "../services/weatherService";
 
 import { logger } from "./logger";
@@ -13,6 +16,9 @@ const COORDS_TTL = 12 * 60 * 60 * 1000; // 12小时
 const LOCATION_TTL = 12 * 60 * 60 * 1000; // 12小时
 const ALERT_TTL = 12 * 60 * 60 * 1000; // 12小时
 const MINUTELY_TTL = 5 * 60 * 1000; // 5分钟
+const DAILY_TTL = 3 * 60 * 60 * 1000; // 3小时
+const AIR_QUALITY_TTL = 60 * 60 * 1000; // 1小时
+const ASTRONOMY_TTL = 12 * 60 * 60 * 1000; // 12小时
 
 export interface WeatherCache {
   // 1. 坐标与定位缓存
@@ -50,6 +56,28 @@ export interface WeatherCache {
     location: string; // "lon,lat"
     updatedAt: number;
     lastApiFetchAt?: number; // 上次API请求时间
+  };
+
+  // 4.1 三日天气预报缓存
+  daily3d?: {
+    data: WeatherDaily3dResponse;
+    location: string; // "lon,lat"
+    updatedAt: number;
+  };
+
+  // 4.2 空气质量缓存
+  airQuality?: {
+    data: AirQualityCurrentResponse;
+    signature: string; // lat,lon 的签名
+    updatedAt: number;
+  };
+
+  // 4.3 日出日落缓存
+  astronomySun?: {
+    data: AstronomySunResponse;
+    location: string; // "lon,lat"
+    date: string; // yyyyMMdd
+    updatedAt: number;
   };
 
   // 5. 预警去重记录 (Map 结构序列化)
@@ -180,6 +208,38 @@ export function updateMinutelyCache(
   });
 }
 
+export function updateDaily3dCache(location: string, data: WeatherDaily3dResponse) {
+  saveWeatherCache({
+    daily3d: {
+      data,
+      location,
+      updatedAt: Date.now(),
+    },
+  });
+}
+
+export function updateAirQualityCache(lat: number, lon: number, data: AirQualityCurrentResponse) {
+  const signature = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  saveWeatherCache({
+    airQuality: {
+      data,
+      signature,
+      updatedAt: Date.now(),
+    },
+  });
+}
+
+export function updateAstronomySunCache(location: string, date: string, data: AstronomySunResponse) {
+  saveWeatherCache({
+    astronomySun: {
+      data,
+      location,
+      date,
+      updatedAt: Date.now(),
+    },
+  });
+}
+
 /**
  * 更新分钟级降水API最后请求时间
  */
@@ -248,6 +308,44 @@ export function getValidMinutely(location: string) {
   return null;
 }
 
+export function getValidDaily3d(location: string) {
+  const cache = getWeatherCache();
+  if (
+    cache.daily3d &&
+    cache.daily3d.location === location &&
+    Date.now() - cache.daily3d.updatedAt < DAILY_TTL
+  ) {
+    return cache.daily3d.data;
+  }
+  return null;
+}
+
+export function getValidAirQuality(lat: number, lon: number) {
+  const cache = getWeatherCache();
+  const signature = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  if (
+    cache.airQuality &&
+    cache.airQuality.signature === signature &&
+    Date.now() - cache.airQuality.updatedAt < AIR_QUALITY_TTL
+  ) {
+    return cache.airQuality.data;
+  }
+  return null;
+}
+
+export function getValidAstronomySun(location: string, date: string) {
+  const cache = getWeatherCache();
+  if (
+    cache.astronomySun &&
+    cache.astronomySun.location === location &&
+    cache.astronomySun.date === date &&
+    Date.now() - cache.astronomySun.updatedAt < ASTRONOMY_TTL
+  ) {
+    return cache.astronomySun.data;
+  }
+  return null;
+}
+
 /**
  * 读取站点预警记录
  */
@@ -308,6 +406,21 @@ export function cleanupWeatherCache() {
     // 清理分钟级降水
     if (current.minutely && now - current.minutely.updatedAt > MINUTELY_TTL) {
       updates.minutely = undefined;
+      changed = true;
+    }
+
+    if (current.daily3d && now - current.daily3d.updatedAt > DAILY_TTL) {
+      updates.daily3d = undefined;
+      changed = true;
+    }
+
+    if (current.airQuality && now - current.airQuality.updatedAt > AIR_QUALITY_TTL) {
+      updates.airQuality = undefined;
+      changed = true;
+    }
+
+    if (current.astronomySun && now - current.astronomySun.updatedAt > ASTRONOMY_TTL) {
+      updates.astronomySun = undefined;
       changed = true;
     }
 

@@ -11,6 +11,7 @@ import {
   updateLocationCache,
   updateGeolocationDiagnostics,
 } from "../utils/weatherStorage";
+import { getAppSettings } from "../utils/appSettings";
 
 export interface Coords {
   lat: number;
@@ -63,6 +64,83 @@ export interface WeatherNow {
     sources?: string[];
     license?: string[];
   };
+  error?: string;
+}
+
+export interface WeatherDaily3dResponse {
+  code?: string;
+  updateTime?: string;
+  daily?: Array<{
+    fxDate?: string;
+    sunrise?: string;
+    sunset?: string;
+    moonrise?: string;
+    moonset?: string;
+    moonPhase?: string;
+    tempMax?: string;
+    tempMin?: string;
+    iconDay?: string;
+    textDay?: string;
+    iconNight?: string;
+    textNight?: string;
+    humidity?: string;
+    precip?: string;
+    pressure?: string;
+    vis?: string;
+    uvIndex?: string;
+  }>;
+  refer?: {
+    sources?: string[];
+    license?: string[];
+  };
+  error?: string;
+}
+
+export interface AstronomySunResponse {
+  code?: string;
+  sunrise?: string;
+  sunset?: string;
+  refer?: {
+    sources?: string[];
+    license?: string[];
+  };
+  error?: string;
+}
+
+export interface CityLookupResponse {
+  code?: string;
+  location?: Array<{
+    name?: string;
+    id?: string;
+    lat?: string;
+    lon?: string;
+    adm2?: string;
+    adm1?: string;
+    country?: string;
+    tz?: string;
+    type?: string;
+    rank?: string;
+  }>;
+  error?: string;
+}
+
+export interface AirQualityCurrentResponse {
+  metadata?: {
+    tag?: string;
+    sources?: string[];
+  };
+  indexes?: Array<{
+    code?: string;
+    name?: string;
+    aqi?: number;
+    level?: string;
+    category?: string;
+    primaryPollutant?: { code?: string };
+  }>;
+  pollutants?: Array<{
+    code?: string;
+    concentration?: { value?: number; unit?: string };
+  }>;
   error?: string;
 }
 
@@ -133,6 +211,19 @@ const QWEATHER_HOST = (() => {
 
 const QWEATHER_API_KEY = requireEnv("VITE_QWEATHER_API_KEY", import.meta.env.VITE_QWEATHER_API_KEY);
 const AMAP_KEY = requireEnv("VITE_AMAP_API_KEY", import.meta.env.VITE_AMAP_API_KEY);
+
+function buildQWeatherHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-QW-Api-Key": QWEATHER_API_KEY,
+    "Accept-Encoding": "gzip, deflate",
+    "User-Agent": "QWeatherTest/1.0",
+  };
+  const jwt = import.meta.env.VITE_QWEATHER_JWT;
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
+  }
+  return headers;
+}
 
 async function httpGetJson(
   url: string,
@@ -394,19 +485,56 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
 export async function fetchWeatherNow(location: string): Promise<WeatherNow> {
   const url = `https://${QWEATHER_HOST}/v7/weather/now?location=${encodeURIComponent(location)}`;
   try {
-    const headers: Record<string, string> = {
-      "X-QW-Api-Key": QWEATHER_API_KEY,
-      "Accept-Encoding": "gzip, deflate",
-      "User-Agent": "QWeatherTest/1.0",
-    };
-    const jwt = import.meta.env.VITE_QWEATHER_JWT;
-    if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt}`;
-    }
-    const data = await httpGetJson(url, headers);
+    const data = await httpGetJson(url, buildQWeatherHeaders());
     return data as WeatherNow;
   } catch (e: unknown) {
     return { error: String(e) } as WeatherNow;
+  }
+}
+
+export async function fetchWeatherDaily3d(location: string): Promise<WeatherDaily3dResponse> {
+  const url = `https://${QWEATHER_HOST}/v7/weather/3d?location=${encodeURIComponent(location)}&lang=zh`;
+  try {
+    const data = await httpGetJson(url, buildQWeatherHeaders());
+    return data as WeatherDaily3dResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as WeatherDaily3dResponse;
+  }
+}
+
+export async function fetchAstronomySun(
+  location: string,
+  date: string
+): Promise<AstronomySunResponse> {
+  const url = `https://${QWEATHER_HOST}/v7/astronomy/sun?location=${encodeURIComponent(location)}&date=${encodeURIComponent(date)}&lang=zh`;
+  try {
+    const data = await httpGetJson(url, buildQWeatherHeaders());
+    return data as AstronomySunResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as AstronomySunResponse;
+  }
+}
+
+export async function fetchCityLookup(keyword: string): Promise<CityLookupResponse> {
+  const url = `https://${QWEATHER_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(keyword)}&lang=zh&number=5`;
+  try {
+    const data = await httpGetJson(url, buildQWeatherHeaders());
+    return data as CityLookupResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as CityLookupResponse;
+  }
+}
+
+export async function fetchAirQualityCurrent(
+  lat: number,
+  lon: number
+): Promise<AirQualityCurrentResponse> {
+  const url = `https://${QWEATHER_HOST}/airquality/v1/current/${lat.toFixed(2)}/${lon.toFixed(2)}?lang=zh`;
+  try {
+    const data = await httpGetJson(url, buildQWeatherHeaders());
+    return data as AirQualityCurrentResponse;
+  } catch (e: unknown) {
+    return { error: String(e) } as AirQualityCurrentResponse;
   }
 }
 
@@ -450,14 +578,7 @@ export async function fetchWeatherAlertsByCoords(
 ): Promise<WeatherAlertResponse> {
   const url = `https://${QWEATHER_HOST}/weatheralert/v1/current/${lat.toFixed(2)}/${lon.toFixed(2)}?localTime=true&lang=zh`;
   try {
-    const headers: Record<string, string> = {
-      "X-QW-Api-Key": QWEATHER_API_KEY,
-      "Accept-Encoding": "gzip, deflate",
-      "User-Agent": "QWeatherTest/1.0",
-    };
-    const jwt = import.meta.env.VITE_QWEATHER_JWT;
-    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-    const data = await httpGetJson(url, headers);
+    const data = await httpGetJson(url, buildQWeatherHeaders());
     return data as WeatherAlertResponse;
   } catch (e: unknown) {
     return { error: String(e) } as WeatherAlertResponse;
@@ -472,17 +593,56 @@ export async function fetchWeatherAlertsByCoords(
 export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPrecipResponse> {
   const url = `https://${QWEATHER_HOST}/v7/minutely/5m?location=${encodeURIComponent(location)}&lang=zh`;
   try {
-    const headers: Record<string, string> = {
-      "X-QW-Api-Key": QWEATHER_API_KEY,
-      "Accept-Encoding": "gzip, deflate",
-      "User-Agent": "QWeatherTest/1.0",
-    };
-    const jwt = import.meta.env.VITE_QWEATHER_JWT;
-    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-    const data = (await httpGetJson(url, headers)) as MinutelyPrecipResponse;
+    const data = (await httpGetJson(url, buildQWeatherHeaders())) as MinutelyPrecipResponse;
     return data;
   } catch (e: unknown) {
     return { error: String(e) } as MinutelyPrecipResponse;
+  }
+}
+
+function formatDateYYYYMMDD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}
+
+function isFiniteNumber(n: unknown): n is number {
+  return typeof n === "number" && Number.isFinite(n);
+}
+
+function validateCoords(lat: number, lon: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
+
+async function resolveManualCoordsFromSettings(): Promise<
+  | { coords: Coords; coordsSource: string }
+  | { coords: null; coordsSource: null }
+> {
+  try {
+    const weather = getAppSettings().general.weather;
+    if (weather.locationMode !== "manual") return { coords: null, coordsSource: null };
+    const manual = weather.manualLocation;
+    if (manual.type === "coords") {
+      const lat = manual.lat;
+      const lon = manual.lon;
+      if (isFiniteNumber(lat) && isFiniteNumber(lon) && validateCoords(lat, lon)) {
+        return { coords: { lat, lon }, coordsSource: "manual_coords" };
+      }
+      return { coords: null, coordsSource: null };
+    }
+    const cityName = String(manual.cityName || "").trim();
+    if (!cityName) return { coords: null, coordsSource: null };
+    const resp = await fetchCityLookup(cityName);
+    const first = resp.location && resp.location.length > 0 ? resp.location[0] : null;
+    const lat = first?.lat != null ? Number.parseFloat(String(first.lat)) : NaN;
+    const lon = first?.lon != null ? Number.parseFloat(String(first.lon)) : NaN;
+    if (validateCoords(lat, lon)) {
+      return { coords: { lat, lon }, coordsSource: "manual_city" };
+    }
+    return { coords: null, coordsSource: null };
+  } catch {
+    return { coords: null, coordsSource: null };
   }
 }
 
@@ -608,19 +768,29 @@ export async function buildWeatherFlow(): Promise<{
   city?: string | null;
   addressInfo?: AddressInfo | null;
   weather?: WeatherNow | null;
+  daily3d?: WeatherDaily3dResponse | null;
+  airQuality?: AirQualityCurrentResponse | null;
+  astronomySun?: AstronomySunResponse | null;
 }> {
   // 1. 读取坐标缓存
   let coords: Coords | null = null;
   let coordsSource: string | null = null;
 
+  const manualResolved = await resolveManualCoordsFromSettings();
+  if (manualResolved.coords) {
+    coords = manualResolved.coords;
+    coordsSource = manualResolved.coordsSource;
+    updateCoordsCache(coords.lat, coords.lon, coordsSource);
+  }
+
   const cachedCoords = getValidCoords();
-  if (cachedCoords) {
+  if (!coords && cachedCoords) {
     coords = { lat: cachedCoords.lat, lon: cachedCoords.lon };
     coordsSource = cachedCoords.source;
   }
 
   // 策略调整：如果当前没有缓存，或者缓存不是来自浏览器定位，则尝试浏览器定位
-  if (!coords || coordsSource !== "geolocation") {
+  if ((!coords || coordsSource !== "geolocation") && coordsSource !== "manual_city" && coordsSource !== "manual_coords") {
     const geo = await getGeolocationResult();
     updateGeolocationDiagnostics(geo.diagnostics);
     if (geo.coords) {
@@ -689,6 +859,27 @@ export async function buildWeatherFlow(): Promise<{
 
   // 3. 实时天气始终请求最新
   const locationParam = `${coords.lon},${coords.lat}`;
-  const weather = await fetchWeatherNow(locationParam);
-  return { coords, coordsSource, city, addressInfo, weather };
+  const date = formatDateYYYYMMDD(new Date());
+  const results = await Promise.allSettled([
+    fetchWeatherNow(locationParam),
+    fetchWeatherDaily3d(locationParam),
+    fetchAstronomySun(locationParam, date),
+    fetchAirQualityCurrent(coords.lat, coords.lon),
+  ]);
+
+  const weather = results[0].status === "fulfilled" ? results[0].value : ({ error: String(results[0].reason) } as WeatherNow);
+  const daily3d =
+    results[1].status === "fulfilled"
+      ? results[1].value
+      : ({ error: String(results[1].reason) } as WeatherDaily3dResponse);
+  const astronomySun =
+    results[2].status === "fulfilled"
+      ? results[2].value
+      : ({ error: String(results[2].reason) } as AstronomySunResponse);
+  const airQuality =
+    results[3].status === "fulfilled"
+      ? results[3].value
+      : ({ error: String(results[3].reason) } as AirQualityCurrentResponse);
+
+  return { coords, coordsSource, city, addressInfo, weather, daily3d, astronomySun, airQuality };
 }

@@ -209,27 +209,6 @@
   font-size: 0.8rem;
 }
 
-/* 箱线图样式 */
-.boxWhisker {
-  stroke: var(--secondary-color);
-  stroke-width: 2;
-}
-
-.boxLine {
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 2;
-}
-
-.boxRect {
-  fill: #03dac6;
-  opacity: 0.35;
-}
-
-.boxMedian {
-  stroke: #03dac6;
-  stroke-width: 3;
-}
-
 /* 提醒密度条形图（细柱） */
 .barThin {
   fill: #ff6b6b;

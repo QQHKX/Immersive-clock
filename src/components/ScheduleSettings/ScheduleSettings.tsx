@@ -1,10 +1,29 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 
 import { logger } from "../../utils/logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { readStudySchedule, writeStudySchedule } from "../../utils/studyScheduleStorage";
-import { FormSection, FormInput, FormButton, FormButtonGroup, FormRow } from "../FormComponents";
-import { PlusIcon, TrashIcon, SaveIcon } from "../Icons";
+import {
+  ExcelImportResult,
+  parseStudyScheduleFromExcelArrayBuffer,
+  rebaseStudyPeriodIds,
+} from "../../utils/studyScheduleExcelImport";
+import {
+  createNewStudyPeriod,
+  getStudyPeriodDurationMinutes,
+  parseTimeText,
+  sortScheduleByStartTime,
+  validateStudySchedule,
+} from "../../utils/studyScheduleValidation";
+import {
+  FormSection,
+  FormFilePicker,
+  FormInput,
+  FormButton,
+  FormButtonGroup,
+  FormRow,
+} from "../FormComponents";
+import { FileIcon, PlusIcon, RefreshIcon, ResetIcon, SaveIcon, TrashIcon } from "../Icons";
 import { Modal } from "../Modal";
 import { StudyPeriod, DEFAULT_SCHEDULE } from "../StudyStatus";
 
@@ -21,15 +40,24 @@ interface ScheduleSettingsProps {
  * 功能：支持添加、修改、删除上课时间段
  */
 const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, onSave }) => {
-  const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftSchedule, setDraftSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
+  const [excelImport, setExcelImport] = useState<ExcelImportResult | null>(null);
+  const [excelFileName, setExcelFileName] = useState<string>("");
+  const [excelBusy, setExcelBusy] = useState(false);
+  const [excelError, setExcelError] = useState<string>("");
+
+  const validation = useMemo(() => validateStudySchedule(draftSchedule), [draftSchedule]);
+  const excelValidation = useMemo(
+    () => (excelImport ? validateStudySchedule(excelImport.periods) : null),
+    [excelImport]
+  );
 
   /**
    * 从localStorage加载课程表
    */
   const loadSchedule = useCallback(() => {
     const data = readStudySchedule();
-    setSchedule(Array.isArray(data) && data.length > 0 ? data : DEFAULT_SCHEDULE);
+    setDraftSchedule(Array.isArray(data) && data.length > 0 ? data : DEFAULT_SCHEDULE);
   }, []);
 
   /**
@@ -49,13 +77,21 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
   );
 
   /**
-   * 按开始时间排序课程表
+   * 生成可保存的课表（函数级注释：统一时间格式为 HH:MM，并对名称做 trim 与自动补齐）
    */
-  const sortSchedule = useCallback((periods: StudyPeriod[]): StudyPeriod[] => {
-    return [...periods].sort((a, b) => {
-      const timeA = parseInt(a.startTime.replace(":", ""));
-      const timeB = parseInt(b.startTime.replace(":", ""));
-      return timeA - timeB;
+  const toSavableSchedule = useCallback((input: StudyPeriod[]): StudyPeriod[] => {
+    const normalized = validateStudySchedule(input).normalized;
+    const sorted = sortScheduleByStartTime(normalized);
+    return sorted.map((p, index) => {
+      const start = parseTimeText(p.startTime);
+      const end = parseTimeText(p.endTime);
+      const safeName = typeof p.name === "string" ? p.name.trim() : "";
+      return {
+        ...p,
+        startTime: start?.normalized ?? p.startTime,
+        endTime: end?.normalized ?? p.endTime,
+        name: safeName.length > 0 ? safeName : `自定义时段${index + 1}`,
+      };
     });
   }, []);
 
@@ -63,29 +99,45 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
    * 添加新的时间段
    */
   const handleAddPeriod = useCallback(() => {
-    const newPeriod: StudyPeriod = {
-      id: Date.now().toString(),
-      startTime: "19:00",
-      endTime: "20:00",
-      name: "自定义时段",
-    };
-    const newSchedule = sortSchedule([...schedule, newPeriod]);
-    setSchedule(newSchedule);
-    setEditingId(newPeriod.id);
-  }, [schedule, sortSchedule]);
+    setDraftSchedule((prev) => [...prev, createNewStudyPeriod(prev)]);
+  }, []);
+
+  /** 复制时间段（函数级注释：复制当前行并生成新 id，便于快速创建相似时段） */
+  const handleDuplicatePeriod = useCallback((id: string) => {
+    setDraftSchedule((prev) => {
+      const index = prev.findIndex((p) => p.id === id);
+      if (index < 0) return prev;
+      const base = prev[index];
+      const copy: StudyPeriod = { ...base, id: String(Date.now()), name: `${base.name}` };
+      const next = [...prev];
+      next.splice(index + 1, 0, copy);
+      return next;
+    });
+  }, []);
+
+  /** 移动时间段（函数级注释：上移/下移仅影响当前显示顺序，不会在输入时自动排序） */
+  const handleMovePeriod = useCallback((id: string, dir: "up" | "down") => {
+    setDraftSchedule((prev) => {
+      const index = prev.findIndex((p) => p.id === id);
+      if (index < 0) return prev;
+      const targetIndex = dir === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      const tmp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = tmp;
+      return next;
+    });
+  }, []);
 
   /**
    * 删除时间段
    */
   const handleDeletePeriod = useCallback(
     (id: string) => {
-      const newSchedule = schedule.filter((period) => period.id !== id);
-      setSchedule(newSchedule);
-      if (editingId === id) {
-        setEditingId(null);
-      }
+      setDraftSchedule((prev) => prev.filter((period) => period.id !== id));
     },
-    [schedule, editingId]
+    []
   );
 
   /**
@@ -93,71 +145,40 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
    */
   const handleUpdatePeriod = useCallback(
     (id: string, field: keyof StudyPeriod, value: string) => {
-      const newSchedule = schedule.map((period) => {
-        if (period.id === id) {
-          return { ...period, [field]: value };
-        }
-        return period;
-      });
-      setSchedule(sortSchedule(newSchedule));
+      setDraftSchedule((prev) =>
+        prev.map((period) => (period.id === id ? { ...period, [field]: value } : period))
+      );
     },
-    [schedule, sortSchedule]
-  );
-
-  /**
-   * 验证时间格式
-   */
-  const isValidTime = useCallback((time: string): boolean => {
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
-  }, []);
-
-  /**
-   * 验证时间段是否有效
-   */
-  const isValidPeriod = useCallback(
-    (period: StudyPeriod): boolean => {
-      if (!isValidTime(period.startTime) || !isValidTime(period.endTime)) {
-        return false;
-      }
-      const startMinutes = parseInt(period.startTime.replace(":", ""));
-      const endMinutes = parseInt(period.endTime.replace(":", ""));
-      return startMinutes < endMinutes;
-    },
-    [isValidTime]
+    []
   );
 
   /**
    * 保存并关闭
    */
   const handleSave = useCallback(() => {
-    const trimmedSchedule = schedule.map((p) => ({
-      ...p,
-      name: typeof p.name === "string" ? p.name.trim() : "",
-    }));
-    // 验证所有时间段
-    const validSchedule = trimmedSchedule.filter((period) => isValidPeriod(period));
-    if (validSchedule.length === 0) {
-      alert("请至少添加一个有效的时间段");
-      return;
-    }
-
-    const sortedSchedule = sortSchedule(validSchedule).map((p, index) => ({
-      ...p,
-      name: p.name && p.name.trim().length > 0 ? p.name.trim() : `自定义时段${index + 1}`,
-    }));
-    setSchedule(sortedSchedule);
-    saveSchedule(sortedSchedule);
+    if (validation.hasErrors) return;
+    const savable = toSavableSchedule(draftSchedule);
+    setDraftSchedule(savable);
+    saveSchedule(savable);
     onClose();
-  }, [schedule, isValidPeriod, sortSchedule, saveSchedule, onClose]);
+  }, [draftSchedule, saveSchedule, onClose, toSavableSchedule, validation.hasErrors]);
+
+  /** 按开始时间排序（函数级注释：用户主动点击时才排序，避免输入时列表跳动） */
+  const handleSortByTime = useCallback(() => {
+    setDraftSchedule((prev) => sortScheduleByStartTime(prev));
+  }, []);
+
+  /** 恢复已保存（函数级注释：撤销本次弹窗内修改，重新从持久化加载） */
+  const handleRestoreSaved = useCallback(() => {
+    loadSchedule();
+  }, [loadSchedule]);
 
   /**
    * 重置为默认课程表
    */
   const handleReset = useCallback(() => {
     if (confirm("确定要重置为默认课程表吗？")) {
-      setSchedule(DEFAULT_SCHEDULE);
-      setEditingId(null);
+      setDraftSchedule(DEFAULT_SCHEDULE);
     }
   }, []);
 
@@ -165,8 +186,43 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
   useEffect(() => {
     if (isOpen) {
       loadSchedule();
+      setExcelImport(null);
+      setExcelFileName("");
+      setExcelBusy(false);
+      setExcelError("");
     }
   }, [isOpen, loadSchedule]);
+
+  /** 处理 Excel 文件选择（函数级注释：读取 ArrayBuffer 并解析出课表预览与行级错误） */
+  const handleExcelFileChange = useCallback(async (file: File | null) => {
+    setExcelImport(null);
+    setExcelError("");
+    setExcelFileName(file?.name ?? "");
+    if (!file) return;
+    try {
+      setExcelBusy(true);
+      const buffer = await file.arrayBuffer();
+      const result = parseStudyScheduleFromExcelArrayBuffer(buffer);
+      setExcelImport(result);
+    } catch (e) {
+      setExcelError(e instanceof Error ? e.message : "解析 Excel 失败");
+    } finally {
+      setExcelBusy(false);
+    }
+  }, []);
+
+  /** 应用导入结果（函数级注释：支持替换当前课表或合并追加到当前课表） */
+  const applyExcelImport = useCallback(
+    (mode: "replace" | "append") => {
+      if (!excelImport) return;
+      if (mode === "replace") {
+        setDraftSchedule(excelImport.periods);
+        return;
+      }
+      setDraftSchedule((prev) => [...prev, ...rebaseStudyPeriodIds(excelImport.periods, String(Date.now()))]);
+    },
+    [excelImport]
+  );
 
   if (!isOpen) return null;
 
@@ -178,23 +234,108 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
       maxWidth="lg"
       footer={
         <FormButtonGroup align="left">
-          <FormButton variant="secondary" onClick={handleReset}>
+          <FormButton variant="secondary" onClick={handleRestoreSaved} icon={<RefreshIcon size={16} />}>
+            恢复已保存
+          </FormButton>
+          <FormButton variant="secondary" onClick={handleSortByTime} icon={<RefreshIcon size={16} />}>
+            按时间排序
+          </FormButton>
+          <FormButton variant="secondary" onClick={handleReset} icon={<ResetIcon size={16} />}>
             重置默认
           </FormButton>
           <FormButtonGroup>
             <FormButton variant="secondary" onClick={onClose}>
               取消
             </FormButton>
-            <FormButton variant="primary" onClick={handleSave} icon={<SaveIcon size={16} />}>
+            <FormButton
+              variant="primary"
+              onClick={handleSave}
+              icon={<SaveIcon size={16} />}
+              disabled={validation.hasErrors}
+            >
               保存
             </FormButton>
           </FormButtonGroup>
         </FormButtonGroup>
       }
     >
+      <FormSection title="Excel 导入">
+        <FormFilePicker
+          label="选择 Excel 文件（.xlsx / .xls）"
+          accept=".xlsx,.xls"
+          buttonText={excelBusy ? "解析中..." : "选择文件"}
+          placeholder="未选择文件"
+          fileName={excelFileName}
+          disabled={excelBusy}
+          onFileChange={handleExcelFileChange}
+        />
+        {excelError && <div className={styles.importError}>{excelError}</div>}
+        {excelImport && (
+          <div className={styles.importSummary}>
+            <div className={styles.importSummaryRow}>
+              <span>工作表：</span>
+              <span className={styles.importSummaryValue}>{excelImport.meta.sheetName || "-"}</span>
+            </div>
+            <div className={styles.importSummaryRow}>
+              <span>解析结果：</span>
+              <span className={styles.importSummaryValue}>
+                成功 {excelImport.periods.length} 行，失败 {excelImport.rowErrors.length} 行
+              </span>
+            </div>
+            {excelImport.rowErrors.length > 0 && (
+              <div className={styles.importErrors}>
+                {excelImport.rowErrors.slice(0, 6).map((e) => (
+                  <div key={`${e.rowNumber}-${e.message}`} className={styles.importErrorItem}>
+                    第 {e.rowNumber} 行：{e.message}
+                  </div>
+                ))}
+                {excelImport.rowErrors.length > 6 && (
+                  <div className={styles.importErrorMore}>更多错误已省略…</div>
+                )}
+              </div>
+            )}
+            {excelValidation?.hasErrors && (
+              <div className={styles.importHint}>导入数据可能存在时间冲突，应用后需要在下方修正。</div>
+            )}
+            <div className={styles.importActions}>
+              <FormButton
+                variant="primary"
+                icon={<FileIcon size={16} />}
+                onClick={() => applyExcelImport("replace")}
+                disabled={excelBusy || excelImport.periods.length === 0}
+              >
+                替换当前课表
+              </FormButton>
+              <FormButton
+                variant="secondary"
+                onClick={() => applyExcelImport("append")}
+                disabled={excelBusy || excelImport.periods.length === 0}
+              >
+                合并追加
+              </FormButton>
+            </div>
+          </div>
+        )}
+      </FormSection>
+
       <FormSection title="课程时间表">
+        {validation.globalErrors.length > 0 && (
+          <div className={styles.globalErrors}>
+            {validation.globalErrors.map((msg) => (
+              <div key={msg} className={styles.globalErrorItem}>
+                {msg}
+              </div>
+            ))}
+          </div>
+        )}
+        {validation.hasErrors && (
+          <div className={styles.globalHint}>请修正红色提示后再保存（可先按“按时间排序”快速定位冲突）。</div>
+        )}
         <div className={styles.scheduleList}>
-          {schedule.map((period, index) => (
+          {draftSchedule.map((period, index) => {
+            const itemErrors = validation.errors[period.id] ?? {};
+            const duration = getStudyPeriodDurationMinutes(period);
+            return (
             <div key={period.id} className={styles.periodItem}>
               <div className={styles.periodNumber}>{index + 1}</div>
               <div className={styles.periodInputs}>
@@ -209,26 +350,58 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
                     type="time"
                     value={period.startTime}
                     onChange={(e) => handleUpdatePeriod(period.id, "startTime", e.target.value)}
-                    variant={!isValidTime(period.startTime) ? "default" : "time"}
+                    variant="time"
+                    error={itemErrors.startTime}
                   />
                   <span className={styles.timeSeparator}>-</span>
                   <FormInput
                     type="time"
                     value={period.endTime}
                     onChange={(e) => handleUpdatePeriod(period.id, "endTime", e.target.value)}
-                    variant={!isValidTime(period.endTime) ? "default" : "time"}
+                    variant="time"
+                    error={itemErrors.endTime}
                   />
+                  <div className={styles.periodMeta}>
+                    <span className={styles.durationText}>
+                      {typeof duration === "number" ? `${duration} 分钟` : "--"}
+                    </span>
+                  </div>
                 </FormRow>
+                {itemErrors.row && <div className={styles.rowError}>{itemErrors.row}</div>}
               </div>
-              <FormButton
-                variant="danger"
-                size="sm"
-                onClick={() => handleDeletePeriod(period.id)}
-                icon={<TrashIcon size={16} />}
-                title="删除时间段"
-              />
+              <div className={styles.rowActions}>
+                <FormButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleMovePeriod(period.id, "up")}
+                  disabled={index === 0}
+                >
+                  上移
+                </FormButton>
+                <FormButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleMovePeriod(period.id, "down")}
+                  disabled={index === draftSchedule.length - 1}
+                >
+                  下移
+                </FormButton>
+                <FormButton variant="secondary" size="sm" onClick={() => handleDuplicatePeriod(period.id)}>
+                  复制
+                </FormButton>
+                <FormButton
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDeletePeriod(period.id)}
+                  icon={<TrashIcon size={16} />}
+                  title="删除时间段"
+                >
+                  删除
+                </FormButton>
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <FormButtonGroup align="center">
