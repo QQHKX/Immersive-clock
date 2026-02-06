@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 
 import { StudyPeriod } from "../types/studySchedule";
+
 import { parseExcelTimeNumber, parseTimeText } from "./studyScheduleValidation";
 
 export interface ExcelImportRowError {
@@ -118,4 +119,3 @@ function parseCellTime(value: unknown) {
   if (typeof value === "number") return parseExcelTimeNumber(value);
   return parseTimeText(String(value ?? ""));
 }
-

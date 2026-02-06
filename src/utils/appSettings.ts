@@ -1,5 +1,5 @@
-import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem } from "../types";
+import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { DeepPartial } from "../types/utilityTypes";
 
 import { logger } from "./logger";

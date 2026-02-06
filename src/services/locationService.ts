@@ -1,11 +1,3 @@
-import {
-  getValidCoords,
-  getValidLocation,
-  updateCoordsCache,
-  updateGeolocationDiagnostics,
-  updateLocationCache,
-} from "../utils/weatherStorage";
-import { getAppSettings } from "../utils/appSettings";
 import type {
   AddressInfo,
   CityLookupResponse,
@@ -14,6 +6,15 @@ import type {
   GeolocationPermissionState,
   GeolocationResult,
 } from "../types/weather";
+import { getAppSettings } from "../utils/appSettings";
+import {
+  getValidCoords,
+  getValidLocation,
+  updateCoordsCache,
+  updateGeolocationDiagnostics,
+  updateLocationCache,
+} from "../utils/weatherStorage";
+
 import { httpGetJson } from "./httpClient";
 import { qweatherGetJson } from "./qweatherClient";
 import { requireEnv } from "./serviceEnv";

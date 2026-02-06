@@ -1,4 +1,3 @@
-import { buildLocationFlow, type LocationFlowOptions } from "./locationService";
 import type {
   AddressInfo,
   AirQualityCurrentResponse,
@@ -13,6 +12,8 @@ import type {
   WeatherDaily3dResponse,
   WeatherNow,
 } from "../types/weather";
+
+import { buildLocationFlow, type LocationFlowOptions } from "./locationService";
 import { qweatherGetJson } from "./qweatherClient";
 
 export type {
