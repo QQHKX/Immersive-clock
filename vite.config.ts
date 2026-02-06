@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin, type PluginOption } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import electron from "vite-plugin-electron";
 import renderer from "vite-plugin-electron-renderer";
@@ -17,12 +17,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   // 检测是否为 Electron 模式
   const isElectron = mode === "electron";
-  const isTest = mode === "test";
+  const isTest =
+    mode === "test" || process.env.VITEST === "true" || process.env.NODE_ENV === "test";
 
-  const forceLocalhostIpPlugin = () => {
+  const forceLocalhostIpPlugin = (): Plugin => {
     return {
       name: "force-localhost-ip",
-      config(config: { server?: { host?: string } }) {
+      config(config) {
         config.server = { ...(config.server || {}), host: "127.0.0.1" };
       },
     };
@@ -49,142 +50,144 @@ export default defineConfig(({ mode }) => {
   // 供插件（如 versionCachePlugin）读取
   process.env.VITE_APP_VERSION = appVersion;
 
+  const plugins: PluginOption[] = [
+    forceLocalhostIpPlugin(),
+    react({ fastRefresh: !isTest }) as unknown as PluginOption,
+    // Electron 插件（仅在 Electron 模式下启用）
+    isElectron &&
+      (electron([
+        {
+          // 主进程入口文件
+          entry: "electron/main.ts",
+          onstart(options) {
+            options.startup();
+          },
+          vite: {
+            build: {
+              outDir: "dist-electron",
+              rollupOptions: {
+                external: ["electron"],
+              },
+            },
+          },
+        },
+        {
+          // 预加载脚本
+          entry: "electron/preload.ts",
+          onstart(options) {
+            // 重新加载页面
+            options.reload();
+          },
+          vite: {
+            build: {
+              outDir: "dist-electron",
+              lib: {
+                entry: "electron/preload.ts",
+                formats: ["cjs"],
+                fileName: () => "preload",
+              },
+              rollupOptions: {
+                external: ["electron"],
+                // 将预加载脚本输出为 CommonJS，以避免在打包后的 preload 中出现 ESM import
+                output: {
+                  format: "cjs",
+                  inlineDynamicImports: true,
+                  entryFileNames: "preload.cjs",
+                },
+              },
+            },
+          },
+        },
+      ]) as unknown as PluginOption),
+    isElectron && (renderer() as unknown as PluginOption),
+    !isTest &&
+      (VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["favicon.svg", "apple-touch-icon.png", "og-image.png"],
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,woff}"],
+          navigateFallback: "/index.html",
+          navigateFallbackAllowlist: [/^\/.*$/],
+          navigateFallbackDenylist: [
+            /\.(xml|txt|webmanifest|json|ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|eot|ttf|otf)$/,
+          ],
+          ignoreURLParametersMatching: [/^v$/],
+          runtimeCaching: [
+            {
+              urlPattern: /\/fonts\/.*\.(woff2?|ttf|otf|eot)$/i,
+              handler: "CacheFirst",
+              options: {
+                cacheName: "local-webfonts",
+                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              urlPattern: ({ request }) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "images-cache",
+                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
+              },
+            },
+            {
+              urlPattern: ({ request }) => request.destination === "font",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "fonts-cache",
+                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              },
+            },
+            {
+              urlPattern: ({ request }) => request.destination === "audio",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "audio-cache",
+                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 2 },
+              },
+            },
+            {
+              urlPattern: /\/docs\/.*\.md$/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "docs-cache",
+                expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
+              },
+            },
+          ],
+        },
+        devOptions: {
+          enabled: true,
+        },
+        manifest: (() => {
+          try {
+            const manifestRaw = fs.readFileSync(
+              path.resolve(process.cwd(), "public/manifest.json"),
+              "utf-8"
+            );
+            const manifest = JSON.parse(manifestRaw);
+            manifest.version = appVersion;
+            return manifest;
+          } catch (e) {
+            return {
+              name: "Immersive Clock",
+              short_name: "Clock",
+              start_url: "/",
+              display: "standalone",
+              background_color: "#ffffff",
+              theme_color: "#000000",
+              icons: [],
+              version: appVersion,
+            };
+          }
+        })(),
+      }) as unknown as PluginOption),
+    // 版本缓存插件需在 PWA 之后运行，以便处理注入的 webmanifest
+    versionCachePlugin() as unknown as PluginOption,
+  ].filter((p): p is PluginOption => Boolean(p));
+
   return {
-    plugins: [
-      forceLocalhostIpPlugin(),
-      react({ fastRefresh: !isTest }),
-      // Electron 插件（仅在 Electron 模式下启用）
-      isElectron &&
-        electron([
-          {
-            // 主进程入口文件
-            entry: "electron/main.ts",
-            onstart(options) {
-              options.startup();
-            },
-            vite: {
-              build: {
-                outDir: "dist-electron",
-                rollupOptions: {
-                  external: ["electron"],
-                },
-              },
-            },
-          },
-          {
-            // 预加载脚本
-            entry: "electron/preload.ts",
-            onstart(options) {
-              // 重新加载页面
-              options.reload();
-            },
-            vite: {
-              build: {
-                outDir: "dist-electron",
-                lib: {
-                  entry: "electron/preload.ts",
-                  formats: ["cjs"],
-                  fileName: () => "preload",
-                },
-                rollupOptions: {
-                  external: ["electron"],
-                  // 将预加载脚本输出为 CommonJS，以避免在打包后的 preload 中出现 ESM import
-                  output: {
-                    format: "cjs",
-                    inlineDynamicImports: true,
-                    entryFileNames: "preload.cjs",
-                  },
-                },
-              },
-            },
-          },
-        ]),
-      isElectron && renderer(),
-      !isTest &&
-        VitePWA({
-          registerType: "autoUpdate",
-          includeAssets: ["favicon.svg", "apple-touch-icon.png", "og-image.png"],
-          workbox: {
-            globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,woff}"],
-            navigateFallback: "/index.html",
-            navigateFallbackAllowlist: [/^\/.*$/],
-            navigateFallbackDenylist: [
-              /\.(xml|txt|webmanifest|json|ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|eot|ttf|otf)$/,
-            ],
-            ignoreURLParametersMatching: [/^v$/],
-            runtimeCaching: [
-              {
-                urlPattern: /\/fonts\/.*\.(woff2?|ttf|otf|eot)$/i,
-                handler: "CacheFirst",
-                options: {
-                  cacheName: "local-webfonts",
-                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
-                  cacheableResponse: { statuses: [0, 200] },
-                },
-              },
-              {
-                urlPattern: ({ request }) => request.destination === "image",
-                handler: "CacheFirst",
-                options: {
-                  cacheName: "images-cache",
-                  expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
-                },
-              },
-              {
-                urlPattern: ({ request }) => request.destination === "font",
-                handler: "CacheFirst",
-                options: {
-                  cacheName: "fonts-cache",
-                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
-                },
-              },
-              {
-                urlPattern: ({ request }) => request.destination === "audio",
-                handler: "CacheFirst",
-                options: {
-                  cacheName: "audio-cache",
-                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 2 },
-                },
-              },
-              {
-                urlPattern: /\/docs\/.*\.md$/,
-                handler: "NetworkFirst",
-                options: {
-                  cacheName: "docs-cache",
-                  expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
-                },
-              },
-            ],
-          },
-          devOptions: {
-            enabled: true,
-          },
-          manifest: (() => {
-            try {
-              const manifestRaw = fs.readFileSync(
-                path.resolve(process.cwd(), "public/manifest.json"),
-                "utf-8"
-              );
-              const manifest = JSON.parse(manifestRaw);
-              manifest.version = appVersion;
-              return manifest;
-            } catch (e) {
-              return {
-                name: "Immersive Clock",
-                short_name: "Clock",
-                start_url: "/",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: "#000000",
-                icons: [],
-                version: appVersion,
-              };
-            }
-          })(),
-        }),
-      // 版本缓存插件需在 PWA 之后运行，以便处理注入的 webmanifest
-      versionCachePlugin(),
-    ].filter(Boolean),
+    plugins,
     define: {
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
       __ENABLE_PWA__: !isElectron,
