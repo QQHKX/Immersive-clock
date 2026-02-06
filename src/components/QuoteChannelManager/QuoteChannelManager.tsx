@@ -352,9 +352,7 @@ export function QuoteChannelManager({
 
   return (
     <FormSection title="语录渠道管理">
-      <div className={styles.channelManagerInfo}>
-        <p className={styles.infoText}>管理励志语录的获取渠道，调节各渠道的权重和启用状态。</p>
-      </div>
+      <p className={styles.helpText}>管理励志语录的获取渠道，调节各渠道的权重和启用状态。</p>
 
       <FormButtonGroup align="right">
         <input

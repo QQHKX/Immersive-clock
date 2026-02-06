@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 import { logger } from "../../utils/logger";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
-import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 import { getAdjustedDate } from "../../utils/timeSync";
 import { Weather } from "../Weather";
 

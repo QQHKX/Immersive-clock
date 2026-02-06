@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useAppState } from "../../contexts/AppContext";
 import { useTimer } from "../../hooks/useTimer";
 import { CountdownItem } from "../../types";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 import { formatClock } from "../../utils/formatTime";
 import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
 import { readStudyBackground } from "../../utils/studyBackgroundStorage";
@@ -14,7 +15,6 @@ import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
 import NoiseReportModal, { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
 import StudyStatus from "../StudyStatus";
-import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
 
 import styles from "./Study.module.css";
 

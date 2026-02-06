@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
-import { FormSection, FormSlider } from "../../FormComponents";
+import { FormSection, FormSlider, FormRow } from "../../FormComponents";
 import { QuoteChannelManager } from "../../QuoteChannelManager";
 import styles from "../SettingsPanel.module.css";
 
@@ -12,11 +12,6 @@ export interface ContentSettingsPanelProps {
   onRegisterSave?: (fn: () => void) => void;
 }
 
-/**
- * 内容管理分段组件
- * - 语录自动刷新频率
- * - 语录渠道管理
- */
 /**
  * 内容管理分段组件
  * - 语录自动刷新间隔设置
@@ -59,23 +54,24 @@ export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRe
       aria-labelledby="content"
     >
       <FormSection title="语录自动刷新">
-        <div className={styles.quoteRefreshInfo}>
-          <p className={styles.infoText}>当前设置: {formatRefreshIntervalText(draftInterval)}</p>
-          <p className={styles.helpText}>
+        <div className={styles.sliderWithInfo}>
+          <div className={styles.sliderWrapper}>
+            <FormSlider
+              label="刷新频率"
+              value={draftInterval}
+              min={30}
+              max={1800}
+              step={30}
+              onChange={handleQuoteRefreshIntervalChange}
+              formatValue={formatRefreshIntervalText}
+              showRange={true}
+              rangeLabels={["30秒", "手动刷新"]}
+            />
+          </div>
+          <p className={styles.infoSide}>
             调节语录的自动刷新频率，左端为最短间隔30秒，右端为关闭自动刷新。
           </p>
         </div>
-        <FormSlider
-          label="刷新频率"
-          value={draftInterval}
-          min={30}
-          max={1800}
-          step={30}
-          onChange={handleQuoteRefreshIntervalChange}
-          formatValue={formatRefreshIntervalText}
-          showRange={true}
-          rangeLabels={["30秒", "手动刷新"]}
-        />
       </FormSection>
 
       <QuoteChannelManager

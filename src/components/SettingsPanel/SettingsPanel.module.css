@@ -136,6 +136,40 @@
   }
 }
 
+/* 滑块与说明信息左右分栏布局 */
+.sliderWithInfo {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.sliderWrapper {
+  flex: 0 0 60%;
+  min-width: 300px;
+}
+
+.infoSide {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-family: var(--font-ui);
+}
+
+@media (max-width: 768px) {
+  .sliderWithInfo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .sliderWrapper {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .noiseCalibrationInfo {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -225,65 +259,6 @@
 .selectOverride:focus {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
-}
-
-/* 语录刷新设置样式 */
-.quoteRefreshInfo {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.quoteRefreshSlider {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
-  outline: none;
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.quoteRefreshSlider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.quoteRefreshSlider:focus {
-  background: rgba(255, 255, 255, 0.15);
 }
 
 .sliderContainer {

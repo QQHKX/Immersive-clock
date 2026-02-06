@@ -2,12 +2,12 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 
 import { logger } from "../../utils/logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
-import { readStudySchedule, writeStudySchedule } from "../../utils/studyScheduleStorage";
 import {
   ExcelImportResult,
   parseStudyScheduleFromExcelArrayBuffer,
   rebaseStudyPeriodIds,
 } from "../../utils/studyScheduleExcelImport";
+import { readStudySchedule, writeStudySchedule } from "../../utils/studyScheduleStorage";
 import {
   createNewStudyPeriod,
   getStudyPeriodDurationMinutes,

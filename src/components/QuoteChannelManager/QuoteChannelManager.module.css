@@ -1,13 +1,5 @@
 /* 语录渠道管理组件样式 */
 
-.channelManagerInfo {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--border-radius-md);
-}
-
 .infoText {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 import { useAppState } from "../../contexts/AppContext";
+import { buildLocationFlow } from "../../services/locationService";
 import {
   buildWeatherFlow,
   fetchWeatherAlertsByCoords,
   fetchMinutelyPrecip,
 } from "../../services/weatherService";
-import { buildLocationFlow } from "../../services/locationService";
-import type { MinutelyPrecipResponse } from "../../types/weather";
 import type { WeatherFlowOptions } from "../../services/weatherService";
-import { logger } from "../../utils/logger";
+import type { MinutelyPrecipResponse } from "../../types/weather";
 import { getAppSettings } from "../../utils/appSettings";
+import { logger } from "../../utils/logger";
 import { SETTINGS_EVENTS, subscribeSettingsEvent } from "../../utils/settingsEvents";
 import {
   getWeatherCache,
