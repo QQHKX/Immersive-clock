@@ -81,7 +81,7 @@ describe("weatherService", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { getCoordsViaIP } = await import("../weatherService");
+    const { getCoordsViaIP } = await import("../locationService");
     const coords = await getCoordsViaIP();
 
     expect(coords).not.toBeNull();

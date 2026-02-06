@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import type { WeatherAlertResponse } from "../../services/weatherService";
+import type { WeatherAlertResponse } from "../../types/weather";
 import {
   selectLatestAlertsPerStation,
   buildAlertSignature,

@@ -4,7 +4,7 @@
  * - 构造预警签名以实现本地去重（优先使用 id，其次组合键）
  * - 站点归一化：使用 senderName，缺失时用坐标兜底键
  */
-import type { WeatherAlertResponse } from "../services/weatherService";
+import type { WeatherAlertResponse } from "../types/weather";
 
 import { readStationAlertRecord, writeStationAlertRecord } from "./weatherStorage";
 

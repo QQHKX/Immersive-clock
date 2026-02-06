@@ -80,6 +80,16 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
     setLastRefreshError("");
   }, []);
 
+  const handleRefreshLocationAuto = useCallback(() => {
+    const weatherRefreshEvent = new CustomEvent("weatherLocationRefresh", {
+      detail: { preferredLocationMode: "auto" },
+    });
+    window.dispatchEvent(weatherRefreshEvent);
+    setWeatherRefreshStatus("刷新中");
+    setIsRefreshing(true);
+    setLastRefreshError("");
+  }, []);
+
   useEffect(() => {
     const onDone = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
@@ -90,7 +100,11 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       refreshDisplayData();
     };
     window.addEventListener("weatherRefreshDone", onDone as EventListener);
-    return () => window.removeEventListener("weatherRefreshDone", onDone as EventListener);
+    window.addEventListener("weatherLocationRefreshDone", onDone as EventListener);
+    return () => {
+      window.removeEventListener("weatherRefreshDone", onDone as EventListener);
+      window.removeEventListener("weatherLocationRefreshDone", onDone as EventListener);
+    };
   }, [refreshDisplayData]);
 
   // 注册保存：将“消息弹窗 Beta / 天气提醒”开关持久化
@@ -107,18 +121,18 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const manualLocation =
         manualType === "coords"
           ? {
-              type: "coords" as const,
-              lat: Number.isFinite(Number.parseFloat(manualLat))
-                ? Number.parseFloat(manualLat)
-                : undefined,
-              lon: Number.isFinite(Number.parseFloat(manualLon))
-                ? Number.parseFloat(manualLon)
-                : undefined,
-            }
+            type: "coords" as const,
+            lat: Number.isFinite(Number.parseFloat(manualLat))
+              ? Number.parseFloat(manualLat)
+              : undefined,
+            lon: Number.isFinite(Number.parseFloat(manualLon))
+              ? Number.parseFloat(manualLon)
+              : undefined,
+          }
           : {
-              type: "city" as const,
-              cityName: String(manualCityName || "").trim(),
-            };
+            type: "city" as const,
+            cityName: String(manualCityName || "").trim(),
+          };
 
       updateGeneralSettings({
         weather: {
@@ -149,7 +163,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   ]);
 
   const now = cache.now?.data.now;
-  const refer = cache.now?.data.refer;
   const geoDiag = cache.geolocation?.diagnostics;
   const geoHint = (() => {
     const msg = String(geoDiag?.errorMessage || "").toLowerCase();
@@ -166,9 +179,9 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       role="tabpanel"
       aria-labelledby="weather"
     >
-      <FormSection title="消息弹窗（Beta）">
+      <FormSection title="基本设置">
         <FormCheckbox
-          label="启用消息弹窗beta"
+          label="启用消息弹窗 (Beta)"
           checked={messagePopupEnabled}
           onChange={(e) => setMessagePopupEnabled(e.target.checked)}
         />
@@ -189,114 +202,19 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
         />
       </FormSection>
 
-      <FormSection title="实时天气">
-        <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
-        <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
-        <p className={styles.infoText}>
-          气温：{now?.temp ? `${now.temp}°C` : "未获取"} 体感：
-          {now?.feelsLike ? `${now.feelsLike}°C` : "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          风向：{now?.windDir || "未获取"} 风力：
-          {now?.windScale || "未获取"} 风速：
-          {now?.windSpeed ? `${now.windSpeed} km/h` : "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          湿度：{now?.humidity ? `${now.humidity}%` : "未获取"} 气压：
-          {now?.pressure ? `${now.pressure} hPa` : "未获取"}
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-          {(() => {
-            const humidity = now?.humidity ? Number.parseFloat(String(now.humidity)) : NaN;
-            if (!Number.isFinite(humidity)) return null;
-            const ratio = Math.min(1, Math.max(0, humidity / 100));
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 64, opacity: 0.85, fontSize: "0.75rem" }}>湿度</div>
-                <div
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.12)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${Math.round(ratio * 100)}%`,
-                      height: "100%",
-                      background: "rgba(255,255,255,0.55)",
-                    }}
-                  />
-                </div>
-                <div style={{ width: 48, textAlign: "right", opacity: 0.85, fontSize: "0.75rem" }}>
-                  {Math.round(humidity)}%
-                </div>
-              </div>
-            );
-          })()}
-          {(() => {
-            const pressure = now?.pressure ? Number.parseFloat(String(now.pressure)) : NaN;
-            if (!Number.isFinite(pressure)) return null;
-            const ratio = Math.min(1, Math.max(0, (pressure - 900) / 200));
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 64, opacity: 0.85, fontSize: "0.75rem" }}>气压</div>
-                <div
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.12)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${Math.round(ratio * 100)}%`,
-                      height: "100%",
-                      background: "rgba(255,255,255,0.55)",
-                    }}
-                  />
-                </div>
-                <div style={{ width: 72, textAlign: "right", opacity: 0.85, fontSize: "0.75rem" }}>
-                  {Math.round(pressure)} hPa
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        <p className={styles.infoText}>
-          日出/日落：
-          {cache.astronomySun?.data?.sunrise && cache.astronomySun?.data?.sunset
-            ? `${cache.astronomySun.data.sunrise} / ${cache.astronomySun.data.sunset}`
-            : "未获取"}
-        </p>
-
-        <p className={styles.infoText}>
-          空气质量：
-          {(() => {
-            const idx = cache.airQuality?.data?.indexes?.[0];
-            if (!idx) return "未获取";
-            const pollutant = idx.primaryPollutant?.code ? ` 主污染物=${idx.primaryPollutant.code}` : "";
-            return `${idx.name || "AQI"}=${String(idx.aqi ?? "")} ${idx.category || ""}${pollutant}`;
-          })()}
-        </p>
-
-        <p className={styles.infoText}>
-          三日预报：
-          {(() => {
-            const daily = cache.daily3d?.data?.daily;
-            if (!daily || daily.length === 0) return "未获取";
-            const brief = daily
-              .slice(0, 3)
-              .map((d) => `${d.fxDate || ""} ${d.textDay || ""} ${d.tempMin || ""}~${d.tempMax || ""}°C`)
-              .join(" ｜ ");
-            return brief;
-          })()}
-        </p>
+      <FormSection title="刷新设置">
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="自动刷新间隔"
+            value={String(Math.round(autoRefreshIntervalMin))}
+            options={[
+              { label: "15分钟", value: "15" },
+              { label: "30分钟", value: "30" },
+              { label: "1小时", value: "60" },
+            ]}
+            onChange={(v) => setAutoRefreshIntervalMin(Number(v))}
+          />
+        </FormRow>
       </FormSection>
 
       <FormSection title="地理位置">
@@ -305,12 +223,25 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             label="定位方式"
             value={locationMode}
             options={[
-              { label: "自动", value: "auto" },
-              { label: "手动", value: "manual" },
+              { label: "自动定位", value: "auto" },
+              { label: "手动设置", value: "manual" },
             ]}
             onChange={(v) => setLocationMode(v as "auto" | "manual")}
           />
         </FormRow>
+
+        {locationMode === "auto" ? (
+          <FormButtonGroup align="left">
+            <FormButton
+              variant="secondary"
+              onClick={handleRefreshLocationAuto}
+              icon={<RefreshIcon size={16} />}
+              loading={isRefreshing}
+            >
+              刷新定位
+            </FormButton>
+          </FormButtonGroup>
+        ) : null}
 
         {locationMode === "manual" ? (
           <>
@@ -319,7 +250,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
                 label="手动类型"
                 value={manualType}
                 options={[
-                  { label: "城市", value: "city" },
+                  { label: "城市名称", value: "city" },
                   { label: "经纬度", value: "coords" },
                 ]}
                 onChange={(v) => setManualType(v as "city" | "coords")}
@@ -350,74 +281,38 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
                 />
               </FormRow>
             )}
-            <p className={styles.helpText}>保存后生效；手动定位将优先于浏览器定位与 IP 定位。</p>
+            <p className={styles.helpText}>保存后生效；手动定位优先级高于自动定位。</p>
           </>
         ) : null}
 
-        <p className={styles.infoText}>
-          当前坐标：
-          {cache.coords ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}` : "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          当前来源：
-          {(() => {
-            const source = cache.coords?.source;
-            if (!source) return "未获取";
-            if (source === "geolocation") return "浏览器定位";
-            if (source === "amap_ip") return "高德IP定位";
-            if (source === "ip") return "公共IP定位";
-            if (source === "manual_city") return "手动城市";
-            if (source === "manual_coords") return "手动经纬度";
-            return source;
-          })()}
-        </p>
-        <p className={styles.infoText}>街道地址：{cache.location?.address || "未获取"}</p>
-        <p className={styles.infoText}>
-          定位诊断：
-          {geoDiag
-            ? `安全上下文=${geoDiag.isSecureContext ? "是" : "否"} 权限=${geoDiag.permissionState}${
-                geoDiag.errorCode ? ` 错误码=${geoDiag.errorCode}` : ""
-              }${geoDiag.errorMessage ? ` 原因=${geoDiag.errorMessage}` : ""}`
-            : "未获取"}
-        </p>
-        {geoHint ? <p className={styles.infoText}>{geoHint}</p> : null}
-        {!geoDiag ? null : (
-          <>
-            {!geoDiag.isSecureContext ? (
-              <p className={styles.infoText}>建议：在 HTTPS/安全上下文下使用浏览器定位（部分环境下 HTTP 会被限制）。</p>
-            ) : null}
-            {geoDiag.permissionState === "denied" ? (
-              <p className={styles.infoText}>建议：检查系统/浏览器位置权限是否已允许。</p>
-            ) : null}
-          </>
-        )}
+        <div className={styles.weatherInfo} style={{ marginTop: '0.5rem' }}>
+          <p className={styles.infoText}>
+            当前坐标：
+            {cache.coords ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}` : "未获取"}
+            <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
+            来源：
+            {(() => {
+              const source = cache.coords?.source;
+              if (!source) return "未获取";
+              if (source === "geolocation") return "浏览器定位";
+              if (source === "amap_ip") return "高德IP定位";
+              if (source === "ip") return "公共IP定位";
+              if (source === "manual_city") return "手动城市";
+              if (source === "manual_coords") return "手动经纬度";
+              return source;
+            })()}
+          </p>
+          <p className={styles.infoText}>地址：{cache.location?.address || "未获取"}</p>
+          {geoDiag ? (
+            <p className={styles.infoText} style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+              诊断：权限={geoDiag.permissionState} {geoDiag.errorMessage ? `(${geoDiag.errorMessage})` : ""}
+            </p>
+          ) : null}
+          {geoHint ? <p className={styles.infoText} style={{ color: '#ffab40' }}>{geoHint}</p> : null}
+        </div>
       </FormSection>
 
-      <FormSection title="服务状态">
-        <FormRow gap="sm" align="center">
-          <FormSegmented
-            label="自动刷新"
-            value={String(Math.round(autoRefreshIntervalMin))}
-            options={[
-              { label: "15min", value: "15" },
-              { label: "30min", value: "30" },
-              { label: "1h", value: "60" },
-            ]}
-            onChange={(v) => setAutoRefreshIntervalMin(Number(v))}
-          />
-        </FormRow>
-        <p className={styles.infoText}>数据源：{refer?.sources ? "QWeather" : "未获取"}</p>
-        <p className={styles.infoText}>
-          许可：{refer?.license ? "QWeather Developers License" : "未获取"}
-        </p>
-        <p className={styles.infoText}>
-          最后成功时间：
-          {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleString() : "未成功"}
-        </p>
-        <p className={styles.infoText}>
-          刷新状态：{weatherRefreshStatus || "未刷新"}
-          {lastRefreshError ? `（${lastRefreshError}）` : ""}
-        </p>
+      <FormSection title="实时天气">
         <FormButtonGroup align="left">
           <FormButton
             variant="secondary"
@@ -425,9 +320,88 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             icon={<RefreshIcon size={16} />}
             loading={isRefreshing}
           >
-            刷新天气
+            刷新数据
           </FormButton>
         </FormButtonGroup>
+
+        <div className={styles.weatherInfo} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px' }}>
+            <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
+            <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
+            <p className={styles.infoText}>
+              气温：{now?.temp ? `${now.temp}°C` : "--"} <span style={{ opacity: 0.5, margin: '0 4px' }}>/</span> 体感：{now?.feelsLike ? `${now.feelsLike}°C` : "--"}
+            </p>
+            <p className={styles.infoText}>
+              风况：{now?.windDir || "--"} {now?.windScale || "--"}级 ({now?.windSpeed ? `${now.windSpeed}km/h` : "--"})
+            </p>
+            <p className={styles.infoText}>
+              空气质量：
+              {(() => {
+                const idx = cache.airQuality?.data?.indexes?.[0];
+                if (!idx) return "未获取";
+                return `${idx.name || "AQI"} ${idx.aqi ?? ""} ${idx.category || ""}`;
+              })()}
+            </p>
+            <p className={styles.infoText}>
+              日出日落：
+              {cache.astronomySun?.data?.sunrise && cache.astronomySun?.data?.sunset
+                ? `${cache.astronomySun.data.sunrise} - ${cache.astronomySun.data.sunset}`
+                : "未获取"}
+            </p>
+          </div>
+
+          {/* 湿度与气压条 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 4 }}>
+            {(() => {
+              const humidity = now?.humidity ? Number.parseFloat(String(now.humidity)) : NaN;
+              if (!Number.isFinite(humidity)) return null;
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>湿度</div>
+                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(100, Math.max(0, humidity))}%`, height: "100%", background: "rgba(255,255,255,0.6)" }} />
+                  </div>
+                  <div style={{ width: 40, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}>{Math.round(humidity)}%</div>
+                </div>
+              );
+            })()}
+            {(() => {
+              const pressure = now?.pressure ? Number.parseFloat(String(now.pressure)) : NaN;
+              if (!Number.isFinite(pressure)) return null;
+              const ratio = Math.min(1, Math.max(0, (pressure - 900) / 200));
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>气压</div>
+                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(ratio * 100)}%`, height: "100%", background: "rgba(255,255,255,0.6)" }} />
+                  </div>
+                  <div style={{ width: 60, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}>{Math.round(pressure)}hPa</div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div style={{ marginTop: 4, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className={styles.infoText} style={{ opacity: 0.8 }}>
+              未来三日：
+              {(() => {
+                const daily = cache.daily3d?.data?.daily;
+                if (!daily || daily.length === 0) return "未获取";
+                return daily.slice(0, 3).map((d) => `${d.textDay} ${d.tempMin}~${d.tempMax}°`).join("  |  ");
+              })()}
+            </p>
+          </div>
+        </div>
+
+        {lastRefreshError ? (
+          <p className={styles.infoText} style={{ color: '#ff5252', marginTop: 8 }}>
+            刷新失败：{lastRefreshError}
+          </p>
+        ) : (
+          <p className={styles.infoText} style={{ opacity: 0.5, fontSize: '0.8rem', marginTop: 4 }}>
+            数据更新于：{cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "未成功"}
+          </p>
+        )}
       </FormSection>
     </div>
   );

@@ -213,6 +213,133 @@ describe("weatherService - flow", () => {
     expect(weatherStorageMocks.updateGeolocationDiagnostics).not.toHaveBeenCalled();
   });
 
+  it("buildWeatherFlow：preferredLocationMode=auto 时跳过手动定位解析", async () => {
+    weatherStorageMocks.getValidCoords.mockReturnValue({
+      lat: 31.2,
+      lon: 121.5,
+      source: "ip",
+      updatedAt: 1,
+    });
+    weatherStorageMocks.getValidLocation.mockReturnValue({
+      signature: "31.2000,121.5000",
+      updatedAt: 1,
+      city: "上海",
+      address: "A 路 1 号",
+      addressSource: "Amap",
+    });
+
+    localStorage.setItem(
+      "AppSettings",
+      JSON.stringify({
+        version: 1,
+        modifiedAt: 1,
+        general: {
+          weather: {
+            autoRefreshIntervalMin: 30,
+            locationMode: "manual",
+            manualLocation: { type: "city", cityName: "北京" },
+          },
+        },
+      })
+    );
+
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/geo/v2/city/lookup?")) {
+        return Promise.reject(new Error("should not call geo lookup when preferredLocationMode=auto"));
+      }
+      if (url.includes("/v7/weather/now?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", now: { text: "晴" } }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/weather/3d?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", daily: [] }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/v7/astronomy/sun?")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ code: "200", sunrise: "06:58", sunset: "17:58" }),
+        } satisfies FetchResponseLike);
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () => JSON.stringify({ indexes: [] }),
+        } satisfies FetchResponseLike);
+      }
+      return Promise.reject(new Error(`unexpected url: ${url}`));
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { buildWeatherFlow } = await import("../weatherService");
+    const res = await buildWeatherFlow({ preferredLocationMode: "auto" });
+
+    expect(res.coords).toEqual({ lat: 31.2, lon: 121.5 });
+    expect(res.coordsSource).toBe("ip");
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/geo/v2/city/lookup?"))).toBe(
+      false
+    );
+  });
+
+  it("buildLocationFlow：只刷新定位与反编码，不请求天气接口", async () => {
+    weatherStorageMocks.getValidCoords.mockReturnValue({
+      lat: 31.2,
+      lon: 121.5,
+      source: "geolocation",
+      updatedAt: 1,
+    });
+    weatherStorageMocks.getValidLocation.mockReturnValue(null);
+
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/v7/weather/now?") || url.includes("/v7/weather/3d?") || url.includes("/v7/astronomy/sun?")) {
+        return Promise.reject(new Error(`should not call weather api: ${url}`));
+      }
+      if (url.includes("/airquality/v1/current/")) {
+        return Promise.reject(new Error(`should not call airquality api: ${url}`));
+      }
+      if (url.includes("restapi.amap.com/v3/geocode/regeo")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: async () =>
+            JSON.stringify({
+              status: "1",
+              regeocode: {
+                formatted_address: "上海市 黄浦区",
+                addressComponent: { city: "上海市", province: "上海市" },
+              },
+            }),
+        } satisfies FetchResponseLike);
+      }
+      return Promise.reject(new Error(`unexpected url: ${url}`));
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { buildLocationFlow } = await import("../locationService");
+    const res = await buildLocationFlow({ preferredLocationMode: "auto" });
+
+    expect(res.coords).toEqual({ lat: 31.2, lon: 121.5 });
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/v7/weather/now?"))).toBe(false);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/airquality/v1/current/"))).toBe(
+      false
+    );
+  });
+
   it("buildWeatherFlow：无坐标缓存时优先浏览器定位并缓存，再反编码与拉取实时天气", async () => {
     weatherStorageMocks.getValidCoords.mockReturnValue(null);
     weatherStorageMocks.getValidLocation.mockReturnValue(null);
@@ -383,7 +510,7 @@ describe("weatherService - flow", () => {
     } satisfies FetchResponseLike);
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { getCoordsViaAmapIP } = await import("../weatherService");
+    const { getCoordsViaAmapIP } = await import("../locationService");
     const coords = await getCoordsViaAmapIP();
 
     expect(coords).toEqual({ lat: 32, lon: 122 });
@@ -407,7 +534,7 @@ describe("weatherService - flow", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { getCoordsViaIP } = await import("../weatherService");
+    const { getCoordsViaIP } = await import("../locationService");
     const coords = await getCoordsViaIP();
     expect(coords).toEqual({ lat: 31.2, lon: 121.5 });
   });
@@ -416,7 +543,7 @@ describe("weatherService - flow", () => {
     Object.defineProperty(window, "isSecureContext", { value: false, configurable: true });
     Object.defineProperty(navigator, "geolocation", { value: {}, configurable: true });
 
-    const { getGeolocationResult } = await import("../weatherService");
+    const { getGeolocationResult } = await import("../locationService");
     const res = await getGeolocationResult();
 
     expect(res.coords).toBeNull();
@@ -440,7 +567,7 @@ describe("weatherService - flow", () => {
       configurable: true,
     });
 
-    const { getGeolocationResult } = await import("../weatherService");
+    const { getGeolocationResult } = await import("../locationService");
     const res = await getGeolocationResult();
 
     expect(res.coords).toBeNull();
@@ -505,7 +632,7 @@ describe("weatherService - flow", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { reverseGeocodeOSM } = await import("../weatherService");
+    const { reverseGeocodeOSM } = await import("../locationService");
     const r1 = await reverseGeocodeOSM(31.2, 121.5);
     expect(r1.address).toContain("A 路");
     expect(r1.address).toContain("N");
@@ -541,7 +668,7 @@ describe("weatherService - flow", () => {
       text: async () => JSON.stringify({ status: "0", info: "bad key" }),
     } satisfies FetchResponseLike) as unknown as typeof fetch;
 
-    const { reverseGeocodeAmap } = await import("../weatherService");
+    const { reverseGeocodeAmap } = await import("../locationService");
     const r1 = await reverseGeocodeAmap(31.2, 121.5);
     expect(String(r1.error)).toContain("bad key");
 
@@ -580,7 +707,7 @@ describe("weatherService - flow", () => {
       text: async () => JSON.stringify({ status: "1", rectangle: "not-a-rect" }),
     } satisfies FetchResponseLike) as unknown as typeof fetch;
 
-    const { getCoordsViaAmapIP } = await import("../weatherService");
+    const { getCoordsViaAmapIP } = await import("../locationService");
     const coords = await getCoordsViaAmapIP();
     expect(coords).toBeNull();
   });
@@ -608,7 +735,7 @@ describe("weatherService - flow", () => {
       configurable: true,
     });
 
-    const { getGeolocationResult } = await import("../weatherService");
+    const { getGeolocationResult } = await import("../locationService");
     const res = await getGeolocationResult({
       enableHighAccuracy: true,
       timeoutMs: 1000,
@@ -626,7 +753,7 @@ describe("weatherService - flow", () => {
     });
     Object.defineProperty(navigator, "geolocation", { value: {}, configurable: true });
 
-    const { getGeolocationResult } = await import("../weatherService");
+    const { getGeolocationResult } = await import("../locationService");
     const res = await getGeolocationResult();
     expect(res.diagnostics.permissionState).toBe("unknown");
   });
@@ -646,7 +773,7 @@ describe("weatherService - flow", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { getCoordsViaIP } = await import("../weatherService");
+    const { getCoordsViaIP } = await import("../locationService");
     const coords = await getCoordsViaIP();
     expect(coords).toEqual({ lat: 31.2, lon: 121.5 });
   });

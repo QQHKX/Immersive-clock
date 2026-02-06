@@ -6,7 +6,9 @@ import {
   fetchWeatherAlertsByCoords,
   fetchMinutelyPrecip,
 } from "../../services/weatherService";
-import type { MinutelyPrecipResponse } from "../../services/weatherService";
+import { buildLocationFlow } from "../../services/locationService";
+import type { MinutelyPrecipResponse } from "../../types/weather";
+import type { WeatherFlowOptions } from "../../services/weatherService";
 import { logger } from "../../utils/logger";
 import { getAppSettings } from "../../utils/appSettings";
 import { SETTINGS_EVENTS, subscribeSettingsEvent } from "../../utils/settingsEvents";
@@ -31,6 +33,8 @@ const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
 const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
 const MINUTELY_PRECIP_MANUAL_REFRESH_EVENT = "weatherMinutelyPrecipRefresh";
 const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
+const WEATHER_LOCATION_REFRESH_EVENT = "weatherLocationRefresh";
+const WEATHER_LOCATION_REFRESH_DONE_EVENT = "weatherLocationRefreshDone";
 
 type MinutelyPrecipCache = Pick<MinutelyPrecipResponse, "updateTime" | "summary" | "minutely"> & {
   fetchedAt: number;
@@ -468,7 +472,7 @@ const Weather: React.FC = () => {
   /**
    * 初始化天气数据（通过和风 + 高德反编码）
    */
-  const initializeWeather = useCallback(async () => {
+  const initializeWeather = useCallback(async (options?: WeatherFlowOptions) => {
     try {
       setLoading(true);
       setError(null);
@@ -489,7 +493,7 @@ const Weather: React.FC = () => {
         }
       }
 
-      const result = await buildWeatherFlow();
+      const result = await buildWeatherFlow(options);
 
       if (
         !result.coords ||
@@ -564,6 +568,46 @@ const Weather: React.FC = () => {
       setLoading(false);
     }
   }, [mapWeatherToIcon]);
+
+  /**
+   * 仅刷新定位信息（函数级中文注释）：
+   * - 只更新坐标与地址缓存，不触发天气接口请求；
+   * - 用于设置页“自动模式-刷新定位”按钮。
+   */
+  const refreshLocationOnly = useCallback(async (options?: WeatherFlowOptions) => {
+    try {
+      const result = await buildLocationFlow(options);
+      const cache = getWeatherCache();
+      const geoDiag = cache.geolocation?.diagnostics || null;
+      const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
+        detail: {
+          status: result.coords ? "成功" : "失败",
+          errorMessage: result.coords ? "" : "定位失败",
+          address: cache.location?.address || "",
+          ts: Date.now(),
+          coords: result.coords || null,
+          coordsSource: result.coordsSource || null,
+          geolocationDiagnostics: geoDiag,
+        },
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "未知错误";
+      const cache = getWeatherCache();
+      const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
+        detail: {
+          status: "失败",
+          errorMessage,
+          address: cache.location?.address || "",
+          ts: Date.now(),
+          coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
+          coordsSource: cache.coords?.source || null,
+          geolocationDiagnostics: cache.geolocation?.diagnostics || null,
+        },
+      });
+      window.dispatchEvent(event);
+    }
+  }, []);
 
   /**
    * 处理天气预警与降雨提醒
@@ -653,19 +697,33 @@ const Weather: React.FC = () => {
    * 组件挂载时初始化天气数据
    */
   useEffect(() => {
-    initializeWeather();
+    void initializeWeather();
 
     const intervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
-    const interval = setInterval(initializeWeather, intervalMs);
+    const interval = setInterval(() => void initializeWeather(), intervalMs);
     const localMinutelyInterval = setInterval(() => updateMinutelyPopupFromCache(), intervalMs);
     const localMinutelyTickInterval = setInterval(() => updateMinutelyPopupFromCache(), 60 * 1000);
 
     // 监听天气刷新事件
-    const handleWeatherRefresh = () => {
-      initializeWeather();
+    const handleWeatherRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const preferredLocationMode =
+        detail.preferredLocationMode === "auto" || detail.preferredLocationMode === "manual"
+          ? (detail.preferredLocationMode as "auto" | "manual")
+          : undefined;
+      void initializeWeather({ preferredLocationMode });
     };
 
     window.addEventListener("weatherRefresh", handleWeatherRefresh);
+    const handleLocationRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const preferredLocationMode =
+        detail.preferredLocationMode === "auto" || detail.preferredLocationMode === "manual"
+          ? (detail.preferredLocationMode as "auto" | "manual")
+          : undefined;
+      void refreshLocationOnly({ preferredLocationMode, forceGeolocation: true });
+    };
+    window.addEventListener(WEATHER_LOCATION_REFRESH_EVENT, handleLocationRefresh);
     const handleMinutelyManualRefresh = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
       const forceApi = detail.forceApi === true;
@@ -697,6 +755,7 @@ const Weather: React.FC = () => {
       clearInterval(localMinutelyInterval);
       clearInterval(localMinutelyTickInterval);
       window.removeEventListener("weatherRefresh", handleWeatherRefresh);
+      window.removeEventListener(WEATHER_LOCATION_REFRESH_EVENT, handleLocationRefresh);
       window.removeEventListener(
         MINUTELY_PRECIP_MANUAL_REFRESH_EVENT,
         handleMinutelyManualRefresh as EventListener
@@ -706,6 +765,7 @@ const Weather: React.FC = () => {
   }, [
     autoRefreshIntervalMin,
     initializeWeather,
+    refreshLocationOnly,
     handleAlertsAndPrecip,
     refreshMinutelyPrecip,
     updateMinutelyPopupFromCache,

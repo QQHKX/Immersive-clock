@@ -1,11 +1,11 @@
-import {
-  WeatherNow,
-  MinutelyPrecipResponse,
-  GeolocationDiagnostics,
-  WeatherDaily3dResponse,
-  AstronomySunResponse,
+import type {
   AirQualityCurrentResponse,
-} from "../services/weatherService";
+  AstronomySunResponse,
+  GeolocationDiagnostics,
+  MinutelyPrecipResponse,
+  WeatherDaily3dResponse,
+  WeatherNow,
+} from "../types/weather";
 
 import { logger } from "./logger";
 
