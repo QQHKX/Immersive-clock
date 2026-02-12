@@ -5,8 +5,14 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { AppContextProvider } from "./contexts/AppContext";
 import { initializeStorage } from "./utils/storageInitializer";
+import Clarity from "@microsoft/clarity";
 
 import "./styles/global.css";
+
+// 初始化 Microsoft Clarity
+if (import.meta.env.PROD) {
+  Clarity.init("sfsiwls4dz");
+}
 
 // 在应用启动前初始化本地存储
 initializeStorage();

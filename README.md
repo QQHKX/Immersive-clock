@@ -205,7 +205,7 @@ npm run test:e2e
 
 - **环境感知**：
   - **实时天气**：集成和风天气 API，提供分钟级降水预警与气象灾害预警。
-  - **噪音监测**：实时分贝监测，支持基线校准、最大阈值设置及超标报告自动弹窗。([🎙️ 评分系统原理](public/docs/noise-scoring.md))
+  - **噪音监测**：实时分贝监测，支持基线校准、最大阈值设置及超标报告自动弹窗。
 - **专注氛围**：
   - **励志语录**：支持多频道源（如一言），可配置不同频道的权重与自动刷新频率。
   - **组件开关**：可自由隐藏噪音、语录、大字时间等组件，定制专属学习界面。
@@ -235,6 +235,7 @@ npm run test:e2e
 - [Usage Guide (English)](docs/usage.en-US.md)
 - [常见问题（中文）](docs/faq.zh-CN.md)
 - [FAQ (English)](docs/faq.en-US.md)
+- [🎙️ 评分系统原理](public/docs/noise-scoring.md)
 
 ---
 
