@@ -29,8 +29,8 @@ const DEFAULT_SETTINGS: NoiseControlSettings = {
   avgWindowSec: 1,
   sliceSec: 20,
   frameMs: 50,
-  scoreThresholdDbfs: -35,
-  segmentMergeGapMs: 300,
+  scoreThresholdDbfs: -45,
+  segmentMergeGapMs: 500,
   maxSegmentsPerMin: 6,
   alertSoundEnabled: false,
 };

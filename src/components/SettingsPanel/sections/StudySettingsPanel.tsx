@@ -424,7 +424,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
               rangeLabels={["-60", "-10"]}
             />
             <p className={styles.helpText} style={{ marginTop: 4 }}>
-              仅影响纪律评分，不受校准影响；数值越大（越接近 0）越严格。
+              仅影响纪律评分，不受校准影响；数值越小（越远离 0）越严格。
             </p>
           </div>
 
