@@ -115,7 +115,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch {}
+    } catch { }
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -299,6 +299,22 @@ export function Study() {
     setHistoryOpen(false);
   }, []);
 
+  /**
+   * 打开噪音历史记录（函数级注释：由噪音监测“呼吸灯”触发，进入历史记录管理界面）
+   */
+  const handleOpenHistory = useCallback(() => {
+    setHistoryOpen(true);
+  }, []);
+
+  /**
+   * 从历史列表查看详情（函数级注释：关闭历史弹窗并打开报告弹窗，复用统一的统计报告 UI）
+   */
+  const handleViewHistoryDetail = useCallback((period: NoiseReportPeriod) => {
+    setHistoryOpen(false);
+    setReportPeriod(period);
+    setReportOpen(true);
+  }, []);
+
   const display = study.display || {
     showStatusBar: true,
     showNoiseMonitor: true,
@@ -361,7 +377,9 @@ export function Study() {
       {(display.showStatusBar || display.showNoiseMonitor) && (
         <div className={styles.topLeft}>
           {display.showStatusBar && <StudyStatus />}
-          {display.showNoiseMonitor && <NoiseMonitor />}
+          {display.showNoiseMonitor && (
+            <NoiseMonitor onBreathingLightClick={handleOpenHistory} onStatusClick={handleOpenHistory} />
+          )}
         </div>
       )}
 
@@ -413,7 +431,13 @@ export function Study() {
       )}
 
       {/* 噪音历史记录弹窗 */}
-      {historyOpen && <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />}
+      {historyOpen && (
+        <NoiseHistoryModal
+          isOpen={historyOpen}
+          onClose={handleCloseHistory}
+          onViewDetail={handleViewHistoryDetail}
+        />
+      )}
     </div>
   );
 }

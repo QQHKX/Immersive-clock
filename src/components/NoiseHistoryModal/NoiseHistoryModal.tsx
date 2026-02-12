@@ -1,182 +1,192 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-import { getNoiseReports, SavedNoiseReport } from "../../utils/noiseReportStorage";
-import { FormSection } from "../FormComponents";
+import { StudyPeriod, DEFAULT_SCHEDULE } from "../../types/studySchedule";
+import { formatDateTimeLocal, parseDateTimeLocal } from "../../utils/dateTimeLocal";
+import { buildNoiseHistoryListItems } from "../../utils/noiseHistoryBuilder";
+import type { NoiseSliceSummary } from "../../types/noise";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
+import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
+import { FormButton, FormInput, FormRow, FormSection } from "../FormComponents";
 import Modal from "../Modal/Modal";
+import type { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
 
 import styles from "./NoiseHistoryModal.module.css";
 
 export interface NoiseHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onViewDetail: (period: NoiseReportPeriod) => void;
 }
 
-const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose }) => {
-  const [reports, setReports] = useState<SavedNoiseReport[]>([]);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartWidth, setChartWidth] = useState(800);
+function formatRange(start: Date, end: Date): string {
+  return `${start.toLocaleString()} - ${end.toLocaleString()}`;
+}
+
+const MAX_CUSTOM_RANGE_MS = 24 * 60 * 60 * 1000;
+
+const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, onViewDetail }) => {
+  const [tick, setTick] = useState(0);
+  const [customName, setCustomName] = useState("自定义报告");
+  const [customStartValue, setCustomStartValue] = useState("");
+  const [customEndValue, setCustomEndValue] = useState("");
+  const [customError, setCustomError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
-    const list = getNoiseReports();
-    setReports(list);
-    setActiveIndex(0);
-
-    const measure = () => {
-      const w = chartContainerRef.current?.clientWidth || 800;
-      setChartWidth(w);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    const unsubscribe = subscribeNoiseSlicesUpdated(() => setTick((t) => t + 1));
+    setTick((t) => t + 1);
+    return unsubscribe;
   }, [isOpen]);
 
-  const active = reports[activeIndex];
+  useEffect(() => {
+    if (!isOpen) return;
+    const end = new Date();
+    end.setSeconds(0, 0);
+    const start = new Date(end.getTime() - 60 * 60 * 1000);
+    setCustomName("自定义报告");
+    setCustomStartValue(formatDateTimeLocal(start));
+    setCustomEndValue(formatDateTimeLocal(end));
+    setCustomError(null);
+  }, [isOpen]);
 
-  const chart = useMemo(() => {
-    if (!active)
-      return {
-        width: chartWidth,
-        height: 160,
-        padding: 36,
-        path: "",
-        xTicks: [] as number[],
-        yTicks: [] as number[],
-        thresholdY: 0,
-        chartWidth: chartWidth,
-      };
-    const width = chartWidth;
-    const height = active.chart.height;
-    const padding = active.chart.padding;
-    const minDb = 0;
-    const maxDb = 80;
-    const startTs = active.start;
-    const endTs = active.end;
-    const span = endTs - startTs;
-    const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
-    const mapY = (v: number) =>
-      height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
-    const pts = active.series.map((p) => ({ x: mapX(p.t), y: mapY(p.v) }));
-    const path = pts
-      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
-      .join(" ");
-    const xTicks = [startTs, (startTs + endTs) / 2, endTs].map(mapX);
-    const yTicks = [minDb, 40, 60, maxDb].map(mapY);
-    const thresholdY = mapY(active.chart.threshold);
-    return { width, height, padding, path, xTicks, yTicks, thresholdY, chartWidth: width };
-  }, [active, chartWidth]);
+  const slices: NoiseSliceSummary[] = useMemo(() => {
+    void tick;
+    if (!isOpen) return [];
+    return readNoiseSlices();
+  }, [isOpen, tick]);
 
-  const formatDuration = (ms: number) => {
-    const sec = Math.round(ms / 1000);
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}分${s}秒`;
+  const availableRange = useMemo(() => {
+    if (!isOpen) return null;
+    if (slices.length === 0) return null;
+    let minStart = Infinity;
+    let maxEnd = -Infinity;
+    for (const s of slices) {
+      if (s.start < minStart) minStart = s.start;
+      if (s.end > maxEnd) maxEnd = s.end;
+    }
+    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) return null;
+    return { min: new Date(minStart), max: new Date(maxEnd) };
+  }, [isOpen, slices]);
+
+  const items = useMemo(() => {
+    if (!isOpen) return [];
+    let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
+    try {
+      const s = readStudySchedule();
+      if (Array.isArray(s) && s.length > 0) schedule = s;
+    } catch { }
+    return buildNoiseHistoryListItems({ slices, schedule });
+  }, [isOpen, slices]);
+
+  /** 查看自定义报告（函数级注释：校验起止时间并回传 NoiseReportPeriod，让上层复用统一报告弹窗展示） */
+  const handleViewCustomReport = () => {
+    setCustomError(null);
+    const start = parseDateTimeLocal(customStartValue);
+    const end = parseDateTimeLocal(customEndValue);
+    if (!start || !end) {
+      setCustomError("请输入有效的开始/结束时间。");
+      return;
+    }
+    const startTs = start.getTime();
+    const endTs = end.getTime();
+    if (endTs <= startTs) {
+      setCustomError("结束时间必须晚于开始时间。");
+      return;
+    }
+    if (endTs - startTs > MAX_CUSTOM_RANGE_MS) {
+      setCustomError("当前仅支持查看最近 24 小时内的时间段报告。");
+      return;
+    }
+    const name = customName.trim().length > 0 ? customName.trim() : "自定义报告";
+    onViewDetail({
+      id: `custom-${startTs}-${endTs}`,
+      name,
+      start,
+      end,
+    });
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="历史记录" maxWidth="xxl">
-      <div className={styles.container}>
-        <div className={styles.sidebar}>
-          <div className={styles.timelineTitle}>时间轴（最近7天）</div>
-          <div className={styles.timelineList} aria-live="polite">
-            {reports.length === 0 ? (
-              <div className={styles.empty}>暂无历史报告</div>
-            ) : (
-              reports.map((r, idx) => (
-                <div
-                  key={`${r.id}-${idx}`}
-                  className={`${styles.timelineItem} ${idx === activeIndex ? styles.active : ""}`}
-                  onClick={() => setActiveIndex(idx)}
-                >
-                  <div className={styles.itemTitle}>{r.periodName}</div>
-                  <div className={styles.itemSub}>
-                    {new Date(r.start).toLocaleString()} - {new Date(r.end).toLocaleString()}
-                  </div>
-                </div>
-              ))
-            )}
+    <Modal isOpen={isOpen} onClose={onClose} title="历史记录管理" maxWidth="xxl">
+      <FormSection title="自定义报告">
+        <div className={styles.note}>
+          {availableRange
+            ? `可用数据范围：${formatRange(availableRange.min, availableRange.max)}`
+            : "当前暂无切片数据（生成报告后将显示统计）。"}
+        </div>
+
+        <div className={styles.customForm}>
+          <FormInput
+            label="报告名称"
+            value={customName}
+            onChange={(e) => setCustomName(e.target.value)}
+            placeholder="例如：午间自习"
+          />
+
+          <FormRow gap="sm" align="end" className={styles.customRow}>
+            <FormInput
+              label="开始时间"
+              type="datetime-local"
+              value={customStartValue}
+              onChange={(e) => setCustomStartValue(e.target.value)}
+            />
+            <FormInput
+              label="结束时间"
+              type="datetime-local"
+              value={customEndValue}
+              onChange={(e) => setCustomEndValue(e.target.value)}
+            />
+            <FormButton variant="primary" size="sm" onClick={handleViewCustomReport}>
+              查看报告
+            </FormButton>
+          </FormRow>
+
+          {customError ? <div className={styles.customError}>{customError}</div> : null}
+        </div>
+      </FormSection>
+
+      <FormSection title="历史记录（最近24小时）">
+        <div className={styles.note}>数据来源：噪音切片摘要（仅保存最近 24 小时）。</div>
+
+        <div className={styles.list} aria-live="polite">
+          <div className={styles.headerRow}>
+            <div className={styles.colName}>名称</div>
+            <div className={styles.colScore}>评分</div>
+            <div className={styles.colTime}>时间</div>
+            <div className={styles.colAction}></div>
           </div>
-        </div>
 
-        <div className={styles.content}>
-          <FormSection title="关键统计对比">
-            {active ? (
-              <div className={styles.statsGrid}>
-                <div className={styles.statItem}>
-                  <div className={styles.statLabel}>平均</div>
-                  <div className={styles.statValue}>{active.stats.avg.toFixed(1)} dB</div>
+          {items.length === 0 ? (
+            <div className={styles.empty}>暂无历史记录</div>
+          ) : (
+            items.map((item) => (
+              <div key={item.period.id} className={styles.dataRow}>
+                <div className={styles.colName}>{item.period.name}</div>
+                <div className={styles.colScore}>
+                  {item.avgScore === null ? "—" : item.avgScore.toFixed(0)}
                 </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statLabel}>峰值</div>
-                  <div className={styles.statValue}>{active.stats.max.toFixed(1)} dB</div>
-                </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statLabel}>提醒次数</div>
-                  <div className={styles.statValue}>{active.stats.transitions}</div>
-                </div>
-                <div className={styles.statItem}>
-                  <div className={styles.statLabel}>吵闹时长</div>
-                  <div className={styles.statValue}>
-                    {formatDuration(active.stats.noisyDurationMs)}
-                  </div>
+                <div className={styles.colTime}>{formatRange(item.period.start, item.period.end)}</div>
+                <div className={styles.colAction}>
+                  <FormButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      onViewDetail({
+                        id: item.period.id,
+                        name: item.period.name,
+                        start: item.period.start,
+                        end: item.period.end,
+                      })
+                    }
+                  >
+                    查看详情
+                  </FormButton>
                 </div>
               </div>
-            ) : (
-              <div className={styles.empty}>请选择左侧时间轴的记录</div>
-            )}
-          </FormSection>
-
-          <FormSection title="历史图表">
-            {active && active.series.length > 0 ? (
-              <div ref={chartContainerRef} className={styles.chartRow}>
-                <svg
-                  width={chart.width}
-                  height={active.chart.height}
-                  className={styles.chart}
-                  viewBox={`0 0 ${chart.width} ${active.chart.height}`}
-                >
-                  <defs>
-                    <linearGradient
-                      id="historyAreaGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2={active.chart.height}
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop offset="0%" stopColor="#03DAC6" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#03DAC6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-
-                  {/* 阈值线 */}
-                  <line
-                    x1={chart.padding}
-                    y1={chart.thresholdY}
-                    x2={chart.width - chart.padding}
-                    y2={chart.thresholdY}
-                    stroke="#ff4757"
-                    strokeDasharray="4 4"
-                    strokeWidth={1}
-                  />
-                  {/* 折线 */}
-                  <path d={chart.path} stroke="#03DAC6" strokeWidth={2} fill="none" />
-                  {/* 面积填充 */}
-                  <path
-                    d={`${chart.path} L ${chart.width - chart.padding} ${active.chart.height - chart.padding} L ${chart.padding} ${active.chart.height - chart.padding} Z`}
-                    fill="url(#historyAreaGradient)"
-                  />
-                </svg>
-              </div>
-            ) : (
-              <div className={styles.empty}>该记录暂无图表数据</div>
-            )}
-          </FormSection>
-
-          {/* 底部关闭按钮移除，使用头部的统一关闭按钮与遮罩点击/ESC */}
+            ))
+          )}
         </div>
-      </div>
+      </FormSection>
     </Modal>
   );
 };

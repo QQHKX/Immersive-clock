@@ -316,7 +316,7 @@ try {
 - 适用：非关键配置、可重建/可过期的数据（如天气缓存、噪音采样、按日分片的报告）
 - 推荐做法：
   - 使用独立的 `src/utils/*Storage.ts` 或 `src/utils/*Service.ts` 管理读写与校验
-  - 对分片数据使用统一前缀（例如 `noise-reports.<date>`），并提供清理策略函数（例如保留 7 天）
+  - 对可过期数据提供清理策略函数（例如：噪音切片摘要 `noise-slices` 仅保留最近 24 小时）
 
 **3) IndexedDB（大体积/二进制/文件）**
 
@@ -328,7 +328,7 @@ try {
 - **统一入口**：配置类优先进入 `AppSettings`，避免新增散落的 localStorage 配置键
 - **命名要求**：
   - localStorage 键必须"可读 + 可归类"，避免短、泛、无前缀的键名
-  - 动态键必须有固定前缀，例如：`noise-reports.<YYYY-MM-DD>`
+  - 动态键必须有固定前缀，例如：`weather-cache.<YYYY-MM-DD>`
 - **类型与校验**：
   - 读取 localStorage 时必须做 `JSON.parse` try/catch，并校验结构（数组/字段类型等）
   - 读取 AppSettings 时可依赖 `getAppSettings()` 的默认值合并

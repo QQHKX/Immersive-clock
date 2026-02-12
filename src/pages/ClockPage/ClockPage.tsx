@@ -13,6 +13,7 @@ import { Stopwatch } from "../../components/Stopwatch/Stopwatch";
 import { Study } from "../../components/Study/Study";
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 import { startTimeSyncManager } from "../../utils/timeSync";
+import type { MessagePopupOpenDetail, MessagePopupType } from "../../types/messagePopup";
 
 import styles from "./ClockPage.module.css";
 
@@ -34,9 +35,10 @@ export function ClockPage() {
   const [globalPopups, setGlobalPopups] = useState<
     Array<{
       id: string;
-      type: "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
+      type: MessagePopupType;
       title: string;
       message: React.ReactNode;
+      themeColor?: string;
     }>
   >([]);
 
@@ -166,16 +168,15 @@ export function ClockPage() {
   useEffect(() => {
     const onOpen = (e: Event) => {
       if (mode !== "study") return;
-      const detail = (e as CustomEvent).detail || {};
-      const type =
-        (detail.type as "general" | "weatherAlert" | "coolingReminder" | "systemUpdate") ||
-        "general";
+      const detail = (e as CustomEvent<MessagePopupOpenDetail>).detail || {};
+      const type: MessagePopupType = detail.type ?? "general";
       const title = (detail.title as string) || "消息提醒";
       const message = (detail.message as React.ReactNode) || "";
+      const themeColor = typeof detail.themeColor === "string" ? detail.themeColor : undefined;
       const id = (detail.id as string) || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setGlobalPopups((prev) => {
         const idx = prev.findIndex((x) => x.id === id);
-        const nextItem = { id, type, title, message };
+        const nextItem = { id, type, title, message, themeColor };
         if (idx >= 0) {
           const next = [...prev];
           next[idx] = nextItem;
@@ -285,6 +286,7 @@ export function ClockPage() {
               type={p.type}
               title={p.title}
               message={p.message}
+              themeColor={p.themeColor}
               usePortal={false}
             />
           ))}

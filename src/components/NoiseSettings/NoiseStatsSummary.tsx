@@ -1,21 +1,13 @@
-import React, { useMemo, useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
-import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
+import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { FormSection } from "../FormComponents";
 import { DEFAULT_SCHEDULE, StudyPeriod } from "../StudyStatus";
 
 import styles from "./NoiseSettings.module.css";
-
-const getThreshold = () => getNoiseControlSettings().maxLevelDb;
-
-interface NoiseSample {
-  t: number;
-  v: number;
-  s: "quiet" | "noisy";
-}
 
 function formatDuration(ms: number) {
   const sec = Math.round(ms / 1000);
@@ -26,14 +18,13 @@ function formatDuration(ms: number) {
 
 export const NoiseStatsSummary: React.FC = () => {
   const [tick, setTick] = useState(0);
+
   useEffect(() => {
-    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick((t) => t + 1));
-    // 立即更新一次，避免首次为空
+    const unsubscribe = subscribeNoiseSlicesUpdated(() => setTick((t) => t + 1));
     setTick((t) => t + 1);
     return unsubscribe;
   }, []);
 
-  // 订阅：噪音控制设置变化（阈值），引发统计重新计算
   useEffect(() => {
     const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, () =>
       setTick((t) => t + 1)
@@ -41,15 +32,11 @@ export const NoiseStatsSummary: React.FC = () => {
     return off;
   }, []);
 
-  // 订阅：课表变化，引发统计重新计算
   useEffect(() => {
-    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () =>
-      setTick((t) => t + 1)
-    );
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => setTick((t) => t + 1));
     return off;
   }, []);
 
-  // 计算当前课程时段（如果存在）
   const getCurrentPeriodRange = useCallback((): { start: Date; end: Date } | null => {
     try {
       let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
@@ -75,7 +62,6 @@ export const NoiseStatsSummary: React.FC = () => {
         const startMin = start.getHours() * 60 + start.getMinutes();
         const endMin = end.getHours() * 60 + end.getMinutes();
         if (nowMin >= startMin && nowMin <= endMin) {
-          // 统计范围：从本节开始到当前时刻（不超过该节结束）
           const rangeEnd = now.getTime() > end.getTime() ? end : now;
           return { start, end: rangeEnd };
         }
@@ -88,68 +74,102 @@ export const NoiseStatsSummary: React.FC = () => {
 
   const stats = useMemo(() => {
     void tick;
-    try {
-      const all: NoiseSample[] = readNoiseSamples();
-      // 仅统计当前课程时段的数据
-      const range = getCurrentPeriodRange();
-      const list = range
-        ? all.filter((s) => s.t >= range.start.getTime() && s.t <= range.end.getTime())
-        : [];
-      if (list.length < 2) return { noisyDurationMs: 0, transitions: 0, avg: 0, max: 0 };
-      let noisyDurationMs = 0;
-      let transitions = 0;
-      let sum = 0;
-      let max = -Infinity;
-      for (let i = 1; i < list.length; i++) {
-        const prev = list[i - 1];
-        const cur = list[i];
-        sum += cur.v;
-        if (cur.v > max) max = cur.v;
-        const dt = cur.t - prev.t;
-        const threshold = getThreshold();
-        if (prev.v > threshold || cur.v > threshold) {
-          noisyDurationMs += dt;
-        }
-        if (prev.v <= threshold && cur.v > threshold) {
-          transitions++;
-        }
-      }
-      const avg = sum / list.length;
-      return { noisyDurationMs, transitions, avg, max };
-    } catch {
-      return { noisyDurationMs: 0, transitions: 0, avg: 0, max: 0 };
+    const thresholdDb = getNoiseControlSettings().maxLevelDb;
+    const range = getCurrentPeriodRange();
+    if (!range) {
+      return {
+        hasRange: false,
+        rangeLabel: "当前无课程时段",
+        avgDb: 0,
+        maxDb: 0,
+        avgScore: 0,
+        overDurationMs: 0,
+        segmentCount: 0,
+        thresholdDb,
+      };
     }
+
+    const startTs = range.start.getTime();
+    const endTs = range.end.getTime();
+    const slices = readNoiseSlices().filter((s) => s.end >= startTs && s.start <= endTs);
+    if (!slices.length) {
+      return {
+        hasRange: true,
+        rangeLabel: `${range.start.toLocaleTimeString()} - ${range.end.toLocaleTimeString()}`,
+        avgDb: 0,
+        maxDb: 0,
+        avgScore: 0,
+        overDurationMs: 0,
+        segmentCount: 0,
+        thresholdDb,
+      };
+    }
+
+    let totalMs = 0;
+    let sumDb = 0;
+    let sumScore = 0;
+    let maxDb = -Infinity;
+    let overDurationMs = 0;
+    let segmentCount = 0;
+
+    for (const s of slices) {
+      const overlapStart = Math.max(startTs, s.start);
+      const overlapEnd = Math.min(endTs, s.end);
+      const overlapMs = overlapEnd - overlapStart;
+      const sliceMs = Math.max(1, s.end - s.start);
+      if (overlapMs <= 0) continue;
+
+      const ratio = overlapMs / sliceMs;
+      totalMs += overlapMs;
+      sumDb += s.display.avgDb * overlapMs;
+      sumScore += s.score * overlapMs;
+      if (s.display.p95Db > maxDb) maxDb = s.display.p95Db;
+
+      overDurationMs += s.raw.overRatioDbfs * overlapMs;
+      segmentCount += Math.round(s.raw.segmentCount * ratio);
+    }
+
+    const avgDb = totalMs > 0 ? sumDb / totalMs : 0;
+    const avgScore = totalMs > 0 ? sumScore / totalMs : 0;
+    const clippedMaxDb = maxDb === -Infinity ? 0 : maxDb;
+
+    return {
+      hasRange: true,
+      rangeLabel: `${range.start.toLocaleTimeString()} - ${range.end.toLocaleTimeString()}`,
+      avgDb,
+      maxDb: clippedMaxDb,
+      avgScore,
+      overDurationMs,
+      segmentCount,
+      thresholdDb,
+    };
   }, [tick, getCurrentPeriodRange]);
 
   return (
     <FormSection title="统计模块">
       <div className={styles.statsGrid}>
         <div className={styles.statItem}>
-          <div className={styles.statLabel}>累计超标时长</div>
-          <div className={styles.statValue}>{formatDuration(stats.noisyDurationMs)}</div>
+          <div className={styles.statLabel}>平均纪律分</div>
+          <div className={styles.statValue}>{stats.avgScore.toFixed(0)}</div>
         </div>
         <div className={styles.statItem}>
-          <div className={styles.statLabel}>提醒次数</div>
-          <div className={styles.statValue}>{stats.transitions}</div>
+          <div className={styles.statLabel}>超阈时长</div>
+          <div className={styles.statValue}>{formatDuration(stats.overDurationMs)}</div>
         </div>
         <div className={styles.statItem}>
-          <div className={styles.statLabel}>平均噪音</div>
-          <div className={styles.statValue}>{stats.avg.toFixed(1)} dB</div>
+          <div className={styles.statLabel}>事件段数</div>
+          <div className={styles.statValue}>{stats.segmentCount}</div>
         </div>
         <div className={styles.statItem}>
-          <div className={styles.statLabel}>峰值噪音</div>
-          <div className={styles.statValue}>{stats.max.toFixed(1)} dB</div>
+          <div className={styles.statLabel}>平均/峰值</div>
+          <div className={styles.statValue}>
+            {stats.avgDb.toFixed(1)} / {stats.maxDb.toFixed(1)} dB
+          </div>
         </div>
       </div>
       <div className={styles.sourceNote} aria-live="polite">
-        数据来源时间：
-        {(() => {
-          const range = getCurrentPeriodRange();
-          if (!range) return "当前无课程时段";
-          const s = range.start.toLocaleTimeString();
-          const e = range.end.toLocaleTimeString();
-          return `${s} - ${e}`;
-        })()}
+        数据来源时间：{stats.rangeLabel}
+        {stats.hasRange ? `（显示阈值：${stats.thresholdDb.toFixed(0)} dB）` : ""}
       </div>
     </FormSection>
   );

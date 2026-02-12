@@ -1,0 +1,178 @@
+import type { NoiseFrameSample, NoiseSliceRawStats, NoiseSliceSummary } from "../../types/noise";
+import type { ComputeNoiseScoreOptions } from "../../utils/noiseScoreEngine";
+import { computeNoiseSliceScore, DEFAULT_NOISE_SCORE_OPTIONS } from "../../utils/noiseScoreEngine";
+import type { NoiseRealtimeRingBuffer } from "./noiseRealtimeRingBuffer";
+
+export interface NoiseSliceAggregatorOptions {
+  sliceSec: number;
+  score: ComputeNoiseScoreOptions;
+  baselineRms: number;
+  displayBaselineDb: number;
+  ringBuffer: NoiseRealtimeRingBuffer;
+}
+
+export interface NoiseSliceAggregatorController {
+  onFrame: (frame: NoiseFrameSample) => NoiseSliceSummary | null;
+  flush: () => NoiseSliceSummary | null;
+  reset: () => void;
+  setDisplayMapping: (next: { baselineRms: number; displayBaselineDb: number }) => void;
+  setScoreOptions: (next: Partial<ComputeNoiseScoreOptions>) => void;
+  setSliceSec: (sliceSec: number) => void;
+}
+
+function quantileSorted(sorted: number[], p: number): number {
+  if (!sorted.length) return 0;
+  const pp = Math.max(0, Math.min(1, p));
+  if (sorted.length === 1) return sorted[0];
+  const idx = (sorted.length - 1) * pp;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  const w = idx - lo;
+  return sorted[lo] * (1 - w) + sorted[hi] * w;
+}
+
+function computeDisplayDbFromRms(params: {
+  rms: number;
+  baselineRms: number;
+  displayBaselineDb: number;
+}): number {
+  const safeRms = Math.max(1e-12, params.rms);
+  if (params.baselineRms > 0) {
+    return params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms));
+  }
+  return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
+}
+
+export function createNoiseSliceAggregator(options: NoiseSliceAggregatorOptions): NoiseSliceAggregatorController {
+  let sliceMs = Math.max(1000, Math.round(options.sliceSec * 1000));
+  let scoreOpt: ComputeNoiseScoreOptions = {
+    ...DEFAULT_NOISE_SCORE_OPTIONS,
+    ...(options.score ?? DEFAULT_NOISE_SCORE_OPTIONS),
+  };
+
+  let baselineRms = options.baselineRms;
+  let displayBaselineDb = options.displayBaselineDb;
+  const ringBuffer = options.ringBuffer;
+
+  let sliceStart: number | null = null;
+  let frames = 0;
+  let sumDbfs = 0;
+  let sumDisplayDb = 0;
+  let maxDbfs = -Infinity;
+  let aboveFrames = 0;
+  let segmentCount = 0;
+  let lastAbove = false;
+  let lastSegmentEndTs: number | null = null;
+  const dbfsValues: number[] = [];
+  const displayValues: number[] = [];
+
+  const reset = () => {
+    sliceStart = null;
+    frames = 0;
+    sumDbfs = 0;
+    sumDisplayDb = 0;
+    maxDbfs = -Infinity;
+    aboveFrames = 0;
+    segmentCount = 0;
+    lastAbove = false;
+    lastSegmentEndTs = null;
+    dbfsValues.length = 0;
+    displayValues.length = 0;
+  };
+
+  const finalizeSlice = (endTs: number): NoiseSliceSummary | null => {
+    if (sliceStart === null || frames <= 0) return null;
+    const startTs = sliceStart;
+    const durationMs = Math.max(1, endTs - startTs);
+
+    dbfsValues.sort((a, b) => a - b);
+    displayValues.sort((a, b) => a - b);
+
+    const raw: NoiseSliceRawStats = {
+      avgDbfs: sumDbfs / frames,
+      maxDbfs: maxDbfs === -Infinity ? 0 : maxDbfs,
+      p50Dbfs: quantileSorted(dbfsValues, 0.5),
+      p95Dbfs: quantileSorted(dbfsValues, 0.95),
+      overRatioDbfs: aboveFrames / frames,
+      segmentCount,
+    };
+
+    const display = {
+      avgDb: sumDisplayDb / frames,
+      p95Db: quantileSorted(displayValues, 0.95),
+    };
+
+    const { score, scoreDetail } = computeNoiseSliceScore(raw, durationMs, scoreOpt);
+
+    const summary: NoiseSliceSummary = {
+      start: startTs,
+      end: endTs,
+      frames,
+      raw,
+      display,
+      score,
+      scoreDetail,
+    };
+
+    reset();
+    sliceStart = endTs;
+    return summary;
+  };
+
+  const onFrame = (frame: NoiseFrameSample): NoiseSliceSummary | null => {
+    if (sliceStart === null) sliceStart = frame.t;
+
+    const displayDb = computeDisplayDbFromRms({ rms: frame.rms, baselineRms, displayBaselineDb });
+    ringBuffer.push({ t: frame.t, dbfs: frame.dbfs, displayDb });
+
+    frames += 1;
+    sumDbfs += frame.dbfs;
+    sumDisplayDb += displayDb;
+    if (frame.dbfs > maxDbfs) maxDbfs = frame.dbfs;
+    dbfsValues.push(frame.dbfs);
+    displayValues.push(displayDb);
+
+    const isAbove = frame.dbfs > scoreOpt.scoreThresholdDbfs;
+    if (isAbove) {
+      aboveFrames += 1;
+      if (!lastAbove) {
+        const merged =
+          lastSegmentEndTs !== null && frame.t - lastSegmentEndTs <= scoreOpt.segmentMergeGapMs;
+        if (!merged) segmentCount += 1;
+        lastAbove = true;
+      }
+    } else if (lastAbove) {
+      lastAbove = false;
+      lastSegmentEndTs = frame.t;
+    }
+
+    if (frame.t - sliceStart >= sliceMs) {
+      return finalizeSlice(frame.t);
+    }
+    return null;
+  };
+
+  const flush = () => {
+    const now = Date.now();
+    if (sliceStart === null) return null;
+    return finalizeSlice(now);
+  };
+
+  return {
+    onFrame,
+    flush,
+    reset,
+    setDisplayMapping: (next) => {
+      baselineRms = next.baselineRms;
+      displayBaselineDb = next.displayBaselineDb;
+    },
+    setScoreOptions: (next) => {
+      scoreOpt = { ...scoreOpt, ...next };
+    },
+    setSliceSec: (next) => {
+      sliceMs = Math.max(1000, Math.round(next * 1000));
+    },
+  };
+}
+

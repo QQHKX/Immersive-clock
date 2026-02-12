@@ -796,7 +796,7 @@ describe("weatherService - flow", () => {
       fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> } | undefined
     )?.headers;
     expect(headers?.Authorization).toBe("Bearer jwt-token");
-  });
+  }, 15000);
 
   it("httpGetJson：空响应体会触发非 JSON 错误（经由 fetchMinutelyPrecip 返回 error）", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({

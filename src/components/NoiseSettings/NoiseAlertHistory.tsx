@@ -1,63 +1,58 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
-import { readNoiseSamples, subscribeNoiseSamplesUpdated } from "../../utils/noiseDataService";
+import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { FormSection } from "../FormComponents";
 
 import styles from "./NoiseSettings.module.css";
 
-const getThreshold = () => getNoiseControlSettings().maxLevelDb;
-
-interface NoiseSample {
-  t: number;
-  v: number;
-  s: "quiet" | "noisy";
-}
-
 export const NoiseAlertHistory: React.FC = () => {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const unsubscribe = subscribeNoiseSamplesUpdated(() => setTick((t) => t + 1));
+    const unsubscribe = subscribeNoiseSlicesUpdated(() => setTick((t) => t + 1));
     setTick((t) => t + 1);
     return unsubscribe;
   }, []);
 
-  const { items, total } = useMemo(() => {
+  const { items, totalSegments } = useMemo(() => {
     void tick;
     try {
-      const all: NoiseSample[] = readNoiseSamples();
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 最近24小时
-      const threshold = getThreshold();
-      const recent = all.filter((s) => s.t >= cutoff).sort((a, b) => a.t - b.t);
-      const transitions: { time: string; value: number }[] = [];
-      for (let i = 1; i < recent.length; i++) {
-        const prev = recent[i - 1];
-        const cur = recent[i];
-        if (prev.v <= threshold && cur.v > threshold) {
-          transitions.push({ time: new Date(cur.t).toLocaleTimeString(), value: cur.v });
-        }
-      }
-      // 最新在前
-      transitions.reverse();
-      return { items: transitions, total: transitions.length };
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      const recent = readNoiseSlices()
+        .filter((s) => s.end >= cutoff)
+        .sort((a, b) => b.end - a.end);
+
+      const rows = recent
+        .filter((s) => s.raw.segmentCount > 0 || s.raw.overRatioDbfs > 0)
+        .slice(0, 60)
+        .map((s) => ({
+          time: new Date(s.end).toLocaleTimeString(),
+          segments: s.raw.segmentCount,
+          overRatio: s.raw.overRatioDbfs,
+          score: s.score,
+        }));
+
+      const totalSegments = recent.reduce((acc, s) => acc + (s.raw.segmentCount || 0), 0);
+      return { items: rows, totalSegments };
     } catch {
-      return { items: [], total: 0 };
+      return { items: [], totalSegments: 0 };
     }
   }, [tick]);
 
   return (
     <FormSection title="提醒记录">
       <div className={styles.alertHeader}>
-        <div>最近24小时提醒次数：{total}</div>
+        <div>最近24小时事件段数：{totalSegments}</div>
       </div>
       <div className={styles.alertList}>
         {items.length === 0 ? (
-          <div className={styles.empty}>暂无提醒记录</div>
+          <div className={styles.empty}>暂无记录</div>
         ) : (
           items.map((it, idx) => (
             <div key={idx} className={styles.alertItem}>
               <span className={styles.alertTime}>{it.time}</span>
-              <span className={styles.alertValue}>{it.value.toFixed(1)} dB</span>
+              <span className={styles.alertValue}>
+                段{it.segments} / {(it.overRatio * 100).toFixed(0)}% / {it.score.toFixed(0)}分
+              </span>
             </div>
           ))
         )}
@@ -67,3 +62,4 @@ export const NoiseAlertHistory: React.FC = () => {
 };
 
 export default NoiseAlertHistory;
+

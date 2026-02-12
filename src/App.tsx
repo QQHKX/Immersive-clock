@@ -6,7 +6,6 @@ import AnnouncementModal from "./components/AnnouncementModal";
 import { ClockPage } from "./pages/ClockPage/ClockPage";
 import { shouldShowAnnouncement } from "./utils/announcementStorage";
 import { logger } from "./utils/logger";
-import { cleanupReports } from "./utils/noiseReportStorage";
 
 /**
  * 主应用组件
@@ -41,13 +40,6 @@ export function App() {
     };
 
     checkAnnouncement();
-
-    // 初始化时清理过期的噪音报告（保留7天）
-    try {
-      cleanupReports();
-    } catch (e) {
-      logger.warn("初始化清理噪音报告失败:", e);
-    }
 
     return () => clearTimeout(timer);
   }, []); // 空依赖数组确保只在组件挂载时执行一次

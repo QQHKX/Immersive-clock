@@ -1,4 +1,4 @@
-import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem } from "../types";
+import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem, AppMode } from "../types";
 import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { DeepPartial } from "../types/utilityTypes";
 
@@ -10,6 +10,9 @@ export interface AppSettings {
   modifiedAt: number;
 
   general: {
+    startup: {
+      initialMode: AppMode;
+    };
     quote: {
       autoRefreshInterval: number;
       channels: QuoteSourceConfig[];
@@ -82,6 +85,11 @@ export interface AppSettings {
     baselineDb: number;
     showRealtimeDb: boolean;
     avgWindowSec: number;
+    sliceSec: number;
+    frameMs: number;
+    scoreThresholdDbfs: number;
+    segmentMergeGapMs: number;
+    maxSegmentsPerMin: number;
     // 新增字段
     baselineDisplayDb: number;
     baselineRms: number;
@@ -97,6 +105,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   version: CURRENT_SETTINGS_VERSION,
   modifiedAt: Date.now(),
   general: {
+    startup: {
+      initialMode: "clock",
+    },
     quote: {
       autoRefreshInterval: 600,
       channels: [],
@@ -162,6 +173,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     baselineDb: 40,
     showRealtimeDb: true,
     avgWindowSec: 1,
+    sliceSec: 20,
+    frameMs: 50,
+    scoreThresholdDbfs: -35,
+    segmentMergeGapMs: 300,
+    maxSegmentsPerMin: 6,
     baselineDisplayDb: 40,
     baselineRms: 0.000414581087327115,
     reportAutoPopup: true,
@@ -191,6 +207,7 @@ export function getAppSettings(): AppSettings {
       general: {
         ...DEFAULT_SETTINGS.general,
         ...parsed.general,
+        startup: { ...DEFAULT_SETTINGS.general.startup, ...(parsed.general?.startup || {}) },
         quote: { ...DEFAULT_SETTINGS.general.quote, ...(parsed.general?.quote || {}) },
         announcement: {
           ...DEFAULT_SETTINGS.general.announcement,
@@ -249,6 +266,9 @@ export function updateAppSettings(
       const generalUpdates = updates.general;
       nextSettings.general = {
         ...current.general,
+        startup: generalUpdates.startup
+          ? { ...current.general.startup, ...generalUpdates.startup }
+          : current.general.startup,
         quote: generalUpdates.quote
           ? { ...current.general.quote, ...generalUpdates.quote }
           : current.general.quote,

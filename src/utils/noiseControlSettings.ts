@@ -14,6 +14,11 @@ export interface NoiseControlSettings {
   baselineDb: number; // 手动基准显示分贝
   showRealtimeDb: boolean; // 是否显示实时分贝副文本
   avgWindowSec: number; // 噪音平均时间窗（秒）
+  sliceSec: number;
+  frameMs: number;
+  scoreThresholdDbfs: number;
+  segmentMergeGapMs: number;
+  maxSegmentsPerMin: number;
   alertSoundEnabled: boolean; // 超过阈值时播放提示音
 }
 
@@ -22,6 +27,11 @@ const DEFAULT_SETTINGS: NoiseControlSettings = {
   baselineDb: 40,
   showRealtimeDb: true,
   avgWindowSec: 1,
+  sliceSec: 20,
+  frameMs: 50,
+  scoreThresholdDbfs: -35,
+  segmentMergeGapMs: 300,
+  maxSegmentsPerMin: 6,
   alertSoundEnabled: false,
 };
 

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { STOPWATCH_TICK_MS } from "../constants/timer";
 import { AppState, AppAction, StudyState, QuoteChannelState, QuoteSettingsState } from "../types";
 import { getAppSettings, updateAppSettings, updateStudySettings } from "../utils/appSettings";
+import { getStartupModeFromSettings } from "../utils/startupMode";
 import { nowMs } from "../utils/timeSource";
 
 /**
@@ -57,7 +58,7 @@ function loadStudyState(): StudyState {
  * 应用初始状态
  */
 const initialState: AppState = {
-  mode: "clock",
+  mode: getStartupModeFromSettings(),
   isHudVisible: false,
   countdown: {
     initialTime: 0,

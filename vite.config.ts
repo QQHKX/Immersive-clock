@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => {
 
   const plugins: PluginOption[] = [
     forceLocalhostIpPlugin(),
-    react({ fastRefresh: !isTest }) as unknown as PluginOption,
+    !isTest && (react() as unknown as PluginOption),
     // Electron 插件（仅在 Electron 模式下启用）
     isElectron &&
       (electron([

@@ -4,9 +4,9 @@ import { createPortal } from "react-dom";
 import { FormButton } from "../FormComponents";
 import { LightButton } from "../LightControls/LightControls";
 
-import styles from "./messagePopup.module.css";
+import type { MessagePopupType } from "../../types/messagePopup";
 
-type MessageType = "general" | "weatherAlert" | "coolingReminder" | "systemUpdate";
+import styles from "./messagePopup.module.css";
 
 /**
  * 消息弹窗动作项类型
@@ -25,13 +25,14 @@ interface ActionItem {
 interface MessagePopupProps {
   isOpen: boolean;
   onClose?: () => void;
-  type?: MessageType;
+  type?: MessagePopupType;
   title?: string;
   message?: React.ReactNode;
   icon?: React.ReactNode;
   actions?: ActionItem[];
   className?: string;
   usePortal?: boolean; // 设置页预览时可设为 false 进行内联渲染
+  themeColor?: string;
 }
 
 /**
@@ -51,6 +52,7 @@ export default function MessagePopup({
   actions = [],
   className = "",
   usePortal = true,
+  themeColor,
 }: MessagePopupProps) {
   const [mounted, setMounted] = useState<boolean>(isOpen);
   const [exiting, setExiting] = useState<boolean>(false);
@@ -90,14 +92,18 @@ export default function MessagePopup({
     {
       general: styles.general,
       weatherAlert: styles.weatherAlert,
+      weatherForecast: styles.weatherForecast,
       coolingReminder: styles.coolingReminder,
       systemUpdate: styles.systemUpdate,
     }[type] || styles.general;
 
   const rootClass = `${styles.container} ${exiting ? styles.exit : styles.enter} ${typeClass} ${!usePortal ? styles.inline : ""} ${className}`;
+  const rootStyle = themeColor
+    ? ({ ["--message-popup-theme-color"]: themeColor } as React.CSSProperties)
+    : undefined;
 
   const node = (
-    <div className={rootClass} role="dialog" aria-live="polite" aria-label={title}>
+    <div className={rootClass} style={rootStyle} role="dialog" aria-live="polite" aria-label={title}>
       <LightButton
         className={styles.closeButton}
         aria-label="关闭"

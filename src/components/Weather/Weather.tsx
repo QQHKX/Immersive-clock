@@ -69,6 +69,19 @@ function parseTimeMs(iso?: string): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+function mapWeatherAlertColorToThemeColor(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  const normalized = String(code).trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  if (normalized === "red" || normalized.includes("红")) return "#ef4444";
+  if (normalized === "orange" || normalized.includes("橙")) return "#f97316";
+  if (normalized === "yellow" || normalized.includes("黄")) return "#f5a524";
+  if (normalized === "blue" || normalized.includes("蓝")) return "#3b82f6";
+  if (normalized === "white" || normalized.includes("白")) return "#ffffff";
+  return undefined;
+}
+
 function safeReadSessionFlag(key: string): boolean {
   try {
     return sessionStorage.getItem(key) === "1";
@@ -293,9 +306,10 @@ const Weather: React.FC = () => {
       const ev = new CustomEvent("messagePopup:open", {
         detail: {
           id: MINUTELY_PRECIP_POPUP_ID,
-          type: "weatherAlert",
+          type: "weatherForecast",
           title: "降雨提醒",
           message,
+          themeColor: "#ffffff",
         },
       });
       window.dispatchEvent(ev);
@@ -336,9 +350,10 @@ const Weather: React.FC = () => {
         const ev = new CustomEvent("messagePopup:open", {
           detail: {
             id: MINUTELY_PRECIP_POPUP_ID,
-            type: "weatherAlert",
+            type: "weatherForecast",
             title: "降雨提醒",
             message,
+            themeColor: "#ffffff",
           },
         });
         window.dispatchEvent(ev);
@@ -641,6 +656,7 @@ const Weather: React.FC = () => {
                 continue;
               }
               writeStationRecord(stationKey, signature);
+              const themeColor = mapWeatherAlertColorToThemeColor(item.alert.color?.code);
               const ev = new CustomEvent("messagePopup:open", {
                 detail: {
                   type: "weatherAlert",
@@ -648,6 +664,7 @@ const Weather: React.FC = () => {
                     item.alert.headline ||
                     (item.alert.eventType?.name ? `${item.alert.eventType.name}预警` : "天气预警"),
                   message: item.alert.description || "请注意当前天气预警信息。",
+                  themeColor,
                 },
               });
               window.dispatchEvent(ev);
@@ -659,6 +676,7 @@ const Weather: React.FC = () => {
               if (alertResp.metadata.tag !== lastTag) {
                 updateAlertTag(alertResp.metadata.tag);
                 const first = alertResp.alerts[0];
+                const themeColor = mapWeatherAlertColorToThemeColor(first.color?.code);
                 const ev = new CustomEvent("messagePopup:open", {
                   detail: {
                     type: "weatherAlert",
@@ -666,6 +684,7 @@ const Weather: React.FC = () => {
                       first.headline ||
                       (first.eventType?.name ? `${first.eventType.name}预警` : "天气预警"),
                     message: first.description || "请注意当前天气预警信息。",
+                    themeColor,
                   },
                 });
                 window.dispatchEvent(ev);

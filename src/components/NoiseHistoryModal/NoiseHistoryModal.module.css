@@ -1,105 +1,70 @@
-.container {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 16px;
-  height: 100%;
+.note {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-bottom: 10px;
 }
 
-.sidebar {
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  padding-right: 12px;
+.customForm {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 10px;
 }
 
-.timelineTitle {
+.customRow {
+  flex-wrap: wrap;
+}
+
+.customError {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: 1fr 72px 1.4fr 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 1fr 72px 1.4fr 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.colName {
   font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 8px;
 }
 
-.timelineList {
+.colScore {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.colTime {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.colAction {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.timelineItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.timelineItem:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.timelineItem.active {
-  background: rgba(3, 218, 198, 0.15);
-}
-
-.itemTitle {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.itemSub {
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  overflow-y: auto;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.statItem {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.statLabel {
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
-
-.statValue {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.chartRow {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.chart {
-  width: 100%;
-}
-
-.sectionTitle {
-  font-size: 1rem;
-  font-weight: 600;
+  justify-content: flex-end;
 }
 
 .empty {
@@ -107,48 +72,40 @@
   opacity: 0.8;
 }
 
-/* 响应式：移动端优先右侧空间，缩小时间轴（左侧栏） */
 @media (max-width: 768px) {
-  .container {
-    grid-template-columns: minmax(140px, 32%) 1fr;
-    gap: 12px;
+  .headerRow {
+    display: none;
   }
-  .sidebar {
-    padding-right: 8px;
+
+  .dataRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name score"
+      "time time"
+      "action action";
   }
-  .timelineTitle {
-    font-size: 0.9rem;
-    margin-bottom: 6px;
+
+  .colName {
+    grid-area: name;
   }
-  .timelineList {
-    gap: 6px;
+
+  .colScore {
+    grid-area: score;
+    text-align: right;
   }
-  .timelineItem {
-    padding: 6px 8px;
+
+  .colTime {
+    grid-area: time;
   }
-  .itemTitle {
-    font-size: 0.85rem;
-  }
-  .itemSub {
-    font-size: 0.75rem;
-  }
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
+
+  .colAction {
+    grid-area: action;
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 480px) {
-  .container {
-    grid-template-columns: minmax(120px, 28%) 1fr;
-    gap: 8px;
-  }
-  .timelineItem {
-    padding: 5px 7px;
-  }
-  .itemTitle {
-    font-size: 0.82rem;
-  }
-  .itemSub {
-    font-size: 0.72rem;
+  .dataRow {
+    padding: 8px;
   }
 }

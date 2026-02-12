@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
-import { CountdownItem } from "../../../types";
+import { AppMode, CountdownItem } from "../../../types";
 import {
   getAppSettings,
+  updateGeneralSettings,
   updateStudySettings,
   updateTimeSyncSettings,
 } from "../../../utils/appSettings";
+import { resolveStartupMode } from "../../../utils/startupMode";
 import { readStudyBackground, saveStudyBackground } from "../../../utils/studyBackgroundStorage";
 import {
   importFontFile,
@@ -55,6 +57,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
 }) => {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
+
+  const [startupMode, setStartupMode] = useState<AppMode>("clock");
 
   // 倒计时模式（重构）：'gaokao' | 'single' | 'multi'
   const [countdownMode, setCountdownMode] = useState<"gaokao" | "single" | "multi">("gaokao");
@@ -156,6 +160,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   // 打开时优先从 AppSettings 读取上次选择的倒计时模式
   useEffect(() => {
     try {
+      setStartupMode(resolveStartupMode(getAppSettings().general.startup.initialMode));
       const saved = getAppSettings().study.countdownMode;
       if (saved === "gaokao" || saved === "single" || saved === "multi") {
         setCountdownMode(saved);
@@ -429,6 +434,8 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
       dispatch({ type: "SET_STUDY_NUMERIC_FONT", payload: nextNumeric });
       dispatch({ type: "SET_STUDY_TEXT_FONT", payload: nextText });
 
+      updateGeneralSettings({ startup: { initialMode: startupMode } });
+
       updateTimeSyncSettings((current) => ({
         enabled: timeSyncEnabled,
         provider: timeSyncProvider,
@@ -473,6 +480,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
     numericFontSelected,
     textFontMode,
     textFontSelected,
+    startupMode,
     timeSyncEnabled,
     timeSyncProvider,
     timeSyncHttpDateUrl,
@@ -588,6 +596,23 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   return (
     <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
       {/* 显示设置分区已前移到倒计时设置之前 */}
+
+      <FormSection title="启动设置">
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="启动时默认页面"
+            value={startupMode}
+            options={[
+              { label: "时钟", value: "clock" },
+              { label: "倒计时", value: "countdown" },
+              { label: "秒表", value: "stopwatch" },
+              { label: "自习", value: "study" },
+            ]}
+            onChange={(v) => setStartupMode(v as AppMode)}
+          />
+        </FormRow>
+        <p className={styles.helpText}>该设置将在下次启动（或刷新页面）后生效。</p>
+      </FormSection>
 
       {/* 倒计时设置 */}
       <FormSection title="倒计时设置">
