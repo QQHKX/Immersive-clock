@@ -148,7 +148,11 @@ describe("weatherStorage", () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
     updateDaily3dCache("121.5,31.2", { code: "200", daily: [{ fxDate: "2026-02-06" }] });
     updateAirQualityCache(31.2, 121.5, { indexes: [{ name: "AQI", aqi: 50 }] });
-    updateAstronomySunCache("121.5,31.2", "20260206", { code: "200", sunrise: "06:58", sunset: "17:58" });
+    updateAstronomySunCache("121.5,31.2", "20260206", {
+      code: "200",
+      sunrise: "06:58",
+      sunset: "17:58",
+    });
 
     expect(getValidDaily3d("121.5,31.2")?.code).toBe("200");
     expect(getValidAirQuality(31.2, 121.5)?.indexes?.[0]?.aqi).toBe(50);

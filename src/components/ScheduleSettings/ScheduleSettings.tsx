@@ -133,24 +133,18 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
   /**
    * 删除时间段
    */
-  const handleDeletePeriod = useCallback(
-    (id: string) => {
-      setDraftSchedule((prev) => prev.filter((period) => period.id !== id));
-    },
-    []
-  );
+  const handleDeletePeriod = useCallback((id: string) => {
+    setDraftSchedule((prev) => prev.filter((period) => period.id !== id));
+  }, []);
 
   /**
    * 更新时间段
    */
-  const handleUpdatePeriod = useCallback(
-    (id: string, field: keyof StudyPeriod, value: string) => {
-      setDraftSchedule((prev) =>
-        prev.map((period) => (period.id === id ? { ...period, [field]: value } : period))
-      );
-    },
-    []
-  );
+  const handleUpdatePeriod = useCallback((id: string, field: keyof StudyPeriod, value: string) => {
+    setDraftSchedule((prev) =>
+      prev.map((period) => (period.id === id ? { ...period, [field]: value } : period))
+    );
+  }, []);
 
   /**
    * 保存并关闭
@@ -219,7 +213,10 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
         setDraftSchedule(excelImport.periods);
         return;
       }
-      setDraftSchedule((prev) => [...prev, ...rebaseStudyPeriodIds(excelImport.periods, String(Date.now()))]);
+      setDraftSchedule((prev) => [
+        ...prev,
+        ...rebaseStudyPeriodIds(excelImport.periods, String(Date.now())),
+      ]);
     },
     [excelImport]
   );
@@ -234,10 +231,18 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
       maxWidth="lg"
       footer={
         <FormButtonGroup align="left">
-          <FormButton variant="secondary" onClick={handleRestoreSaved} icon={<RefreshIcon size={16} />}>
+          <FormButton
+            variant="secondary"
+            onClick={handleRestoreSaved}
+            icon={<RefreshIcon size={16} />}
+          >
             恢复已保存
           </FormButton>
-          <FormButton variant="secondary" onClick={handleSortByTime} icon={<RefreshIcon size={16} />}>
+          <FormButton
+            variant="secondary"
+            onClick={handleSortByTime}
+            icon={<RefreshIcon size={16} />}
+          >
             按时间排序
           </FormButton>
           <FormButton variant="secondary" onClick={handleReset} icon={<ResetIcon size={16} />}>
@@ -295,7 +300,9 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
               </div>
             )}
             {excelValidation?.hasErrors && (
-              <div className={styles.importHint}>导入数据可能存在时间冲突，应用后需要在下方修正。</div>
+              <div className={styles.importHint}>
+                导入数据可能存在时间冲突，应用后需要在下方修正。
+              </div>
             )}
             <div className={styles.importActions}>
               <FormButton
@@ -329,77 +336,83 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
           </div>
         )}
         {validation.hasErrors && (
-          <div className={styles.globalHint}>请修正红色提示后再保存（可先按“按时间排序”快速定位冲突）。</div>
+          <div className={styles.globalHint}>
+            请修正红色提示后再保存（可先按“按时间排序”快速定位冲突）。
+          </div>
         )}
         <div className={styles.scheduleList}>
           {draftSchedule.map((period, index) => {
             const itemErrors = validation.errors[period.id] ?? {};
             const duration = getStudyPeriodDurationMinutes(period);
             return (
-            <div key={period.id} className={styles.periodItem}>
-              <div className={styles.periodNumber}>{index + 1}</div>
-              <div className={styles.periodInputs}>
-                <FormInput
-                  type="text"
-                  value={period.name}
-                  onChange={(e) => handleUpdatePeriod(period.id, "name", e.target.value)}
-                  placeholder="课程名称"
-                />
-                <FormRow gap="sm">
+              <div key={period.id} className={styles.periodItem}>
+                <div className={styles.periodNumber}>{index + 1}</div>
+                <div className={styles.periodInputs}>
                   <FormInput
-                    type="time"
-                    value={period.startTime}
-                    onChange={(e) => handleUpdatePeriod(period.id, "startTime", e.target.value)}
-                    variant="time"
-                    error={itemErrors.startTime}
+                    type="text"
+                    value={period.name}
+                    onChange={(e) => handleUpdatePeriod(period.id, "name", e.target.value)}
+                    placeholder="课程名称"
                   />
-                  <span className={styles.timeSeparator}>-</span>
-                  <FormInput
-                    type="time"
-                    value={period.endTime}
-                    onChange={(e) => handleUpdatePeriod(period.id, "endTime", e.target.value)}
-                    variant="time"
-                    error={itemErrors.endTime}
-                  />
-                  <div className={styles.periodMeta}>
-                    <span className={styles.durationText}>
-                      {typeof duration === "number" ? `${duration} 分钟` : "--"}
-                    </span>
-                  </div>
-                </FormRow>
-                {itemErrors.row && <div className={styles.rowError}>{itemErrors.row}</div>}
+                  <FormRow gap="sm">
+                    <FormInput
+                      type="time"
+                      value={period.startTime}
+                      onChange={(e) => handleUpdatePeriod(period.id, "startTime", e.target.value)}
+                      variant="time"
+                      error={itemErrors.startTime}
+                    />
+                    <span className={styles.timeSeparator}>-</span>
+                    <FormInput
+                      type="time"
+                      value={period.endTime}
+                      onChange={(e) => handleUpdatePeriod(period.id, "endTime", e.target.value)}
+                      variant="time"
+                      error={itemErrors.endTime}
+                    />
+                    <div className={styles.periodMeta}>
+                      <span className={styles.durationText}>
+                        {typeof duration === "number" ? `${duration} 分钟` : "--"}
+                      </span>
+                    </div>
+                  </FormRow>
+                  {itemErrors.row && <div className={styles.rowError}>{itemErrors.row}</div>}
+                </div>
+                <div className={styles.rowActions}>
+                  <FormButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleMovePeriod(period.id, "up")}
+                    disabled={index === 0}
+                  >
+                    上移
+                  </FormButton>
+                  <FormButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleMovePeriod(period.id, "down")}
+                    disabled={index === draftSchedule.length - 1}
+                  >
+                    下移
+                  </FormButton>
+                  <FormButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleDuplicatePeriod(period.id)}
+                  >
+                    复制
+                  </FormButton>
+                  <FormButton
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDeletePeriod(period.id)}
+                    icon={<TrashIcon size={16} />}
+                    title="删除时间段"
+                  >
+                    删除
+                  </FormButton>
+                </div>
               </div>
-              <div className={styles.rowActions}>
-                <FormButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleMovePeriod(period.id, "up")}
-                  disabled={index === 0}
-                >
-                  上移
-                </FormButton>
-                <FormButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleMovePeriod(period.id, "down")}
-                  disabled={index === draftSchedule.length - 1}
-                >
-                  下移
-                </FormButton>
-                <FormButton variant="secondary" size="sm" onClick={() => handleDuplicatePeriod(period.id)}>
-                  复制
-                </FormButton>
-                <FormButton
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDeletePeriod(period.id)}
-                  icon={<TrashIcon size={16} />}
-                  title="删除时间段"
-                >
-                  删除
-                </FormButton>
-              </div>
-            </div>
             );
           })}
         </div>

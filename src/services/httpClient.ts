@@ -30,7 +30,9 @@ export async function httpGetJson(
     }
 
     if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} ${resp.statusText}：${url}${preview ? `｜${preview}` : ""}`);
+      throw new Error(
+        `HTTP ${resp.status} ${resp.statusText}：${url}${preview ? `｜${preview}` : ""}`
+      );
     }
 
     if (parsed == null) {
@@ -42,4 +44,3 @@ export async function httpGetJson(
     clearTimeout(timeout);
   }
 }
-

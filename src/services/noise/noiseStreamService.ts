@@ -1,14 +1,15 @@
 import type { NoiseSliceSummary } from "../../types/noise";
-import type { NoiseRealtimePoint } from "./noiseRealtimeRingBuffer";
-import { createNoiseRealtimeRingBuffer } from "./noiseRealtimeRingBuffer";
-import { startNoiseCapture, stopNoiseCapture } from "./noiseCapture";
-import { createNoiseFrameProcessor } from "./noiseFrameProcessor";
-import { createNoiseSliceAggregator } from "./noiseSliceAggregator";
-import { writeNoiseSlice } from "../../utils/noiseSliceService";
 import { getAppSettings } from "../../utils/appSettings";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
-import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { DEFAULT_NOISE_SCORE_OPTIONS } from "../../utils/noiseScoreEngine";
+import { writeNoiseSlice } from "../../utils/noiseSliceService";
+import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+
+import { startNoiseCapture, stopNoiseCapture } from "./noiseCapture";
+import { createNoiseFrameProcessor } from "./noiseFrameProcessor";
+import type { NoiseRealtimePoint } from "./noiseRealtimeRingBuffer";
+import { createNoiseRealtimeRingBuffer } from "./noiseRealtimeRingBuffer";
+import { createNoiseSliceAggregator } from "./noiseSliceAggregator";
 
 export type NoiseStreamStatus = "initializing" | "quiet" | "noisy" | "permission-denied" | "error";
 
@@ -36,8 +37,7 @@ function computeDisplayDbFromRms(params: {
   const safeRms = Math.max(1e-12, params.rms);
   if (params.baselineRms > 0) {
     return (
-      params.displayBaselineDb +
-      20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms))
+      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms))
     );
   }
   return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
@@ -57,7 +57,7 @@ function computeTimeWeightedAverage(windowArr: { t: number; v: number }[], now: 
   return total > 0 ? sum / total : windowArr[windowArr.length - 1].v;
 }
 
-let listeners = new Set<Listener>();
+const listeners = new Set<Listener>();
 let snapshot: NoiseStreamSnapshot = {
   status: "initializing",
   realtimeDisplayDb: 0,
@@ -172,7 +172,11 @@ async function hardStart() {
       onFrame: (frame) => {
         if (stopped) return;
 
-        const displayDb = computeDisplayDbFromRms({ rms: frame.rms, baselineRms, displayBaselineDb });
+        const displayDb = computeDisplayDbFromRms({
+          rms: frame.rms,
+          baselineRms,
+          displayBaselineDb,
+        });
         const now = frame.t;
         windowSamples.push({ t: now, v: displayDb });
         const cutoff = now - Math.max(200, Math.round(avgWindowSec * 1000));
@@ -244,9 +248,13 @@ function ensureSettingsListeners() {
             : (fallback.baselineDb ?? 40);
 
         const nextFrameMs =
-          typeof next?.frameMs === "number" && Number.isFinite(next.frameMs) ? next.frameMs : fallback.frameMs;
+          typeof next?.frameMs === "number" && Number.isFinite(next.frameMs)
+            ? next.frameMs
+            : fallback.frameMs;
         const nextSliceSec =
-          typeof next?.sliceSec === "number" && Number.isFinite(next.sliceSec) ? next.sliceSec : fallback.sliceSec;
+          typeof next?.sliceSec === "number" && Number.isFinite(next.sliceSec)
+            ? next.sliceSec
+            : fallback.sliceSec;
         const nextScoreThresholdDbfs =
           typeof next?.scoreThresholdDbfs === "number" && Number.isFinite(next.scoreThresholdDbfs)
             ? next.scoreThresholdDbfs
@@ -309,15 +317,18 @@ function ensureSettingsListeners() {
     }
   );
 
-  baselineUnsubscribe = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, (evt: CustomEvent) => {
-    try {
-      const detail = evt.detail as { baselineRms?: unknown; baselineDb?: unknown } | undefined;
-      if (typeof detail?.baselineRms === "number") baselineRms = detail.baselineRms;
-      if (typeof detail?.baselineDb === "number") displayBaselineDb = detail.baselineDb;
-    } catch {
-      baselineRms = getAppSettings().noiseControl.baselineRms;
+  baselineUnsubscribe = subscribeSettingsEvent(
+    SETTINGS_EVENTS.NoiseBaselineUpdated,
+    (evt: CustomEvent) => {
+      try {
+        const detail = evt.detail as { baselineRms?: unknown; baselineDb?: unknown } | undefined;
+        if (typeof detail?.baselineRms === "number") baselineRms = detail.baselineRms;
+        if (typeof detail?.baselineDb === "number") displayBaselineDb = detail.baselineDb;
+      } catch {
+        baselineRms = getAppSettings().noiseControl.baselineRms;
+      }
     }
-  });
+  );
 }
 
 function clearStopTimer() {
@@ -364,4 +375,3 @@ export async function restartNoiseStream(): Promise<void> {
     await hardStart();
   }
 }
-

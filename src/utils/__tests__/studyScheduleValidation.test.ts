@@ -45,4 +45,3 @@ describe("studyScheduleValidation", () => {
     expect(p.endTime).toBe("23:30");
   });
 });
-

@@ -236,10 +236,15 @@ const Weather: React.FC = () => {
 
   useEffect(() => {
     const updateInterval = () => {
-      setAutoRefreshIntervalMin(clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180));
+      setAutoRefreshIntervalMin(
+        clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180)
+      );
     };
     const offSaved = subscribeSettingsEvent(SETTINGS_EVENTS.SettingsSaved, updateInterval);
-    const offWeather = subscribeSettingsEvent(SETTINGS_EVENTS.WeatherSettingsUpdated, updateInterval);
+    const offWeather = subscribeSettingsEvent(
+      SETTINGS_EVENTS.WeatherSettingsUpdated,
+      updateInterval
+    );
     return () => {
       offSaved();
       offWeather();
@@ -487,102 +492,109 @@ const Weather: React.FC = () => {
   /**
    * 初始化天气数据（通过和风 + 高德反编码）
    */
-  const initializeWeather = useCallback(async (options?: WeatherFlowOptions) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const initializeWeather = useCallback(
+    async (options?: WeatherFlowOptions) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // 尝试回显缓存
-      const cache = getWeatherCache();
-      if (cache.now?.data) {
-        const now = cache.now.data.now;
-        const locationName = cache.location?.city || "未知";
-        if (now) {
-          setWeatherData({
-            temperature: now.temp ?? "",
-            text: now.text ?? "",
-            location: locationName,
-            icon: mapWeatherToIcon(now.text ?? ""),
-          });
-          setLoading(false); // 如果有缓存先显示，后面继续请求更新
+        // 尝试回显缓存
+        const cache = getWeatherCache();
+        if (cache.now?.data) {
+          const now = cache.now.data.now;
+          const locationName = cache.location?.city || "未知";
+          if (now) {
+            setWeatherData({
+              temperature: now.temp ?? "",
+              text: now.text ?? "",
+              location: locationName,
+              icon: mapWeatherToIcon(now.text ?? ""),
+            });
+            setLoading(false); // 如果有缓存先显示，后面继续请求更新
+          }
         }
+
+        const result = await buildWeatherFlow(options);
+
+        if (
+          !result.coords ||
+          !result.weather ||
+          result.weather.code !== "200" ||
+          !result.weather.now
+        ) {
+          throw new Error(`天气获取失败: ${result.weather?.code || "unknown"}`);
+        }
+
+        const now = result.weather.now;
+        const temperature = now?.temp ?? "";
+        const text = now?.text ?? "";
+        const locationName = result.city || "未知";
+        const icon = mapWeatherToIcon(text);
+
+        const address = result.addressInfo?.address || "";
+        const ts = Date.now();
+
+        setWeatherData({ temperature, text, location: locationName, icon });
+
+        // 持久化实时天气快照
+        updateWeatherNowSnapshot(result.weather);
+        const locationParam = `${result.coords.lon},${result.coords.lat}`;
+        if (result.daily3d && !result.daily3d.error) {
+          updateDaily3dCache(locationParam, result.daily3d);
+        }
+        if (result.astronomySun && !result.astronomySun.error) {
+          updateAstronomySunCache(
+            locationParam,
+            formatDateYYYYMMDD(new Date()),
+            result.astronomySun
+          );
+        }
+        if (result.airQuality && !result.airQuality.error) {
+          updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
+        }
+
+        // 广播刷新完成事件
+        const geoDiag = getWeatherCache().geolocation?.diagnostics || null;
+        const event = new CustomEvent("weatherRefreshDone", {
+          detail: {
+            status: "成功",
+            address,
+            ts,
+            coords: result.coords || null,
+            coordsSource: result.coordsSource || null,
+            geolocationDiagnostics: geoDiag,
+            now,
+            refer: result.weather?.refer || null,
+            daily3d: result.daily3d || null,
+            astronomySun: result.astronomySun || null,
+            airQuality: result.airQuality || null,
+          },
+        });
+        window.dispatchEvent(event);
+      } catch (error) {
+        logger.error("天气初始化失败:", error);
+        const errorMessage = error instanceof Error ? error.message : "未知错误";
+        setError(errorMessage);
+
+        const cache = getWeatherCache();
+        const event = new CustomEvent("weatherRefreshDone", {
+          detail: {
+            status: "失败",
+            errorMessage,
+            address: cache.location?.address || "",
+            ts: Date.now(),
+            coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
+            coordsSource: cache.coords?.source || null,
+            geolocationDiagnostics: cache.geolocation?.diagnostics || null,
+          },
+        });
+        window.dispatchEvent(event);
+      } finally {
+        setLoading(false);
       }
-
-      const result = await buildWeatherFlow(options);
-
-      if (
-        !result.coords ||
-        !result.weather ||
-        result.weather.code !== "200" ||
-        !result.weather.now
-      ) {
-        throw new Error(`天气获取失败: ${result.weather?.code || "unknown"}`);
-      }
-
-      const now = result.weather.now;
-      const temperature = now?.temp ?? "";
-      const text = now?.text ?? "";
-      const locationName = result.city || "未知";
-      const icon = mapWeatherToIcon(text);
-
-      const address = result.addressInfo?.address || "";
-      const ts = Date.now();
-
-      setWeatherData({ temperature, text, location: locationName, icon });
-
-      // 持久化实时天气快照
-      updateWeatherNowSnapshot(result.weather);
-      const locationParam = `${result.coords.lon},${result.coords.lat}`;
-      if (result.daily3d && !result.daily3d.error) {
-        updateDaily3dCache(locationParam, result.daily3d);
-      }
-      if (result.astronomySun && !result.astronomySun.error) {
-        updateAstronomySunCache(locationParam, formatDateYYYYMMDD(new Date()), result.astronomySun);
-      }
-      if (result.airQuality && !result.airQuality.error) {
-        updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
-      }
-
-      // 广播刷新完成事件
-      const geoDiag = getWeatherCache().geolocation?.diagnostics || null;
-      const event = new CustomEvent("weatherRefreshDone", {
-        detail: {
-          status: "成功",
-          address,
-          ts,
-          coords: result.coords || null,
-          coordsSource: result.coordsSource || null,
-          geolocationDiagnostics: geoDiag,
-          now,
-          refer: result.weather?.refer || null,
-          daily3d: result.daily3d || null,
-          astronomySun: result.astronomySun || null,
-          airQuality: result.airQuality || null,
-        },
-      });
-      window.dispatchEvent(event);
-    } catch (error) {
-      logger.error("天气初始化失败:", error);
-      const errorMessage = error instanceof Error ? error.message : "未知错误";
-      setError(errorMessage);
-
-      const cache = getWeatherCache();
-      const event = new CustomEvent("weatherRefreshDone", {
-        detail: {
-          status: "失败",
-          errorMessage,
-          address: cache.location?.address || "",
-          ts: Date.now(),
-          coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
-          coordsSource: cache.coords?.source || null,
-          geolocationDiagnostics: cache.geolocation?.diagnostics || null,
-        },
-      });
-      window.dispatchEvent(event);
-    } finally {
-      setLoading(false);
-    }
-  }, [mapWeatherToIcon]);
+    },
+    [mapWeatherToIcon]
+  );
 
   /**
    * 仅刷新定位信息（函数级中文注释）：

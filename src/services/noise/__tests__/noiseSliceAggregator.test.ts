@@ -15,7 +15,10 @@ function frame(t: number, dbfs: number): NoiseFrameSample {
 
 describe("noiseSliceAggregator", () => {
   it("应按 mergeGap 合并事件段，并输出切片摘要", () => {
-    const ringBuffer = createNoiseRealtimeRingBuffer({ retentionMs: 5 * 60 * 1000, capacity: 4096 });
+    const ringBuffer = createNoiseRealtimeRingBuffer({
+      retentionMs: 5 * 60 * 1000,
+      capacity: 4096,
+    });
     const aggregator = createNoiseSliceAggregator({
       sliceSec: 2,
       score: { scoreThresholdDbfs: -35, segmentMergeGapMs: 300, maxSegmentsPerMin: 6 },
@@ -55,4 +58,3 @@ describe("noiseSliceAggregator", () => {
     expect(points.length).toBeGreaterThan(0);
   });
 });
-

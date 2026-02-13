@@ -33,7 +33,9 @@ export const NoiseStatsSummary: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () => setTick((t) => t + 1));
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.StudyScheduleUpdated, () =>
+      setTick((t) => t + 1)
+    );
     return off;
   }, []);
 

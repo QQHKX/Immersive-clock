@@ -30,7 +30,11 @@ export function parseStudyScheduleFromExcelArrayBuffer(buffer: ArrayBuffer): Exc
   const sheetName = workbook.SheetNames[0] ?? "";
   const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
   if (!sheetName || !sheet) {
-    return { periods: [], rowErrors: [{ rowNumber: 0, message: "Excel 文件没有可读取的工作表" }], meta: { sheetName: "", totalRows: 0 } };
+    return {
+      periods: [],
+      rowErrors: [{ rowNumber: 0, message: "Excel 文件没有可读取的工作表" }],
+      meta: { sheetName: "", totalRows: 0 },
+    };
   }
 
   const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });

@@ -237,9 +237,7 @@ export function getAppSettings(): AppSettings {
  * 在 localStorage 中执行原子性的读-改-写操作（同步）
  */
 export function updateAppSettings(
-  partial:
-    | DeepPartial<AppSettings>
-    | ((current: AppSettings) => DeepPartial<AppSettings>)
+  partial: DeepPartial<AppSettings> | ((current: AppSettings) => DeepPartial<AppSettings>)
 ): void {
   try {
     const current = getAppSettings();
@@ -320,8 +318,7 @@ export function updateAppSettings(
           ? { ...current.study.display, ...studyUpdates.display }
           : current.study.display,
         countdownItems: studyUpdates.countdownItems ?? current.study.countdownItems,
-        carouselIntervalSec:
-          studyUpdates.carouselIntervalSec ?? current.study.carouselIntervalSec,
+        carouselIntervalSec: studyUpdates.carouselIntervalSec ?? current.study.carouselIntervalSec,
         style: studyUpdates.style
           ? { ...current.study.style, ...studyUpdates.style }
           : current.study.style,

@@ -1,4 +1,9 @@
-export type NoiseCaptureStatus = "idle" | "initializing" | "running" | "permission-denied" | "error";
+export type NoiseCaptureStatus =
+  | "idle"
+  | "initializing"
+  | "running"
+  | "permission-denied"
+  | "error";
 
 export interface NoiseCaptureOptions {
   highpassHz?: number;
@@ -100,14 +105,12 @@ export async function stopNoiseCapture(
 ): Promise<void> {
   try {
     session?.stream?.getTracks().forEach((t) => t.stop());
-  } catch {
-  }
+  } catch {}
 
   try {
     const ctx = session?.audioContext;
     if (ctx && ctx.state !== "closed") {
       await ctx.close();
     }
-  } catch {
-  }
+  } catch {}
 }

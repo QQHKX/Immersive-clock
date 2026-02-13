@@ -74,7 +74,10 @@ export async function fetchWeatherDaily3d(location: string): Promise<WeatherDail
 /**
  * 获取日出日落（函数级中文注释）。
  */
-export async function fetchAstronomySun(location: string, date: string): Promise<AstronomySunResponse> {
+export async function fetchAstronomySun(
+  location: string,
+  date: string
+): Promise<AstronomySunResponse> {
   try {
     const data = await qweatherGetJson(
       `/v7/astronomy/sun?location=${encodeURIComponent(location)}&date=${encodeURIComponent(date)}&lang=zh`
@@ -88,7 +91,10 @@ export async function fetchAstronomySun(location: string, date: string): Promise
 /**
  * 获取空气质量（函数级中文注释）：使用和风私有域 current。
  */
-export async function fetchAirQualityCurrent(lat: number, lon: number): Promise<AirQualityCurrentResponse> {
+export async function fetchAirQualityCurrent(
+  lat: number,
+  lon: number
+): Promise<AirQualityCurrentResponse> {
   try {
     const data = await qweatherGetJson(
       `/airquality/v1/current/${lat.toFixed(2)}/${lon.toFixed(2)}?lang=zh`

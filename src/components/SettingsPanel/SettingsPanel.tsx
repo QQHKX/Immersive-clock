@@ -39,10 +39,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   >("basic");
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 分区保存注册
-  const basicSaveRef = useRef<() => void>(() => {});
-  const weatherSaveRef = useRef<() => void>(() => {});
-  const monitorSaveRef = useRef<() => void>(() => {});
-  const quotesSaveRef = useRef<() => void>(() => {});
+  const basicSaveRef = useRef<() => void>(() => { });
+  const weatherSaveRef = useRef<() => void>(() => { });
+  const monitorSaveRef = useRef<() => void>(() => { });
+  const quotesSaveRef = useRef<() => void>(() => { });
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -103,16 +103,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         compactBodyTop
         footer={
           <FormButtonGroup align="right">
-            <FormButton variant="secondary" onClick={handleClose}>
+            <FormButton id="settings-close-btn" variant="secondary" onClick={handleClose}>
               取消
             </FormButton>
-            <FormButton variant="primary" onClick={handleSaveAll}>
+            <FormButton id="settings-save-btn" variant="primary" onClick={handleSaveAll}>
               保存
             </FormButton>
           </FormButtonGroup>
         }
       >
-        <div ref={containerRef} className={styles.settingsContainer}>
+        <div id="settings-panel-container" ref={containerRef} className={styles.settingsContainer}>
           {/* 顶部分类选项卡 */}
           <Tabs
             items={[

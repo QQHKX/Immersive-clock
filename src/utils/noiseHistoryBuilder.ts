@@ -67,7 +67,10 @@ export function buildNoiseHistoryListItems(params: {
   windowMs?: number;
 }): NoiseHistoryListItem[] {
   const { slices, schedule } = params;
-  const windowMs = typeof params.windowMs === "number" && params.windowMs > 0 ? params.windowMs : 24 * 60 * 60 * 1000;
+  const windowMs =
+    typeof params.windowMs === "number" && params.windowMs > 0
+      ? params.windowMs
+      : 24 * 60 * 60 * 1000;
 
   if (slices.length === 0 || schedule.length === 0) return [];
 
@@ -114,4 +117,3 @@ export function buildNoiseHistoryListItems(params: {
   items.sort((a, b) => b.period.end.getTime() - a.period.end.getTime());
   return items;
 }
-

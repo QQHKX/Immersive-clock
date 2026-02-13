@@ -77,4 +77,3 @@ describe("startupMode", () => {
     expect(getStartupModeFromSettings()).toBe("clock");
   });
 });
-

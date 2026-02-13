@@ -85,10 +85,46 @@
   z-index: 0;
 }
 
+/* 指引按钮 - 左下角贴边 */
+.tourButton {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  background: transparent;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  z-index: 10;
+  padding: 4px 8px;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.tourButton:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.tourButton:active {
+  transform: scale(0.95);
+}
+
 /* 无障碍适配优化 */
 @media (prefers-reduced-motion: reduce) {
   .timeDisplay {
     transition: none;
+  }
+  
+  .tourButton {
+    transition: none;
+  }
+  
+  .tourButton:hover,
+  .tourButton:active {
+    transform: none;
   }
 }
 
@@ -102,6 +138,11 @@
   .clockPage::before {
     display: none;
   }
+  
+  .tourButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
 }
 
 /* 打印样式 */
@@ -112,6 +153,10 @@
   }
 
   .clockPage::before {
+    display: none;
+  }
+  
+  .tourButton {
     display: none;
   }
 }

@@ -62,4 +62,3 @@ export const NoiseAlertHistory: React.FC = () => {
 };
 
 export default NoiseAlertHistory;
-

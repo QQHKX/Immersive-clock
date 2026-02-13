@@ -21,6 +21,7 @@ interface NoiseReportModalProps {
 }
 
 const CHART_HEIGHT = 140;
+const SMALL_CHART_HEIGHT = 100;
 const CHART_PADDING = 24;
 
 function formatDuration(ms: number) {
@@ -49,12 +50,14 @@ function getScoreLevelText(score: number) {
 export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onClose, period }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(860);
+  const [isGridSingleColumn, setIsGridSingleColumn] = useState(false);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     const measure = () => {
       const w = chartContainerRef.current?.clientWidth || 860;
       setChartWidth(w);
+      setIsGridSingleColumn(window.innerWidth <= 768);
     };
     measure();
     window.addEventListener("resize", measure);
@@ -185,12 +188,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       sustainedPenalty,
       timePenalty,
       segmentPenalty,
-      distribution: totalMs > 0 ? {
-        quiet: distribution.quiet / totalMs,
-        normal: distribution.normal / totalMs,
-        loud: distribution.loud / totalMs,
-        severe: distribution.severe / totalMs,
-      } : { quiet: 0, normal: 0, loud: 0, severe: 0 },
+      distribution:
+        totalMs > 0
+          ? {
+            quiet: distribution.quiet / totalMs,
+            normal: distribution.normal / totalMs,
+            loud: distribution.loud / totalMs,
+            severe: distribution.severe / totalMs,
+          }
+          : { quiet: 0, normal: 0, loud: 0, severe: 0 },
       series,
       scoreText,
       COLORS,
@@ -238,7 +244,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         events: p.events,
       }));
 
-    const path = pts.map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`)).join(" ");
+    const path = pts
+      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
+      .join(" ");
     const areaPath = `${path} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
 
     const scorePath = pts
@@ -275,6 +283,85 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     };
   }, [period, report, chartWidth]);
 
+  const smallChart = useMemo(() => {
+    // Determine width for small charts in the grid
+    // Chart container has 12px padding on each side (24px total)
+    // Grid gap is 12px
+    const containerPadding = 24;
+    const gridGap = 12;
+
+    // If single column (mobile), use full width minus padding. 
+    // Otherwise use half width minus half gap minus padding.
+    const width = isGridSingleColumn
+      ? chartWidth - containerPadding
+      : (chartWidth - gridGap) / 2 - containerPadding;
+
+    const height = SMALL_CHART_HEIGHT;
+    const padding = CHART_PADDING;
+
+    if (!period || !report || report.series.length < 2) {
+      return {
+        width,
+        height,
+        padding,
+        scorePath: "",
+        pts: [] as { x: number; y: number; scoreY: number; events: number }[],
+        xTicks: [] as { x: number; label: string }[],
+        yTicks: [] as { y: number; label: string }[],
+        mapX: (t: number) => 0,
+        mapY: (v: number) => 0,
+      };
+    }
+
+    const minDb = 0;
+    const maxDb = 80;
+    const startTs = period.start.getTime();
+    const endTs = period.end.getTime();
+    const span = Math.max(1, endTs - startTs);
+    const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
+    const mapY = (v: number) =>
+      height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
+
+    const pts = report.series
+      .slice()
+      .sort((a, b) => a.t - b.t)
+      .map((p) => ({
+        x: mapX(p.t),
+        y: mapY(p.v),
+        scoreY: mapY(p.score * 0.8),
+        events: p.events,
+      }));
+
+    const scorePath = pts
+      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.scoreY}` : `L ${pt.x} ${pt.scoreY}`))
+      .join(" ");
+
+    // Use fewer ticks for small chart
+    const xTickTs = [startTs, endTs].map((t) => Math.round(t));
+    const xTicks = xTickTs.map((t) => ({
+      x: mapX(t),
+      label: formatTimeHHMM(new Date(t)),
+    }));
+
+    const yTickVals = [20, 40, 60, 80];
+    const yTicks = yTickVals.map((v) => ({
+      y: mapY(v),
+      label: String(v),
+    }));
+
+    return {
+      width,
+      height,
+      padding,
+      scorePath,
+      pts,
+      xTicks,
+      yTicks,
+      mapX,
+      mapY,
+    };
+  }, [period, report, chartWidth, isGridSingleColumn]);
+
   const scoreInfo = useMemo(() => {
     if (!report) return null;
     const s = Math.round(report.avgScore);
@@ -301,7 +388,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
           <div className={styles.overviewGrid}>
             <div className={styles.card}>
               <div className={styles.cardLabel}>时长</div>
-              <div className={styles.cardValue}>{period ? formatMinutes(periodDurationMs) : "—"}</div>
+              <div className={styles.cardValue}>
+                {period ? formatMinutes(periodDurationMs) : "—"}
+              </div>
             </div>
             <div className={styles.card}>
               <div className={styles.cardLabel}>表现</div>
@@ -312,15 +401,21 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             </div>
             <div className={styles.card}>
               <div className={styles.cardLabel}>峰值</div>
-              <div className={styles.cardValue}>{report ? `${report.maxDb.toFixed(1)} dB` : "—"}</div>
+              <div className={styles.cardValue}>
+                {report ? `${report.maxDb.toFixed(1)} dB` : "—"}
+              </div>
             </div>
             <div className={styles.card}>
               <div className={styles.cardLabel}>平均</div>
-              <div className={styles.cardValue}>{report ? `${report.avgDb.toFixed(1)} dB` : "—"}</div>
+              <div className={styles.cardValue}>
+                {report ? `${report.avgDb.toFixed(1)} dB` : "—"}
+              </div>
             </div>
             <div className={styles.card}>
               <div className={styles.cardLabel}>超阈时长</div>
-              <div className={styles.cardValue}>{report ? formatDuration(report.overDurationMs) : "—"}</div>
+              <div className={styles.cardValue}>
+                {report ? formatDuration(report.overDurationMs) : "—"}
+              </div>
             </div>
             <div className={styles.card}>
               <div className={styles.cardLabel}>打断次数</div>
@@ -383,7 +478,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         y2={t.y}
                         className={styles.gridLine}
                       />
-                      <text x={chart.padding - 8} y={t.y + 4} textAnchor="end" className={styles.axisLabel}>
+                      <text
+                        x={chart.padding - 8}
+                        y={t.y + 4}
+                        textAnchor="end"
+                        className={styles.axisLabel}
+                      >
                         {t.label}
                       </text>
                     </g>
@@ -405,7 +505,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   />
                   {/* Base area (normal) */}
                   <mask id="normalMask">
-                    <rect x="0" y={chart.thresholdY} width={chart.width} height={chart.height} fill="white" />
+                    <rect
+                      x="0"
+                      y={chart.thresholdY}
+                      width={chart.width}
+                      height={chart.height}
+                      fill="white"
+                    />
                   </mask>
                   {/* Warning area (loud) */}
                   <mask id="warningMask">
@@ -430,7 +536,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                       key={`x-${idx}`}
                       x={t.x}
                       y={chart.height - 10}
-                      textAnchor={idx === 0 ? "start" : idx === chart.xTicks.length - 1 ? "end" : "middle"}
+                      textAnchor={
+                        idx === 0 ? "start" : idx === chart.xTicks.length - 1 ? "end" : "middle"
+                      }
                       className={styles.axisLabel}
                     >
                       {t.label}
@@ -440,8 +548,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
               </div>
 
               <div className={styles.rangeText}>
-                统计范围：{period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}；
-                噪音报警阈值：{report.thresholdDb.toFixed(1)} dB
+                统计范围：
+                {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
+                ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB
               </div>
             </div>
           ) : (
@@ -456,17 +565,16 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
               <div className={styles.chartContainer}>
                 <div className={styles.chartTitle}>评分走势 (0-100)</div>
                 <svg
-                  width="100%"
-                  height="120"
-                  viewBox={`0 0 ${chart.width} ${chart.height}`}
-                  preserveAspectRatio="none"
+                  width={smallChart.width}
+                  height={smallChart.height}
+                  viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
                 >
                   {/* Reuse grid lines */}
-                  {chart.yTicks.map((t) => (
+                  {smallChart.yTicks.map((t) => (
                     <line
                       key={`sy-${t.label}`}
-                      x1={chart.padding}
-                      x2={chart.width - chart.padding}
+                      x1={smallChart.padding}
+                      x2={smallChart.width - smallChart.padding}
                       y1={t.y}
                       y2={t.y}
                       className={styles.gridLine}
@@ -474,7 +582,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   ))}
                   {/* Score Path */}
                   <path
-                    d={chart.scorePath}
+                    d={smallChart.scorePath}
                     fill="none"
                     stroke={report.COLORS.score}
                     strokeWidth="2"
@@ -482,12 +590,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   />
 
                   {/* Axis Labels */}
-                  {chart.xTicks.map((t, idx) => (
+                  {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`sx-${idx}`}
                       x={t.x}
-                      y={chart.height - 10}
-                      textAnchor={idx === 0 ? "start" : idx === chart.xTicks.length - 1 ? "end" : "middle"}
+                      y={smallChart.height - 10}
+                      textAnchor={
+                        idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"
+                      }
                       className={styles.axisLabel}
                     >
                       {t.label}
@@ -499,16 +609,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
               <div className={styles.chartContainer}>
                 <div className={styles.chartTitle}>打断次数密度 (次/分)</div>
                 <svg
-                  width="100%"
-                  height="120"
-                  viewBox={`0 0 ${chart.width} ${chart.height}`}
-                  preserveAspectRatio="none"
+                  width={smallChart.width}
+                  height={smallChart.height}
+                  viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
                 >
-                  {chart.yTicks.map((t) => (
+                  {smallChart.yTicks.map((t) => (
                     <line
                       key={`ey-${t.label}`}
-                      x1={chart.padding}
-                      x2={chart.width - chart.padding}
+                      x1={smallChart.padding}
+                      x2={smallChart.width - smallChart.padding}
                       y1={t.y}
                       y2={t.y}
                       className={styles.gridLine}
@@ -516,12 +625,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   ))}
 
                   {/* Event Bars */}
-                  {chart.pts.map((p, i) => {
+                  {smallChart.pts.map((p, i) => {
                     // map event count (0-20) to height
-                    const barHeight = (p.events / 20) * (chart.height - chart.padding * 2);
-                    const y = chart.height - chart.padding - barHeight;
+                    const barHeight = (p.events / 20) * (smallChart.height - smallChart.padding * 2);
+                    const y = smallChart.height - smallChart.padding - barHeight;
                     // width depends on total points
-                    const barWidth = (chart.width - chart.padding * 2) / chart.pts.length;
+                    const barWidth = (smallChart.width - smallChart.padding * 2) / smallChart.pts.length;
                     return (
                       <rect
                         key={i}
@@ -536,12 +645,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   })}
 
                   {/* Axis Labels */}
-                  {chart.xTicks.map((t, idx) => (
+                  {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`ex-${idx}`}
                       x={t.x}
-                      y={chart.height - 10}
-                      textAnchor={idx === 0 ? "start" : idx === chart.xTicks.length - 1 ? "end" : "middle"}
+                      y={smallChart.height - 10}
+                      textAnchor={
+                        idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"
+                      }
                       className={styles.axisLabel}
                     >
                       {t.label}
@@ -552,79 +663,64 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
               <div className={styles.chartContainer}>
                 <div className={styles.chartTitle}>噪音等级分布</div>
-                <svg width="100%" height="40" viewBox="0 0 300 40" preserveAspectRatio="none">
-                  <defs>
-                    <clipPath id="distBarClip">
-                      <rect x="0" y="0" width="300" height="20" rx="6" />
-                    </clipPath>
-                  </defs>
-                  <g clipPath="url(#distBarClip)">
-                    <rect x="0" y="0" width="300" height="20" fill="rgba(255, 255, 255, 0.1)" />
-                    <rect
-                      x="0"
-                      y="0"
-                      width={300 * report.distribution.quiet}
-                      height="20"
-                      fill={report.COLORS.quiet}
-                      opacity={0.8}
+                <div className={styles.distributionChart}>
+                  <div className={styles.distributionBar}>
+                    <div
+                      className={styles.distributionSegment}
+                      style={{
+                        width: `${report.distribution.quiet * 100}%`,
+                        backgroundColor: report.COLORS.quiet,
+                      }}
                     />
-                    <rect
-                      x={300 * report.distribution.quiet}
-                      y="0"
-                      width={300 * report.distribution.normal}
-                      height="20"
-                      fill={report.COLORS.normal}
-                      opacity={0.8}
+                    <div
+                      className={styles.distributionSegment}
+                      style={{
+                        width: `${report.distribution.normal * 100}%`,
+                        backgroundColor: report.COLORS.normal,
+                      }}
                     />
-                    <rect
-                      x={300 * (report.distribution.quiet + report.distribution.normal)}
-                      y="0"
-                      width={300 * report.distribution.loud}
-                      height="20"
-                      fill={report.COLORS.loud}
-                      opacity={0.8}
+                    <div
+                      className={styles.distributionSegment}
+                      style={{
+                        width: `${report.distribution.loud * 100}%`,
+                        backgroundColor: report.COLORS.loud,
+                      }}
                     />
-                    <rect
-                      x={
-                        300 *
-                        (report.distribution.quiet +
-                          report.distribution.normal +
-                          report.distribution.loud)
-                      }
-                      y="0"
-                      width={300 * report.distribution.severe}
-                      height="20"
-                      fill={report.COLORS.severe}
-                      opacity={0.8}
+                    <div
+                      className={styles.distributionSegment}
+                      style={{
+                        width: `${report.distribution.severe * 100}%`,
+                        backgroundColor: report.COLORS.severe,
+                      }}
                     />
-                  </g>
-                </svg>
+                  </div>
+                </div>
                 <div className={styles.legend}>
                   <div className={styles.legendItem}>
                     <div
                       className={styles.legendColor}
-                      style={{ background: report.COLORS.quiet, opacity: 0.8 }}
+                      style={{ background: report.COLORS.quiet }}
                     />
                     安静 ({(report.distribution.quiet * 100).toFixed(0)}%)
                   </div>
                   <div className={styles.legendItem}>
                     <div
                       className={styles.legendColor}
-                      style={{ background: report.COLORS.normal, opacity: 0.8 }}
+                      style={{ background: report.COLORS.normal }}
                     />
                     正常 ({(report.distribution.normal * 100).toFixed(0)}%)
                   </div>
                   <div className={styles.legendItem}>
                     <div
                       className={styles.legendColor}
-                      style={{ background: report.COLORS.loud, opacity: 0.8 }}
+                      style={{ background: report.COLORS.loud }}
                     />
                     吵闹 ({(report.distribution.loud * 100).toFixed(0)}%)
                   </div>
                   <div className={styles.legendItem}>
                     <div
                       className={styles.legendColor}
-                      style={{ background: report.COLORS.severe, opacity: 0.8 }}
+                      style={{ background: report.COLORS.severe }}
                     />
                     极吵 ({(report.distribution.severe * 100).toFixed(0)}%)
                   </div>
@@ -633,76 +729,55 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
               <div className={styles.chartContainer}>
                 <div className={styles.chartTitle}>扣分归因 (越长扣分越多)</div>
-                <svg width="100%" height="90" viewBox="0 0 300 90">
-                  <g transform="translate(0, 5)">
-                    <text x="0" y="12" fill="var(--secondary-color)" fontSize="12">
-                      持续
-                    </text>
-                    <rect
-                      x="35"
-                      y="2"
-                      width={Math.max(2, 220 * report.sustainedPenalty)}
-                      height="12"
-                      rx="2"
-                      fill={report.COLORS.sustained}
-                      opacity={0.8}
-                    />
-                    <text
-                      x={40 + Math.max(2, 220 * report.sustainedPenalty)}
-                      y="12"
-                      fill="var(--secondary-color)"
-                      fontSize="10"
-                    >
+                <div className={styles.penaltyList}>
+                  <div className={styles.penaltyItem}>
+                    <div className={styles.penaltyLabel}>持续</div>
+                    <div className={styles.penaltyBarTrack}>
+                      <div
+                        className={styles.penaltyBarFill}
+                        style={{
+                          width: `${report.sustainedPenalty * 100}%`,
+                          backgroundColor: report.COLORS.sustained,
+                        }}
+                      />
+                    </div>
+                    <div className={styles.penaltyValue}>
                       {(report.sustainedPenalty * 100).toFixed(0)}%
-                    </text>
-                  </g>
+                    </div>
+                  </div>
 
-                  <g transform="translate(0, 35)">
-                    <text x="0" y="12" fill="var(--secondary-color)" fontSize="12">
-                      时长
-                    </text>
-                    <rect
-                      x="35"
-                      y="2"
-                      width={Math.max(2, 220 * report.timePenalty)}
-                      height="12"
-                      rx="2"
-                      fill={report.COLORS.time}
-                      opacity={0.8}
-                    />
-                    <text
-                      x={40 + Math.max(2, 220 * report.timePenalty)}
-                      y="12"
-                      fill="var(--secondary-color)"
-                      fontSize="10"
-                    >
+                  <div className={styles.penaltyItem}>
+                    <div className={styles.penaltyLabel}>时长</div>
+                    <div className={styles.penaltyBarTrack}>
+                      <div
+                        className={styles.penaltyBarFill}
+                        style={{
+                          width: `${report.timePenalty * 100}%`,
+                          backgroundColor: report.COLORS.time,
+                        }}
+                      />
+                    </div>
+                    <div className={styles.penaltyValue}>
                       {(report.timePenalty * 100).toFixed(0)}%
-                    </text>
-                  </g>
+                    </div>
+                  </div>
 
-                  <g transform="translate(0, 65)">
-                    <text x="0" y="12" fill="var(--secondary-color)" fontSize="12">
-                      打断
-                    </text>
-                    <rect
-                      x="35"
-                      y="2"
-                      width={Math.max(2, 220 * report.segmentPenalty)}
-                      height="12"
-                      rx="2"
-                      fill={report.COLORS.segment}
-                      opacity={0.8}
-                    />
-                    <text
-                      x={40 + Math.max(2, 220 * report.segmentPenalty)}
-                      y="12"
-                      fill="var(--secondary-color)"
-                      fontSize="10"
-                    >
+                  <div className={styles.penaltyItem}>
+                    <div className={styles.penaltyLabel}>打断</div>
+                    <div className={styles.penaltyBarTrack}>
+                      <div
+                        className={styles.penaltyBarFill}
+                        style={{
+                          width: `${report.segmentPenalty * 100}%`,
+                          backgroundColor: report.COLORS.segment,
+                        }}
+                      />
+                    </div>
+                    <div className={styles.penaltyValue}>
                       {(report.segmentPenalty * 100).toFixed(0)}%
-                    </text>
-                  </g>
-                </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (

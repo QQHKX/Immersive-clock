@@ -142,7 +142,9 @@ export function validateStudySchedule(input: StudyPeriod[]): ScheduleValidationR
     end: ParsedTime;
   }>;
 
-  sortable.sort((a, b) => (a.start.minutes === b.start.minutes ? a.index - b.index : a.start.minutes - b.start.minutes));
+  sortable.sort((a, b) =>
+    a.start.minutes === b.start.minutes ? a.index - b.index : a.start.minutes - b.start.minutes
+  );
 
   for (let i = 0; i < sortable.length - 1; i++) {
     const cur = sortable[i];
@@ -192,4 +194,3 @@ export function createNewStudyPeriod(existing: StudyPeriod[]): StudyPeriod {
     name: "自定义时段",
   };
 }
-

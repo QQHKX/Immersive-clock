@@ -12,4 +12,3 @@ export interface MessagePopupOpenDetail {
   message?: unknown;
   themeColor?: string;
 }
-

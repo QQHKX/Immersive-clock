@@ -58,4 +58,3 @@ export function createNoiseRealtimeRingBuffer(params: {
 
   return { push, snapshot, clear };
 }
-

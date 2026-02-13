@@ -53,8 +53,8 @@ export const RealTimeNoiseChart: React.FC = () => {
 
       const path = points.length
         ? points
-          .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.t)} ${yScale(p.displayDb)}`)
-          .join(" ")
+            .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.t)} ${yScale(p.displayDb)}`)
+            .join(" ")
         : "";
 
       const thresholdY = yScale(threshold);
@@ -77,7 +77,12 @@ export const RealTimeNoiseChart: React.FC = () => {
         {points.length === 0 ? (
           <div className={styles.empty}>暂无数据</div>
         ) : (
-          <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="实时噪音折线图">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="实时噪音折线图"
+          >
             {yTicks.map((yt, i) => (
               <g key={`ytick-${i}`}>
                 <line
@@ -132,4 +137,3 @@ export const RealTimeNoiseChart: React.FC = () => {
 };
 
 export default RealTimeNoiseChart;
-

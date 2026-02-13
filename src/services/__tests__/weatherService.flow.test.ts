@@ -246,7 +246,9 @@ describe("weatherService - flow", () => {
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/geo/v2/city/lookup?")) {
-        return Promise.reject(new Error("should not call geo lookup when preferredLocationMode=auto"));
+        return Promise.reject(
+          new Error("should not call geo lookup when preferredLocationMode=auto")
+        );
       }
       if (url.includes("/v7/weather/now?")) {
         return Promise.resolve({
@@ -289,9 +291,9 @@ describe("weatherService - flow", () => {
 
     expect(res.coords).toEqual({ lat: 31.2, lon: 121.5 });
     expect(res.coordsSource).toBe("ip");
-    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/geo/v2/city/lookup?"))).toBe(
-      false
-    );
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).includes("/geo/v2/city/lookup?"))
+    ).toBe(false);
   });
 
   it("buildLocationFlow：只刷新定位与反编码，不请求天气接口", async () => {
@@ -305,7 +307,11 @@ describe("weatherService - flow", () => {
 
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("/v7/weather/now?") || url.includes("/v7/weather/3d?") || url.includes("/v7/astronomy/sun?")) {
+      if (
+        url.includes("/v7/weather/now?") ||
+        url.includes("/v7/weather/3d?") ||
+        url.includes("/v7/astronomy/sun?")
+      ) {
         return Promise.reject(new Error(`should not call weather api: ${url}`));
       }
       if (url.includes("/airquality/v1/current/")) {
@@ -334,10 +340,12 @@ describe("weatherService - flow", () => {
     const res = await buildLocationFlow({ preferredLocationMode: "auto" });
 
     expect(res.coords).toEqual({ lat: 31.2, lon: 121.5 });
-    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/v7/weather/now?"))).toBe(false);
-    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/airquality/v1/current/"))).toBe(
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/v7/weather/now?"))).toBe(
       false
     );
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).includes("/airquality/v1/current/"))
+    ).toBe(false);
   });
 
   it("buildWeatherFlow：无坐标缓存时优先浏览器定位并缓存，再反编码与拉取实时天气", async () => {

@@ -19,7 +19,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
     if (onRegisterSave) {
-      onRegisterSave(() => { });
+      onRegisterSave(() => {});
     }
   }, [onRegisterSave]);
 

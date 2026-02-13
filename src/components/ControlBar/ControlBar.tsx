@@ -161,6 +161,7 @@ export function ControlBar() {
 
       <div className={styles.globalControls}>
         <FormButton
+          id="tour-fullscreen-btn"
           className={styles.controlButton}
           onClick={toggleFullscreen}
           aria-label={isFullscreen ? "退出全屏" : "进入全屏"}

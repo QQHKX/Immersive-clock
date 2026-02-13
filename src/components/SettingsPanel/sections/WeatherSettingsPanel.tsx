@@ -121,18 +121,18 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const manualLocation =
         manualType === "coords"
           ? {
-            type: "coords" as const,
-            lat: Number.isFinite(Number.parseFloat(manualLat))
-              ? Number.parseFloat(manualLat)
-              : undefined,
-            lon: Number.isFinite(Number.parseFloat(manualLon))
-              ? Number.parseFloat(manualLon)
-              : undefined,
-          }
+              type: "coords" as const,
+              lat: Number.isFinite(Number.parseFloat(manualLat))
+                ? Number.parseFloat(manualLat)
+                : undefined,
+              lon: Number.isFinite(Number.parseFloat(manualLon))
+                ? Number.parseFloat(manualLon)
+                : undefined,
+            }
           : {
-            type: "city" as const,
-            cityName: String(manualCityName || "").trim(),
-          };
+              type: "city" as const,
+              cityName: String(manualCityName || "").trim(),
+            };
 
       updateGeneralSettings({
         weather: {
@@ -285,10 +285,12 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           </>
         ) : null}
 
-        <div className={styles.weatherInfo} style={{ marginTop: '0.5rem' }}>
+        <div className={styles.weatherInfo} style={{ marginTop: "0.5rem" }}>
           <p className={styles.infoText}>
             当前坐标：
-            {cache.coords ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}` : "未获取"}
+            {cache.coords
+              ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}`
+              : "未获取"}
             <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
             来源：
             {(() => {
@@ -304,11 +306,16 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           </p>
           <p className={styles.infoText}>地址：{cache.location?.address || "未获取"}</p>
           {geoDiag ? (
-            <p className={styles.infoText} style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-              诊断：权限={geoDiag.permissionState} {geoDiag.errorMessage ? `(${geoDiag.errorMessage})` : ""}
+            <p className={styles.infoText} style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+              诊断：权限={geoDiag.permissionState}{" "}
+              {geoDiag.errorMessage ? `(${geoDiag.errorMessage})` : ""}
             </p>
           ) : null}
-          {geoHint ? <p className={styles.infoText} style={{ color: '#ffab40' }}>{geoHint}</p> : null}
+          {geoHint ? (
+            <p className={styles.infoText} style={{ color: "#ffab40" }}>
+              {geoHint}
+            </p>
+          ) : null}
         </div>
       </FormSection>
 
@@ -324,15 +331,27 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           </FormButton>
         </FormButtonGroup>
 
-        <div className={styles.weatherInfo} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px' }}>
+        <div
+          className={styles.weatherInfo}
+          style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "8px 16px",
+            }}
+          >
             <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
             <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
             <p className={styles.infoText}>
-              气温：{now?.temp ? `${now.temp}°C` : "--"} <span style={{ opacity: 0.5, margin: '0 4px' }}>/</span> 体感：{now?.feelsLike ? `${now.feelsLike}°C` : "--"}
+              气温：{now?.temp ? `${now.temp}°C` : "--"}{" "}
+              <span style={{ opacity: 0.5, margin: "0 4px" }}>/</span> 体感：
+              {now?.feelsLike ? `${now.feelsLike}°C` : "--"}
             </p>
             <p className={styles.infoText}>
-              风况：{now?.windDir || "--"} {now?.windScale || "--"}级 ({now?.windSpeed ? `${now.windSpeed}km/h` : "--"})
+              风况：{now?.windDir || "--"} {now?.windScale || "--"}级 (
+              {now?.windSpeed ? `${now.windSpeed}km/h` : "--"})
             </p>
             <p className={styles.infoText}>
               空气质量：
@@ -358,10 +377,28 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>湿度</div>
-                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.min(100, Math.max(0, humidity))}%`, height: "100%", background: "rgba(255,255,255,0.6)" }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 4,
+                      borderRadius: 2,
+                      background: "rgba(255,255,255,0.1)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.min(100, Math.max(0, humidity))}%`,
+                        height: "100%",
+                        background: "rgba(255,255,255,0.6)",
+                      }}
+                    />
                   </div>
-                  <div style={{ width: 40, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}>{Math.round(humidity)}%</div>
+                  <div
+                    style={{ width: 40, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}
+                  >
+                    {Math.round(humidity)}%
+                  </div>
                 </div>
               );
             })()}
@@ -372,34 +409,58 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>气压</div>
-                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.round(ratio * 100)}%`, height: "100%", background: "rgba(255,255,255,0.6)" }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 4,
+                      borderRadius: 2,
+                      background: "rgba(255,255,255,0.1)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.round(ratio * 100)}%`,
+                        height: "100%",
+                        background: "rgba(255,255,255,0.6)",
+                      }}
+                    />
                   </div>
-                  <div style={{ width: 60, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}>{Math.round(pressure)}hPa</div>
+                  <div
+                    style={{ width: 60, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}
+                  >
+                    {Math.round(pressure)}hPa
+                  </div>
                 </div>
               );
             })()}
           </div>
 
-          <div style={{ marginTop: 4, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div
+            style={{ marginTop: 4, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.1)" }}
+          >
             <p className={styles.infoText} style={{ opacity: 0.8 }}>
               未来三日：
               {(() => {
                 const daily = cache.daily3d?.data?.daily;
                 if (!daily || daily.length === 0) return "未获取";
-                return daily.slice(0, 3).map((d) => `${d.textDay} ${d.tempMin}~${d.tempMax}°`).join("  |  ");
+                return daily
+                  .slice(0, 3)
+                  .map((d) => `${d.textDay} ${d.tempMin}~${d.tempMax}°`)
+                  .join("  |  ");
               })()}
             </p>
           </div>
         </div>
 
         {lastRefreshError ? (
-          <p className={styles.infoText} style={{ color: '#ff5252', marginTop: 8 }}>
+          <p className={styles.infoText} style={{ color: "#ff5252", marginTop: 8 }}>
             刷新失败：{lastRefreshError}
           </p>
         ) : (
-          <p className={styles.infoText} style={{ opacity: 0.5, fontSize: '0.8rem', marginTop: 4 }}>
-            数据更新于：{cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "未成功"}
+          <p className={styles.infoText} style={{ opacity: 0.5, fontSize: "0.8rem", marginTop: 4 }}>
+            数据更新于：
+            {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "未成功"}
           </p>
         )}
       </FormSection>

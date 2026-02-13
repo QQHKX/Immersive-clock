@@ -43,4 +43,3 @@ export interface NoiseSliceSummary {
   score: number;
   scoreDetail: NoiseScoreBreakdown;
 }
-

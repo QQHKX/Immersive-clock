@@ -12,8 +12,9 @@ import { SettingsPanel } from "../../components/SettingsPanel";
 import { Stopwatch } from "../../components/Stopwatch/Stopwatch";
 import { Study } from "../../components/Study/Study";
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
-import { startTimeSyncManager } from "../../utils/timeSync";
 import type { MessagePopupOpenDetail, MessagePopupType } from "../../types/messagePopup";
+import { startTimeSyncManager } from "../../utils/timeSync";
+import { startTour, isTourActive } from "../../utils/tour";
 
 import styles from "./ClockPage.module.css";
 
@@ -29,6 +30,7 @@ export function ClockPage() {
   const { mode, isModalOpen } = useAppState();
   const dispatch = useAppDispatch();
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hudContainerRef = useRef<HTMLDivElement | null>(null);
   const prevModeRef = useRef(mode);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
@@ -58,29 +60,93 @@ export function ClockPage() {
   }, []);
 
   /**
-   * 处理页面点击事件
-   * 显示HUD并设置自动隐藏定时器
+   * 清除 HUD 自动隐藏定时器
    */
-  const handlePageClick = useCallback(() => {
-    // 如果模态框打开，不处理点击事件
-    if (isModalOpen) {
-      return;
-    }
-
-    // 显示HUD
-    dispatch({ type: "SHOW_HUD" });
-
-    // 清除之前的定时器
+  const clearHudHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
     }
+  }, []);
 
-    // 设置8秒后自动隐藏HUD
+  /**
+   * 判断是否应阻止 HUD 被自动隐藏（例如：键盘焦点在 HUD 内或引导中）
+   */
+  const shouldPreventHudAutoHide = useCallback(() => {
+    if (isTourActive()) return true;
+    const activeElement = document.activeElement;
+    if (!activeElement) return false;
+    return !!hudContainerRef.current?.contains(activeElement);
+  }, []);
+
+  /**
+   * 启动 HUD 自动隐藏定时器（若当前不应隐藏，则自动延后重试）
+   */
+  const scheduleHudAutoHide = useCallback(() => {
+    clearHudHideTimeout();
     hideTimeoutRef.current = setTimeout(() => {
+      if (shouldPreventHudAutoHide()) {
+        scheduleHudAutoHide();
+        return;
+      }
       dispatch({ type: "HIDE_HUD" });
       hideTimeoutRef.current = null;
     }, 8000);
-  }, [dispatch, isModalOpen]);
+  }, [clearHudHideTimeout, dispatch, shouldPreventHudAutoHide]);
+
+  useEffect(() => {
+    return () => {
+      clearHudHideTimeout();
+    };
+  }, [clearHudHideTimeout]);
+
+  // 自动启动新手指引
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startTour(false, {
+        onStart: () => {
+          // 确保 HUD 显示并清除自动隐藏定时器
+          dispatch({ type: "SHOW_HUD" });
+          clearHudHideTimeout();
+        },
+        switchMode: (mode) => {
+          dispatch({ type: "SET_MODE", payload: mode as any });
+        },
+        openSettings: () => {
+          setShowSettings(true);
+        },
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [dispatch]);
+
+  /**
+   * 处理页面点击事件
+   * 显示HUD并设置自动隐藏定时器
+   */
+  const handlePageClick = useCallback(
+    (e?: React.MouseEvent) => {
+      // 如果模态框打开，不处理点击事件
+      if (isModalOpen) {
+        return;
+      }
+
+      // 显示HUD
+      dispatch({ type: "SHOW_HUD" });
+
+      const eventTarget = (e?.target as Element | null) ?? null;
+      const isClickInsideHud =
+        !!eventTarget && !!hudContainerRef.current?.contains(eventTarget as Node);
+
+      if (isClickInsideHud) {
+        clearHudHideTimeout();
+        return;
+      }
+
+      scheduleHudAutoHide();
+    },
+    [clearHudHideTimeout, dispatch, isModalOpen, scheduleHudAutoHide]
+  );
 
   /**
    * 处理键盘事件
@@ -101,6 +167,9 @@ export function ClockPage() {
        * 保证输入框/文本域/可编辑区域的默认行为（换行、输入等）
        */
       const eventTarget = e.target as HTMLElement | null;
+      if (eventTarget && hudContainerRef.current?.contains(eventTarget)) {
+        return;
+      }
       const tagName = eventTarget?.tagName?.toUpperCase();
       const isEditingElement =
         !!eventTarget &&
@@ -228,13 +297,57 @@ export function ClockPage() {
       tabIndex={0}
       aria-label="时钟应用主界面"
     >
-      <div className={styles.timeDisplay} id={`${mode}-panel`} role="tabpanel">
+      <div
+        className={styles.timeDisplay}
+        id={`${mode}-panel`}
+        role="tabpanel"
+        data-tour="clock-area"
+      >
         {renderTimeDisplay()}
       </div>
 
-      <HUD />
+      <div
+        ref={hudContainerRef}
+        onFocusCapture={() => {
+          dispatch({ type: "SHOW_HUD" });
+          clearHudHideTimeout();
+        }}
+        onBlurCapture={(e) => {
+          const nextFocused = e.relatedTarget as Node | null;
+          if (nextFocused && hudContainerRef.current?.contains(nextFocused)) {
+            return;
+          }
+          if (isModalOpen) return;
+          scheduleHudAutoHide();
+        }}
+        onPointerDownCapture={() => {
+          dispatch({ type: "SHOW_HUD" });
+          clearHudHideTimeout();
+        }}
+      >
+        <HUD />
+      </div>
 
       <AuthorInfo onVersionClick={handleVersionClick} />
+
+      {/* 仅在时钟页面显示的左下角指引按钮 */}
+      {mode === "clock" && (
+        <button
+          className={styles.tourButton}
+          onClick={() => {
+            startTour(true, {
+              onStart: () => {
+                dispatch({ type: "SHOW_HUD" });
+              },
+            });
+          }}
+          title="重播新手指引"
+          type="button"
+          aria-label="重播新手指引"
+        >
+          ?
+        </button>
+      )}
 
       {/* 设置按钮 - 只在自习模式下显示 */}
       {mode === "study" && (

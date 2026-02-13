@@ -56,10 +56,16 @@ export function ModeSelector() {
   ];
 
   return (
-    <div className={styles.modeSelector} role="tablist" aria-label="选择时钟模式">
+    <div
+      className={styles.modeSelector}
+      role="tablist"
+      aria-label="选择时钟模式"
+      id="tour-mode-selector"
+    >
       {modes.map(({ key, label, icon: Icon, description }) => (
         <LightButton
           key={key}
+          id={key === "study" ? "mode-tab-study" : undefined}
           className={`${styles.modeButton} ${mode === key ? styles.active : ""}`}
           onClick={() => handleModeChange(key)}
           role="tab"

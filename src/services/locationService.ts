@@ -282,9 +282,17 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
         const latRaw = data[keys[0]];
         const lonRaw = data[keys[1]];
         const latNum =
-          typeof latRaw === "number" ? latRaw : typeof latRaw === "string" ? parseFloat(latRaw) : NaN;
+          typeof latRaw === "number"
+            ? latRaw
+            : typeof latRaw === "string"
+              ? parseFloat(latRaw)
+              : NaN;
         const lonNum =
-          typeof lonRaw === "number" ? lonRaw : typeof lonRaw === "string" ? parseFloat(lonRaw) : NaN;
+          typeof lonRaw === "number"
+            ? lonRaw
+            : typeof lonRaw === "string"
+              ? parseFloat(lonRaw)
+              : NaN;
         if (Number.isFinite(latNum) && Number.isFinite(lonNum)) {
           return { lat: latNum, lon: lonNum };
         }
@@ -315,15 +323,21 @@ function isFiniteNumber(n: unknown): n is number {
 }
 
 function validateCoords(lat: number, lon: number): boolean {
-  return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180
+  );
 }
 
 /**
  * 从 AppSettings 的手动定位设置解析坐标（函数级中文注释）。
  */
 async function resolveManualCoordsFromSettings(): Promise<
-  | { coords: Coords; coordsSource: string }
-  | { coords: null; coordsSource: null }
+  { coords: Coords; coordsSource: string } | { coords: null; coordsSource: null }
 > {
   try {
     const weather = getAppSettings().general.weather;
@@ -393,7 +407,11 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
       "Accept-Encoding": "gzip, deflate",
     })) as AmapReverseResponse;
     if (String(data?.status) !== "1") {
-      return { error: String(data?.info || "Amap reverse geocode failed"), source: "Amap", raw: data };
+      return {
+        error: String(data?.info || "Amap reverse geocode failed"),
+        source: "Amap",
+        raw: data,
+      };
     }
     const addr = data?.regeocode?.formatted_address || "";
     return { address: addr, source: "Amap", raw: data?.regeocode?.addressComponent || {} };
@@ -406,7 +424,10 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
  * 从高德反编码地址对象中提取城市名（函数级中文注释）。
  */
 function extractCityFromAmapReverse(raw: unknown): string | null {
-  const comp = raw as NonNullable<AmapReverseResponse["regeocode"]>["addressComponent"] | null | undefined;
+  const comp = raw as
+    | NonNullable<AmapReverseResponse["regeocode"]>["addressComponent"]
+    | null
+    | undefined;
   const pickText = (v: unknown): string | null => {
     if (typeof v === "string" && v.trim()) return v.trim();
     if (Array.isArray(v)) {

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+import type { NoiseSliceSummary } from "../../types/noise";
 import { StudyPeriod, DEFAULT_SCHEDULE } from "../../types/studySchedule";
 import { formatDateTimeLocal, parseDateTimeLocal } from "../../utils/dateTimeLocal";
 import { buildNoiseHistoryListItems } from "../../utils/noiseHistoryBuilder";
-import type { NoiseSliceSummary } from "../../types/noise";
-import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { FormButton, FormInput, FormRow, FormSection } from "../FormComponents";
 import Modal from "../Modal/Modal";
 import type { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
@@ -74,7 +74,7 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
     try {
       const s = readStudySchedule();
       if (Array.isArray(s) && s.length > 0) schedule = s;
-    } catch { }
+    } catch {}
     return buildNoiseHistoryListItems({ slices, schedule });
   }, [isOpen, slices]);
 
@@ -165,7 +165,9 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
                 <div className={styles.colScore}>
                   {item.avgScore === null ? "—" : item.avgScore.toFixed(0)}
                 </div>
-                <div className={styles.colTime}>{formatRange(item.period.start, item.period.end)}</div>
+                <div className={styles.colTime}>
+                  {formatRange(item.period.start, item.period.end)}
+                </div>
                 <div className={styles.colAction}>
                   <FormButton
                     variant="secondary"

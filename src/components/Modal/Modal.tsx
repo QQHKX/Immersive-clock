@@ -41,9 +41,8 @@ export function Modal({
    * 处理背景点击关闭
    */
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    // 禁用点击背景关闭功能
+    e.stopPropagation();
   };
 
   /**

@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
+import type { MessagePopupType } from "../../types/messagePopup";
 import { FormButton } from "../FormComponents";
 import { LightButton } from "../LightControls/LightControls";
-
-import type { MessagePopupType } from "../../types/messagePopup";
 
 import styles from "./messagePopup.module.css";
 
@@ -103,7 +102,13 @@ export default function MessagePopup({
     : undefined;
 
   const node = (
-    <div className={rootClass} style={rootStyle} role="dialog" aria-live="polite" aria-label={title}>
+    <div
+      className={rootClass}
+      style={rootStyle}
+      role="dialog"
+      aria-live="polite"
+      aria-label={title}
+    >
       <LightButton
         className={styles.closeButton}
         aria-label="关闭"

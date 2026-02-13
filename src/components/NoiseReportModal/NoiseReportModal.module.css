@@ -36,7 +36,7 @@
 
 .overviewGrid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -108,6 +108,25 @@
   stroke: rgba(255, 255, 255, 0.12);
   stroke-width: 1;
   stroke-dasharray: 3 3;
+}
+
+.distributionChart {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.distributionBar {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.distributionSegment {
+  height: 100%;
+  transition: width 0.3s ease;
 }
 
 .rangeText {
@@ -186,6 +205,48 @@
   .overviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.penaltyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.penaltyItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.penaltyLabel {
+  width: 32px;
+  color: var(--secondary-color);
+  font-size: 0.8rem;
+}
+
+.penaltyBarTrack {
+  flex: 1;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.penaltyBarFill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.penaltyValue {
+  width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--secondary-color);
+  font-size: 0.8rem;
 }
 
 .footer {

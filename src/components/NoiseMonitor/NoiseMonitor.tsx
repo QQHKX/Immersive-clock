@@ -13,14 +13,8 @@ interface NoiseMonitorProps {
 const NOISY_ALERT_COOLDOWN_MS = 10_000;
 
 const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onStatusClick }) => {
-  const {
-    status,
-    realtimeDisplayDb,
-    maxLevelDb,
-    showRealtimeDb,
-    alertSoundEnabled,
-    retry,
-  } = useNoiseStream();
+  const { status, realtimeDisplayDb, maxLevelDb, showRealtimeDb, alertSoundEnabled, retry } =
+    useNoiseStream();
 
   const [playNoisyAlert] = useAudio("/ding-2.mp3");
   const playNoisyAlertRef = useRef<(() => void) | null>(playNoisyAlert);

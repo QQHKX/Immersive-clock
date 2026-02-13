@@ -229,7 +229,11 @@ export function updateAirQualityCache(lat: number, lon: number, data: AirQuality
   });
 }
 
-export function updateAstronomySunCache(location: string, date: string, data: AstronomySunResponse) {
+export function updateAstronomySunCache(
+  location: string,
+  date: string,
+  data: AstronomySunResponse
+) {
   saveWeatherCache({
     astronomySun: {
       data,

@@ -1,6 +1,7 @@
 import type { NoiseFrameSample, NoiseSliceRawStats, NoiseSliceSummary } from "../../types/noise";
 import type { ComputeNoiseScoreOptions } from "../../utils/noiseScoreEngine";
 import { computeNoiseSliceScore, DEFAULT_NOISE_SCORE_OPTIONS } from "../../utils/noiseScoreEngine";
+
 import type { NoiseRealtimeRingBuffer } from "./noiseRealtimeRingBuffer";
 
 export interface NoiseSliceAggregatorOptions {
@@ -39,12 +40,16 @@ function computeDisplayDbFromRms(params: {
 }): number {
   const safeRms = Math.max(1e-12, params.rms);
   if (params.baselineRms > 0) {
-    return params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms));
+    return (
+      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms))
+    );
   }
   return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
 }
 
-export function createNoiseSliceAggregator(options: NoiseSliceAggregatorOptions): NoiseSliceAggregatorController {
+export function createNoiseSliceAggregator(
+  options: NoiseSliceAggregatorOptions
+): NoiseSliceAggregatorController {
   let sliceMs = Math.max(1000, Math.round(options.sliceSec * 1000));
   let scoreOpt: ComputeNoiseScoreOptions = {
     ...DEFAULT_NOISE_SCORE_OPTIONS,
@@ -175,4 +180,3 @@ export function createNoiseSliceAggregator(options: NoiseSliceAggregatorOptions)
     },
   };
 }
-

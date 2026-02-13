@@ -8,4 +8,3 @@ export function requireEnv(name: string, value: string | undefined): string {
   }
   return String(value).trim();
 }
-

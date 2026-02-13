@@ -45,4 +45,3 @@ export async function qweatherGetJson(pathWithQuery: string, timeoutMs = 10000):
   const url = `https://${getQWeatherHost()}${pathWithQuery}`;
   return httpGetJson(url, buildQWeatherHeaders(), timeoutMs);
 }
-

@@ -63,4 +63,3 @@ export function createNoiseFrameProcessor(
     isRunning: () => timer !== null,
   };
 }
-

@@ -83,15 +83,14 @@ describe("noiseHistoryBuilder", () => {
   });
 
   it("无重叠数据时不应生成条目", () => {
-    const schedule: StudyPeriod[] = [
-      { id: "1", name: "A", startTime: "10:00", endTime: "11:00" },
-    ];
+    const schedule: StudyPeriod[] = [{ id: "1", name: "A", startTime: "10:00", endTime: "11:00" }];
     const sliceStart = new Date(2026, 0, 2, 8, 0, 0, 0).getTime();
     const sliceEnd = new Date(2026, 0, 2, 9, 0, 0, 0).getTime();
-    const slices: NoiseSliceSummary[] = [makeSlice({ start: sliceStart, end: sliceEnd, score: 90 })];
+    const slices: NoiseSliceSummary[] = [
+      makeSlice({ start: sliceStart, end: sliceEnd, score: 90 }),
+    ];
 
     const items = buildNoiseHistoryListItems({ slices, schedule });
     expect(items.length).toBe(0);
   });
 });
-

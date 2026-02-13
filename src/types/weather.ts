@@ -163,4 +163,3 @@ export interface MinutelyPrecipResponse {
   minutely?: Array<{ fxTime?: string; precip?: string; type?: string }>;
   error?: string;
 }
-

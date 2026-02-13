@@ -69,7 +69,8 @@ describe("noiseScoreEngine", () => {
     });
 
     expect(manySegments.score).toBeLessThan(fewSegments.score);
-    expect(manySegments.scoreDetail.segmentPenalty).toBeGreaterThan(fewSegments.scoreDetail.segmentPenalty);
+    expect(manySegments.scoreDetail.segmentPenalty).toBeGreaterThan(
+      fewSegments.scoreDetail.segmentPenalty
+    );
   });
 });
-
