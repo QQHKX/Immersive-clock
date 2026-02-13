@@ -29,7 +29,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   const { study } = useAppState();
   const dispatch = useAppDispatch();
   const [cache, setCache] = useState(() => getWeatherCache());
-  const [weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>("");
+  const [_weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshError, setLastRefreshError] = useState<string>("");
   const [messagePopupEnabled, setMessagePopupEnabled] = useState<boolean>(
@@ -173,11 +173,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   })();
 
   return (
-    <div
-      id="weather-panel"
-      role="tabpanel"
-      aria-labelledby="weather"
-    >
+    <div id="weather-panel" role="tabpanel" aria-labelledby="weather">
       <FormSection title="基本设置">
         <FormCheckbox
           label="启用消息弹窗 (Beta)"

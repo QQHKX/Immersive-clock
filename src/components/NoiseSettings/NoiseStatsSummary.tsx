@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+import {
+  getNoiseStreamSnapshot,
+  subscribeNoiseStream,
+} from "../../services/noise/noiseStreamService";
 import type { NoiseSliceSummary } from "../../types/noise";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
-import { getNoiseStreamSnapshot, subscribeNoiseStream } from "../../services/noise/noiseStreamService";
 
 import styles from "./NoiseSettings.module.css";
 
@@ -66,7 +69,9 @@ export const NoiseStatsSummary: React.FC = () => {
   const displaySlice = useMemo(() => {
     void tick;
     if (latestSlice) return latestSlice;
-    const slices = readNoiseSlices().slice().sort((a, b) => b.start - a.start);
+    const slices = readNoiseSlices()
+      .slice()
+      .sort((a, b) => b.start - a.start);
     return slices[0] ?? null;
   }, [latestSlice, tick]);
 
@@ -87,7 +92,9 @@ export const NoiseStatsSummary: React.FC = () => {
               最近切片 · {formatDuration(Math.max(0, displaySlice.end - displaySlice.start))} ·{" "}
               {clampFiniteNumber(displaySlice.score, 0).toFixed(1)}分
             </div>
-            <div className={styles.sliceTime}>{formatTimeRange(displaySlice.start, displaySlice.end)}</div>
+            <div className={styles.sliceTime}>
+              {formatTimeRange(displaySlice.start, displaySlice.end)}
+            </div>
           </div>
 
           <div className={styles.sliceGrid}>
@@ -112,13 +119,13 @@ export const NoiseStatsSummary: React.FC = () => {
                 {formatPercent01(displaySlice.raw.overRatioDbfs)} ·{" "}
                 {formatDuration(
                   clampFiniteNumber(displaySlice.raw.overRatioDbfs, 0) *
-                  clampFiniteNumber(
-                    typeof displaySlice.raw.sampledDurationMs === "number" &&
-                      Number.isFinite(displaySlice.raw.sampledDurationMs)
-                      ? Math.max(0, displaySlice.raw.sampledDurationMs)
-                      : Math.max(0, displaySlice.end - displaySlice.start),
-                    Math.max(0, displaySlice.end - displaySlice.start)
-                  )
+                    clampFiniteNumber(
+                      typeof displaySlice.raw.sampledDurationMs === "number" &&
+                        Number.isFinite(displaySlice.raw.sampledDurationMs)
+                        ? Math.max(0, displaySlice.raw.sampledDurationMs)
+                        : Math.max(0, displaySlice.end - displaySlice.start),
+                      Math.max(0, displaySlice.end - displaySlice.start)
+                    )
                 )}
               </div>
             </div>
@@ -133,8 +140,10 @@ export const NoiseStatsSummary: React.FC = () => {
           {displaySlice.scoreDetail?.thresholdsUsed ? (
             <div className={styles.sliceFootnote}>
               阈值(dBFS)：{displaySlice.scoreDetail.thresholdsUsed.scoreThresholdDbfs.toFixed(0)}
-              ；合并间隔：{displaySlice.scoreDetail.thresholdsUsed.segmentMergeGapMs.toFixed(0)}ms；频率上限：
-              {displaySlice.scoreDetail.thresholdsUsed.maxSegmentsPerMin.toFixed(0)}段/分钟；扣分：持续
+              ；合并间隔：{displaySlice.scoreDetail.thresholdsUsed.segmentMergeGapMs.toFixed(0)}
+              ms；频率上限：
+              {displaySlice.scoreDetail.thresholdsUsed.maxSegmentsPerMin.toFixed(0)}
+              段/分钟；扣分：持续
               {clampFiniteNumber(displaySlice.scoreDetail.sustainedPenalty, 0).toFixed(1)} / 时长
               {clampFiniteNumber(displaySlice.scoreDetail.timePenalty, 0).toFixed(1)} / 事件
               {clampFiniteNumber(displaySlice.scoreDetail.segmentPenalty, 0).toFixed(1)}

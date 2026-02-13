@@ -74,7 +74,7 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
     try {
       const s = readStudySchedule();
       if (Array.isArray(s) && s.length > 0) schedule = s;
-    } catch { }
+    } catch {}
     return buildNoiseHistoryListItems({ slices, schedule });
   }, [isOpen, slices]);
 

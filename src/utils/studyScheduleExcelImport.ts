@@ -24,7 +24,7 @@ type HeaderMatch = {
   endKey?: string;
 };
 
-/** 
+/**
  * 解析 Excel 课表数据
  * 从第一个工作表读取，兼容中英文表头与 Excel 数字时间
  */
@@ -92,7 +92,7 @@ export function parseStudyScheduleFromExcelArrayBuffer(buffer: ArrayBuffer): Exc
   return { periods, rowErrors, meta: { sheetName, totalRows: rawRows.length } };
 }
 
-/** 
+/**
  * 重新生成学习时段 ID
  * 用于合并导入时避免与现有 ID 冲突
  */

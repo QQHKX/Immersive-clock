@@ -46,7 +46,8 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
     const dynamicInterval = Math.max(MIN_ALERT_INTERVAL, MAX_ALERT_INTERVAL - diff * 100);
 
     const cooldownPassed =
-      !lastNoisyAlertPlayedAtRef.current || now - lastNoisyAlertPlayedAtRef.current >= dynamicInterval;
+      !lastNoisyAlertPlayedAtRef.current ||
+      now - lastNoisyAlertPlayedAtRef.current >= dynamicInterval;
 
     if (justBecameNoisy || cooldownPassed) {
       // 播放报警音

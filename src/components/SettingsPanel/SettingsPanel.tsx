@@ -38,10 +38,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   >("basic");
   const [targetYear, setTargetYear] = useState(study.targetYear);
   // 分区保存注册
-  const basicSaveRef = useRef<() => void>(() => { });
-  const weatherSaveRef = useRef<() => void>(() => { });
-  const monitorSaveRef = useRef<() => void>(() => { });
-  const quotesSaveRef = useRef<() => void>(() => { });
+  const basicSaveRef = useRef<() => void>(() => {});
+  const weatherSaveRef = useRef<() => void>(() => {});
+  const monitorSaveRef = useRef<() => void>(() => {});
+  const quotesSaveRef = useRef<() => void>(() => {});
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**

@@ -1,10 +1,11 @@
+import { NOISE_REALTIME_CHART_SLICE_COUNT } from "../../constants/noise";
 import type { NoiseSliceSummary } from "../../types/noise";
 import { getAppSettings } from "../../utils/appSettings";
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { DEFAULT_NOISE_SCORE_OPTIONS } from "../../utils/noiseScoreEngine";
 import { writeNoiseSlice } from "../../utils/noiseSliceService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
-import { NOISE_REALTIME_CHART_SLICE_COUNT } from "../../constants/noise";
+
 import { startNoiseCapture, stopNoiseCapture } from "./noiseCapture";
 import { createNoiseFrameProcessor } from "./noiseFrameProcessor";
 import type { NoiseRealtimePoint } from "./noiseRealtimeRingBuffer";

@@ -1,9 +1,9 @@
-import type { NoiseScoreBreakdown, NoiseSliceRawStats } from "../types/noise";
 import {
   NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
   NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
   NOISE_SCORE_THRESHOLD_DBFS,
 } from "../constants/noise";
+import type { NoiseScoreBreakdown, NoiseSliceRawStats } from "../types/noise";
 
 export interface ComputeNoiseScoreOptions {
   scoreThresholdDbfs: number;
@@ -35,7 +35,8 @@ export function computeNoiseSliceScore(
     typeof raw.sampledDurationMs === "number" && Number.isFinite(raw.sampledDurationMs)
       ? Math.max(0, raw.sampledDurationMs)
       : null;
-  const effectiveDurationMs = sampledDurationMs && sampledDurationMs > 0 ? sampledDurationMs : durationMs;
+  const effectiveDurationMs =
+    sampledDurationMs && sampledDurationMs > 0 ? sampledDurationMs : durationMs;
   const minutes = Math.max(1e-6, effectiveDurationMs / 60_000);
   const segmentsPerMin = raw.segmentCount / minutes;
 
@@ -46,7 +47,7 @@ export function computeNoiseSliceScore(
   const timePenalty = clamp01(raw.overRatioDbfs / 0.3);
   const segmentPenalty = clamp01(segmentsPerMin / Math.max(1e-6, opt.maxSegmentsPerMin));
 
-  const penalty = 0.40 * sustainedPenalty + 0.3 * timePenalty + 0.30 * segmentPenalty;
+  const penalty = 0.4 * sustainedPenalty + 0.3 * timePenalty + 0.3 * segmentPenalty;
   const rawScore = 100 * (1 - penalty);
   const score = Math.max(0, Math.min(100, Math.round(rawScore * 10) / 10));
 
@@ -68,7 +69,9 @@ export function computeNoiseSliceScore(
       durationMs,
       sampledDurationMs: sampledDurationMs ?? undefined,
       coverageRatio:
-        sampledDurationMs && sampledDurationMs > 0 ? clamp01(sampledDurationMs / Math.max(1, durationMs)) : undefined,
+        sampledDurationMs && sampledDurationMs > 0
+          ? clamp01(sampledDurationMs / Math.max(1, durationMs))
+          : undefined,
     },
   };
 }
