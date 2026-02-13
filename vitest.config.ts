@@ -10,11 +10,6 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["src/setupTests.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: [
-      "tests/e2e/**",
-      "node_modules/**",
-      "dist/**",
-      "dist-electron/**",
-    ],
+    exclude: ["tests/e2e/**", "node_modules/**", "dist/**", "dist-electron/**"],
   },
 });
