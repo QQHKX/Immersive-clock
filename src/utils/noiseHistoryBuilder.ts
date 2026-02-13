@@ -40,8 +40,7 @@ function buildDateTime(dateKey: string, timeStr: string): Date | null {
 }
 
 /**
- * 计算时段平均评分
- * 按切片与时段的重叠时长对 score 进行加权平均
+ * 计算时段平均评分（函数级注释：按切片与时段的重叠时长对 score 进行加权平均，时长使用采样有效时长）
  */
 function computeAvgScoreForRange(
   slices: NoiseSliceSummary[],
@@ -55,8 +54,15 @@ function computeAvgScoreForRange(
     const overlapEnd = Math.min(endTs, s.end);
     const overlapMs = overlapEnd - overlapStart;
     if (overlapMs <= 0) continue;
-    totalMs += overlapMs;
-    sumScore += s.score * overlapMs;
+
+    const sliceMs = Math.max(1, s.end - s.start);
+    const ratio = overlapMs / sliceMs;
+
+    // 使用采样有效时长（sampledDurationMs）进行加权，若不存在则回退至物理时长
+    const effectiveMs = (s.raw.sampledDurationMs ?? sliceMs) * ratio;
+
+    totalMs += effectiveMs;
+    sumScore += s.score * effectiveMs;
   }
   return { avgScore: totalMs > 0 ? sumScore / totalMs : null, totalMs };
 }

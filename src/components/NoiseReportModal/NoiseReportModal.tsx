@@ -313,26 +313,29 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       if (overlapMs <= 0) continue;
 
       const ratio = overlapMs / sliceMs;
-      totalMs += overlapMs;
-      sumAvgDb += s.display.avgDb * overlapMs;
-      sumScore += s.score * overlapMs;
-      sumP50 += s.raw.p50Dbfs * overlapMs;
-      sumP95 += s.raw.p95Dbfs * overlapMs;
+      // 使用有效采样时长（sampledDurationMs）作为权重基准，排除采集间隙
+      const effectiveOverlapMs = (s.raw.sampledDurationMs ?? sliceMs) * ratio;
+
+      totalMs += effectiveOverlapMs;
+      sumAvgDb += s.display.avgDb * effectiveOverlapMs;
+      sumScore += s.score * effectiveOverlapMs;
+      sumP50 += s.raw.p50Dbfs * effectiveOverlapMs;
+      sumP95 += s.raw.p95Dbfs * effectiveOverlapMs;
       if (s.display.p95Db > maxDb) maxDb = s.display.p95Db;
 
-      overDurationMs += s.raw.overRatioDbfs * overlapMs;
+      overDurationMs += s.raw.overRatioDbfs * effectiveOverlapMs;
       segmentCount += Math.round(s.raw.segmentCount * ratio);
 
-      sumSustainedPenalty += s.scoreDetail.sustainedPenalty * overlapMs;
-      sumTimePenalty += s.scoreDetail.timePenalty * overlapMs;
-      sumSegmentPenalty += s.scoreDetail.segmentPenalty * overlapMs;
+      sumSustainedPenalty += s.scoreDetail.sustainedPenalty * effectiveOverlapMs;
+      sumTimePenalty += s.scoreDetail.timePenalty * effectiveOverlapMs;
+      sumSegmentPenalty += s.scoreDetail.segmentPenalty * effectiveOverlapMs;
 
       // 分布统计
       const db = s.display.avgDb;
-      if (db < 45) distribution.quiet += overlapMs;
-      else if (db < 60) distribution.normal += overlapMs;
-      else if (db < 75) distribution.loud += overlapMs;
-      else distribution.severe += overlapMs;
+      if (db < 45) distribution.quiet += effectiveOverlapMs;
+      else if (db < 60) distribution.normal += effectiveOverlapMs;
+      else if (db < 75) distribution.loud += effectiveOverlapMs;
+      else distribution.severe += effectiveOverlapMs;
 
       series.push({
         t: Math.min(Math.max(s.end, startTs), endTs),
@@ -449,12 +452,18 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     // 将点分为连续的段
     const segments: typeof pts[] = [];
     if (pts.length > 0) {
+      const sortedDurations = pts
+        .map((p) => Math.max(1, p.t - p.start))
+        .sort((a, b) => a - b);
+      const typicalSliceMs =
+        sortedDurations.length > 0 ? sortedDurations[Math.floor(sortedDurations.length / 2)] : 0;
+      const breakToleranceMs = Math.max(2000, typicalSliceMs * 2);
       let currentSeg = [pts[0]];
       for (let i = 1; i < pts.length; i++) {
         const prev = pts[i - 1];
         const curr = pts[i];
-        // 如果当前点开始时间 > 前一点结束时间 + 容差(例如 2秒)，则视为断开
-        if (curr.start > prev.t + 2000) {
+        // 如果当前点开始时间 > 前一点结束时间 + 容差，则视为断开
+        if (curr.start > prev.t + breakToleranceMs) {
           segments.push(currentSeg);
           currentSeg = [curr];
         } else {
@@ -818,23 +827,26 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       <stop offset="0%" stopColor={report.COLORS.severe} stopOpacity={0.4} />
                       <stop offset="100%" stopColor={report.COLORS.severe} stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="lineGradient" gradientUnits="userSpaceOnUse">
-                      {chart.pts.map((p, i) => (
-                        <stop
+                    <mask id="lineNormalMask">
+                      {chart.maskRects.map((r, i) => (
+                        <rect
                           key={i}
-                          offset={`${(i / (chart.pts.length - 1)) * 100}%`}
-                          stopColor={p.y < chart.thresholdY ? report.COLORS.severe : "#03DAC6"}
+                          x={r.x}
+                          y={chart.thresholdY}
+                          width={r.w}
+                          height={Math.max(0, chart.height - chart.thresholdY)}
+                          fill="white"
                         />
                       ))}
-                    </linearGradient>
-                    <mask id="lineCoverageMask">
+                    </mask>
+                    <mask id="lineWarningMask">
                       {chart.maskRects.map((r, i) => (
                         <rect
                           key={i}
                           x={r.x}
                           y={0}
                           width={r.w}
-                          height={chart.height}
+                          height={Math.max(0, chart.thresholdY)}
                           fill="white"
                         />
                       ))}
@@ -872,13 +884,25 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                   <path
                     d={chart.path}
                     className={`${styles.line} ${showMainChart ? styles.animatePath : ""}`}
-                    stroke="url(#lineGradient)"
-                    mask="url(#lineCoverageMask)"
+                    stroke="#03DAC6"
+                    mask="url(#lineNormalMask)"
                     style={{
-                      stroke: "url(#lineGradient)",
+                      stroke: "#03DAC6",
                       strokeDasharray: "var(--path-length)",
                       strokeDashoffset: "var(--path-length)",
-                      visibility: showMainChart ? "visible" : "hidden"
+                      visibility: showMainChart ? "visible" : "hidden",
+                    }}
+                  />
+                  <path
+                    d={chart.path}
+                    className={`${styles.line} ${showMainChart ? styles.animatePath : ""}`}
+                    stroke={report.COLORS.severe}
+                    mask="url(#lineWarningMask)"
+                    style={{
+                      stroke: report.COLORS.severe,
+                      strokeDasharray: "var(--path-length)",
+                      strokeDashoffset: "var(--path-length)",
+                      visibility: showMainChart ? "visible" : "hidden",
                     }}
                   />
                   {/* 正常区域 */}

@@ -104,10 +104,11 @@ describe("noiseScoreEngine", () => {
         overRatioDbfs: 0,
         segmentCount: 0,
       },
-      60_000
+      60_000,
+      { scoreThresholdDbfs: -45 }
     );
 
-    expect(score).toBeCloseTo(94.5, 6);
+    expect(score).toBeCloseTo(96.0, 6);
     expect(score * 10).toBeCloseTo(Math.round(score * 10), 8);
   });
 });

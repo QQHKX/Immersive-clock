@@ -10,7 +10,10 @@ interface NoiseMonitorProps {
   onStatusClick?: () => void;
 }
 
-const NOISY_ALERT_COOLDOWN_MS = 10_000;
+/** 报警音最小间隔（噪音极大时，200ms） */
+const MIN_ALERT_INTERVAL = 200;
+/** 报警音最大间隔（噪音刚过阈值时，2000ms） */
+const MAX_ALERT_INTERVAL = 2000;
 
 const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onStatusClick }) => {
   const { status, realtimeDisplayDb, maxLevelDb, showRealtimeDb, alertSoundEnabled, retry } =
@@ -27,6 +30,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
 
   useEffect(() => {
     if (!alertSoundEnabled) return;
+
     const isNoisy = status === "noisy";
     if (!isNoisy) {
       lastIsNoisyRef.current = false;
@@ -35,15 +39,23 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
 
     const now = Date.now();
     const justBecameNoisy = !lastIsNoisyRef.current;
+
+    // 计算动态间隔：噪音超过阈值越多，间隔越短（类似倒车雷达）
+    const diff = Math.max(0, realtimeDisplayDb - maxLevelDb);
+    // 每超过 1dB 减少 100ms 间隔，最小 200ms，最大 2000ms
+    const dynamicInterval = Math.max(MIN_ALERT_INTERVAL, MAX_ALERT_INTERVAL - diff * 100);
+
     const cooldownPassed =
-      !lastNoisyAlertPlayedAtRef.current ||
-      now - lastNoisyAlertPlayedAtRef.current >= NOISY_ALERT_COOLDOWN_MS;
+      !lastNoisyAlertPlayedAtRef.current || now - lastNoisyAlertPlayedAtRef.current >= dynamicInterval;
+
     if (justBecameNoisy || cooldownPassed) {
+      // 播放报警音
       playNoisyAlertRef.current?.();
       lastNoisyAlertPlayedAtRef.current = now;
     }
+
     lastIsNoisyRef.current = true;
-  }, [status, alertSoundEnabled]);
+  }, [status, alertSoundEnabled, realtimeDisplayDb, maxLevelDb]);
 
   const statusText = useMemo(() => {
     const isElectronRuntime = () => {

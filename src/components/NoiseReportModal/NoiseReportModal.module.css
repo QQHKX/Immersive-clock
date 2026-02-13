@@ -27,7 +27,7 @@
   }
 
   to {
-    opacity: 0.28;
+    opacity: 1;
   }
 }
 
@@ -203,7 +203,7 @@
 }
 
 .area {
-  opacity: 0.28;
+  opacity: 1;
 }
 
 .threshold {

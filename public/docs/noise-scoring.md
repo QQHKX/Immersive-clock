@@ -15,9 +15,34 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 ## 2. 数据采集与预处理
 
 系统通过 Web Audio API 实时采集音频流：
-1.  **采样率**：每秒采集约 20-50 帧音频样本（取决于设备性能）。
+1.  **采样率**：默认每秒采集约 **20 帧**（`frameMs = 50ms`，由定时器驱动）。
 2.  **原始特征**：计算每一帧的 `DBFS` (Decibels relative to Full Scale)。
     > **注意**：评分系统始终使用**原始 DBFS** 进行计算，而不使用用户校准后的显示分贝 (Display dB)。这保证了评分的客观性，不受用户随意调整校准值的影响。
+3.  **分析切片**：按固定时间窗聚合为切片（默认 `sliceSec = 30s`），每个切片都会生成一条评分与统计摘要。
+
+### 为什么“校准”不会影响评分与超阈时长
+项目通过“原始数据（用于评分）”与“显示数据（用于展示）”的**严格分层**，杜绝了校准值导致的评分偏差：
+
+1.  **评分只依赖原始 DBFS（设备输出的相对电平）**  
+    - 评分的三项核心指标（`p50Dbfs`、`overRatioDbfs`、`segmentCount`）都来自原始 `dbfs` 统计。  
+    - “超阈时长占比”判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-50 dBFS`），与校准无关。  
+    - 这意味着即使用户把“显示分贝基准”调高/调低，评分侧的 `dbfs` 不会变化，因此得分与超阈时长也不会被“调参刷分”。
+
+2.  **校准仅影响 Display dB（UI 展示口径），不进入评分链路**  
+    - 校准（`baselineRms` / `baselineDb`）只用于将 `rms` 映射为 `displayDb`，用于实时显示与报告中的“噪音等级分布”等图表展示。  
+    - 这些展示口径变化不会反向影响评分输入，也不会改变切片摘要中的 `raw.*` 字段。
+
+3.  **统计报告中“超阈时长”取自 raw.overRatioDbfs**  
+    - 报告里展示的“超阈时长”是对每个切片 `raw.overRatioDbfs` 按有效采样时长加权汇总得到，仍然完全基于 DBFS。  
+    - 相比之下，“噪音等级分布”使用的是 `display.avgDb`（校准后的显示分贝），因此它会随校准变化——这是为了更贴近用户直觉的 dB 区间划分。
+
+### 参数说明（与当前实现一致）
+为保证统计口径稳定，当前版本会将“分析与评分”的高级参数固定为程序内常量（避免被设置面板或旧缓存覆盖）：
+- `frameMs = 50ms`（约 20fps）
+- `sliceSec = 30s`
+- `scoreThresholdDbfs = -50 dBFS`（评分用阈值）
+- `segmentMergeGapMs = 500ms`
+- `maxSegmentsPerMin = 6`
 
 ## 3. 三大核心指标
 
@@ -29,14 +54,16 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 *   **意义**：反映环境本身是否安静。如果环境中有持续的风扇声或交谈声，该指标会升高。
 
 ### B. 超阈值时长占比 (Over Threshold Ratio)
-*   **定义**：音量超过设定报警阈值的时间比例。
-*   **算法**：`超标帧数 / 总帧数`。
+*   **定义**：原始 `DBFS` 超过评分阈值（`scoreThresholdDbfs`）的时间比例。
+*   **算法**：`超标帧数 / 总帧数`（超标判定：`dbfs > scoreThresholdDbfs`）。
 *   **意义**：反映环境的“纯净度”。即使是 0.1 秒的尖叫也会被精确计入，无法被平均值掩盖。
+
+> **提示**：评分阈值（`scoreThresholdDbfs`，单位 dBFS）与“界面报警/提示音”使用的显示分贝阈值（`maxLevelDb`，单位 dB）不是同一个概念；前者只用于评分，后者用于判定 noisy/quiet 与提示音触发。
 
 ### C. 打断次数密度 (Interruption Density)
 *   **定义**：单位时间内（每分钟）发生的独立噪音事件次数。
 *   **智能合并算法**：
-    *   系统设有 **300ms** (默认) 的合并窗口。
+    *   系统设有 **500ms** (默认) 的合并窗口。
     *   如果两次响声间隔小于该窗口（如拉椅子的一连串声音），会被合并为 **1 次打断**。
     *   只有间隔较长的响声才会被计为新的打断。
 *   **意义**：反映环境的干扰频率。频繁的打断（如断断续续的说话声）比连续的噪音更易打断心流。
@@ -49,18 +76,18 @@ $$ \text{Score} = 100 \times (1 - \text{TotalPenalty}) $$
 
 其中 **总惩罚系数 (`TotalPenalty`)** 由三个加权项组成：
 
-$$ \text{TotalPenalty} = 0.55 \times P_{\text{sustained}} + 0.30 \times P_{\text{time}} + 0.15 \times P_{\text{segment}} $$
+$$ \text{TotalPenalty} = 0.40 \times P_{\text{sustained}} + 0.30 \times P_{\text{time}} + 0.30 \times P_{\text{segment}} $$
 
 | 维度 | 权重 | 扣分逻辑 (达到满扣分的条件) |
 | :--- | :--- | :--- |
-| **持续噪音** ($P_{\text{sustained}}$) | **55%** | 中位数电平超过阈值 **6dB** 以上 |
+| **持续噪音** ($P_{\text{sustained}}$) | **40%** | 中位数电平（`p50Dbfs`）超过阈值（`scoreThresholdDbfs`）**6 dBFS** 以上 |
 | **超阈时长** ($P_{\text{time}}$) | **30%** | 超阈时间占比达到 **30%** |
-| **打断频次** ($P_{\text{segment}}$) | **15%** | 打断次数达到 **6 次/分钟** |
+| **打断频次** ($P_{\text{segment}}$) | **30%** | 打断次数达到 **6 次/分钟** |
 
 ### 权重解读
-*   **持续噪音 (55%)** 是最大的扣分项。这意味着如果环境一直很吵，分数绝对不会高。
-*   **超阈时长 (30%)** 其次。只要大部分时间是安静的，偶尔的噪音是可以被容忍的。
-*   **打断频次 (15%)** 权重最低，主要用于惩罚那些“虽然声音不大，但很细碎烦人”的场景。
+*   **持续噪音 (40%)**：持续底噪仍会明显拉低分数。
+*   **超阈时长 (30%)**：只要大部分时间安静，偶尔的噪音仍可被容忍。
+*   **打断频次 (30%)**：强调“被频繁打断”对心流的破坏，提升对碎片化干扰的惩罚力度。
 
 ## 5. 报告中的图表
 
@@ -72,4 +99,4 @@ $$ \text{TotalPenalty} = 0.55 \times P_{\text{sustained}} + 0.30 \times P_{\text
 *   **打断次数密度**：展示每分钟被干扰的次数。
 
 ---
-*本文档对应代码实现位于 `src/utils/noiseScoreEngine.ts` 与 `src/services/noise/noiseSliceAggregator.ts`。*
+*本文档对应代码实现位于 `src/utils/noiseScoreEngine.ts`、`src/services/noise/noiseSliceAggregator.ts` 与 `src/services/noise/noiseStreamService.ts`，参数来源与固定策略见 `src/utils/noiseControlSettings.ts`。*
