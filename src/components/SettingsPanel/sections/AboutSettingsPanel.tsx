@@ -1,8 +1,11 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 
 import pkg from "../../../../package.json";
-import { getAppSettings, APP_SETTINGS_KEY } from "../../../utils/appSettings";
-import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
+import { getAppSettings, APP_SETTINGS_KEY, resetAppSettings } from "../../../utils/appSettings";
+import { db } from "../../../utils/db";
+import { clearNoiseSlices } from "../../../utils/noiseSliceService";
+import { clearWeatherCache } from "../../../utils/weatherStorage";
+import { FormSection, FormButton, FormButtonGroup, FormSelect } from "../../FormComponents";
 import { TrashIcon, SaveIcon, FileIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
 
@@ -15,6 +18,14 @@ export interface AboutSettingsPanelProps {
 
 const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedClearOption, setSelectedClearOption] = useState<string>("all");
+
+  const clearOptions = [
+    { value: "all", label: "全部清理（重置所有设置与数据）" },
+    { value: "settings", label: "仅清理设置（保留噪音/天气缓存）" },
+    { value: "noise", label: "仅清理噪音历史数据" },
+    { value: "weather", label: "仅清理天气缓存" },
+  ];
 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
@@ -94,22 +105,109 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   }, []);
 
   /**
-   * 清除所有本地缓存（localStorage）
+   * 仅清理 AppSettings（保留噪音历史/天气缓存）
+   */
+  const handleClearSettingsOnly = useCallback(() => {
+    const ok = window.confirm(
+      "确定要恢复默认设置吗？该操作将重置所有设置，但保留噪音历史和天气缓存。"
+    );
+    if (!ok) return;
+    try {
+      resetAppSettings();
+      alert("已恢复默认设置。建议刷新页面以确保设置生效。");
+    } catch (err) {
+      console.error("重置设置失败:", err);
+      alert("重置设置失败，请稍后重试。");
+    }
+  }, []);
+
+  /**
+   * 仅清理噪音历史数据
+   */
+  const handleClearNoiseOnly = useCallback(() => {
+    const ok = window.confirm("确定要清除噪音历史数据吗？该操作不影响其他数据。");
+    if (!ok) return;
+    try {
+      clearNoiseSlices();
+      alert("已清除噪音历史数据。");
+    } catch (err) {
+      console.error("清除噪音历史失败:", err);
+      alert("清除噪音历史失败，请稍后重试。");
+    }
+  }, []);
+
+  /**
+   * 仅清理天气缓存
+   */
+  const handleClearWeatherOnly = useCallback(() => {
+    const ok = window.confirm("确定要清除天气缓存吗？该操作不影响其他数据。");
+    if (!ok) return;
+    try {
+      clearWeatherCache();
+      alert("已清除天气缓存。天气信息将在下次刷新时重新获取。");
+    } catch (err) {
+      console.error("清除天气缓存失败:", err);
+      alert("清除天气缓存失败，请稍后重试。");
+    }
+  }, []);
+
+  /**
+   * 清除 IndexedDB 中的自定义字体数据
+   */
+  const handleClearIndexedDB = useCallback(async () => {
+    try {
+      await db.clear();
+    } catch (err) {
+      console.error("清除 IndexedDB 失败:", err);
+    }
+  }, []);
+
+  /**
+   * 清除所有本地缓存
    * - 提示确认，避免误操作
    * - 清理后不会自动刷新页面，用户可手动刷新生效
    */
-  const handleClearCaches = useCallback(() => {
-    const ok = window.confirm("确定要清除所有本地缓存吗？该操作将重置设置与本地数据。");
+  const handleClearAll = useCallback(async () => {
+    const ok = window.confirm(
+      "确定要清除所有本地缓存吗？该操作将重置所有设置与数据（包括自定义字体），且无法恢复。"
+    );
     if (!ok) return;
     try {
-      // 直接清空 localStorage，覆盖项目内所有键
       localStorage.clear();
+      await handleClearIndexedDB();
       alert("已清除所有缓存。建议刷新页面以确保设置重置。");
     } catch (err) {
       console.error("清除缓存失败:", err);
       alert("清除缓存失败，请稍后重试。");
     }
-  }, []);
+  }, [handleClearIndexedDB]);
+
+  /**
+   * 根据选择执行相应的清理操作
+   */
+  const handleClearCaches = useCallback(() => {
+    switch (selectedClearOption) {
+      case "settings":
+        handleClearSettingsOnly();
+        break;
+      case "noise":
+        handleClearNoiseOnly();
+        break;
+      case "weather":
+        handleClearWeatherOnly();
+        break;
+      case "all":
+      default:
+        handleClearAll();
+        break;
+    }
+  }, [
+    selectedClearOption,
+    handleClearSettingsOnly,
+    handleClearNoiseOnly,
+    handleClearWeatherOnly,
+    handleClearAll,
+  ]);
 
   return (
     <div id="about-panel" role="tabpanel" aria-labelledby="about">
@@ -167,17 +265,39 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       </FormSection>
 
       <FormSection title="缓存与重置">
-        <p className={styles.helpText}>如遇到设置异常或数据问题，可尝试清理本地缓存。</p>
+        <p className={styles.helpText}>
+          如遇到设置异常或数据问题，可尝试清理本地缓存。请选择清理范围后执行操作。
+        </p>
+        <FormSelect
+          label="清理范围"
+          value={selectedClearOption}
+          options={clearOptions}
+          onChange={(value) => setSelectedClearOption(value)}
+        />
         <FormButtonGroup align="left">
           <FormButton
-            variant="danger"
+            variant={selectedClearOption === "all" ? "danger" : "secondary"}
             size="md"
             onClick={handleClearCaches}
             icon={<TrashIcon size={16} />}
-            aria-label="清除所有缓存"
-            title="清除所有缓存"
+            aria-label="执行清理操作"
+            title={
+              selectedClearOption === "all"
+                ? "清除所有缓存"
+                : selectedClearOption === "settings"
+                  ? "恢复默认设置"
+                  : selectedClearOption === "noise"
+                    ? "清除噪音历史"
+                    : "清除天气缓存"
+            }
           >
-            清除所有缓存
+            {selectedClearOption === "all"
+              ? "清除所有缓存"
+              : selectedClearOption === "settings"
+                ? "恢复默认设置"
+                : selectedClearOption === "noise"
+                  ? "清除噪音历史"
+                  : "清除天气缓存"}
           </FormButton>
         </FormButtonGroup>
       </FormSection>
