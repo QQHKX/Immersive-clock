@@ -68,17 +68,31 @@
 
 > 适用场景：校园自习、专注学习、番茄钟、演示看板、桌面时钟等。
 
-# 🌠 界面预览
+## 🌠 界面预览
 
-![](docs/demo/极简界面.jpeg)
+<div align="center">
+  <img src="docs/demo/极简界面.jpeg" width="48%" alt="极简界面" />
+  <img src="docs/demo/晚自习功能.jpeg" width="48%" alt="晚自习功能" />
+</div>
 
-![](docs/demo/模式选择.jpeg)
+<div align="center">
+  <img src="docs/demo/噪音走势图.jpeg" width="80%" alt="噪音走势图" />
+</div>
 
-![](docs/demo/倒计时功能.jpeg)
+<div align="center">
+  <img src="docs/demo/丰富的自习报告.jpeg" width="80%" alt="丰富的自习报告" />
+</div>
 
-![](docs/demo/自习功能.jpeg)
+<div align="center">
+  <img src="docs/demo/高帧率采样.jpeg" width="32%" alt="高帧率采样" />
+  <img src="docs/demo/丰富的自定义设置.jpeg" width="32%" alt="丰富的自定义设置" />
+  <img src="docs/demo/励志语录自定义.jpeg" width="32%" alt="励志语录自定义" />
+</div>
 
-![](docs/demo/公告-更新日志弹窗.jpeg)
+<div align="center">
+  <img src="docs/demo/友好的新手引导.jpeg" width="48%" alt="友好的新手引导" />
+  <img src="docs/demo/公告-更新日志弹窗.jpeg" width="48%" alt="公告-更新日志弹窗" />
+</div>
 
 ---
 
@@ -205,7 +219,7 @@ npm run test:e2e
 
 - **环境感知**：
   - **实时天气**：集成和风天气 API，提供分钟级降水预警与气象灾害预警。
-  - **噪音监测**：实时分贝监测，支持基线校准、最大阈值设置及超标报告自动弹窗。
+  - **噪音监测**：高帧率实时采样与分贝监测，支持基线校准、最大阈值设置及包含走势图的详细自习报告。
 - **专注氛围**：
   - **励志语录**：支持多频道源（如一言），可配置不同频道的权重与自动刷新频率。
   - **组件开关**：可自由隐藏噪音、语录、大字时间等组件，定制专属学习界面。
@@ -214,6 +228,7 @@ npm run test:e2e
 ### 🚀 性能与体验
 
 - **PWA 支持**：离线缓存、桌面安装、自动更新。
+- **新手友好**：提供友好的首次使用引导，帮助用户快速熟悉核心功能。
 - **资源优化**：静态资源（图片/字体/音频）分级缓存策略，秒级加载。
 - **无障碍设计**：全键盘导航支持（Space/Enter 唤出 HUD），优化 ARIA 属性。
 
