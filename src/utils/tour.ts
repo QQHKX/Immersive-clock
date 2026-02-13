@@ -234,6 +234,25 @@ const temporarilyDisableButtons = (buttons: Array<HTMLButtonElement | null | und
 };
 
 /**
+ * 手动添加关闭按钮（因为 allowClose: false 禁用了所有关闭方式，需手动补回按钮以仅允许按钮退出）
+ */
+const ensureCloseButton = (popover: PopoverDOM, driver: Driver) => {
+  if (popover.wrapper.querySelector(".driver-popover-close-btn")) {
+    return;
+  }
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "driver-popover-close-btn";
+  closeBtn.innerHTML = "&times;";
+  closeBtn.title = "退出指引";
+  closeBtn.onclick = () => {
+    driver.destroy();
+  };
+
+  popover.wrapper.appendChild(closeBtn);
+};
+
+/**
  * 让引导弹窗默认焦点落在“下一步”，而不是“上一步”或“X”
  */
 const preferTourNextButtonAsDefaultFocus = (
@@ -241,23 +260,31 @@ const preferTourNextButtonAsDefaultFocus = (
     nextButton: HTMLButtonElement;
     previousButton: HTMLButtonElement;
     closeButton: HTMLButtonElement;
+    wrapper: HTMLElement;
   },
   opts: { driver: Driver }
 ) => {
+  // 确保关闭按钮存在（因为 allowClose: false）
+  ensureCloseButton(popover, opts.driver);
+
   if (!opts.driver.isActive()) return;
 
   const canNext = isTourButtonUsable(popover.nextButton);
   const canPrev = isTourButtonUsable(popover.previousButton);
 
   if (canNext) {
-    const restore = temporarilyDisableButtons([popover.closeButton, popover.previousButton]);
+    // 这里的 popover.closeButton 可能是 null，因为 allowClose: false
+    // 如果我们手动添加了按钮，它不在 popover.closeButton 引用中，但可以通过 DOM 获取
+    const manualCloseBtn = popover.wrapper.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
+    const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn, popover.previousButton]);
     focusButtonWithRetries(popover.nextButton, 4);
     setTimeout(() => restore(), 160);
     return;
   }
 
   if (canPrev) {
-    const restore = temporarilyDisableButtons([popover.closeButton]);
+    const manualCloseBtn = popover.wrapper.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
+    const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn]);
     focusButtonWithRetries(popover.previousButton, 3);
     setTimeout(() => restore(), 160);
   }

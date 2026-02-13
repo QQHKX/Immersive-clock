@@ -111,10 +111,25 @@
 /* 关闭按钮 (右上角 X) */
 .driver-popover-close-btn {
   color: var(--secondary-color, #bbbbbb) !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+  /* 确保位置在右上角，不被 padding 挤压 */
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 10 !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .driver-popover-close-btn:hover {
   color: var(--warning-color, #cf6679) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* 进度提示 */
