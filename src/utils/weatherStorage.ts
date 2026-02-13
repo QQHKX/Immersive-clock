@@ -25,26 +25,26 @@ export interface WeatherCache {
   coords?: {
     lat: number;
     lon: number;
-    source: string; // 'geolocation' | 'amap_ip' | 'ip'
+    source: string; // 来源: 'geolocation' | 'amap_ip' | 'ip'
     updatedAt: number;
   };
 
-  // 1.1 浏览器定位诊断信息（用于排查移动端/Electron 定位失败原因）
+  // 1.1 浏览器定位诊断信息
   geolocation?: {
     diagnostics: GeolocationDiagnostics;
     updatedAt: number;
   };
 
-  // 2. 城市与地址缓存 (依赖坐标)
+  // 2. 城市与地址缓存
   location?: {
     city?: string;
     address?: string;
     addressSource?: string;
-    signature: string; // lat,lon 的签名
+    signature: string; // 坐标签名 (lat,lon)
     updatedAt: number;
   };
 
-  // 3. 实时天气快照 (用于回显)
+  // 3. 实时天气快照
   now?: {
     data: WeatherNow;
     updatedAt: number;
@@ -53,39 +53,39 @@ export interface WeatherCache {
   // 4. 分钟级降水缓存
   minutely?: {
     data: MinutelyPrecipResponse;
-    location: string; // "lon,lat"
+    location: string; // 位置 (lon,lat)
     updatedAt: number;
-    lastApiFetchAt?: number; // 上次API请求时间
+    lastApiFetchAt?: number; // 上次 API 请求时间
   };
 
   // 4.1 三日天气预报缓存
   daily3d?: {
     data: WeatherDaily3dResponse;
-    location: string; // "lon,lat"
+    location: string; // 位置 (lon,lat)
     updatedAt: number;
   };
 
   // 4.2 空气质量缓存
   airQuality?: {
     data: AirQualityCurrentResponse;
-    signature: string; // lat,lon 的签名
+    signature: string; // 坐标签名 (lat,lon)
     updatedAt: number;
   };
 
   // 4.3 日出日落缓存
   astronomySun?: {
     data: AstronomySunResponse;
-    location: string; // "lon,lat"
-    date: string; // yyyyMMdd
+    location: string; // 位置 (lon,lat)
+    date: string; // 日期 (yyyyMMdd)
     updatedAt: number;
   };
 
-  // 5. 预警去重记录 (Map 结构序列化)
-  alerts?: Record<string, { sig: string; ts: number }>; // 键名为 stationKey
+  // 5. 预警去重记录
+  alerts?: Record<string, { sig: string; ts: number }>; // 键为站点 ID
 
   // 6. 预警元数据
   alertMetadata?: {
-    lastTag?: string; // 预警数据的 tag，用于检测变化
+    lastTag?: string; // 预警数据标识，用于检测变化
   };
 }
 
@@ -208,6 +208,11 @@ export function updateMinutelyCache(
   });
 }
 
+/**
+ * 更新三日天气预报缓存
+ * @param location 位置 (lon,lat)
+ * @param data 天气数据
+ */
 export function updateDaily3dCache(location: string, data: WeatherDaily3dResponse) {
   saveWeatherCache({
     daily3d: {
@@ -218,6 +223,12 @@ export function updateDaily3dCache(location: string, data: WeatherDaily3dRespons
   });
 }
 
+/**
+ * 更新空气质量缓存
+ * @param lat 纬度
+ * @param lon 经度
+ * @param data 空气质量数据
+ */
 export function updateAirQualityCache(lat: number, lon: number, data: AirQualityCurrentResponse) {
   const signature = `${lat.toFixed(2)},${lon.toFixed(2)}`;
   saveWeatherCache({
@@ -229,6 +240,12 @@ export function updateAirQualityCache(lat: number, lon: number, data: AirQuality
   });
 }
 
+/**
+ * 更新日出日落缓存
+ * @param location 位置 (lon,lat)
+ * @param date 日期 (yyyyMMdd)
+ * @param data 天文数据
+ */
 export function updateAstronomySunCache(
   location: string,
   date: string,
@@ -312,6 +329,10 @@ export function getValidMinutely(location: string) {
   return null;
 }
 
+/**
+ * 获取有效的三日天气预报缓存
+ * @param location 位置 (lon,lat)
+ */
 export function getValidDaily3d(location: string) {
   const cache = getWeatherCache();
   if (
@@ -324,6 +345,11 @@ export function getValidDaily3d(location: string) {
   return null;
 }
 
+/**
+ * 获取有效的空气质量缓存
+ * @param lat 纬度
+ * @param lon 经度
+ */
 export function getValidAirQuality(lat: number, lon: number) {
   const cache = getWeatherCache();
   const signature = `${lat.toFixed(2)},${lon.toFixed(2)}`;
@@ -337,6 +363,11 @@ export function getValidAirQuality(lat: number, lon: number) {
   return null;
 }
 
+/**
+ * 获取有效的日出日落缓存
+ * @param location 位置 (lon,lat)
+ * @param date 日期 (yyyyMMdd)
+ */
 export function getValidAstronomySun(location: string, date: string) {
   const cache = getWeatherCache();
   if (

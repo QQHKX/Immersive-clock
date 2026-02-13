@@ -38,7 +38,7 @@ export const shouldShowAnnouncement = (): boolean => {
 
     return true; // 隐藏期已过，应该显示
   } catch (error) {
-    logger.error("Error checking announcement visibility:", error);
+    logger.error("检查公告显示状态时出错:", error);
     return true; // 出错时默认显示
   }
 };
@@ -61,13 +61,12 @@ export const setDontShowForWeek = (): void => {
       },
     }));
   } catch (error) {
-    logger.error("Error setting announcement hide preference:", error);
+    logger.error("设置公告隐藏偏好时出错:", error);
   }
 };
 
 /**
  * 清除公告隐藏设置
- * @remarks 调试与重置辅助：清空“一周内不再显示”偏好。
  */
 export const clearAnnouncementHidePreference = (): void => {
   try {
@@ -82,14 +81,12 @@ export const clearAnnouncementHidePreference = (): void => {
       },
     }));
   } catch (error) {
-    logger.error("Error clearing announcement hide preference:", error);
+    logger.error("清除公告隐藏偏好时出错:", error);
   }
 };
 
 /**
  * 获取公告隐藏状态信息
- * @returns 返回包含隐藏状态详细信息的对象
- * @remarks 调试辅助：用于排查公告显示逻辑与缓存状态。
  */
 export const getAnnouncementHideInfo = (): {
   isHidden: boolean;

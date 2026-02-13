@@ -322,7 +322,7 @@ export function startTimeSyncManager(): () => void {
         lastError: "",
       });
       window.dispatchEvent(new CustomEvent("timeSync:updated"));
-      logger.info(`Time sync success (${reason}): offset=${r.offsetMs}ms rtt=${r.rttMs}ms`);
+      logger.info(`网络校时成功 (${reason}): 偏移量=${r.offsetMs}ms 延迟=${r.rttMs}ms`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       updateTimeSyncSettings({
@@ -330,7 +330,7 @@ export function startTimeSyncManager(): () => void {
         lastError: msg,
       });
       window.dispatchEvent(new CustomEvent("timeSync:updated"));
-      logger.warn(`Time sync failed (${reason}): ${msg}`);
+      logger.warn(`网络校时失败 (${reason}): ${msg}`);
     } finally {
       isSyncing = false;
     }

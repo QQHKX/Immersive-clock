@@ -38,7 +38,8 @@ function buildDateTime(dateKey: string, timeStr: string): Date | null {
 }
 
 /**
- * 计算时段平均评分（函数级注释：按切片与时段的重叠时长，对 slice.score 进行加权平均）
+ * 计算时段平均评分
+ * 按切片与时段的重叠时长对 score 进行加权平均
  */
 function computeAvgScoreForRange(
   slices: NoiseSliceSummary[],
@@ -59,7 +60,8 @@ function computeAvgScoreForRange(
 }
 
 /**
- * 构建噪音历史列表（函数级注释：从最近窗口期内的噪音切片与课表生成“课时-评分-时间”列表）
+ * 构建噪音历史列表
+ * 从最近窗口期内的噪音切片与课表生成“课时-评分-时间”列表
  */
 export function buildNoiseHistoryListItems(params: {
   slices: NoiseSliceSummary[];

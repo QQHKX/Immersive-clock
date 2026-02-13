@@ -80,7 +80,9 @@ interface AmapReverseResponse {
 let cachedAmapKey: string | null = null;
 
 /**
- * 获取高德 Web API Key（函数级中文注释）。
+ * 获取高德 Web API Key
+ * 从环境变量中获取并校验高德 Web API Key
+ * @returns 校验后的高德 Web API Key
  */
 function getAmapKey(): string {
   if (cachedAmapKey) return cachedAmapKey;
@@ -89,7 +91,9 @@ function getAmapKey(): string {
 }
 
 /**
- * 获取浏览器 geolocation 权限状态（函数级中文注释）：尽可能不抛错。
+ * 获取浏览器定位权限状态
+ * 检查浏览器是否支持定位权限查询，以及当前状态是否为已授权、拒绝或提示
+ * @returns 定位权限状态（granted/denied/prompt/unsupported/unknown）
  */
 async function getGeolocationPermissionState(): Promise<GeolocationPermissionState> {
   try {
@@ -109,7 +113,7 @@ async function getGeolocationPermissionState(): Promise<GeolocationPermissionSta
 }
 
 /**
- * 通过浏览器原生 Geolocation API 获取坐标与诊断信息（函数级中文注释）。
+ * 通过浏览器原生 Geolocation API 获取坐标与诊断信息
  */
 export async function getGeolocationResult(options?: {
   timeoutMs?: number;
@@ -215,7 +219,7 @@ export async function getGeolocationResult(options?: {
 }
 
 /**
- * 通过浏览器原生 Geolocation API 获取坐标（函数级中文注释）。
+ * 通过浏览器原生 Geolocation API 获取坐标
  */
 export async function getCoordsViaGeolocation(): Promise<Coords | null> {
   const result = await getGeolocationResult();
@@ -223,17 +227,13 @@ export async function getCoordsViaGeolocation(): Promise<Coords | null> {
 }
 
 /**
- * 使用高德地图的 IP 定位获取坐标（函数级中文注释）：
- * - 通过返回的城市矩形取中心点
- * - 若失败返回 null
+ * 使用高德地图 IP 定位获取坐标
+ * 失败返回 null
  */
 export async function getCoordsViaAmapIP(): Promise<Coords | null> {
   const url = `https://restapi.amap.com/v3/ip?key=${encodeURIComponent(getAmapKey())}`;
   try {
-    const data = (await httpGetJson(url, {
-      "User-Agent": "QWeatherTest/1.0",
-      "Accept-Encoding": "gzip, deflate",
-    })) as AmapIpResponse;
+    const data = (await httpGetJson(url)) as AmapIpResponse;
     if (String(data?.status) !== "1") {
       return null;
     }
@@ -259,7 +259,7 @@ export async function getCoordsViaAmapIP(): Promise<Coords | null> {
 }
 
 /**
- * 使用第三方 IP 服务获取坐标（函数级中文注释）：失败返回 null。
+ * 使用第三方 IP 服务获取坐标
  */
 export async function getCoordsViaIP(): Promise<Coords | null> {
   const sources: Array<[string, string[]]> = [
@@ -268,10 +268,7 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
   ];
   for (const [url, keys] of sources) {
     try {
-      const data = (await httpGetJson(url, { "User-Agent": "QWeatherTest/1.0" })) as Record<
-        string,
-        unknown
-      >;
+      const data = (await httpGetJson(url)) as Record<string, unknown>;
       if (keys.length === 1 && keys[0] === "loc") {
         const loc = (data as IpInfoResponse)?.loc;
         if (loc && loc.includes(",")) {
@@ -305,7 +302,8 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
 }
 
 /**
- * 使用和风 GeoAPI 进行城市查询（函数级中文注释）：用于“手动城市名 → 经纬度”。
+ * 使用和风 GeoAPI 进行城市查询
+ * 用于“手动城市名 → 经纬度”
  */
 export async function fetchCityLookup(keyword: string): Promise<CityLookupResponse> {
   try {
@@ -322,6 +320,9 @@ function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
 }
 
+/**
+ * 校验经纬度是否合法
+ */
 function validateCoords(lat: number, lon: number): boolean {
   return (
     Number.isFinite(lat) &&
@@ -334,7 +335,7 @@ function validateCoords(lat: number, lon: number): boolean {
 }
 
 /**
- * 从 AppSettings 的手动定位设置解析坐标（函数级中文注释）。
+ * 从 AppSettings 的手动定位设置解析坐标
  */
 async function resolveManualCoordsFromSettings(): Promise<
   { coords: Coords; coordsSource: string } | { coords: null; coordsSource: null }
@@ -367,16 +368,12 @@ async function resolveManualCoordsFromSettings(): Promise<
 }
 
 /**
- * 使用 OSM Nominatim 反向地理编码（函数级中文注释）。
+ * 使用 OSM Nominatim 反向地理编码
  */
 export async function reverseGeocodeOSM(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
   try {
-    const data = (await httpGetJson(url, {
-      "User-Agent": "QWeatherTest/1.0 (+https://dev.qweather.com/)",
-      "Accept-Language": "zh-CN",
-      "Accept-Encoding": "gzip, deflate",
-    })) as OsmReverseResponse;
+    const data = (await httpGetJson(url)) as OsmReverseResponse;
     const addr: OsmAddress = data?.address || {};
     const parts: string[] = [];
     if (addr.road) parts.push(addr.road);
@@ -395,17 +392,14 @@ export async function reverseGeocodeOSM(lat: number, lon: number): Promise<Addre
 }
 
 /**
- * 使用高德反向地理编码（函数级中文注释）。
+ * 使用高德反向地理编码
  */
 export async function reverseGeocodeAmap(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://restapi.amap.com/v3/geocode/regeo?key=${encodeURIComponent(getAmapKey())}&location=${encodeURIComponent(
     `${lon},${lat}`
   )}&radius=100&extensions=base`;
   try {
-    const data = (await httpGetJson(url, {
-      "User-Agent": "QWeatherTest/1.0",
-      "Accept-Encoding": "gzip, deflate",
-    })) as AmapReverseResponse;
+    const data = (await httpGetJson(url)) as AmapReverseResponse;
     if (String(data?.status) !== "1") {
       return {
         error: String(data?.info || "Amap reverse geocode failed"),
@@ -421,7 +415,7 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
 }
 
 /**
- * 从高德反编码地址对象中提取城市名（函数级中文注释）。
+ * 从高德反编码地址对象中提取城市名
  */
 function extractCityFromAmapReverse(raw: unknown): string | null {
   const comp = raw as
@@ -451,7 +445,7 @@ function extractCityFromAmapReverse(raw: unknown): string | null {
 }
 
 /**
- * 从 OSM 反向地理编码地址对象中提取城市名（函数级中文注释）。
+ * 从 OSM 反向地理编码地址对象中提取城市名
  */
 function extractCityFromOsmAddress(raw: unknown): string | null {
   const addr = raw as Partial<OsmAddress> | null | undefined;
@@ -462,7 +456,7 @@ function extractCityFromOsmAddress(raw: unknown): string | null {
 }
 
 /**
- * 根据反向地理编码结果抽取城市名（函数级中文注释）。
+ * 根据反向地理编码结果抽取城市名
  */
 function extractCityFromAddressInfo(info: AddressInfo | null): string | null {
   if (!info) return null;
@@ -472,9 +466,8 @@ function extractCityFromAddressInfo(info: AddressInfo | null): string | null {
 }
 
 /**
- * 获取坐标与地址信息并写入缓存（函数级中文注释）：
- * - 坐标：手动定位（可选）→ 缓存 →（可选强制）浏览器定位→ 浏览器定位（策略）→ IP 定位
- * - 地址：缓存 → 高德反编码 → OSM 回退
+ * 获取坐标与地址信息并写入缓存
+ * 优先级：手动定位 -> 缓存 -> 浏览器定位 -> IP 定位
  */
 async function resolveCoordsAndLocation(options?: LocationFlowOptions): Promise<{
   coords: Coords | null;
@@ -577,8 +570,10 @@ async function resolveCoordsAndLocation(options?: LocationFlowOptions): Promise<
 }
 
 /**
- * 构建位置获取流程（函数级中文注释）：
- * - 更新并返回当前坐标/来源/城市/地址；不包含任何天气数据请求。
+ * 构建位置获取流程
+ * 更新并返回当前坐标、来源、城市及地址
+ * @param options - 位置获取选项
+ * @returns 包含坐标、来源、城市及地址信息的对象
  */
 export async function buildLocationFlow(options?: LocationFlowOptions): Promise<{
   coords: Coords | null;

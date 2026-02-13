@@ -13,7 +13,8 @@ export function resolveStartupMode(value: unknown): AppMode {
 }
 
 /**
- * 从 AppSettings 读取启动模式（函数级中文注释：集中处理读取与兜底，供启动链路复用与测试）
+ * 从 AppSettings 读取启动模式
+ * 集中处理读取与兜底，供启动链路复用与测试
  */
 export function getStartupModeFromSettings(): AppMode {
   const settings = getAppSettings();

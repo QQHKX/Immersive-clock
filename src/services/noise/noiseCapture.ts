@@ -27,6 +27,11 @@ const DEFAULT_OPTIONS: Required<NoiseCaptureOptions> = {
   analyserFftSize: 2048,
 };
 
+/**
+ * 启动环境噪音采集
+ * @param options 采集配置选项
+ * @returns 返回包含音频上下文和分析器的会话对象
+ */
 export async function startNoiseCapture(
   options?: NoiseCaptureOptions
 ): Promise<NoiseCaptureSession> {
@@ -93,6 +98,10 @@ export async function startNoiseCapture(
   }
 }
 
+/**
+ * 停止噪音采集并释放资源
+ * @param session 需要停止的采集会话或包含资源的局部对象
+ */
 export async function stopNoiseCapture(
   session:
     | NoiseCaptureSession
@@ -105,12 +114,16 @@ export async function stopNoiseCapture(
 ): Promise<void> {
   try {
     session?.stream?.getTracks().forEach((t) => t.stop());
-  } catch {}
+  } catch {
+    /* 忽略错误 */
+  }
 
   try {
     const ctx = session?.audioContext;
     if (ctx && ctx.state !== "closed") {
       await ctx.close();
     }
-  } catch {}
+  } catch {
+    /* 忽略错误 */
+  }
 }

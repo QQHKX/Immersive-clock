@@ -56,6 +56,9 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+/**
+ * 格式化时间戳为 HH:mm
+ */
 function formatTimestampHm(ms: number): string {
   const d = new Date(ms);
   const hh = pad2(d.getHours());
@@ -82,6 +85,9 @@ function mapWeatherAlertColorToThemeColor(code?: string | null): string | undefi
   return undefined;
 }
 
+/**
+ * 安全读取 SessionStorage 标志
+ */
 function safeReadSessionFlag(key: string): boolean {
   try {
     return sessionStorage.getItem(key) === "1";
@@ -94,10 +100,13 @@ function safeWriteSessionFlag(key: string, value: boolean): void {
   try {
     sessionStorage.setItem(key, value ? "1" : "0");
   } catch {
-    /* ignore */
+    /* 忽略错误 */
   }
 }
 
+/**
+ * 计算分钟级降水统计信息
+ */
 function computeMinutelyRainStats(cache: MinutelyPrecipCache, nowMs: number) {
   const list = cache.minutely || [];
   const baseMs = parseTimeMs(cache.updateTime) ?? cache.fetchedAt ?? nowMs;

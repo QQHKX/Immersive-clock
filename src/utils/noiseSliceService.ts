@@ -65,6 +65,9 @@ function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
   };
 }
 
+/**
+ * 读取噪音切片历史记录
+ */
 export function readNoiseSlices(): NoiseSliceSummary[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -76,6 +79,10 @@ export function readNoiseSlices(): NoiseSliceSummary[] {
   }
 }
 
+/**
+ * 写入新的噪音切片
+ * 自动清理超出保留时长的旧记录
+ */
 export function writeNoiseSlice(slice: NoiseSliceSummary): NoiseSliceSummary[] {
   try {
     const list = readNoiseSlices();
@@ -92,6 +99,9 @@ export function writeNoiseSlice(slice: NoiseSliceSummary): NoiseSliceSummary[] {
   }
 }
 
+/**
+ * 清空噪音切片记录
+ */
 export function clearNoiseSlices(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -100,6 +110,9 @@ export function clearNoiseSlices(): void {
   }
 }
 
+/**
+ * 订阅噪音切片更新事件
+ */
 export function subscribeNoiseSlicesUpdated(handler: () => void): () => void {
   window.addEventListener(NOISE_SLICES_UPDATED_EVENT, handler);
   return () => window.removeEventListener(NOISE_SLICES_UPDATED_EVENT, handler);

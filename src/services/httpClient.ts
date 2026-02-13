@@ -1,7 +1,6 @@
 /**
- * 通过 fetch 获取 JSON（函数级中文注释）：
- * - 内置超时（AbortController）
- * - 对非 2xx 与非 JSON 响应抛出包含预览片段的错误，便于排障
+ * 通过 fetch 获取 JSON 数据
+ * 包含超时控制与异常处理
  */
 export async function httpGetJson(
   url: string,

@@ -46,7 +46,7 @@ export {
 export type WeatherFlowOptions = LocationFlowOptions;
 
 /**
- * 获取实时天气（函数级中文注释）。
+ * 获取实时天气
  */
 export async function fetchWeatherNow(location: string): Promise<WeatherNow> {
   try {
@@ -58,7 +58,7 @@ export async function fetchWeatherNow(location: string): Promise<WeatherNow> {
 }
 
 /**
- * 获取三日天气预报（函数级中文注释）。
+ * 获取三日天气预报
  */
 export async function fetchWeatherDaily3d(location: string): Promise<WeatherDaily3dResponse> {
   try {
@@ -72,7 +72,7 @@ export async function fetchWeatherDaily3d(location: string): Promise<WeatherDail
 }
 
 /**
- * 获取日出日落（函数级中文注释）。
+ * 获取日出日落时间
  */
 export async function fetchAstronomySun(
   location: string,
@@ -89,7 +89,7 @@ export async function fetchAstronomySun(
 }
 
 /**
- * 获取空气质量（函数级中文注释）：使用和风私有域 current。
+ * 获取空气质量：使用和风私有域 current
  */
 export async function fetchAirQualityCurrent(
   lat: number,
@@ -106,7 +106,7 @@ export async function fetchAirQualityCurrent(
 }
 
 /**
- * 获取指定坐标的天气预警（函数级中文注释）：使用和风私有域。
+ * 获取指定坐标的天气预警：使用和风私有域
  */
 export async function fetchWeatherAlertsByCoords(
   lat: number,
@@ -123,7 +123,7 @@ export async function fetchWeatherAlertsByCoords(
 }
 
 /**
- * 获取分钟级降水（函数级中文注释）：location 为 \"lon,lat\"，使用和风私有域。
+ * 获取分钟级降水：使用和风私有域
  */
 export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPrecipResponse> {
   try {
@@ -136,6 +136,9 @@ export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPre
   }
 }
 
+/**
+ * 格式化日期为 YYYYMMDD
+ */
 function formatDateYYYYMMDD(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -144,9 +147,8 @@ function formatDateYYYYMMDD(d: Date): string {
 }
 
 /**
- * 构建天气数据获取流程（函数级中文注释）：
- * - 先通过位置服务获取 coords/address/city（并写入缓存）
- * - 再并发请求 now/3d/sun/airquality
+ * 构建天气数据获取流程
+ * 包含坐标获取、实时天气、预报、天文及空气质量
  */
 export async function buildWeatherFlow(options?: WeatherFlowOptions): Promise<{
   coords: Coords | null;

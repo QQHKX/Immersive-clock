@@ -5,8 +5,8 @@ let cachedHost: string | null = null;
 let cachedApiKey: string | null = null;
 
 /**
- * 获取 QWeather API Host（函数级中文注释）：
- * - 支持两种命名：优先 VITE_QWEATHER_API_HOST，其次 VITE_QWEATHER_HOST
+ * 获取 QWeather API Host
+ * 优先使用 VITE_QWEATHER_API_HOST
  */
 export function getQWeatherHost(): string {
   if (cachedHost) return cachedHost;
@@ -38,8 +38,8 @@ export function buildQWeatherHeaders(): Record<string, string> {
 }
 
 /**
- * 请求 QWeather JSON（函数级中文注释）：
- * - 自动拼接 host 并带上标准 headers
+ * 请求 QWeather JSON 数据
+ * 自动拼接 Host 并附加认证请求头
  */
 export async function qweatherGetJson(pathWithQuery: string, timeoutMs = 10000): Promise<unknown> {
   const url = `https://${getQWeatherHost()}${pathWithQuery}`;

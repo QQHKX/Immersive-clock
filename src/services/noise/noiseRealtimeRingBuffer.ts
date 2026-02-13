@@ -10,6 +10,11 @@ export interface NoiseRealtimeRingBuffer {
   clear: () => void;
 }
 
+/**
+ * 创建实时噪音数据的环形缓冲区
+ * @param params 包含保留时长 (retentionMs) 和容量 (capacity) 的对象
+ * @returns 返回包含 push, snapshot, clear 方法的对象
+ */
 export function createNoiseRealtimeRingBuffer(params: {
   retentionMs: number;
   capacity: number;

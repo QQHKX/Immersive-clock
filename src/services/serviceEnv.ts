@@ -1,6 +1,9 @@
 /**
- * 读取并校验环境变量（函数级中文注释）：
- * - 统一在服务层进行 env 校验，避免静默使用空值导致难排查问题。
+ * 读取并校验环境变量
+ * 统一在服务层校验，避免空值导致问题
+ * @param name - 环境变量名称
+ * @param value - 环境变量值
+ * @returns 校验后的环境变量值
  */
 export function requireEnv(name: string, value: string | undefined): string {
   if (!value || !String(value).trim()) {

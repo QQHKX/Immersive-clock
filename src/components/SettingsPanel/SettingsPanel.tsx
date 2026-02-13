@@ -27,8 +27,7 @@ interface SettingsPanelProps {
 
 /**
  * 设置面板主组件
- * 将基础、天气、监测、语录、关于分区委托给子组件，
- * 保留目标年份持久化与选项卡切换逻辑。
+ * 提供各功能分区的设置界面
  */
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { study } = useAppState();
@@ -174,7 +173,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {activeCategory === "about" && (
             <AboutSettingsPanel
               onRegisterSave={() => {
-                /* noop */
+                /* 空操作 */
               }}
             />
           )}

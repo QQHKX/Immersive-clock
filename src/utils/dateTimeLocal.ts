@@ -1,5 +1,5 @@
 /**
- * 格式化为 datetime-local 可用的值（函数级注释：将本地时间 Date 转为 YYYY-MM-DDTHH:mm 字符串，供 input[type=datetime-local] 使用）
+ * 格式化为 datetime-local 可用的值：将本地时间 Date 转为 YYYY-MM-DDTHH:mm 字符串
  */
 export function formatDateTimeLocal(date: Date): string {
   const y = date.getFullYear();
@@ -11,7 +11,7 @@ export function formatDateTimeLocal(date: Date): string {
 }
 
 /**
- * 解析 datetime-local 输入值（函数级注释：从 YYYY-MM-DDTHH:mm 解析为本地时间 Date，非法输入返回 null）
+ * 解析 datetime-local 输入值：从 YYYY-MM-DDTHH:mm 解析为本地时间 Date
  */
 export function parseDateTimeLocal(value: string): Date | null {
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);

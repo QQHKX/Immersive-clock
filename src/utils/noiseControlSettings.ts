@@ -10,9 +10,9 @@ import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
 // ...
 
 export interface NoiseControlSettings {
-  maxLevelDb: number; // 最大允许噪音级别（阈值）
+  maxLevelDb: number; // 最大允许噪音级别
   baselineDb: number; // 手动基准显示分贝
-  showRealtimeDb: boolean; // 是否显示实时分贝副文本
+  showRealtimeDb: boolean; // 是否显示实时分贝
   avgWindowSec: number; // 噪音平均时间窗（秒）
   sliceSec: number;
   frameMs: number;

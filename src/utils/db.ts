@@ -16,6 +16,9 @@ interface IDBWrapper {
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+/**
+ * 打开 IndexedDB 数据库
+ */
 function openDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
@@ -58,9 +61,6 @@ export const db: IDBWrapper = {
     return new Promise((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       const store = transaction.objectStore(STORE_NAME);
-      // 如果 value 是对象且没有 keyPath 字段（id），这里可能会报错，
-      // 但我们的用法保证了 value 中包含 id。
-      // put 会自动使用 keyPath
       const request = store.put(value);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);

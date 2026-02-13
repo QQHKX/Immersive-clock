@@ -21,6 +21,12 @@ export interface NoiseSliceAggregatorController {
   setSliceSec: (sliceSec: number) => void;
 }
 
+/**
+ * 计算已排序数组的分位数
+ * @param sorted 已排序的数值数组
+ * @param p 分位数 (0-1)
+ * @returns 分位数值
+ */
 function quantileSorted(sorted: number[], p: number): number {
   if (!sorted.length) return 0;
   const pp = Math.max(0, Math.min(1, p));
@@ -33,6 +39,11 @@ function quantileSorted(sorted: number[], p: number): number {
   return sorted[lo] * (1 - w) + sorted[hi] * w;
 }
 
+/**
+ * 从 RMS 计算显示的分贝值
+ * @param params 包含当前 RMS、基准 RMS 和基准分贝的对象
+ * @returns 显示的分贝值
+ */
 function computeDisplayDbFromRms(params: {
   rms: number;
   baselineRms: number;
@@ -47,6 +58,11 @@ function computeDisplayDbFromRms(params: {
   return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
 }
 
+/**
+ * 创建噪音片段聚合器
+ * @param options 配置选项
+ * @returns 返回包含 onFrame, flush, reset 等方法的对象
+ */
 export function createNoiseSliceAggregator(
   options: NoiseSliceAggregatorOptions
 ): NoiseSliceAggregatorController {

@@ -29,6 +29,11 @@ type Listener = () => void;
 const RETENTION_MS = 5 * 60 * 1000;
 const STOP_DEBOUNCE_MS = 400;
 
+/**
+ * 从 RMS 计算显示的分贝值
+ * @param params 包含当前 RMS、基准 RMS 和基准分贝的对象
+ * @returns 显示的分贝值
+ */
 function computeDisplayDbFromRms(params: {
   rms: number;
   baselineRms: number;
@@ -43,6 +48,12 @@ function computeDisplayDbFromRms(params: {
   return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
 }
 
+/**
+ * 计算时间加权平均值
+ * @param windowArr 包含时间戳和值的数组
+ * @param now 当前时间戳
+ * @returns 加权平均值
+ */
 function computeTimeWeightedAverage(windowArr: { t: number; v: number }[], now: number): number {
   if (!windowArr.length) return 0;
   let sum = 0;
@@ -58,6 +69,8 @@ function computeTimeWeightedAverage(windowArr: { t: number; v: number }[], now: 
 }
 
 const listeners = new Set<Listener>();
+
+/** 噪音流快照数据 */
 let snapshot: NoiseStreamSnapshot = {
   status: "initializing",
   realtimeDisplayDb: 0,
@@ -101,6 +114,7 @@ let maxSegmentsPerMin =
 let settingsUnsubscribe: (() => void) | null = null;
 let baselineUnsubscribe: (() => void) | null = null;
 
+/** 触发监听器更新 */
 function emit() {
   snapshot = {
     ...snapshot,
@@ -109,11 +123,13 @@ function emit() {
   listeners.forEach((fn) => fn());
 }
 
+/** 更新快照并触发更新 */
 function setSnapshot(patch: Partial<NoiseStreamSnapshot>) {
   snapshot = { ...snapshot, ...patch };
   listeners.forEach((fn) => fn());
 }
 
+/** 停止噪音流采集 */
 async function hardStop() {
   if (!running) return;
   running = false;
@@ -121,21 +137,28 @@ async function hardStop() {
 
   try {
     processorStop?.();
-  } catch {}
+  } catch {
+    /* 忽略错误 */
+  }
   processorStop = null;
 
   try {
     const last = aggregatorFlush?.();
     if (last) writeNoiseSlice(last);
-  } catch {}
+  } catch {
+    /* 忽略错误 */
+  }
   aggregatorFlush = null;
 
   try {
     await captureCleanup?.();
-  } catch {}
+  } catch {
+    /* 忽略错误 */
+  }
   captureCleanup = null;
 }
 
+/** 启动噪音流采集 */
 async function hardStart() {
   if (running) return;
   running = true;
@@ -214,6 +237,7 @@ async function hardStart() {
   }
 }
 
+/** 确保设置监听器已注册 */
 function ensureSettingsListeners() {
   if (settingsUnsubscribe || baselineUnsubscribe) return;
 
@@ -331,6 +355,7 @@ function ensureSettingsListeners() {
   );
 }
 
+/** 清除停止定时器 */
 function clearStopTimer() {
   if (stopTimer != null) {
     window.clearTimeout(stopTimer);
@@ -338,6 +363,11 @@ function clearStopTimer() {
   }
 }
 
+/**
+ * 订阅噪音数据流
+ * @param listener 监听器函数
+ * @returns 取消订阅的函数
+ */
 export function subscribeNoiseStream(listener: Listener): () => void {
   ensureSettingsListeners();
   listeners.add(listener);
@@ -361,6 +391,10 @@ export function subscribeNoiseStream(listener: Listener): () => void {
   };
 }
 
+/**
+ * 获取噪音流当前快照
+ * @returns 噪音流快照
+ */
 export function getNoiseStreamSnapshot(): NoiseStreamSnapshot {
   return {
     ...snapshot,
@@ -368,6 +402,9 @@ export function getNoiseStreamSnapshot(): NoiseStreamSnapshot {
   };
 }
 
+/**
+ * 重启噪音采集流
+ */
 export async function restartNoiseStream(): Promise<void> {
   clearStopTimer();
   await hardStop();

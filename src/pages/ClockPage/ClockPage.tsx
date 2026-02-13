@@ -80,8 +80,8 @@ export function ClockPage() {
   }, []);
 
   /**
-   * 启动 HUD 自动隐藏定时器（若当前不应隐藏，则自动延后重试）
-   */
+ * 启动 HUD 自动隐藏定时器
+ */
   const scheduleHudAutoHide = useCallback(() => {
     clearHudHideTimeout();
     hideTimeoutRef.current = setTimeout(() => {
@@ -257,7 +257,7 @@ export function ClockPage() {
         try {
           sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "1");
         } catch {
-          /* ignore */
+          /* 忽略错误 */
         }
       }
     };
@@ -266,7 +266,7 @@ export function ClockPage() {
       try {
         sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
       } catch {
-        /* ignore */
+        /* 忽略错误 */
       }
     };
     window.addEventListener("messagePopup:open", onOpen as EventListener);
@@ -284,7 +284,7 @@ export function ClockPage() {
       try {
         sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
       } catch {
-        /* ignore */
+        /* 忽略错误 */
       }
     }
   }, [mode, globalPopups.length]);
@@ -391,7 +391,7 @@ export function ClockPage() {
                     sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
                     sessionStorage.setItem(MINUTELY_PRECIP_POPUP_DISMISSED_KEY, "1");
                   } catch {
-                    /* ignore */
+                    /* 忽略错误 */
                   }
                 }
                 setGlobalPopups((prev) => prev.filter((x) => x.id !== p.id));

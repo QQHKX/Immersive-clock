@@ -16,6 +16,10 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+/**
+ * 计算噪音切片评分
+ * 基于持续电平、时间占比和波动频率进行综合评估
+ */
 export function computeNoiseSliceScore(
   raw: NoiseSliceRawStats,
   durationMs: number,

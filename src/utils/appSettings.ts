@@ -187,7 +187,6 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 /**
  * 获取完整的 AppSettings 配置对象
- * 如果不存在或出错则返回默认配置
  */
 export function getAppSettings(): AppSettings {
   try {
@@ -234,7 +233,6 @@ export function getAppSettings(): AppSettings {
 
 /**
  * 局部更新 AppSettings 配置
- * 在 localStorage 中执行原子性的读-改-写操作（同步）
  */
 export function updateAppSettings(
   partial: DeepPartial<AppSettings> | ((current: AppSettings) => DeepPartial<AppSettings>)
@@ -372,7 +370,8 @@ export function updateGeneralSettings(updates: DeepPartial<AppSettings["general"
 }
 
 /**
- * 更新网络校时设置（函数级注释：对 timeSync 进行深合并，避免传入 Partial 时覆盖丢字段）
+ * 更新网络校时设置
+ * 对 timeSync 进行深合并，避免覆盖丢字段
  */
 export function updateTimeSyncSettings(
   updates:

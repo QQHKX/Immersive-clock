@@ -647,7 +647,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                       visibility: showMainChart ? "visible" : "hidden"
                     }}
                   />
-                  {/* Base area (normal) */}
+                  {/* 正常区域 */}
                   <mask id="normalMask">
                     <rect
                       x="0"
@@ -657,7 +657,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                       fill="white"
                     />
                   </mask>
-                  {/* Warning area (loud) */}
+                  {/* 预警区域 */}
                   <mask id="warningMask">
                     <rect x="0" y="0" width={chart.width} height={chart.thresholdY} fill="white" />
                   </mask>
@@ -716,11 +716,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
                   style={
                     {
-                      "--path-length": smallChart.width * 3, // Increase path length to ensure full coverage
+                      "--path-length": smallChart.width * 3, // 增加路径长度以确保完全覆盖
                     } as React.CSSProperties
                   }
                 >
-                  {/* Reuse grid lines */}
+                  {/* 复用网格线 */}
                   {smallChart.yTicks.map((t) => (
                     <line
                       key={`sy-${t.label}`}
@@ -731,7 +731,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                       className={styles.gridLine}
                     />
                   ))}
-                  {/* Score Path */}
+                  {/* 评分路径 */}
                   <path
                     d={smallChart.scorePath}
                     fill="none"
@@ -741,12 +741,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     className={showMoreStats ? styles.animatePath : ""}
                     style={{
                       strokeDasharray: "var(--path-length)",
-                      strokeDashoffset: showMoreStats ? "var(--path-length)" : "var(--path-length)", // Always hide initially
-                      visibility: showMoreStats ? "visible" : "hidden" // Ensure hidden until animation starts
+                      strokeDashoffset: showMoreStats ? "var(--path-length)" : "var(--path-length)", // 初始隐藏
+                      visibility: showMoreStats ? "visible" : "hidden" // 动画开始前保持隐藏
                     }}
                   />
 
-                  {/* Axis Labels */}
+                  {/* 坐标轴标签 */}
                   {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`sx-${idx}`}
@@ -781,81 +781,20 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     />
                   ))}
 
-                  {/* Event Bars */}
+                  {/* 柱状图 */}
                   {smallChart.pts.map((p, i) => {
-                    // map event count (0-20) to height
+                    // 将事件计数 (0-20) 映射到高度
                     const barHeight = (p.events / 20) * (smallChart.height - smallChart.padding * 2);
                     const y = smallChart.height - smallChart.padding - barHeight;
-                    // width depends on total points
                     const barWidth = (smallChart.width - smallChart.padding * 2) / smallChart.pts.length;
 
-                    // Calculate staggered delay based on total duration (6s) spread across all points
-                    // We want the wave to travel from left to right over ~6 seconds
-                    // To sync exactly with the line chart (which takes 4.5s to complete), 
-                    // the last bar should START animation slightly before 4.5s so it finishes around 4.5s.
-                    // Or more simply, let's make the wave propagation take roughly 4.05s so the visual "front" matches.
+                    // 计算阶梯延迟，使动画从左向右波动
+                    // 为与折线图同步，波动总时长设为 4.05s
                     const totalDuration = 4.05;
                     const progress = i / Math.max(1, smallChart.pts.length - 1);
 
-                    // Apply cubic-bezier(0.25, 0.46, 0.45, 0.94) easing manually
-                    // Simplified cubic-bezier implementation for 1D time mapping
-                    // This approximates the CSS animation curve so the bars appear to follow the line drawing head
-                    const t = progress;
-                    const p0 = 0, p1 = 0.25, p2 = 0.45, p3 = 1; // x-coordinates of control points
-                    // Since we want time-to-time mapping, we can just use the progress directly if we assume linear traversal,
-                    // BUT the CSS animation slows down at start and end. 
-                    // To match the visual position of the line head, the delay needs to be the INVERSE of the easing function?
-                    // No, the line animation progress is: current_position = easing(current_time / total_time) * total_length
-                    // So for a bar at position P (0..1), we want to find time T such that easing(T) = P.
-                    // Then delay = T * total_time.
-
-                    // Inverse cubic-bezier is hard to solve analytically. Let's approximate.
-                    // The CSS curve (0.25, 0.46, 0.45, 0.94) starts slow, speeds up, then slows down.
-                    // So the line head stays at start longer, moves fast in middle, stays at end longer.
-                    // Therefore, bars at start need MORE delay relative to linear, bars in middle LESS delay?
-                    // Wait, if line is slow at start, it takes LONGER to reach 10%. So bar at 10% should have LARGER delay.
-                    // So we need T = inverse_easing(P).
-
-                    // Let's use a simple approximation for the inverse of that specific bezier.
-                    // It's roughly linear in middle but steeper at ends.
-                    // Actually, let's just use a simple power curve to approximate the delay distribution if exact inverse is too complex.
-                    // Or, we can use Newton's method to solve for T given P for cubic bezier.
-
-                    // Cubic Bezier function for X component (time in CSS)
-                    // B(t) = (1-t)^3*P0 + 3(1-t)^2*t*P1 + 3(1-t)*t^2*P2 + t^3*P3
-                    // Here we need to solve for t where B_y(t) = progress (since CSS animates offset based on Y-curve value over time X)
-                    // CSS timing function defines y(x). We want x such that y(x) = P.
-                    // Bezier points for ease: (0,0), (0.25, 0.46), (0.45, 0.94), (1,1)
-                    // x coords: 0, 0.25, 0.45, 1
-                    // y coords: 0, 0.46, 0.94, 1  <-- wait, standard css cubic-bezier(x1, y1, x2, y2) defines P1 and P2. P0=(0,0), P3=(1,1).
-                    // So P1=(0.25, 0.46), P2=(0.45, 0.94).
-                    // The animation progress output (0..1) is Y at time X.
-                    // We want to find time X such that Y(X) = bar_position_percentage.
-
-                    // Let's approximate T such that Y(T) ≈ progress.
-                    // Since solving cubic is expensive in render loop, let's pre-calculate or use a look-up if possible.
-                    // For now, let's use a iterative approximation (Newton-Raphson) for 3-4 steps.
-
-                    let guessT = progress; // Initial guess
-                    for (let j = 0; j < 4; j++) {
-                      const t = guessT;
-                      const invT = 1 - t;
-                      // Y coordinate of cubic bezier at t
-                      // y(t) = 3*invT^2*t*0.46 + 3*invT*t^2*0.94 + t^3
-                      const y = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
-
-                      // Derivative dy/dt
-                      // y'(t) = ... complex.
-                      // Let's just use simple bisection or binary search for stability and simplicity.
-                      // Binary search is safer.
-
-                      // Wait, simpler approach:
-                      // The delay should match the time when the line head reaches this x-position.
-                      // Time T is what we need. CSS animation maps Time T -> Progress Y.
-                      // So we need T such that Bezier(T) = BarPosition.
-                    }
-
-                    // Binary search for T
+                    // 二分查找求出贝塞尔曲线对应的时刻 T，使 T 时刻的进度 y(T) ≈ progress
+                    // 贝塞尔参数: (0.25, 0.46), (0.45, 0.94)
                     let low = 0, high = 1;
                     let solvedT = progress;
                     for (let k = 0; k < 8; k++) {
@@ -883,13 +822,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         style={{
                           transformOrigin: `center ${smallChart.height - smallChart.padding}px`,
                           animationDelay: `${delay}s`,
-                          transform: showMoreStats ? undefined : "scaleY(0)" // Ensure hidden initially
+                          transform: showMoreStats ? undefined : "scaleY(0)" // 初始隐藏
                         }}
                       />
                     );
                   })}
 
-                  {/* Axis Labels */}
+                  {/* 坐标轴标签 */}
                   {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`ex-${idx}`}
@@ -916,7 +855,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         width: `${report.distribution.quiet * 100}%`,
                         backgroundColor: report.COLORS.quiet,
                         animationDelay: "0s",
-                        transform: showMoreStats ? undefined : "scaleX(0)", // Ensure hidden initially
+                        transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                         transformOrigin: "left"
                       }}
                     />
@@ -926,7 +865,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         width: `${report.distribution.normal * 100}%`,
                         backgroundColor: report.COLORS.normal,
                         animationDelay: "0.2s",
-                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                         transformOrigin: "left"
                       }}
                     />
@@ -936,7 +875,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         width: `${report.distribution.loud * 100}%`,
                         backgroundColor: report.COLORS.loud,
                         animationDelay: "0.4s",
-                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                         transformOrigin: "left"
                       }}
                     />
@@ -946,7 +885,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         width: `${report.distribution.severe * 100}%`,
                         backgroundColor: report.COLORS.severe,
                         animationDelay: "0.6s",
-                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                         transformOrigin: "left"
                       }}
                     />
@@ -996,7 +935,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                           width: `${report.sustainedPenalty * 100}%`,
                           backgroundColor: report.COLORS.sustained,
                           animationDelay: "0s",
-                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                           transformOrigin: "left"
                         }}
                       />
@@ -1015,7 +954,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                           width: `${report.timePenalty * 100}%`,
                           backgroundColor: report.COLORS.time,
                           animationDelay: "0.2s",
-                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                           transformOrigin: "left"
                         }}
                       />
@@ -1034,7 +973,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                           width: `${report.segmentPenalty * 100}%`,
                           backgroundColor: report.COLORS.segment,
                           animationDelay: "0.4s",
-                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
                           transformOrigin: "left"
                         }}
                       />
