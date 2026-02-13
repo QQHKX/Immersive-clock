@@ -46,8 +46,12 @@ function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
   const sampledDurationMs = isFiniteNumber(slice.raw.sampledDurationMs)
     ? Math.max(0, Math.round(slice.raw.sampledDurationMs))
     : undefined;
-  const gapCount = isFiniteNumber(slice.raw.gapCount) ? Math.max(0, Math.round(slice.raw.gapCount)) : undefined;
-  const maxGapMs = isFiniteNumber(slice.raw.maxGapMs) ? Math.max(0, Math.round(slice.raw.maxGapMs)) : undefined;
+  const gapCount = isFiniteNumber(slice.raw.gapCount)
+    ? Math.max(0, Math.round(slice.raw.gapCount))
+    : undefined;
+  const maxGapMs = isFiniteNumber(slice.raw.maxGapMs)
+    ? Math.max(0, Math.round(slice.raw.maxGapMs))
+    : undefined;
 
   return {
     ...slice,

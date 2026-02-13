@@ -80,8 +80,8 @@ export function ClockPage() {
   }, []);
 
   /**
- * 启动 HUD 自动隐藏定时器
- */
+   * 启动 HUD 自动隐藏定时器
+   */
   const scheduleHudAutoHide = useCallback(() => {
     clearHudHideTimeout();
     hideTimeoutRef.current = setTimeout(() => {

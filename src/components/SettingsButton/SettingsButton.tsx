@@ -77,8 +77,9 @@ export function SettingsButton({ onClick, isVisible = true }: SettingsButtonProp
   return (
     <button
       id="tour-settings-btn"
-      className={`${styles.settingsButton} ${isVisible ? styles.visible : styles.hidden} ${isFaded ? styles.faded : styles.normal
-        }`}
+      className={`${styles.settingsButton} ${isVisible ? styles.visible : styles.hidden} ${
+        isFaded ? styles.faded : styles.normal
+      }`}
       onClick={onClick}
       onMouseEnter={resetFadeState}
       aria-label="打开设置"

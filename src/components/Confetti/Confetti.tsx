@@ -10,15 +10,7 @@ type ConfettiPiece = {
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 
 const createPieces = (count: number): ConfettiPiece[] => {
-  const palette = [
-    "#03dac6",
-    "#ffffff",
-    "#bb86fc",
-    "#cf6679",
-    "#4dd0e1",
-    "#ffd54f",
-    "#81c784",
-  ];
+  const palette = ["#03dac6", "#ffffff", "#bb86fc", "#cf6679", "#4dd0e1", "#ffd54f", "#81c784"];
 
   return Array.from({ length: count }).map((_, idx) => {
     const left = `${randomBetween(0, 100).toFixed(2)}vw`;
@@ -57,4 +49,3 @@ export function Confetti({ count = 80 }: { count?: number }) {
     </div>
   );
 }
-

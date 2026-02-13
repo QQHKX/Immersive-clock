@@ -1,4 +1,11 @@
-import { driver, type Config, type Driver, type DriverHook, type PopoverDOM, type State } from "driver.js";
+import {
+  driver,
+  type Config,
+  type Driver,
+  type DriverHook,
+  type PopoverDOM,
+  type State,
+} from "driver.js";
 import "driver.js/dist/driver.css";
 import "../styles/tour.css";
 
@@ -141,7 +148,10 @@ const isNoiseMonitorEnabled = () => {
  */
 const isNoiseHistoryModalOpen = () => {
   const modal = document.querySelector('[data-tour="noise-history-modal"]');
-  return !!modal && (typeof (modal as HTMLElement).isConnected !== "boolean" || (modal as HTMLElement).isConnected);
+  return (
+    !!modal &&
+    (typeof (modal as HTMLElement).isConnected !== "boolean" || (modal as HTMLElement).isConnected)
+  );
 };
 
 /**
@@ -237,6 +247,10 @@ const temporarilyDisableButtons = (buttons: Array<HTMLButtonElement | null | und
  * 手动添加关闭按钮（因为 allowClose: false 禁用了所有关闭方式，需手动补回按钮以仅允许按钮退出）
  */
 const ensureCloseButton = (popover: PopoverDOM, driver: Driver) => {
+  if (!popover.wrapper) {
+    return;
+  }
+
   if (popover.wrapper.querySelector(".driver-popover-close-btn")) {
     return;
   }
@@ -275,22 +289,33 @@ const preferTourNextButtonAsDefaultFocus = (
   if (canNext) {
     // 这里的 popover.closeButton 可能是 null，因为 allowClose: false
     // 如果我们手动添加了按钮，它不在 popover.closeButton 引用中，但可以通过 DOM 获取
-    const manualCloseBtn = popover.wrapper.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
-    const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn, popover.previousButton]);
+    const manualCloseBtn = popover.wrapper?.querySelector(
+      ".driver-popover-close-btn"
+    ) as HTMLButtonElement | null;
+    const restore = temporarilyDisableButtons([
+      popover.closeButton,
+      manualCloseBtn,
+      popover.previousButton,
+    ]);
     focusButtonWithRetries(popover.nextButton, 4);
     setTimeout(() => restore(), 160);
     return;
   }
 
   if (canPrev) {
-    const manualCloseBtn = popover.wrapper.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
+    const manualCloseBtn = popover.wrapper?.querySelector(
+      ".driver-popover-close-btn"
+    ) as HTMLButtonElement | null;
     const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn]);
     focusButtonWithRetries(popover.previousButton, 3);
     setTimeout(() => restore(), 160);
   }
 };
 
-type TourPopoverRenderHook = (popover: PopoverDOM, opts: { config: Config; state: State; driver: Driver }) => void;
+type TourPopoverRenderHook = (
+  popover: PopoverDOM,
+  opts: { config: Config; state: State; driver: Driver }
+) => void;
 
 /**
  * 组合引导弹窗渲染回调（函数级注释：driver.js 的 step.onPopoverRender 会覆盖全局 onPopoverRender，因此需显式合并以保证默认焦点始终落在“下一步”）
@@ -331,9 +356,12 @@ interface TourOptions {
 }
 
 /**
- * 判断本次销毁是否属于“完成指引”（停留在最后一步结束）
+ * 判断本次销毁是否属于"完成指引"（停留在最后一步结束）
  */
-const isTourCompleted = (opts: { config: { steps?: unknown[] }; state: { activeIndex?: number } }) => {
+const _isTourCompleted = (opts: {
+  config: { steps?: unknown[] };
+  state: { activeIndex?: number };
+}) => {
   const totalSteps = Array.isArray(opts.config.steps) ? opts.config.steps.length : 0;
   const activeIndex = typeof opts.state.activeIndex === "number" ? opts.state.activeIndex : -1;
   return totalSteps > 0 && activeIndex === totalSteps - 1;
@@ -439,8 +467,7 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: "#tour-settings-btn",
         popover: {
           title: "个性化设置",
-          description:
-            "点击“帮我打开”可自动打开设置面板；打开后按钮会变为“下一步”，再继续即可。",
+          description: "点击“帮我打开”可自动打开设置面板；打开后按钮会变为“下一步”，再继续即可。",
           side: "top",
           align: "end",
           onPopoverRender: composeTourPopoverRender((popover) => {
@@ -534,7 +561,9 @@ export const startTour = (force = false, options?: TourOptions) => {
         onHighlightStarted: () => {
           const baselineValue = getNoiseBaselineSliderValue();
           calibrationBaselineAtEnter = baselineValue;
-          const el = document.querySelector('[data-tour="noise-calibration"]') as HTMLElement | null;
+          const el = document.querySelector(
+            '[data-tour="noise-calibration"]'
+          ) as HTMLElement | null;
           el?.scrollIntoView?.({ block: "center", inline: "nearest", behavior: "smooth" });
         },
       },

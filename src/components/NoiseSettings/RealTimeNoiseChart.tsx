@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 
-import { useNoiseStream } from "../../hooks/useNoiseStream";
 import {
   NOISE_ANALYSIS_FRAME_MS,
   NOISE_ANALYSIS_SLICE_SEC,
   NOISE_REALTIME_CHART_SLICE_COUNT,
 } from "../../constants/noise";
+import { useNoiseStream } from "../../hooks/useNoiseStream";
 
 import styles from "./NoiseSettings.module.css";
 

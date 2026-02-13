@@ -1,16 +1,16 @@
-import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import React from "react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 
 import { AppContextProvider } from "../../../contexts/AppContext";
 import { ClockPage } from "../ClockPage";
 
 vi.mock("../../../utils/timeSync", () => ({
-  startTimeSyncManager: () => () => { },
+  startTimeSyncManager: () => () => {},
 }));
 
 vi.mock("../../../utils/tour", () => ({
-  startTour: () => { },
+  startTour: () => {},
   isTourActive: () => false,
 }));
 

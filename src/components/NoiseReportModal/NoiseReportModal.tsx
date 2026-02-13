@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
-import { FormButton, FormSection } from "../FormComponents";
+import { FormButton, FormSection as _FormSection } from "../FormComponents";
 import Modal from "../Modal/Modal";
 
 import styles from "./NoiseReportModal.module.css";
@@ -47,24 +47,22 @@ const NumberTicker: React.FC<{
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    const timeoutId = setTimeout(() => {
+      const animate = (time: number) => {
+        if (!startTimeRef.current) startTimeRef.current = time;
+        const progress = Math.min((time - startTimeRef.current) / duration, 1);
 
-    const animate = (time: number) => {
-      if (!startTimeRef.current) startTimeRef.current = time;
-      const progress = Math.min((time - startTimeRef.current) / duration, 1);
+        // 三次缓出效果
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
 
-      // 三次缓出效果
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const current = progress === 1 ? value : value * easeProgress;
+        setDisplayValue(current);
 
-      const current = progress === 1 ? value : value * easeProgress;
-      setDisplayValue(current);
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(animate);
+        }
+      };
 
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    timeoutId = setTimeout(() => {
       rafRef.current = requestAnimationFrame(animate);
     }, delay);
 
@@ -74,9 +72,7 @@ const NumberTicker: React.FC<{
     };
   }, [value, duration, delay]);
 
-  const formatted = formatter
-    ? formatter(displayValue)
-    : displayValue.toFixed(decimals) + suffix;
+  const formatted = formatter ? formatter(displayValue) : displayValue.toFixed(decimals) + suffix;
 
   return <span>{formatted}</span>;
 };
@@ -155,19 +151,30 @@ function getSmoothPath(pts: { x: number; y: number }[], alpha: number = 0.5) {
     const p3 = i < pts.length - 2 ? pts[i + 2] : pts[i + 1];
 
     // 计算控制点
-    const getCp = (pA: { x: number; y: number }, pB: { x: number; y: number }, pC: { x: number; y: number }, pD: { x: number; y: number }) => {
+    const getCp = (
+      pA: { x: number; y: number },
+      pB: { x: number; y: number },
+      pC: { x: number; y: number },
+      pD: { x: number; y: number }
+    ) => {
       const d1 = Math.pow(Math.pow(pB.x - pA.x, 2) + Math.pow(pB.y - pA.y, 2), alpha * 0.5);
       const d2 = Math.pow(Math.pow(pC.x - pB.x, 2) + Math.pow(pC.y - pB.y, 2), alpha * 0.5);
       const d3 = Math.pow(Math.pow(pD.x - pC.x, 2) + Math.pow(pD.y - pC.y, 2), alpha * 0.5);
 
-      let cp1x = pB.x + (d2 * (pB.x - pA.x) / (d1 + d2) + (pC.x - pB.x) / 2) / 3;
-      let cp1y = pB.y + (d2 * (pB.y - pA.y) / (d1 + d2) + (pC.y - pB.y) / 2) / 3;
-      let cp2x = pC.x - (d2 * (pD.x - pC.x) / (d3 + d2) + (pC.x - pB.x) / 2) / 3;
-      let cp2y = pC.y - (d2 * (pD.y - pC.y) / (d3 + d2) + (pC.y - pB.y) / 2) / 3;
+      let cp1x = pB.x + ((d2 * (pB.x - pA.x)) / (d1 + d2) + (pC.x - pB.x) / 2) / 3;
+      let cp1y = pB.y + ((d2 * (pB.y - pA.y)) / (d1 + d2) + (pC.y - pB.y) / 2) / 3;
+      let cp2x = pC.x - ((d2 * (pD.x - pC.x)) / (d3 + d2) + (pC.x - pB.x) / 2) / 3;
+      let cp2y = pC.y - ((d2 * (pD.y - pC.y)) / (d3 + d2) + (pC.y - pB.y) / 2) / 3;
 
       // 极端情况回退：如果距离为0
-      if (isNaN(cp1x)) { cp1x = pB.x + (pC.x - pB.x) / 3; cp1y = pB.y + (pC.y - pB.y) / 3; }
-      if (isNaN(cp2x)) { cp2x = pC.x - (pC.x - pB.x) / 3; cp2y = pC.y - (pC.y - pB.y) / 3; }
+      if (isNaN(cp1x)) {
+        cp1x = pB.x + (pC.x - pB.x) / 3;
+        cp1y = pB.y + (pC.y - pB.y) / 3;
+      }
+      if (isNaN(cp2x)) {
+        cp2x = pC.x - (pC.x - pB.x) / 3;
+        cp2y = pC.y - (pC.y - pB.y) / 3;
+      }
 
       return { cp1x, cp1y, cp2x, cp2y };
     };
@@ -377,11 +384,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       distribution:
         totalMs > 0
           ? {
-            quiet: distribution.quiet / totalMs,
-            normal: distribution.normal / totalMs,
-            loud: distribution.loud / totalMs,
-            severe: distribution.severe / totalMs,
-          }
+              quiet: distribution.quiet / totalMs,
+              normal: distribution.normal / totalMs,
+              loud: distribution.loud / totalMs,
+              severe: distribution.severe / totalMs,
+            }
           : { quiet: 0, normal: 0, loud: 0, severe: 0 },
       series,
       scoreText,
@@ -410,8 +417,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         eventTicks: [] as { y: number; label: string }[],
         maxEvents: 1,
         thresholdY: 0,
-        mapX: (t: number) => 0,
-        mapY: (v: number) => 0,
+        mapX: (_t: number) => 0,
+        mapY: (_v: number) => 0,
       };
     }
 
@@ -424,8 +431,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     const mapY = (v: number) =>
       height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
     const maxEvents = Math.max(1, ...report.series.map((s) => s.events));
-    const mapEventY = (v: number) =>
-      height - padding - (v / maxEvents) * (height - padding * 2);
+    const mapEventY = (v: number) => height - padding - (v / maxEvents) * (height - padding * 2);
 
     const sortedSeries = report.series.slice().sort((a, b) => a.t - b.t);
     const pts = sortedSeries.map((p, i) => {
@@ -450,11 +456,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     });
 
     // 将点分为连续的段
-    const segments: typeof pts[] = [];
+    const segments: (typeof pts)[] = [];
     if (pts.length > 0) {
-      const sortedDurations = pts
-        .map((p) => Math.max(1, p.t - p.start))
-        .sort((a, b) => a - b);
+      const sortedDurations = pts.map((p) => Math.max(1, p.t - p.start)).sort((a, b) => a - b);
       const typicalSliceMs =
         sortedDurations.length > 0 ? sortedDurations[Math.floor(sortedDurations.length / 2)] : 0;
       const breakToleranceMs = Math.max(2000, typicalSliceMs * 2);
@@ -489,15 +493,17 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
 
     // 生成遮罩矩形，用于隐藏无数据区域
     // 为了防止线宽被裁剪，矩形宽度稍微向两端扩展
-    const maskRects = segments.map(seg => {
-      if (seg.length === 0) return null;
-      const first = seg[0];
-      const last = seg[seg.length - 1];
-      // 扩展 2px 以覆盖线帽
-      const x = first.x - 2;
-      const w = Math.max(0, last.x - first.x) + 4;
-      return { x, w };
-    }).filter(Boolean) as { x: number; w: number }[];
+    const maskRects = segments
+      .map((seg) => {
+        if (seg.length === 0) return null;
+        const first = seg[0];
+        const last = seg[seg.length - 1];
+        // 扩展 2px 以覆盖线帽
+        const x = first.x - 2;
+        const w = Math.max(0, last.x - first.x) + 4;
+        return { x, w };
+      })
+      .filter(Boolean) as { x: number; w: number }[];
 
     const xTickTs = [startTs, startTs + span / 3, startTs + (span * 2) / 3, endTs].map((t) =>
       Math.round(t)
@@ -570,8 +576,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         yTicks: [] as { y: number; label: string }[],
         eventTicks: [] as { y: number; label: string }[],
         maxEvents: 1,
-        mapX: (t: number) => 0,
-        mapY: (v: number) => 0,
+        mapX: (_t: number) => 0,
+        mapY: (_v: number) => 0,
       };
     }
 
@@ -629,7 +635,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     // 重新计算聚合后的最大值用于缩放
     const maxBucketEvents = Math.max(1, ...eventBuckets.map((b) => b.events));
 
-    const segments: typeof pts[] = [];
+    const segments: (typeof pts)[] = [];
     if (pts.length > 0) {
       let currentSeg = [pts[0]];
       for (let i = 1; i < pts.length; i++) {
@@ -658,8 +664,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
 
     const scorePath = getSmoothPath(pts.map((p) => ({ x: p.x, y: p.scoreY })));
 
-    const scorePathLength =
-      calculatePathLength([pts.map((p) => ({ x: p.x, y: p.scoreY }))]) * 1.15;
+    const scorePathLength = calculatePathLength([pts.map((p) => ({ x: p.x, y: p.scoreY }))]) * 1.15;
 
     // 小图表使用较少的刻度
     const xTickTs = [startTs, endTs].map((t) => Math.round(t));
@@ -730,13 +735,17 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         <div className={styles.section}>
           <h4 className={styles.sectionTitle}>报告概览</h4>
           <div className={styles.overviewGrid}>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>时长</div>
-              <div className={styles.cardValue}>
-                {report ? formatMinutes(report.totalMs) : "—"}
-              </div>
+              <div className={styles.cardValue}>{report ? formatMinutes(report.totalMs) : "—"}</div>
             </div>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>表现</div>
               <div className={styles.cardValue}>
                 {scoreInfo ? (
@@ -749,7 +758,10 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                 {scoreInfo ? <span className={styles.cardSub}>（{scoreInfo.level}）</span> : null}
               </div>
             </div>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>峰值</div>
               <div className={styles.cardValue}>
                 {report ? (
@@ -761,7 +773,10 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                 )}
               </div>
             </div>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>平均</div>
               <div className={styles.cardValue}>
                 {report ? (
@@ -773,13 +788,19 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                 )}
               </div>
             </div>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>超阈时长</div>
               <div className={styles.cardValue}>
                 {report ? formatDuration(report.overDurationMs) : "—"}
               </div>
             </div>
-            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
+            <div
+              className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`}
+              style={{ opacity: 0 }}
+            >
               <div className={styles.cardLabel}>打断次数</div>
               <div className={styles.cardValue}>
                 {report ? <NumberTicker value={report.segmentCount} duration={750} /> : "—"}
@@ -954,8 +975,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
               <div className={styles.rangeText}>
                 统计范围：
                 {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
-                ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB
-                ； 覆盖率：{periodDurationMs > 0 ? ((report.totalMs / periodDurationMs) * 100).toFixed(1) : "0.0"}%
+                ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB ； 覆盖率：
+                {periodDurationMs > 0
+                  ? ((report.totalMs / periodDurationMs) * 100).toFixed(1)
+                  : "0.0"}
+                %
               </div>
             </div>
           ) : (
@@ -1016,7 +1040,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     style={{
                       strokeDasharray: "var(--path-length)",
                       strokeDashoffset: showMoreStats ? undefined : "var(--path-length)",
-                      visibility: showMoreStats ? "visible" : "hidden"
+                      visibility: showMoreStats ? "visible" : "hidden",
                     }}
                   />
 
@@ -1027,7 +1051,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       x={t.x}
                       y={smallChart.height - 10}
                       textAnchor={
-                        idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"
+                        idx === 0
+                          ? "start"
+                          : idx === smallChart.xTicks.length - 1
+                            ? "end"
+                            : "middle"
                       }
                       className={styles.axisLabel}
                     >
@@ -1113,7 +1141,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       x={t.x}
                       y={smallChart.height - 10}
                       textAnchor={
-                        idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"
+                        idx === 0
+                          ? "start"
+                          : idx === smallChart.xTicks.length - 1
+                            ? "end"
+                            : "middle"
                       }
                       className={styles.axisLabel}
                     >
@@ -1134,7 +1166,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                         backgroundColor: report.COLORS.quiet,
                         animationDelay: "0s",
                         transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                        transformOrigin: "left"
+                        transformOrigin: "left",
                       }}
                     />
                     <div
@@ -1144,7 +1176,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                         backgroundColor: report.COLORS.normal,
                         animationDelay: "0.2s",
                         transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                        transformOrigin: "left"
+                        transformOrigin: "left",
                       }}
                     />
                     <div
@@ -1154,7 +1186,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                         backgroundColor: report.COLORS.loud,
                         animationDelay: "0.4s",
                         transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                        transformOrigin: "left"
+                        transformOrigin: "left",
                       }}
                     />
                     <div
@@ -1164,7 +1196,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                         backgroundColor: report.COLORS.severe,
                         animationDelay: "0.6s",
                         transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                        transformOrigin: "left"
+                        transformOrigin: "left",
                       }}
                     />
                   </div>
@@ -1214,7 +1246,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                           backgroundColor: report.COLORS.sustained,
                           animationDelay: "0s",
                           transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                          transformOrigin: "left"
+                          transformOrigin: "left",
                         }}
                       />
                     </div>
@@ -1233,7 +1265,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                           backgroundColor: report.COLORS.time,
                           animationDelay: "0.2s",
                           transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                          transformOrigin: "left"
+                          transformOrigin: "left",
                         }}
                       />
                     </div>
@@ -1252,7 +1284,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                           backgroundColor: report.COLORS.segment,
                           animationDelay: "0.4s",
                           transform: showMoreStats ? undefined : "scaleX(0)", // 初始隐藏
-                          transformOrigin: "left"
+                          transformOrigin: "left",
                         }}
                       />
                     </div>

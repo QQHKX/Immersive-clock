@@ -93,11 +93,11 @@ describe("tour 守卫式下一步", () => {
 
     const steps = Array.isArray(config.steps) ? config.steps : [];
     const lastStep = steps[steps.length - 1];
-    
+
     // 模拟点击最后一步的完成按钮
     lastStep.popover!.onNextClick!(
-      undefined, 
-      lastStep as any, 
+      undefined,
+      lastStep as any,
       { config, state: {}, driver: driverInstance } as any
     );
 
@@ -131,7 +131,11 @@ describe("tour 守卫式下一步", () => {
     const someStep = steps[2];
 
     // 直接调用 onDestroyed（模拟非完成状态下的销毁）
-    config.onDestroyed?.(undefined, someStep as any, { config, state: { activeIndex: 2 }, driver: driverInstance } as any);
+    config.onDestroyed?.(
+      undefined,
+      someStep as any,
+      { config, state: { activeIndex: 2 }, driver: driverInstance } as any
+    );
 
     expect(completedListener).toHaveBeenCalledTimes(0);
 

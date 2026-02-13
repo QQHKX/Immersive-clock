@@ -2,9 +2,6 @@
  * 噪音控制设置存储工具
  * 管理用户的最大允许噪音级别与手动基准噪音显示值
  */
-import { getAppSettings, updateNoiseSettings } from "./appSettings";
-import { logger } from "./logger";
-import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
 import {
   NOISE_ANALYSIS_FRAME_MS,
   NOISE_ANALYSIS_SLICE_SEC,
@@ -12,6 +9,10 @@ import {
   NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
   NOISE_SCORE_THRESHOLD_DBFS,
 } from "../constants/noise";
+
+import { getAppSettings, updateNoiseSettings } from "./appSettings";
+import { logger } from "./logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
 
 // localStorage 键名 (不再使用，保留注释或直接移除)
 // ...

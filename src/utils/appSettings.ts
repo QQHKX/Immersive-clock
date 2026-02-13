@@ -1,6 +1,3 @@
-import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem, AppMode } from "../types";
-import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
-import { DeepPartial } from "../types/utilityTypes";
 import {
   NOISE_ANALYSIS_FRAME_MS,
   NOISE_ANALYSIS_SLICE_SEC,
@@ -8,6 +5,9 @@ import {
   NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
   NOISE_SCORE_THRESHOLD_DBFS,
 } from "../constants/noise";
+import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem, AppMode } from "../types";
+import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
+import { DeepPartial } from "../types/utilityTypes";
 
 import { logger } from "./logger";
 import { StudyBackgroundType } from "./studyBackgroundStorage";

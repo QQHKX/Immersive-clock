@@ -68,7 +68,7 @@ export function createNoiseSliceAggregator(
   options: NoiseSliceAggregatorOptions
 ): NoiseSliceAggregatorController {
   let sliceMs = Math.max(1000, Math.round(options.sliceSec * 1000));
-  let frameMs = Math.max(10, Math.round(options.frameMs));
+  const frameMs = Math.max(10, Math.round(options.frameMs));
   let scoreOpt: ComputeNoiseScoreOptions = {
     ...DEFAULT_NOISE_SCORE_OPTIONS,
     ...(options.score ?? DEFAULT_NOISE_SCORE_OPTIONS),
@@ -112,7 +112,10 @@ export function createNoiseSliceAggregator(
     displayValues.length = 0;
   };
 
-  const finalizeSlice = (endTs: number, nextSliceStartTs: number = endTs): NoiseSliceSummary | null => {
+  const finalizeSlice = (
+    endTs: number,
+    nextSliceStartTs: number = endTs
+  ): NoiseSliceSummary | null => {
     if (sliceStart === null || frames <= 0) return null;
     const startTs = sliceStart;
     const durationMs = Math.max(1, endTs - startTs);

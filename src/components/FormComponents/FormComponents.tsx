@@ -194,8 +194,10 @@ export function FormSelect({ label, error, options, className = "", ...props }: 
 }
 
 // 复选框组件
-export interface FormCheckboxProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+export interface FormCheckboxProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "type"
+> {
   label: string;
   error?: string;
 }

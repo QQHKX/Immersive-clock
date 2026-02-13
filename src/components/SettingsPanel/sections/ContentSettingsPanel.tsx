@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 
 import { useAppState, useAppDispatch } from "../../../contexts/AppContext";
-import { FormSection, FormSlider, FormRow } from "../../FormComponents";
+import { FormSection, FormSlider } from "../../FormComponents";
 import { QuoteChannelManager } from "../../QuoteChannelManager";
 import styles from "../SettingsPanel.module.css";
 
@@ -47,11 +47,7 @@ export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRe
   }, [onRegisterSave, draftInterval, dispatch]);
 
   return (
-    <div
-      id="content-panel"
-      role="tabpanel"
-      aria-labelledby="content"
-    >
+    <div id="content-panel" role="tabpanel" aria-labelledby="content">
       <FormSection title="语录自动刷新">
         <div className={styles.sliderWithInfo}>
           <div className={styles.sliderWrapper}>

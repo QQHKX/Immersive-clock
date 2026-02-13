@@ -5,7 +5,7 @@ import styles from "./AuthorInfo.module.css";
 interface AuthorInfoProps {
   /** 版本号点击回调函数 */
   onVersionClick?: () => void;
-}/**
+} /**
  * 作者信息组件
  * 显示应用的作者和版本信息
  * 自动读取package.json中的版本号
