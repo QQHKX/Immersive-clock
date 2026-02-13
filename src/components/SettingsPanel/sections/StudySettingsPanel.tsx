@@ -286,7 +286,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
   // 课表重置功能已迁移到基础设置面板
 
   return (
-    <div className={styles.settingsGroup} id="study-panel" role="tabpanel" aria-labelledby="study">
+    <div id="study-panel" role="tabpanel" aria-labelledby="study">
       <FormSection title="噪音控制">
         <p className={styles.helpText}>仅用于调整噪音状态的显示与提示音触发，不会影响评分结果。</p>
 

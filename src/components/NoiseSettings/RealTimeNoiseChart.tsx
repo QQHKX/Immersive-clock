@@ -6,7 +6,6 @@ import {
   NOISE_ANALYSIS_SLICE_SEC,
   NOISE_REALTIME_CHART_SLICE_COUNT,
 } from "../../constants/noise";
-import { FormSection } from "../FormComponents";
 
 import styles from "./NoiseSettings.module.css";
 
@@ -78,7 +77,7 @@ export const RealTimeNoiseChart: React.FC = () => {
     }, [ringBuffer, maxLevelDb]);
 
   return (
-    <FormSection title="实时噪音曲线">
+    <>
       <div className={styles.chartHeader}>
         <div>阈值：{threshold.toFixed(0)} dB</div>
         <div>
@@ -149,7 +148,7 @@ export const RealTimeNoiseChart: React.FC = () => {
       <div className={styles.sourceNote}>
         显示最近 1 个切片时长（{NOISE_ANALYSIS_SLICE_SEC}秒）的高帧率实时分贝（不落库）。
       </div>
-    </FormSection>
+    </>
   );
 };
 

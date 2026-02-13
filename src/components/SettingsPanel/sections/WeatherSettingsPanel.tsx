@@ -174,7 +174,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
 
   return (
     <div
-      className={styles.settingsGroup}
       id="weather-panel"
       role="tabpanel"
       aria-labelledby="weather"

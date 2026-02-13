@@ -594,7 +594,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
   };
 
   return (
-    <div className={styles.settingsGroup} id="basic-panel" role="tabpanel" aria-labelledby="basic">
+    <div id="basic-panel" role="tabpanel" aria-labelledby="basic">
       {/* 显示设置分区已前移到倒计时设置之前 */}
 
       <FormSection title="启动设置">

@@ -48,7 +48,6 @@ export const ContentSettingsPanel: React.FC<ContentSettingsPanelProps> = ({ onRe
 
   return (
     <div
-      className={styles.settingsGroup}
       id="content-panel"
       role="tabpanel"
       aria-labelledby="content"
