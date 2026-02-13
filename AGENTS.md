@@ -9,7 +9,7 @@
 **技术栈：**
 
 - React 18.2.0 + TypeScript 5.4.0 + React Router 6
-- Vite 4.1.0 构建工具
+- Vite 5.4.0 构建工具
 - PWA 支持（vite-plugin-pwa）
 - Electron 桌面应用支持
 - 测试：Vitest（单元测试）+ Playwright（端到端测试）
@@ -73,22 +73,22 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 
 ### 目录结构与职责
 
-| 目录/文件              | 角色       | 关键职责                                                                     |
-| ---------------------- | ---------- | ---------------------------------------------------------------------------- |
-| `electron/`            | 桌面端核心 | `main.ts`(主进程/协议/权限), `preload.ts`(预加载)                            |
-| `src/main.tsx`         | Web 入口   | 应用挂载、PWA Service Worker 注册                                            |
-| `src/App.tsx`          | 路由容器   | 路由配置、全局公告弹窗容器                                                   |
-| `src/pages/ClockPage/` | 主控页面   | 模式切换逻辑、全局弹窗堆叠管理、HUD 显隐控制                                 |
-| `src/contexts/`        | 状态核心   | `AppContext`(运行时状态), `appReducer`(状态转换逻辑)                         |
-| `src/components/`      | UI 组件库  | `Modal`(统一模态), `FormComponents`, `LightControls`                         |
-| `src/hooks/`           | 逻辑复用   | `useTimer`(高精度计时), `useAudio`(音效), `useBattery`                       |
-| `src/utils/`           | 工具与服务 | `appSettings.ts`(配置管理), `timeSync.ts`(校时), `noiseDataService.ts`(噪音) |
+| 目录/文件              | 角色       | 关键职责                                                                      |
+| ---------------------- | ---------- | ----------------------------------------------------------------------------- |
+| `electron/`            | 桌面端核心 | `main.ts`(主进程/协议/权限), `preload.ts`(预加载)                             |
+| `src/main.tsx`         | Web 入口   | 应用挂载、PWA Service Worker 注册                                             |
+| `src/App.tsx`          | 路由容器   | 路由配置、全局公告弹窗容器                                                    |
+| `src/pages/ClockPage/` | 主控页面   | 模式切换逻辑、全局弹窗堆叠管理、HUD 显隐控制                                  |
+| `src/contexts/`        | 状态核心   | `AppContext`(运行时状态), `appReducer`(状态转换逻辑)                          |
+| `src/components/`      | UI 组件库  | `Modal`(统一模态), `FormComponents`, `LightControls`                          |
+| `src/hooks/`           | 逻辑复用   | `useTimer`(高精度计时), `useAudio`(音效), `useBattery`                        |
+| `src/utils/`           | 工具与服务 | `appSettings.ts`(配置管理), `timeSync.ts`(校时), `noiseSliceService.ts`(噪音) |
 
 ### 关键 Utils 模块
 
 - **`appSettings.ts`**: 统一配置管理中心（CRUD/持久化）
 - **`timeSync.ts`**: 网络校时与本地偏移管理，统一"当前时间"来源
-- **`noiseDataService.ts`**: 噪音采集、存储 (LocalStorage) 与事件分发
+- **`noiseSliceService.ts`**: 噪音采集、存储 (LocalStorage) 与事件分发
 - **`db.ts`**: IndexedDB 封装，用于存储大体积数据（如自定义字体）
 - **`announcementStorage.ts`**: 公告版本控制与已读状态管理
 
@@ -109,7 +109,7 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 
 ### 噪音监测系统
 
-- **数据流**：Web Audio API (AudioContext) -> 实时 RMS/dB 计算 -> `noiseDataService`
+- **数据流**：Web Audio API (AudioContext) -> 实时 RMS/dB 计算 -> `noiseSliceService`
 - **存储策略**：采用**滑动窗口**机制，在 `localStorage` 中存储最近 24 小时的样本 (`NoiseSample[]`)
 - **解耦设计**：采集服务与 UI 完全解耦，通过 `window.dispatchEvent` 触发 `noise-samples-updated` 事件驱动图表更新
 - **提示音提醒**：当平均 dB 超过阈值且在设置中开启时播放提示音（默认关闭）
@@ -121,7 +121,7 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 | 事件名                  | 触发源                 | 监听者          | 作用                           |
 | ----------------------- | ---------------------- | --------------- | ------------------------------ |
 | `settingsSaved`         | SettingsPanel          | 业务组件        | 通知配置已变更（如刷新语录源） |
-| `noise-samples-updated` | noiseDataService       | NoiseChart      | 通知噪音历史数据已更新         |
+| `noise-samples-updated` | noiseSliceService      | NoiseChart      | 通知噪音历史数据已更新         |
 | `timeSync:syncNow`      | SettingsPanel/用户操作 | timeSync 管理器 | 触发一次立即校时               |
 | `timeSync:updated`      | timeSync 管理器        | SettingsPanel   | 通知校时状态已更新（刷新显示） |
 | `storage`               | 浏览器                 | AppContext      | 多标签页状态同步（部分实现）   |
@@ -471,7 +471,7 @@ useTimer(callback, isActive, 1000); // 1秒间隔
 从 `.env.example` 创建 `.env`：
 
 ```bash
-VITE_APP_VERSION=3.12.4  # 如未设置，自动从 package.json 读取
+VITE_APP_VERSION=3.13.0  # 如未设置，自动从 package.json 读取
 ```
 
 **版本注入：**
