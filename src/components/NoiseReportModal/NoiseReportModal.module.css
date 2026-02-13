@@ -1,3 +1,111 @@
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drawPath {
+  from {
+    stroke-dashoffset: var(--path-length, 3000);
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeArea {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 0.28;
+  }
+}
+
+@keyframes growHeight {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes expandWidth {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Animation Classes */
+.animateEnter {
+  opacity: 0;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animatePath {
+  stroke-dasharray: var(--path-length, 3000);
+  stroke-dashoffset: var(--path-length, 3000);
+  animation: drawPath 4.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animateArea {
+  opacity: 0;
+  animation: fadeArea 0.8s ease-out forwards;
+  animation-delay: 1.2s;
+}
+
+.animateBarHeight {
+  transform-origin: bottom;
+  transform: scaleY(0);
+  animation: growHeight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animateBarWidth {
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: expandWidth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Apply staggered delays for overview cards */
+.overviewGrid .card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.overviewGrid .card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.overviewGrid .card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.overviewGrid .card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.overviewGrid .card:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.overviewGrid .card:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
 .section {
   margin-bottom: 1rem;
 }
@@ -201,7 +309,7 @@
   .chartGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .overviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

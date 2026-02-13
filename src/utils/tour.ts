@@ -5,6 +5,8 @@ import "../styles/tour.css";
 const TOUR_STORAGE_KEY = "immersive-clock:has-seen-tour";
 
 let currentDriver: Driver | null = null;
+let calibrationAttemptedInTour = false;
+let calibrationBaselineAtEnter: number | null = null;
 
 /**
  * 判断引导弹窗按钮是否“可作为默认焦点”的目标
@@ -64,6 +66,79 @@ const isInStudyMode = () => {
 const isSettingsPanelOpen = () => {
   const panel = document.getElementById("settings-panel-container");
   return !!panel && (typeof panel.isConnected !== "boolean" || panel.isConnected);
+};
+
+/**
+ * 判断设置面板顶部分类 Tab 是否已激活
+ */
+const isSettingsCategoryActive = (key: "basic" | "monitor") => {
+  const tab = document.getElementById(key);
+  if (!tab) return false;
+  return tab.getAttribute("aria-selected") === "true";
+};
+
+/**
+ * 读取“基准噪音值”滑块当前值（用于判断用户是否已手动修正）
+ */
+const getNoiseBaselineSliderValue = () => {
+  const input = document.querySelector(
+    '#tour-noise-baseline-slider input[type="range"]'
+  ) as HTMLInputElement | null;
+  if (!input) return null;
+  const v = Number.parseFloat(input.value);
+  return Number.isFinite(v) ? v : null;
+};
+
+/**
+ * 判断噪音是否已校准（通过校准状态 DOM 文案判断）
+ */
+const isNoiseCalibrated = () => {
+  const el = document.querySelector('[data-tour="noise-calibration-status"]');
+  const text = el?.textContent ?? "";
+  return text.includes("已校准");
+};
+
+/**
+ * 判断“噪音监测”是否已开启（作为历史记录入口前置条件）
+ */
+const isNoiseMonitorEnabled = () => {
+  const input = document.getElementById("tour-noise-monitor-checkbox") as HTMLInputElement | null;
+  if (!input) return false;
+  return !!input.checked;
+};
+
+/**
+ * 判断噪音历史记录弹窗是否已打开
+ */
+const isNoiseHistoryModalOpen = () => {
+  const modal = document.querySelector('[data-tour="noise-history-modal"]');
+  return !!modal && (typeof (modal as HTMLElement).isConnected !== "boolean" || (modal as HTMLElement).isConnected);
+};
+
+/**
+ * 等待条件成立后再进入下一步（用于跨 React 状态切换后的稳定过渡）
+ */
+const waitForConditionThenMoveNext = (params: {
+  driverObj: Driver;
+  condition: () => boolean;
+  timeoutMs?: number;
+  intervalMs?: number;
+}) => {
+  const { driverObj, condition, timeoutMs = 2400, intervalMs = 60 } = params;
+  const startedAt = Date.now();
+  const tick = () => {
+    if (!driverObj.isActive()) return;
+    if (condition()) {
+      driverObj.moveNext();
+      return;
+    }
+    if (Date.now() - startedAt >= timeoutMs) {
+      driverObj.moveNext();
+      return;
+    }
+    setTimeout(tick, intervalMs);
+  };
+  tick();
 };
 
 /**
@@ -196,6 +271,9 @@ export const startTour = (force = false, options?: TourOptions) => {
     return;
   }
 
+  calibrationAttemptedInTour = false;
+  calibrationBaselineAtEnter = null;
+
   // 指引开始时立即执行回调（显示 HUD）
   options?.onStart?.();
 
@@ -320,16 +398,193 @@ export const startTour = (force = false, options?: TourOptions) => {
         },
       },
       {
+        element: "#monitor",
+        popover: {
+          title: "监测设置",
+          description:
+            "这里可以配置噪音监测、阈值、校准与报告等。点击“帮我切换”可自动打开“监测设置”。",
+          side: "bottom",
+          align: "center",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, isSettingsCategoryActive("monitor") ? "下一步" : "帮我切换");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: () => isSettingsCategoryActive("monitor"),
+            attemptResolve: () => {
+              tryClickElement("#monitor");
+            },
+            hintAfterAttempt:
+              "已为您执行切换操作；若未切换到“监测设置”，请手动点击顶部的“监测设置”标签后再继续。",
+          }),
+        },
+      },
+      {
+        element: '[data-tour="noise-calibration"]',
+        popover: {
+          title: "校准噪音值",
+          description:
+            "建议在安静环境下点击“开始校准”（需要麦克风权限）；若仅显示偏差，也可拖动“基准噪音值”滑块进行手动修正。完成任意一种操作后再继续。",
+          side: "top",
+          align: "center",
+          onPopoverRender: (popover) => {
+            const baselineValue = getNoiseBaselineSliderValue();
+            const baselineChanged =
+              baselineValue !== null &&
+              calibrationBaselineAtEnter !== null &&
+              Math.abs(baselineValue - calibrationBaselineAtEnter) >= 0.5;
+            const satisfied = isNoiseCalibrated() || calibrationAttemptedInTour || baselineChanged;
+            setNextButtonText(popover, satisfied ? "下一步" : "帮我开始校准");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: () => {
+              const baselineValue = getNoiseBaselineSliderValue();
+              const baselineChanged =
+                baselineValue !== null &&
+                calibrationBaselineAtEnter !== null &&
+                Math.abs(baselineValue - calibrationBaselineAtEnter) >= 0.5;
+              return isNoiseCalibrated() || calibrationAttemptedInTour || baselineChanged;
+            },
+            attemptResolve: () => {
+              calibrationAttemptedInTour = true;
+              tryClickElement("#tour-noise-calibrate-btn");
+            },
+            hintAfterAttempt:
+              "已为您触发校准操作；如弹出确认/权限提示，请按提示允许麦克风。若不便授权，也可拖动滑块完成手动修正后继续。",
+          }),
+        },
+        onHighlightStarted: () => {
+          const baselineValue = getNoiseBaselineSliderValue();
+          calibrationBaselineAtEnter = baselineValue;
+          const el = document.querySelector('[data-tour="noise-calibration"]') as HTMLElement | null;
+          el?.scrollIntoView?.({ block: "center", inline: "nearest", behavior: "smooth" });
+        },
+      },
+      {
+        element: "#basic",
+        popover: {
+          title: "基础设置",
+          description: "接下来开启历史记录入口：请切回“基础设置”。点击“帮我切换”可自动切换。",
+          side: "bottom",
+          align: "center",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, isSettingsCategoryActive("basic") ? "下一步" : "帮我切换");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: () => isSettingsCategoryActive("basic"),
+            attemptResolve: () => {
+              tryClickElement("#basic");
+            },
+            hintAfterAttempt:
+              "已为您执行切换操作；若未切换到“基础设置”，请手动点击顶部的“基础设置”标签后再继续。",
+          }),
+        },
+      },
+      {
+        element: "#tour-noise-monitor-checkbox",
+        popover: {
+          title: "开启历史记录入口",
+          description:
+            "请勾选“噪音监测”。开启后，自习页面左上角会出现噪音监测组件，点击即可打开历史记录管理。",
+          side: "top",
+          align: "end",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, isNoiseMonitorEnabled() ? "下一步" : "帮我打开");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: isNoiseMonitorEnabled,
+            attemptResolve: () => {
+              tryClickElement("#tour-noise-monitor-checkbox");
+            },
+            hintAfterAttempt:
+              "已为您执行勾选操作；若未勾选成功，请手动点击“噪音监测”复选框后再继续。",
+          }),
+        },
+      },
+      {
         element: "#settings-save-btn",
         popover: {
           title: "保存设置",
-          description: "点击“完成”将自动保存设置并结束新手指引。",
+          description: "点击“帮我保存”会自动保存设置并返回自习页面，然后继续教您打开历史记录。",
           side: "top",
           align: "end",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, "帮我保存");
+          },
           onNextClick: (_el, _step, opts) => {
             tryClickElement("#settings-save-btn");
-            opts.driver.moveNext();
+            waitForConditionThenMoveNext({
+              driverObj: opts.driver,
+              condition: () => !isSettingsPanelOpen(),
+            });
+            scheduleDriverRefresh(opts.driver, 120);
           },
+        },
+      },
+      {
+        element: '[data-tour="noise-monitor"]',
+        popover: {
+          title: "打开历史记录",
+          description:
+            "点击噪音监测左侧的小灯或状态文字即可打开“历史记录管理”。点击“帮我打开”可自动帮您点击入口。",
+          side: "right",
+          align: "center",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, isNoiseHistoryModalOpen() ? "下一步" : "帮我打开");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: isNoiseHistoryModalOpen,
+            attemptResolve: () => {
+              const clicked = tryClickElement('[data-tour="noise-history-trigger"]');
+              if (!clicked) {
+                tryClickElement('[data-tour="noise-monitor"]');
+              }
+            },
+            hintAfterAttempt:
+              "已为您执行打开操作；若弹窗未出现，请手动点击噪音监测的小灯或状态文字后再继续。",
+          }),
+        },
+        onHighlightStarted: () => {
+          options?.onStart?.();
+        },
+      },
+      {
+        element: '[data-tour="noise-history-modal"]',
+        popover: {
+          title: "历史记录管理",
+          description:
+            "这里可以查看最近24小时的噪音历史，或自定义时间段生成报告。接下来我会带您正确退出历史界面。",
+          side: "left",
+          align: "center",
+        },
+      },
+      {
+        element: '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]',
+        popover: {
+          title: "退出历史界面",
+          description:
+            "点击下方“关闭”按钮即可返回自习页面。点击“帮我关闭”可自动帮您点击；关闭成功后按钮会变为“下一步”。",
+          side: "left",
+          align: "end",
+          onPopoverRender: (popover) => {
+            setNextButtonText(popover, isNoiseHistoryModalOpen() ? "帮我关闭" : "下一步");
+          },
+          onNextClick: createGuardedNextClick({
+            isSatisfied: () => !isNoiseHistoryModalOpen(),
+            attemptResolve: () => {
+              tryClickElement(
+                '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]'
+              );
+            },
+            hintAfterAttempt: "已为您执行关闭操作；若未关闭，请手动点击下方“关闭”按钮后再继续。",
+          }),
+        },
+      },
+      {
+        popover: {
+          title: "完成新手指引",
+          description: "您已完成噪音校准与历史记录的关键操作。点击“完成”结束指引并播放结束动画。",
+          side: "left",
+          align: "center",
         },
       },
     ],

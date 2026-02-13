@@ -6,7 +6,7 @@ import { formatDateTimeLocal, parseDateTimeLocal } from "../../utils/dateTimeLoc
 import { buildNoiseHistoryListItems } from "../../utils/noiseHistoryBuilder";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
-import { FormButton, FormInput, FormRow, FormSection } from "../FormComponents";
+import { FormButton, FormButtonGroup, FormInput, FormRow, FormSection } from "../FormComponents";
 import Modal from "../Modal/Modal";
 import type { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
 
@@ -74,7 +74,7 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
     try {
       const s = readStudySchedule();
       if (Array.isArray(s) && s.length > 0) schedule = s;
-    } catch {}
+    } catch { }
     return buildNoiseHistoryListItems({ slices, schedule });
   }, [isOpen, slices]);
 
@@ -107,88 +107,108 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="历史记录管理" maxWidth="xxl">
-      <FormSection title="自定义报告">
-        <div className={styles.note}>
-          {availableRange
-            ? `可用数据范围：${formatRange(availableRange.min, availableRange.max)}`
-            : "当前暂无切片数据（生成报告后将显示统计）。"}
-        </div>
-
-        <div className={styles.customForm}>
-          <FormInput
-            label="报告名称"
-            value={customName}
-            onChange={(e) => setCustomName(e.target.value)}
-            placeholder="例如：午间自习"
-          />
-
-          <FormRow gap="sm" align="end" className={styles.customRow}>
-            <FormInput
-              label="开始时间"
-              type="datetime-local"
-              value={customStartValue}
-              onChange={(e) => setCustomStartValue(e.target.value)}
-            />
-            <FormInput
-              label="结束时间"
-              type="datetime-local"
-              value={customEndValue}
-              onChange={(e) => setCustomEndValue(e.target.value)}
-            />
-            <FormButton variant="primary" size="sm" onClick={handleViewCustomReport}>
-              查看报告
-            </FormButton>
-          </FormRow>
-
-          {customError ? <div className={styles.customError}>{customError}</div> : null}
-        </div>
-      </FormSection>
-
-      <FormSection title="历史记录（最近24小时）">
-        <div className={styles.note}>数据来源：噪音切片摘要（仅保存最近 24 小时）。</div>
-
-        <div className={styles.list} aria-live="polite">
-          <div className={styles.headerRow}>
-            <div className={styles.colName}>名称</div>
-            <div className={styles.colScore}>评分</div>
-            <div className={styles.colTime}>时间</div>
-            <div className={styles.colAction}></div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="历史记录管理"
+      maxWidth="xxl"
+      closeButtonDataTour="noise-history-close"
+      footer={
+        <FormButtonGroup align="right">
+          <FormButton
+            variant="secondary"
+            onClick={onClose}
+            data-tour="noise-history-footer-close"
+            id="tour-noise-history-footer-close"
+          >
+            关闭
+          </FormButton>
+        </FormButtonGroup>
+      }
+    >
+      <div data-tour="noise-history-modal">
+        <FormSection title="自定义报告">
+          <div className={styles.note}>
+            {availableRange
+              ? `可用数据范围：${formatRange(availableRange.min, availableRange.max)}`
+              : "当前暂无切片数据（生成报告后将显示统计）。"}
           </div>
 
-          {items.length === 0 ? (
-            <div className={styles.empty}>暂无历史记录</div>
-          ) : (
-            items.map((item) => (
-              <div key={item.period.id} className={styles.dataRow}>
-                <div className={styles.colName}>{item.period.name}</div>
-                <div className={styles.colScore}>
-                  {item.avgScore === null ? "—" : item.avgScore.toFixed(0)}
+          <div className={styles.customForm}>
+            <FormInput
+              label="报告名称"
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="例如：午间自习"
+            />
+
+            <FormRow gap="sm" align="end" className={styles.customRow}>
+              <FormInput
+                label="开始时间"
+                type="datetime-local"
+                value={customStartValue}
+                onChange={(e) => setCustomStartValue(e.target.value)}
+              />
+              <FormInput
+                label="结束时间"
+                type="datetime-local"
+                value={customEndValue}
+                onChange={(e) => setCustomEndValue(e.target.value)}
+              />
+              <FormButton variant="primary" size="sm" onClick={handleViewCustomReport}>
+                查看报告
+              </FormButton>
+            </FormRow>
+
+            {customError ? <div className={styles.customError}>{customError}</div> : null}
+          </div>
+        </FormSection>
+
+        <FormSection title="历史记录（最近24小时）">
+          <div className={styles.note}>数据来源：噪音切片摘要（仅保存最近 24 小时）。</div>
+
+          <div className={styles.list} aria-live="polite">
+            <div className={styles.headerRow}>
+              <div className={styles.colName}>名称</div>
+              <div className={styles.colScore}>评分</div>
+              <div className={styles.colTime}>时间</div>
+              <div className={styles.colAction}></div>
+            </div>
+
+            {items.length === 0 ? (
+              <div className={styles.empty}>暂无历史记录</div>
+            ) : (
+              items.map((item) => (
+                <div key={item.period.id} className={styles.dataRow}>
+                  <div className={styles.colName}>{item.period.name}</div>
+                  <div className={styles.colScore}>
+                    {item.avgScore === null ? "—" : item.avgScore.toFixed(0)}
+                  </div>
+                  <div className={styles.colTime}>
+                    {formatRange(item.period.start, item.period.end)}
+                  </div>
+                  <div className={styles.colAction}>
+                    <FormButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        onViewDetail({
+                          id: item.period.id,
+                          name: item.period.name,
+                          start: item.period.start,
+                          end: item.period.end,
+                        })
+                      }
+                    >
+                      查看详情
+                    </FormButton>
+                  </div>
                 </div>
-                <div className={styles.colTime}>
-                  {formatRange(item.period.start, item.period.end)}
-                </div>
-                <div className={styles.colAction}>
-                  <FormButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      onViewDetail({
-                        id: item.period.id,
-                        name: item.period.name,
-                        start: item.period.start,
-                        end: item.period.end,
-                      })
-                    }
-                  >
-                    查看详情
-                  </FormButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </FormSection>
+              ))
+            )}
+          </div>
+        </FormSection>
+      </div>
     </Modal>
   );
 };

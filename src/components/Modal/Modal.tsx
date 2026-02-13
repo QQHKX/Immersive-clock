@@ -19,6 +19,8 @@ export interface ModalProps {
   headerDivider?: boolean;
   /** 压缩内容区顶部内边距，使粘性 Tabs 贴合头部（默认关闭） */
   compactBodyTop?: boolean;
+  /** 关闭按钮的 data-tour 标记（函数级注释：用于新手指引稳定定位关闭按钮） */
+  closeButtonDataTour?: string;
 }
 
 /**
@@ -36,6 +38,7 @@ export function Modal({
   footer,
   headerDivider = true,
   compactBodyTop = false,
+  closeButtonDataTour,
 }: ModalProps) {
   /**
    * 处理背景点击关闭
@@ -90,6 +93,7 @@ export function Modal({
               onClick={onClose}
               className={styles.closeButton}
               aria-label="关闭模态框"
+              data-tour={closeButtonDataTour}
               variant="secondary"
               size="sm"
               icon={<CloseIcon size={20} />}

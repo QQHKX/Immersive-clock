@@ -464,85 +464,92 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       </FormSection>
 
       <FormSection title="校准与修正">
-        <p className={styles.helpText}>
-          如果觉得显示的数值偏小或偏大，可拖动滑块调整；或在安静环境下点击校准让数值更准确。
-        </p>
+        <div data-tour="noise-calibration">
+          <p className={styles.helpText}>
+            如果觉得显示的数值偏小或偏大，可拖动滑块调整；或在安静环境下点击校准让数值更准确。
+          </p>
 
-        {/* 手动构建 Slider 头部以实现自定义布局 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 4,
-            fontSize: "14px",
-            color: "var(--text-primary)",
-          }}
-        >
-          <span>基准噪音值</span>
-          <span>{draftManualBaselineDb.toFixed(0)}dB</span>
-        </div>
-
-        <FormRow gap="md" align="center">
+          {/* 手动构建 Slider 头部以实现自定义布局 */}
           <div
-            className={styles.noiseCalibrationInfo}
             style={{
-              margin: 0,
-              padding: "0 12px",
-              height: "36px", // 与 Slider 轨道区域高度大致匹配
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: "auto",
-              borderRadius: "4px",
+              justifyContent: "space-between",
+              marginBottom: 4,
+              fontSize: "14px",
+              color: "var(--text-primary)",
             }}
           >
-            <p className={styles.infoText} style={{ margin: 0, fontSize: "13px" }}>
-              <span
-                className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
+            <span>基准噪音值</span>
+            <span>{draftManualBaselineDb.toFixed(0)}dB</span>
+          </div>
+
+          <FormRow gap="md" align="center">
+            <div
+              className={styles.noiseCalibrationInfo}
+              style={{
+                margin: 0,
+                padding: "0 12px",
+                height: "36px", // 与 Slider 轨道区域高度大致匹配
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: "auto",
+                borderRadius: "4px",
+              }}
+            >
+              <p
+                className={styles.infoText}
+                style={{ margin: 0, fontSize: "13px" }}
+                data-tour="noise-calibration-status"
+              >
+                <span
+                  className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
+                />
+                {baselineRms > 0 ? "已校准" : "未校准"}
+                {isCalibrating && ` (${calibrationProgress}%)`}
+              </p>
+            </div>
+
+            <div style={{ flex: 1 }} id="tour-noise-baseline-slider">
+              <FormSlider
+                // 移除 label 以隐藏内置头部
+                value={draftManualBaselineDb}
+                min={30}
+                max={60}
+                step={1}
+                onChange={setDraftManualBaselineDb}
+                showRange={false}
+                className={styles.compactSlider} // 可选：如果需要微调样式
               />
-              {baselineRms > 0 ? "已校准" : "未校准"}
-              {isCalibrating && ` (${calibrationProgress}%)`}
+            </div>
+          </FormRow>
+
+          {calibrationError && (
+            <p className={styles.errorText} style={{ marginTop: 8 }}>
+              {calibrationError}
             </p>
-          </div>
+          )}
 
-          <div style={{ flex: 1 }}>
-            <FormSlider
-              // 移除 label 以隐藏内置头部
-              value={draftManualBaselineDb}
-              min={30}
-              max={60}
-              step={1}
-              onChange={setDraftManualBaselineDb}
-              showRange={false}
-              className={styles.compactSlider} // 可选：如果需要微调样式
-            />
-          </div>
-        </FormRow>
-
-        {calibrationError && (
-          <p className={styles.errorText} style={{ marginTop: 8 }}>
-            {calibrationError}
-          </p>
-        )}
-
-        <FormButtonGroup align="left">
-          <FormButton
-            variant="secondary"
-            onClick={handleRecalibrate}
-            disabled={isCalibrating}
-            icon={<VolumeIcon size={16} />}
-          >
-            {noiseBaseline > 0 ? "重新校准" : "开始校准"}
-          </FormButton>
-          <FormButton
-            variant="danger"
-            onClick={handleClearNoiseBaseline}
-            disabled={noiseBaseline === 0 && baselineRms === 0}
-            icon={<VolumeMuteIcon size={16} />}
-          >
-            清除校准
-          </FormButton>
-        </FormButtonGroup>
+          <FormButtonGroup align="left">
+            <FormButton
+              id="tour-noise-calibrate-btn"
+              variant="secondary"
+              onClick={handleRecalibrate}
+              disabled={isCalibrating}
+              icon={<VolumeIcon size={16} />}
+            >
+              {noiseBaseline > 0 ? "重新校准" : "开始校准"}
+            </FormButton>
+            <FormButton
+              variant="danger"
+              onClick={handleClearNoiseBaseline}
+              disabled={noiseBaseline === 0 && baselineRms === 0}
+              icon={<VolumeMuteIcon size={16} />}
+            >
+              清除校准
+            </FormButton>
+          </FormButtonGroup>
+        </div>
       </FormSection>
 
       <FormSection title="噪音报告">

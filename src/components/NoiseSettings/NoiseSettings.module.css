@@ -127,8 +127,82 @@
   margin-bottom: 0.5rem;
 }
 
+.sliceItem {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.sliceItem[data-slice="latest"] {
+  border-color: rgba(76, 201, 240, 0.45);
+  background: rgba(76, 201, 240, 0.08);
+}
+
+.sliceHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-ui);
+}
+
+.sliceTitle {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.sliceTime {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.sliceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.sliceGridItem {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.6rem 0.65rem;
+}
+
+.sliceLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.sliceValue {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sliceFootnote {
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.35;
+  font-family: var(--font-ui);
+}
+
 @media (max-width: 768px) {
   .statsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sliceGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .sliceTime {
+    white-space: normal;
   }
 }

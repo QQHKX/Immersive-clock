@@ -829,6 +829,7 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({
           />
           <FormCheckbox
             label="噪音监测"
+            id="tour-noise-monitor-checkbox"
             checked={!!draftDisplay.showNoiseMonitor}
             onChange={(e) =>
               setDraftDisplay((prev) => ({ ...prev, showNoiseMonitor: e.target.checked }))

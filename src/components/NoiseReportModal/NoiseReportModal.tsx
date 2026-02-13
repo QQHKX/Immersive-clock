@@ -24,6 +24,66 @@ const CHART_HEIGHT = 140;
 const SMALL_CHART_HEIGHT = 100;
 const CHART_PADDING = 24;
 
+/**
+ * 数字滚动组件
+ * @param value 目标数值
+ * @param duration 动画持续时间
+ * @param delay 动画延迟
+ * @param decimals 小数位数
+ * @param suffix 后缀
+ * @param formatter 自定义格式化函数
+ */
+const NumberTicker: React.FC<{
+  value: number;
+  duration?: number;
+  delay?: number;
+  decimals?: number;
+  suffix?: string;
+  formatter?: (v: number) => string;
+}> = ({ value, duration = 1000, delay = 0, decimals = 0, suffix = "", formatter }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const animate = (time: number) => {
+      if (!startTimeRef.current) startTimeRef.current = time;
+      const progress = Math.min((time - startTimeRef.current) / duration, 1);
+
+      // 三次缓出效果
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+      const current = progress === 1 ? value : value * easeProgress;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    timeoutId = setTimeout(() => {
+      rafRef.current = requestAnimationFrame(animate);
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, duration, delay]);
+
+  const formatted = formatter
+    ? formatter(displayValue)
+    : displayValue.toFixed(decimals) + suffix;
+
+  return <span>{formatted}</span>;
+};
+
+/**
+ * 格式化持续时间
+ * @param ms 毫秒数
+ */
 function formatDuration(ms: number) {
   const sec = Math.round(ms / 1000);
   const m = Math.floor(sec / 60);
@@ -31,15 +91,27 @@ function formatDuration(ms: number) {
   return `${m}分${s}秒`;
 }
 
+/**
+ * 格式化分钟
+ * @param ms 毫秒数
+ */
 function formatMinutes(ms: number) {
   const m = Math.round(ms / 60_000);
   return `${m} 分钟`;
 }
 
+/**
+ * 格式化时间为 HH:MM
+ * @param d 日期对象
+ */
 function formatTimeHHMM(d: Date) {
   return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * 获取得分等级文本
+ * @param score 分数
+ */
 function getScoreLevelText(score: number) {
   if (score >= 90) return "优秀";
   if (score >= 75) return "良好";
@@ -47,11 +119,56 @@ function getScoreLevelText(score: number) {
   return "较差";
 }
 
+/**
+ * 噪音统计报告弹窗组件
+ */
 export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onClose, period }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const moreStatsRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(860);
   const [isGridSingleColumn, setIsGridSingleColumn] = useState(false);
   const [tick, setTick] = useState(0);
+
+  // 动画状态
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [showMainChart, setShowMainChart] = useState(false);
+  const [showMoreStats, setShowMoreStats] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      // 开启时重置动画状态
+      setIsLoaded(false);
+      setShowMainChart(false);
+      setShowMoreStats(false);
+
+      // 延迟触发概览动画
+      const t1 = setTimeout(() => setIsLoaded(true), 100);
+      // 延迟触发主图表动画
+      const t2 = setTimeout(() => setShowMainChart(true), 900);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !moreStatsRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShowMoreStats(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(moreStatsRef.current);
+    return () => observer.disconnect();
+  }, [isOpen]);
 
   useEffect(() => {
     const measure = () => {
@@ -108,17 +225,17 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       severe: 0, // > 75
     };
 
-    // Colors matching dark theme (Material Design dark theme palette)
+    // 适配暗色主题的调色盘
     const COLORS = {
-      quiet: "#81C784", // Green 300 - muted green
-      normal: "#64B5F6", // Blue 300 - muted blue
-      loud: "#FFB74D", // Orange 300 - muted orange
-      severe: "#E57373", // Red 300 - muted red
-      sustained: "#FFD54F", // Amber 300
-      time: "#FF8A65", // Deep Orange 300
-      segment: "#F06292", // Pink 300
-      score: "#BA68C8", // Purple 300
-      event: "#E57373", // Red 300
+      quiet: "#81C784", // 绿色 - 安静
+      normal: "#64B5F6", // 蓝色 - 正常
+      loud: "#FFB74D", // 橙色 - 吵闹
+      severe: "#E57373", // 红色 - 极吵
+      sustained: "#FFD54F", // 琥珀色
+      time: "#FF8A65", // 深橙色
+      segment: "#F06292", // 粉色
+      score: "#BA68C8", // 紫色
+      event: "#E57373", // 红色
     };
 
     const series: { t: number; v: number; score: number; events: number }[] = [];
@@ -145,7 +262,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       sumTimePenalty += s.scoreDetail.timePenalty * overlapMs;
       sumSegmentPenalty += s.scoreDetail.segmentPenalty * overlapMs;
 
-      // Distribution
+      // 分布统计
       const db = s.display.avgDb;
       if (db < 45) distribution.quiet += overlapMs;
       else if (db < 60) distribution.normal += overlapMs;
@@ -240,7 +357,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       .map((p) => ({
         x: mapX(p.t),
         y: mapY(p.v),
-        scoreY: mapY(p.score * 0.8), // Scale score 0-100 to 0-80 range for visual consistency
+        scoreY: mapY(p.score * 0.8), // 将 0-100 的评分缩放到 0-80 范围以保持视觉一致性
         events: p.events,
       }));
 
@@ -284,14 +401,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
   }, [period, report, chartWidth]);
 
   const smallChart = useMemo(() => {
-    // Determine width for small charts in the grid
-    // Chart container has 12px padding on each side (24px total)
-    // Grid gap is 12px
+    // 确定网格中小图表的宽度
     const containerPadding = 24;
     const gridGap = 12;
 
-    // If single column (mobile), use full width minus padding. 
-    // Otherwise use half width minus half gap minus padding.
+    // 移动端单列显示，否则双列
     const width = isGridSingleColumn
       ? chartWidth - containerPadding
       : (chartWidth - gridGap) / 2 - containerPadding;
@@ -336,7 +450,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.scoreY}` : `L ${pt.x} ${pt.scoreY}`))
       .join(" ");
 
-    // Use fewer ticks for small chart
+    // 小图表使用较少的刻度
     const xTickTs = [startTs, endTs].map((t) => Math.round(t));
     const xTicks = xTickTs.map((t) => ({
       x: mapX(t),
@@ -377,7 +491,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       footer={
         <div className={styles.footer}>
           <FormButton variant="primary" size="sm" onClick={onClose}>
-            关闭
+            返回
           </FormButton>
         </div>
       }
@@ -386,40 +500,60 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         <div className={styles.section}>
           <h4 className={styles.sectionTitle}>报告概览</h4>
           <div className={styles.overviewGrid}>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>时长</div>
               <div className={styles.cardValue}>
                 {period ? formatMinutes(periodDurationMs) : "—"}
               </div>
             </div>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>表现</div>
               <div className={styles.cardValue}>
-                {scoreInfo ? `${scoreInfo.score} 分` : "—"}
+                {scoreInfo ? (
+                  <>
+                    <NumberTicker value={scoreInfo.score} duration={2000} /> 分
+                  </>
+                ) : (
+                  "—"
+                )}
                 {scoreInfo ? <span className={styles.cardSub}>（{scoreInfo.level}）</span> : null}
               </div>
             </div>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>峰值</div>
               <div className={styles.cardValue}>
-                {report ? `${report.maxDb.toFixed(1)} dB` : "—"}
+                {report ? (
+                  <>
+                    <NumberTicker value={report.maxDb} decimals={1} duration={1800} /> dB
+                  </>
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>平均</div>
               <div className={styles.cardValue}>
-                {report ? `${report.avgDb.toFixed(1)} dB` : "—"}
+                {report ? (
+                  <>
+                    <NumberTicker value={report.avgDb} decimals={1} duration={1800} /> dB
+                  </>
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>超阈时长</div>
               <div className={styles.cardValue}>
                 {report ? formatDuration(report.overDurationMs) : "—"}
               </div>
             </div>
-            <div className={styles.card}>
+            <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>打断次数</div>
-              <div className={styles.cardValue}>{report ? String(report.segmentCount) : "—"}</div>
+              <div className={styles.cardValue}>
+                {report ? <NumberTicker value={report.segmentCount} duration={750} /> : "—"}
+              </div>
             </div>
           </div>
         </div>
@@ -434,6 +568,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   height={chart.height}
                   className={styles.chart}
                   viewBox={`0 0 ${chart.width} ${chart.height}`}
+                  style={
+                    {
+                      "--path-length": chart.width * 2,
+                    } as React.CSSProperties
+                  }
                 >
                   <defs>
                     <linearGradient
@@ -499,9 +638,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
                   <path
                     d={chart.path}
-                    className={styles.line}
+                    className={`${styles.line} ${showMainChart ? styles.animatePath : ""}`}
                     stroke="url(#lineGradient)"
-                    style={{ stroke: "url(#lineGradient)" }}
+                    style={{
+                      stroke: "url(#lineGradient)",
+                      strokeDasharray: "var(--path-length)",
+                      strokeDashoffset: showMainChart ? "var(--path-length)" : "var(--path-length)",
+                      visibility: showMainChart ? "visible" : "hidden"
+                    }}
                   />
                   {/* Base area (normal) */}
                   <mask id="normalMask">
@@ -518,18 +662,20 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     <rect x="0" y="0" width={chart.width} height={chart.thresholdY} fill="white" />
                   </mask>
 
-                  <path
-                    d={chart.areaPath}
-                    fill="url(#noiseAreaGradient)"
-                    className={styles.area}
-                    mask="url(#normalMask)"
-                  />
-                  <path
-                    d={chart.areaPath}
-                    fill="url(#noiseAreaGradientWarning)"
-                    className={styles.area}
-                    mask="url(#warningMask)"
-                  />
+                  <g className={showMainChart ? styles.animateArea : ""} style={{ opacity: 0 }}>
+                    <path
+                      d={chart.areaPath}
+                      fill="url(#noiseAreaGradient)"
+                      className={styles.area}
+                      mask="url(#normalMask)"
+                    />
+                    <path
+                      d={chart.areaPath}
+                      fill="url(#noiseAreaGradientWarning)"
+                      className={styles.area}
+                      mask="url(#warningMask)"
+                    />
+                  </g>
 
                   {chart.xTicks.map((t, idx) => (
                     <text
@@ -558,7 +704,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
           )}
         </div>
 
-        <div className={styles.section}>
+        <div className={styles.section} ref={moreStatsRef}>
           <h4 className={styles.sectionTitle}>更多统计</h4>
           {report ? (
             <div className={styles.chartGrid}>
@@ -568,6 +714,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   width={smallChart.width}
                   height={smallChart.height}
                   viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
+                  style={
+                    {
+                      "--path-length": smallChart.width * 3, // Increase path length to ensure full coverage
+                    } as React.CSSProperties
+                  }
                 >
                   {/* Reuse grid lines */}
                   {smallChart.yTicks.map((t) => (
@@ -587,6 +738,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     stroke={report.COLORS.score}
                     strokeWidth="2"
                     opacity={0.9}
+                    className={showMoreStats ? styles.animatePath : ""}
+                    style={{
+                      strokeDasharray: "var(--path-length)",
+                      strokeDashoffset: showMoreStats ? "var(--path-length)" : "var(--path-length)", // Always hide initially
+                      visibility: showMoreStats ? "visible" : "hidden" // Ensure hidden until animation starts
+                    }}
                   />
 
                   {/* Axis Labels */}
@@ -631,6 +788,88 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     const y = smallChart.height - smallChart.padding - barHeight;
                     // width depends on total points
                     const barWidth = (smallChart.width - smallChart.padding * 2) / smallChart.pts.length;
+
+                    // Calculate staggered delay based on total duration (6s) spread across all points
+                    // We want the wave to travel from left to right over ~6 seconds
+                    // To sync exactly with the line chart (which takes 4.5s to complete), 
+                    // the last bar should START animation slightly before 4.5s so it finishes around 4.5s.
+                    // Or more simply, let's make the wave propagation take roughly 4.05s so the visual "front" matches.
+                    const totalDuration = 4.05;
+                    const progress = i / Math.max(1, smallChart.pts.length - 1);
+
+                    // Apply cubic-bezier(0.25, 0.46, 0.45, 0.94) easing manually
+                    // Simplified cubic-bezier implementation for 1D time mapping
+                    // This approximates the CSS animation curve so the bars appear to follow the line drawing head
+                    const t = progress;
+                    const p0 = 0, p1 = 0.25, p2 = 0.45, p3 = 1; // x-coordinates of control points
+                    // Since we want time-to-time mapping, we can just use the progress directly if we assume linear traversal,
+                    // BUT the CSS animation slows down at start and end. 
+                    // To match the visual position of the line head, the delay needs to be the INVERSE of the easing function?
+                    // No, the line animation progress is: current_position = easing(current_time / total_time) * total_length
+                    // So for a bar at position P (0..1), we want to find time T such that easing(T) = P.
+                    // Then delay = T * total_time.
+
+                    // Inverse cubic-bezier is hard to solve analytically. Let's approximate.
+                    // The CSS curve (0.25, 0.46, 0.45, 0.94) starts slow, speeds up, then slows down.
+                    // So the line head stays at start longer, moves fast in middle, stays at end longer.
+                    // Therefore, bars at start need MORE delay relative to linear, bars in middle LESS delay?
+                    // Wait, if line is slow at start, it takes LONGER to reach 10%. So bar at 10% should have LARGER delay.
+                    // So we need T = inverse_easing(P).
+
+                    // Let's use a simple approximation for the inverse of that specific bezier.
+                    // It's roughly linear in middle but steeper at ends.
+                    // Actually, let's just use a simple power curve to approximate the delay distribution if exact inverse is too complex.
+                    // Or, we can use Newton's method to solve for T given P for cubic bezier.
+
+                    // Cubic Bezier function for X component (time in CSS)
+                    // B(t) = (1-t)^3*P0 + 3(1-t)^2*t*P1 + 3(1-t)*t^2*P2 + t^3*P3
+                    // Here we need to solve for t where B_y(t) = progress (since CSS animates offset based on Y-curve value over time X)
+                    // CSS timing function defines y(x). We want x such that y(x) = P.
+                    // Bezier points for ease: (0,0), (0.25, 0.46), (0.45, 0.94), (1,1)
+                    // x coords: 0, 0.25, 0.45, 1
+                    // y coords: 0, 0.46, 0.94, 1  <-- wait, standard css cubic-bezier(x1, y1, x2, y2) defines P1 and P2. P0=(0,0), P3=(1,1).
+                    // So P1=(0.25, 0.46), P2=(0.45, 0.94).
+                    // The animation progress output (0..1) is Y at time X.
+                    // We want to find time X such that Y(X) = bar_position_percentage.
+
+                    // Let's approximate T such that Y(T) ≈ progress.
+                    // Since solving cubic is expensive in render loop, let's pre-calculate or use a look-up if possible.
+                    // For now, let's use a iterative approximation (Newton-Raphson) for 3-4 steps.
+
+                    let guessT = progress; // Initial guess
+                    for (let j = 0; j < 4; j++) {
+                      const t = guessT;
+                      const invT = 1 - t;
+                      // Y coordinate of cubic bezier at t
+                      // y(t) = 3*invT^2*t*0.46 + 3*invT*t^2*0.94 + t^3
+                      const y = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
+
+                      // Derivative dy/dt
+                      // y'(t) = ... complex.
+                      // Let's just use simple bisection or binary search for stability and simplicity.
+                      // Binary search is safer.
+
+                      // Wait, simpler approach:
+                      // The delay should match the time when the line head reaches this x-position.
+                      // Time T is what we need. CSS animation maps Time T -> Progress Y.
+                      // So we need T such that Bezier(T) = BarPosition.
+                    }
+
+                    // Binary search for T
+                    let low = 0, high = 1;
+                    let solvedT = progress;
+                    for (let k = 0; k < 8; k++) {
+                      const mid = (low + high) / 2;
+                      const t = mid;
+                      const invT = 1 - t;
+                      const y = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
+                      if (y < progress) low = mid;
+                      else high = mid;
+                      solvedT = mid;
+                    }
+
+                    const delay = solvedT * totalDuration;
+
                     return (
                       <rect
                         key={i}
@@ -640,6 +879,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         height={barHeight}
                         fill={report.COLORS.event}
                         opacity={0.6}
+                        className={showMoreStats ? styles.animateBarHeight : ""}
+                        style={{
+                          transformOrigin: `center ${smallChart.height - smallChart.padding}px`,
+                          animationDelay: `${delay}s`,
+                          transform: showMoreStats ? undefined : "scaleY(0)" // Ensure hidden initially
+                        }}
                       />
                     );
                   })}
@@ -666,31 +911,43 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 <div className={styles.distributionChart}>
                   <div className={styles.distributionBar}>
                     <div
-                      className={styles.distributionSegment}
+                      className={`${styles.distributionSegment} ${showMoreStats ? styles.animateBarWidth : ""}`}
                       style={{
                         width: `${report.distribution.quiet * 100}%`,
                         backgroundColor: report.COLORS.quiet,
+                        animationDelay: "0s",
+                        transform: showMoreStats ? undefined : "scaleX(0)", // Ensure hidden initially
+                        transformOrigin: "left"
                       }}
                     />
                     <div
-                      className={styles.distributionSegment}
+                      className={`${styles.distributionSegment} ${showMoreStats ? styles.animateBarWidth : ""}`}
                       style={{
                         width: `${report.distribution.normal * 100}%`,
                         backgroundColor: report.COLORS.normal,
+                        animationDelay: "0.2s",
+                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transformOrigin: "left"
                       }}
                     />
                     <div
-                      className={styles.distributionSegment}
+                      className={`${styles.distributionSegment} ${showMoreStats ? styles.animateBarWidth : ""}`}
                       style={{
                         width: `${report.distribution.loud * 100}%`,
                         backgroundColor: report.COLORS.loud,
+                        animationDelay: "0.4s",
+                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transformOrigin: "left"
                       }}
                     />
                     <div
-                      className={styles.distributionSegment}
+                      className={`${styles.distributionSegment} ${showMoreStats ? styles.animateBarWidth : ""}`}
                       style={{
                         width: `${report.distribution.severe * 100}%`,
                         backgroundColor: report.COLORS.severe,
+                        animationDelay: "0.6s",
+                        transform: showMoreStats ? undefined : "scaleX(0)",
+                        transformOrigin: "left"
                       }}
                     />
                   </div>
@@ -734,10 +991,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     <div className={styles.penaltyLabel}>持续</div>
                     <div className={styles.penaltyBarTrack}>
                       <div
-                        className={styles.penaltyBarFill}
+                        className={`${styles.penaltyBarFill} ${showMoreStats ? styles.animateBarWidth : ""}`}
                         style={{
                           width: `${report.sustainedPenalty * 100}%`,
                           backgroundColor: report.COLORS.sustained,
+                          animationDelay: "0s",
+                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transformOrigin: "left"
                         }}
                       />
                     </div>
@@ -750,10 +1010,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     <div className={styles.penaltyLabel}>时长</div>
                     <div className={styles.penaltyBarTrack}>
                       <div
-                        className={styles.penaltyBarFill}
+                        className={`${styles.penaltyBarFill} ${showMoreStats ? styles.animateBarWidth : ""}`}
                         style={{
                           width: `${report.timePenalty * 100}%`,
                           backgroundColor: report.COLORS.time,
+                          animationDelay: "0.2s",
+                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transformOrigin: "left"
                         }}
                       />
                     </div>
@@ -766,10 +1029,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     <div className={styles.penaltyLabel}>打断</div>
                     <div className={styles.penaltyBarTrack}>
                       <div
-                        className={styles.penaltyBarFill}
+                        className={`${styles.penaltyBarFill} ${showMoreStats ? styles.animateBarWidth : ""}`}
                         style={{
                           width: `${report.segmentPenalty * 100}%`,
                           backgroundColor: report.COLORS.segment,
+                          animationDelay: "0.4s",
+                          transform: showMoreStats ? undefined : "scaleX(0)",
+                          transformOrigin: "left"
                         }}
                       />
                     </div>

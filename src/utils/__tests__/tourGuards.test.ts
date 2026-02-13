@@ -91,11 +91,16 @@ describe("tour 守卫式下一步", () => {
     const config = driverMock.mock.calls[0]?.[0] as Config;
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
 
-    const lastStep = config.steps?.[config.steps.length - 1];
+    const steps = Array.isArray(config.steps) ? config.steps : [];
+    const lastStep = steps[steps.length - 1];
     driverInstance.getConfig = () => config;
-    driverInstance.getState = () => ({ activeIndex: config.steps.length - 1 } as any);
+    driverInstance.getState = () => ({ activeIndex: steps.length - 1 } as any);
 
-    config.onDestroyed?.(undefined, lastStep as any, { config, state: { activeIndex: config.steps.length - 1 }, driver: driverInstance } as any);
+    config.onDestroyed?.(
+      undefined,
+      lastStep as any,
+      { config, state: { activeIndex: steps.length - 1 }, driver: driverInstance } as any
+    );
 
     expect(completedListener).toHaveBeenCalledTimes(1);
 
@@ -115,7 +120,8 @@ describe("tour 守卫式下一步", () => {
     const config = driverMock.mock.calls[0]?.[0] as Config;
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
 
-    const someStep = config.steps?.[2];
+    const steps = Array.isArray(config.steps) ? config.steps : [];
+    const someStep = steps[2];
     driverInstance.getConfig = () => config;
     driverInstance.getState = () => ({ activeIndex: 2 } as any);
 
@@ -124,6 +130,241 @@ describe("tour 守卫式下一步", () => {
     expect(completedListener).toHaveBeenCalledTimes(0);
 
     window.removeEventListener("tour:completed", completedListener);
+  });
+
+  it("切换监测设置：未切换时点击下一步不会跳步，并触发辅助切换", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const monitorTab = document.createElement("button");
+    monitorTab.id = "monitor";
+    monitorTab.setAttribute("aria-selected", "false");
+    monitorTab.addEventListener("click", () => {
+      monitorTab.setAttribute("aria-selected", "true");
+    });
+    document.body.appendChild(monitorTab);
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config;
+    const step = config.steps?.find((s) => s.element === "#monitor");
+    expect(step?.popover?.onNextClick).toBeTypeOf("function");
+
+    const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    const popoverDom = createPopoverDom();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).not.toHaveBeenCalled();
+    expect(monitorTab.getAttribute("aria-selected")).toBe("true");
+    expect(popoverDom.description.textContent).toContain("已为您执行切换操作");
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("噪音校准：未操作时不会跳步，并触发辅助点击校准按钮", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const calibrationWrapper = document.createElement("div");
+    calibrationWrapper.setAttribute("data-tour", "noise-calibration");
+
+    const status = document.createElement("div");
+    status.setAttribute("data-tour", "noise-calibration-status");
+    status.textContent = "未校准";
+    calibrationWrapper.appendChild(status);
+
+    const sliderWrapper = document.createElement("div");
+    sliderWrapper.id = "tour-noise-baseline-slider";
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.value = "45";
+    sliderWrapper.appendChild(slider);
+    calibrationWrapper.appendChild(sliderWrapper);
+
+    const calibrateBtn = document.createElement("button");
+    calibrateBtn.id = "tour-noise-calibrate-btn";
+    const clickSpy = vi.spyOn(calibrateBtn, "click");
+    calibrateBtn.addEventListener("click", () => {
+      status.textContent = "已校准";
+    });
+    calibrationWrapper.appendChild(calibrateBtn);
+
+    document.body.appendChild(calibrationWrapper);
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config;
+    const step = config.steps?.find((s) => s.element === '[data-tour="noise-calibration"]');
+    expect(step?.popover?.onNextClick).toBeTypeOf("function");
+
+    step?.onHighlightStarted?.(undefined as any, step as any, { config } as any);
+
+    const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    const popoverDom = createPopoverDom();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(driverInstance.moveNext).not.toHaveBeenCalled();
+    expect(popoverDom.description.textContent).toContain("已为您触发校准操作");
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("开启历史入口：未勾选时不会跳步，并触发辅助勾选", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "tour-noise-monitor-checkbox";
+    document.body.appendChild(checkbox);
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config;
+    const step = config.steps?.find((s) => s.element === "#tour-noise-monitor-checkbox");
+    expect(step?.popover?.onNextClick).toBeTypeOf("function");
+
+    const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    const popoverDom = createPopoverDom();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).not.toHaveBeenCalled();
+    expect(checkbox.checked).toBe(true);
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("打开历史记录：未打开弹窗时不会跳步，并触发辅助点击入口", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const monitor = document.createElement("div");
+    monitor.setAttribute("data-tour", "noise-monitor");
+
+    const trigger = document.createElement("div");
+    trigger.setAttribute("data-tour", "noise-history-trigger");
+    trigger.addEventListener("click", () => {
+      const modal = document.createElement("div");
+      modal.setAttribute("data-tour", "noise-history-modal");
+      document.body.appendChild(modal);
+    });
+    monitor.appendChild(trigger);
+    document.body.appendChild(monitor);
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config;
+    const step = config.steps?.find((s) => s.element === '[data-tour="noise-monitor"]');
+    expect(step?.popover?.onNextClick).toBeTypeOf("function");
+
+    const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    const popoverDom = createPopoverDom();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-tour="noise-history-modal"]')).toBeTruthy();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("退出历史界面：未关闭时不会跳步，并触发辅助点击关闭按钮", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const modal = document.createElement("div");
+    modal.setAttribute("data-tour", "noise-history-modal");
+    const closeBtn = document.createElement("button");
+    closeBtn.setAttribute("data-tour", "noise-history-footer-close");
+    const clickSpy = vi.spyOn(closeBtn, "click");
+    closeBtn.addEventListener("click", () => {
+      modal.remove();
+    });
+    modal.appendChild(closeBtn);
+    document.body.appendChild(modal);
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config;
+    const step = config.steps?.find(
+      (s) => s.element === '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]'
+    );
+    expect(step?.popover?.onNextClick).toBeTypeOf("function");
+
+    const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    const popoverDom = createPopoverDom();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).not.toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-tour="noise-history-modal"]')).toBeFalsy();
+
+    step!.popover!.onNextClick!(
+      undefined,
+      step as any,
+      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    );
+
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
 
   it("进入自习模式：未切换时点击下一步不会跳步，并触发辅助切换", async () => {
@@ -240,6 +481,7 @@ describe("tour 守卫式下一步", () => {
   });
 
   it("保存设置：点击完成会先触发保存按钮点击再结束", async () => {
+    vi.useFakeTimers();
     driverMock.mockClear();
     localStorage.clear();
 
@@ -249,12 +491,22 @@ describe("tour 守卫式下一步", () => {
     const config = driverMock.mock.calls[0]?.[0] as Config;
     const step = config.steps?.find((s) => s.element === "#settings-save-btn");
 
+    const panel = document.createElement("div");
+    panel.id = "settings-panel-container";
+    document.body.appendChild(panel);
+
     const saveBtn = document.createElement("button");
     saveBtn.id = "settings-save-btn";
     const clickSpy = vi.spyOn(saveBtn, "click");
+    saveBtn.addEventListener("click", () => {
+      setTimeout(() => {
+        panel.remove();
+      }, 200);
+    });
     document.body.appendChild(saveBtn);
 
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
+    driverInstance.isActive = () => true;
     const popoverDom = createPopoverDom();
 
     step!.popover!.onNextClick!(
@@ -264,6 +516,9 @@ describe("tour 守卫式下一步", () => {
     );
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(driverInstance.moveNext).toHaveBeenCalledTimes(0);
+
+    vi.advanceTimersByTime(400);
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
 });

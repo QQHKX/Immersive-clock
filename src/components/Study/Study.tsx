@@ -62,6 +62,8 @@ export function Study() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // [新增] 记录报告是否从历史记录界面打开
+  const [reportFromHistory, setReportFromHistory] = useState(false);
   // 记录当前课时是否已弹出过报告，以及是否被手动关闭以避免重复弹出
   const lastPopupPeriodIdRef = useRef<string | null>(null);
   const dismissedPeriodIdRef = useRef<string | null>(null);
@@ -115,7 +117,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch {}
+    } catch { }
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -154,6 +156,7 @@ export function Study() {
         if (!alreadyPopped && !dismissed && autoPopupEnabled) {
           setReportPeriod({ id: p.id, name: p.name, start, end });
           setReportOpen(true);
+          setReportFromHistory(false); // 自动弹出不属于历史记录来源
           lastPopupPeriodIdRef.current = p.id;
         }
         break;
@@ -293,7 +296,13 @@ export function Study() {
       dismissedPeriodIdRef.current = reportPeriod.id;
     }
     setReportOpen(false);
-  }, [reportPeriod]);
+
+    // 如果是从历史记录打开的，关闭报告时返回历史记录
+    if (reportFromHistory) {
+      setHistoryOpen(true);
+      setReportFromHistory(false); // 重置标记
+    }
+  }, [reportPeriod, reportFromHistory]);
 
   const handleCloseHistory = useCallback(() => {
     setHistoryOpen(false);
@@ -313,6 +322,7 @@ export function Study() {
     setHistoryOpen(false);
     setReportPeriod(period);
     setReportOpen(true);
+    setReportFromHistory(true); // 标记来源为历史记录
   }, []);
 
   const display = study.display || {
