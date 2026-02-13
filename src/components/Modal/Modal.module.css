@@ -111,7 +111,7 @@
 }
 
 /* 无分隔线时自动压缩内容区顶部，统一横竖屏逻辑 */
-.modalHeaderNoDivider+.modalBody {
+.modalHeaderNoDivider + .modalBody {
   padding-top: 0;
   --tabs-safe-top: 0;
 }
@@ -192,7 +192,6 @@
 
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
-
   .modal,
   .modalContent {
     animation: none;
