@@ -1,14 +1,14 @@
 .section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .sectionTitle {
-  margin: 0 0 0.8rem 0;
+  margin: 0 0 0.5rem 0;
   color: var(--text-color, #ffffff);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   position: relative;
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
 }
 
 .sectionTitle::after {
@@ -16,7 +16,7 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 1.2rem;
+  width: 1rem;
   height: 2px;
   background: var(--accent-color, #03dac6);
   border-radius: 1px;
@@ -36,32 +36,33 @@
 
 .overviewGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
 .card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
 }
 
 .cardLabel {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--secondary-color);
+  margin-bottom: 2px;
 }
 
 .cardValue {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  font-size: 1.05rem;
+  gap: 4px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
 .cardSub {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--secondary-color);
 }
@@ -118,44 +119,44 @@
 .chartGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 16px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .chartContainer {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
 }
 
 .chartTitle {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--secondary-color);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 8px;
   justify-content: center;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  gap: 4px;
+  font-size: 0.75rem;
   color: var(--secondary-color);
 }
 
 .legendColor {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
 }
 
@@ -171,9 +172,19 @@
   font-size: 10px;
 }
 
+@media (max-width: 1024px) {
+  .overviewGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .chartGrid {
     grid-template-columns: 1fr;
+  }
+  
+  .overviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -183,10 +194,6 @@
 }
 
 @media (max-width: 768px) {
-  .overviewGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .card {
     padding: 0.5rem 0.65rem;
   }

@@ -38,7 +38,7 @@
 
 .progressContainer {
   width: 100%;
-  max-width: calc(100vw - 800px);
+  max-width: 800px;
   margin: 0 auto;
 }
 

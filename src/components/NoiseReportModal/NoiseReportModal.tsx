@@ -20,8 +20,8 @@ interface NoiseReportModalProps {
   period: NoiseReportPeriod | null;
 }
 
-const CHART_HEIGHT = 160;
-const CHART_PADDING = 36;
+const CHART_HEIGHT = 140;
+const CHART_PADDING = 24;
 
 function formatDuration(ms: number) {
   const sec = Math.round(ms / 1000);
