@@ -61,6 +61,7 @@ describe("noiseHistoryBuilder", () => {
     expect(items[0].period.name).toBe("第1节自习");
     expect(items[0].avgScore).not.toBeNull();
     expect(items[0].avgScore!).toBeCloseTo(90, 5);
+    expect(items[0].coverageRatio).toBeCloseTo(1, 6);
   });
 
   it("应按结束时间倒序排序", () => {

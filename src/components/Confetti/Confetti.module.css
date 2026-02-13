@@ -26,6 +26,7 @@
   from {
     transform: translate3d(0, -12vh, 0) rotate(var(--rot));
   }
+
   to {
     transform: translate3d(0, 112vh, 0) rotate(calc(var(--rot) + 540deg));
   }
@@ -35,9 +36,11 @@
   0% {
     margin-left: 0;
   }
+
   50% {
     margin-left: var(--drift);
   }
+
   100% {
     margin-left: calc(var(--drift) * -0.4);
   }
@@ -47,11 +50,12 @@
   from {
     filter: brightness(1);
   }
+
   50% {
     filter: brightness(1.15);
   }
+
   to {
     filter: brightness(1);
   }
 }
-

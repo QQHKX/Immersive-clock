@@ -1,4 +1,4 @@
-import { driver, type Driver, type DriverHook, type PopoverDOM } from "driver.js";
+import { driver, type Config, type Driver, type DriverHook, type PopoverDOM, type State } from "driver.js";
 import "driver.js/dist/driver.css";
 import "../styles/tour.css";
 
@@ -31,6 +31,35 @@ const scheduleMicrotask = (callback: () => void) => {
     return;
   }
   Promise.resolve().then(callback);
+};
+
+/**
+ * 多次尝试聚焦按钮（函数级注释：规避 driver.js 内部异步聚焦导致焦点落在“上一步/关闭”上的竞态）
+ */
+const focusButtonWithRetries = (button: HTMLButtonElement, retries = 3) => {
+  let remaining = Math.max(0, retries);
+
+  const tryFocusOnce = () => {
+    if (remaining <= 0) return;
+    remaining -= 1;
+
+    if (!button.isConnected) return;
+    if (button.disabled) return;
+
+    const rect = button.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+
+    button.focus();
+    if (document.activeElement === button) return;
+
+    setTimeout(tryFocusOnce, 60);
+  };
+
+  scheduleMicrotask(tryFocusOnce);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(tryFocusOnce);
+  }
+  setTimeout(tryFocusOnce, 0);
 };
 
 /**
@@ -207,21 +236,43 @@ const temporarilyDisableButtons = (buttons: Array<HTMLButtonElement | null | und
 /**
  * 让引导弹窗默认焦点落在“下一步”，而不是“上一步”或“X”
  */
-const preferTourNextButtonAsDefaultFocus = (popover: {
-  nextButton: HTMLButtonElement;
-  previousButton: HTMLButtonElement;
-  closeButton: HTMLButtonElement;
-}) => {
-  if (isTourButtonUsable(popover.nextButton)) {
+const preferTourNextButtonAsDefaultFocus = (
+  popover: {
+    nextButton: HTMLButtonElement;
+    previousButton: HTMLButtonElement;
+    closeButton: HTMLButtonElement;
+  },
+  opts: { driver: Driver }
+) => {
+  if (!opts.driver.isActive()) return;
+
+  const canNext = isTourButtonUsable(popover.nextButton);
+  const canPrev = isTourButtonUsable(popover.previousButton);
+
+  if (canNext) {
     const restore = temporarilyDisableButtons([popover.closeButton, popover.previousButton]);
-    scheduleMicrotask(restore);
+    focusButtonWithRetries(popover.nextButton, 4);
+    setTimeout(() => restore(), 160);
     return;
   }
 
-  if (isTourButtonUsable(popover.previousButton)) {
+  if (canPrev) {
     const restore = temporarilyDisableButtons([popover.closeButton]);
-    scheduleMicrotask(restore);
+    focusButtonWithRetries(popover.previousButton, 3);
+    setTimeout(() => restore(), 160);
   }
+};
+
+type TourPopoverRenderHook = (popover: PopoverDOM, opts: { config: Config; state: State; driver: Driver }) => void;
+
+/**
+ * 组合引导弹窗渲染回调（函数级注释：driver.js 的 step.onPopoverRender 会覆盖全局 onPopoverRender，因此需显式合并以保证默认焦点始终落在“下一步”）
+ */
+const composeTourPopoverRender = (render?: TourPopoverRenderHook): TourPopoverRenderHook => {
+  return (popover, opts) => {
+    render?.(popover, opts);
+    preferTourNextButtonAsDefaultFocus(popover, { driver: opts.driver });
+  };
 };
 
 /**
@@ -273,6 +324,7 @@ export const startTour = (force = false, options?: TourOptions) => {
 
   calibrationAttemptedInTour = false;
   calibrationBaselineAtEnter = null;
+  let isDoneClicked = false;
 
   // 指引开始时立即执行回调（显示 HUD）
   options?.onStart?.();
@@ -288,8 +340,8 @@ export const startTour = (force = false, options?: TourOptions) => {
     nextBtnText: "下一步",
     prevBtnText: "上一步",
     doneBtnText: "完成",
-    onPopoverRender: (popover) => {
-      preferTourNextButtonAsDefaultFocus(popover);
+    onPopoverRender: (popover, opts) => {
+      preferTourNextButtonAsDefaultFocus(popover, { driver: opts.driver });
     },
     steps: [
       {
@@ -327,9 +379,9 @@ export const startTour = (force = false, options?: TourOptions) => {
             "点击“帮我切换”可自动进入自习模式；进入成功后按钮会变为“下一步”，再继续即可。",
           side: "bottom",
           align: "center",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isInStudyMode() ? "下一步" : "帮我切换");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: isInStudyMode,
             attemptResolve: () => {
@@ -364,9 +416,9 @@ export const startTour = (force = false, options?: TourOptions) => {
             "点击“帮我打开”可自动打开设置面板；打开后按钮会变为“下一步”，再继续即可。",
           side: "top",
           align: "end",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isSettingsPanelOpen() ? "下一步" : "帮我打开");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: isSettingsPanelOpen,
             attemptResolve: () => {
@@ -405,9 +457,9 @@ export const startTour = (force = false, options?: TourOptions) => {
             "这里可以配置噪音监测、阈值、校准与报告等。点击“帮我切换”可自动打开“监测设置”。",
           side: "bottom",
           align: "center",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isSettingsCategoryActive("monitor") ? "下一步" : "帮我切换");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: () => isSettingsCategoryActive("monitor"),
             attemptResolve: () => {
@@ -426,7 +478,7 @@ export const startTour = (force = false, options?: TourOptions) => {
             "建议在安静环境下点击“开始校准”（需要麦克风权限）；若仅显示偏差，也可拖动“基准噪音值”滑块进行手动修正。完成任意一种操作后再继续。",
           side: "top",
           align: "center",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             const baselineValue = getNoiseBaselineSliderValue();
             const baselineChanged =
               baselineValue !== null &&
@@ -434,7 +486,7 @@ export const startTour = (force = false, options?: TourOptions) => {
               Math.abs(baselineValue - calibrationBaselineAtEnter) >= 0.5;
             const satisfied = isNoiseCalibrated() || calibrationAttemptedInTour || baselineChanged;
             setNextButtonText(popover, satisfied ? "下一步" : "帮我开始校准");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: () => {
               const baselineValue = getNoiseBaselineSliderValue();
@@ -466,9 +518,9 @@ export const startTour = (force = false, options?: TourOptions) => {
           description: "接下来开启历史记录入口：请切回“基础设置”。点击“帮我切换”可自动切换。",
           side: "bottom",
           align: "center",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isSettingsCategoryActive("basic") ? "下一步" : "帮我切换");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: () => isSettingsCategoryActive("basic"),
             attemptResolve: () => {
@@ -487,9 +539,9 @@ export const startTour = (force = false, options?: TourOptions) => {
             "请勾选“噪音监测”。开启后，自习页面左上角会出现噪音监测组件，点击即可打开历史记录管理。",
           side: "top",
           align: "end",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isNoiseMonitorEnabled() ? "下一步" : "帮我打开");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: isNoiseMonitorEnabled,
             attemptResolve: () => {
@@ -507,9 +559,9 @@ export const startTour = (force = false, options?: TourOptions) => {
           description: "点击“帮我保存”会自动保存设置并返回自习页面，然后继续教您打开历史记录。",
           side: "top",
           align: "end",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, "帮我保存");
-          },
+          }),
           onNextClick: (_el, _step, opts) => {
             tryClickElement("#settings-save-btn");
             waitForConditionThenMoveNext({
@@ -528,9 +580,9 @@ export const startTour = (force = false, options?: TourOptions) => {
             "点击噪音监测左侧的小灯或状态文字即可打开“历史记录管理”。点击“帮我打开”可自动帮您点击入口。",
           side: "right",
           align: "center",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isNoiseHistoryModalOpen() ? "下一步" : "帮我打开");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: isNoiseHistoryModalOpen,
             attemptResolve: () => {
@@ -558,24 +610,22 @@ export const startTour = (force = false, options?: TourOptions) => {
         },
       },
       {
-        element: '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]',
+        element: '[data-tour="noise-history-close"]',
         popover: {
           title: "退出历史界面",
           description:
-            "点击下方“关闭”按钮即可返回自习页面。点击“帮我关闭”可自动帮您点击；关闭成功后按钮会变为“下一步”。",
+            "点击右上角“×”即可关闭历史记录弹窗并返回自习页面。点击“帮我关闭”可自动帮您点击；关闭成功后按钮会变为“下一步”。",
           side: "left",
           align: "end",
-          onPopoverRender: (popover) => {
+          onPopoverRender: composeTourPopoverRender((popover) => {
             setNextButtonText(popover, isNoiseHistoryModalOpen() ? "帮我关闭" : "下一步");
-          },
+          }),
           onNextClick: createGuardedNextClick({
             isSatisfied: () => !isNoiseHistoryModalOpen(),
             attemptResolve: () => {
-              tryClickElement(
-                '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]'
-              );
+              tryClickElement('[data-tour="noise-history-close"]');
             },
-            hintAfterAttempt: "已为您执行关闭操作；若未关闭，请手动点击下方“关闭”按钮后再继续。",
+            hintAfterAttempt: "已为您执行关闭操作；若未关闭，请手动点击右上角“×”后再继续。",
           }),
         },
       },
@@ -585,6 +635,10 @@ export const startTour = (force = false, options?: TourOptions) => {
           description: "您已完成噪音校准与历史记录的关键操作。点击“完成”结束指引并播放结束动画。",
           side: "left",
           align: "center",
+          onNextClick: (_el, _step, opts) => {
+            isDoneClicked = true;
+            opts.driver.destroy();
+          },
         },
       },
     ],
@@ -592,7 +646,7 @@ export const startTour = (force = false, options?: TourOptions) => {
       markTourAsSeen();
       currentDriver = null;
       options?.onEnd?.();
-      if (isTourCompleted({ config: driverObj.getConfig(), state: driverObj.getState() })) {
+      if (isDoneClicked) {
         window.dispatchEvent(new Event("tour:completed"));
       }
       // 派发全局事件通知指引结束

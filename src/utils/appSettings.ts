@@ -1,6 +1,13 @@
 import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem, AppMode } from "../types";
 import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { DeepPartial } from "../types/utilityTypes";
+import {
+  NOISE_ANALYSIS_FRAME_MS,
+  NOISE_ANALYSIS_SLICE_SEC,
+  NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+  NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  NOISE_SCORE_THRESHOLD_DBFS,
+} from "../constants/noise";
 
 import { logger } from "./logger";
 import { StudyBackgroundType } from "./studyBackgroundStorage";
@@ -173,11 +180,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     baselineDb: 40,
     showRealtimeDb: true,
     avgWindowSec: 1,
-    sliceSec: 20,
-    frameMs: 50,
-    scoreThresholdDbfs: -45,
-    segmentMergeGapMs: 500,
-    maxSegmentsPerMin: 6,
+    sliceSec: NOISE_ANALYSIS_SLICE_SEC,
+    frameMs: NOISE_ANALYSIS_FRAME_MS,
+    scoreThresholdDbfs: NOISE_SCORE_THRESHOLD_DBFS,
+    segmentMergeGapMs: NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+    maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
     baselineDisplayDb: 40,
     baselineRms: 0.000414581087327115,
     reportAutoPopup: true,

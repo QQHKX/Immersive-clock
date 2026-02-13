@@ -73,4 +73,41 @@ describe("noiseScoreEngine", () => {
       fewSegments.scoreDetail.segmentPenalty
     );
   });
+
+  it("存在采样覆盖信息时，应使用有效采样时长计算事件密度", () => {
+    const baseRaw = {
+      avgDbfs: -34,
+      maxDbfs: -20,
+      p50Dbfs: -34,
+      p95Dbfs: -28,
+      overRatioDbfs: 0.2,
+      segmentCount: 2,
+    };
+
+    const full = computeNoiseSliceScore(baseRaw, 60_000, { maxSegmentsPerMin: 6 });
+    const partial = computeNoiseSliceScore({ ...baseRaw, sampledDurationMs: 10_000 }, 60_000, {
+      maxSegmentsPerMin: 6,
+    });
+
+    expect(partial.score).toBeLessThan(full.score);
+    expect(partial.scoreDetail.coverageRatio).toBeDefined();
+    expect(partial.scoreDetail.coverageRatio!).toBeCloseTo(10_000 / 60_000, 5);
+  });
+
+  it("评分应保留1位小数", () => {
+    const { score } = computeNoiseSliceScore(
+      {
+        avgDbfs: -44.4,
+        maxDbfs: -30,
+        p50Dbfs: -44.4,
+        p95Dbfs: -40,
+        overRatioDbfs: 0,
+        segmentCount: 0,
+      },
+      60_000
+    );
+
+    expect(score).toBeCloseTo(94.5, 6);
+    expect(score * 10).toBeCloseTo(Math.round(score * 10), 8);
+  });
 });

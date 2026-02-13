@@ -1,6 +1,11 @@
 import React, { useMemo } from "react";
 
 import { useNoiseStream } from "../../hooks/useNoiseStream";
+import {
+  NOISE_ANALYSIS_FRAME_MS,
+  NOISE_ANALYSIS_SLICE_SEC,
+  NOISE_REALTIME_CHART_SLICE_COUNT,
+} from "../../constants/noise";
 import { FormSection } from "../FormComponents";
 
 import styles from "./NoiseSettings.module.css";
@@ -10,7 +15,9 @@ export const RealTimeNoiseChart: React.FC = () => {
 
   const { points, threshold, latest, width, height, margin, yTicks, yScale, path, thresholdY } =
     useMemo(() => {
-      const points = ringBuffer;
+      const points = ringBuffer.filter(
+        (p) => Number.isFinite(p.t) && Number.isFinite(p.displayDb) && Number.isFinite(p.dbfs)
+      );
       const threshold = maxLevelDb;
       const latest = points.length ? points[points.length - 1] : null;
 
@@ -25,9 +32,13 @@ export const RealTimeNoiseChart: React.FC = () => {
       const yMin = Math.max(20, Math.floor(minV - pad));
       const yMax = Math.min(100, Math.ceil(maxV + pad));
 
-      const startTs = points.length ? points[0].t : Date.now() - 5 * 60 * 1000;
+      const fallbackSpanMs = Math.max(
+        1,
+        NOISE_ANALYSIS_SLICE_SEC * NOISE_REALTIME_CHART_SLICE_COUNT * 1000
+      );
       const endTs = points.length ? points[points.length - 1].t : Date.now();
-      const span = Math.max(1, endTs - startTs);
+      const startTs = endTs - fallbackSpanMs;
+      const span = fallbackSpanMs;
 
       const xScale = (t: number) => {
         const x0 = margin.left;
@@ -51,11 +62,15 @@ export const RealTimeNoiseChart: React.FC = () => {
       };
       const yTicks = niceTicks(yMin, yMax, 5);
 
-      const path = points.length
-        ? points
-            .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.t)} ${yScale(p.displayDb)}`)
-            .join(" ")
-        : "";
+      const gapThresholdMs = Math.max(500, NOISE_ANALYSIS_FRAME_MS * 8);
+      let path = "";
+      for (let i = 0; i < points.length; i++) {
+        const prev = i > 0 ? points[i - 1] : null;
+        const p = points[i];
+        const isGap = prev ? p.t - prev.t > gapThresholdMs : true;
+        path += `${isGap ? "M" : "L"} ${xScale(p.t)} ${yScale(p.displayDb)} `;
+      }
+      path = path.trim();
 
       const thresholdY = yScale(threshold);
 
@@ -131,7 +146,9 @@ export const RealTimeNoiseChart: React.FC = () => {
           </svg>
         )}
       </div>
-      <div className={styles.sourceNote}>显示最近数分钟的高帧率实时分贝（不落库）。</div>
+      <div className={styles.sourceNote}>
+        显示最近 1 个切片时长（{NOISE_ANALYSIS_SLICE_SEC}秒）的高帧率实时分贝（不落库）。
+      </div>
     </FormSection>
   );
 };

@@ -6,6 +6,7 @@ import type { NoiseRealtimeRingBuffer } from "./noiseRealtimeRingBuffer";
 
 export interface NoiseSliceAggregatorOptions {
   sliceSec: number;
+  frameMs: number;
   score: ComputeNoiseScoreOptions;
   baselineRms: number;
   displayBaselineDb: number;
@@ -67,6 +68,7 @@ export function createNoiseSliceAggregator(
   options: NoiseSliceAggregatorOptions
 ): NoiseSliceAggregatorController {
   let sliceMs = Math.max(1000, Math.round(options.sliceSec * 1000));
+  let frameMs = Math.max(10, Math.round(options.frameMs));
   let scoreOpt: ComputeNoiseScoreOptions = {
     ...DEFAULT_NOISE_SCORE_OPTIONS,
     ...(options.score ?? DEFAULT_NOISE_SCORE_OPTIONS),
@@ -85,6 +87,10 @@ export function createNoiseSliceAggregator(
   let segmentCount = 0;
   let lastAbove = false;
   let lastSegmentEndTs: number | null = null;
+  let lastFrameTs: number | null = null;
+  let sampledDurationMs = 0;
+  let gapCount = 0;
+  let maxGapMs = 0;
   const dbfsValues: number[] = [];
   const displayValues: number[] = [];
 
@@ -98,11 +104,15 @@ export function createNoiseSliceAggregator(
     segmentCount = 0;
     lastAbove = false;
     lastSegmentEndTs = null;
+    lastFrameTs = null;
+    sampledDurationMs = 0;
+    gapCount = 0;
+    maxGapMs = 0;
     dbfsValues.length = 0;
     displayValues.length = 0;
   };
 
-  const finalizeSlice = (endTs: number): NoiseSliceSummary | null => {
+  const finalizeSlice = (endTs: number, nextSliceStartTs: number = endTs): NoiseSliceSummary | null => {
     if (sliceStart === null || frames <= 0) return null;
     const startTs = sliceStart;
     const durationMs = Math.max(1, endTs - startTs);
@@ -117,6 +127,9 @@ export function createNoiseSliceAggregator(
       p95Dbfs: quantileSorted(dbfsValues, 0.95),
       overRatioDbfs: aboveFrames / frames,
       segmentCount,
+      sampledDurationMs: Math.max(0, Math.round(sampledDurationMs)),
+      gapCount: Math.max(0, Math.round(gapCount)),
+      maxGapMs: Math.max(0, Math.round(maxGapMs)),
     };
 
     const display = {
@@ -137,12 +150,26 @@ export function createNoiseSliceAggregator(
     };
 
     reset();
-    sliceStart = endTs;
+    sliceStart = nextSliceStartTs;
     return summary;
   };
 
   const onFrame = (frame: NoiseFrameSample): NoiseSliceSummary | null => {
+    const gapThresholdMs = Math.max(1000, Math.round(frameMs * 5));
     if (sliceStart === null) sliceStart = frame.t;
+    let pendingSlice: NoiseSliceSummary | null = null;
+
+    if (lastFrameTs !== null) {
+      const dt = frame.t - lastFrameTs;
+      if (dt > 0 && dt <= gapThresholdMs) {
+        sampledDurationMs += dt;
+      } else if (dt > gapThresholdMs) {
+        gapCount += 1;
+        if (dt > maxGapMs) maxGapMs = dt;
+        pendingSlice = finalizeSlice(lastFrameTs, frame.t);
+      }
+    }
+    lastFrameTs = frame.t;
 
     const displayDb = computeDisplayDbFromRms({ rms: frame.rms, baselineRms, displayBaselineDb });
     ringBuffer.push({ t: frame.t, dbfs: frame.dbfs, displayDb });
@@ -171,13 +198,13 @@ export function createNoiseSliceAggregator(
     if (frame.t - sliceStart >= sliceMs) {
       return finalizeSlice(frame.t);
     }
-    return null;
+    return pendingSlice;
   };
 
   const flush = () => {
     const now = Date.now();
     if (sliceStart === null) return null;
-    return finalizeSlice(now);
+    return finalizeSlice(lastFrameTs ?? now);
   };
 
   return {

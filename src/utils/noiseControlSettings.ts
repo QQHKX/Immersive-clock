@@ -5,6 +5,13 @@
 import { getAppSettings, updateNoiseSettings } from "./appSettings";
 import { logger } from "./logger";
 import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
+import {
+  NOISE_ANALYSIS_FRAME_MS,
+  NOISE_ANALYSIS_SLICE_SEC,
+  NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+  NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  NOISE_SCORE_THRESHOLD_DBFS,
+} from "../constants/noise";
 
 // localStorage 键名 (不再使用，保留注释或直接移除)
 // ...
@@ -22,26 +29,40 @@ export interface NoiseControlSettings {
   alertSoundEnabled: boolean; // 超过阈值时播放提示音
 }
 
+const FIXED_NOISE_ANALYSIS_SETTINGS: Pick<
+  NoiseControlSettings,
+  "sliceSec" | "frameMs" | "scoreThresholdDbfs" | "segmentMergeGapMs" | "maxSegmentsPerMin"
+> = {
+  sliceSec: NOISE_ANALYSIS_SLICE_SEC,
+  frameMs: NOISE_ANALYSIS_FRAME_MS,
+  scoreThresholdDbfs: NOISE_SCORE_THRESHOLD_DBFS,
+  segmentMergeGapMs: NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+};
+
 const DEFAULT_SETTINGS: NoiseControlSettings = {
   maxLevelDb: 55,
   baselineDb: 40,
   showRealtimeDb: true,
   avgWindowSec: 1,
-  sliceSec: 20,
-  frameMs: 50,
-  scoreThresholdDbfs: -45,
-  segmentMergeGapMs: 500,
-  maxSegmentsPerMin: 6,
+  ...FIXED_NOISE_ANALYSIS_SETTINGS,
   alertSoundEnabled: false,
 };
 
+/**
+ * 将“分析与评分”的高级参数固定为程序内配置，避免被设置面板或旧缓存覆盖。
+ */
+function applyFixedNoiseAnalysisSettings(settings: NoiseControlSettings): NoiseControlSettings {
+  return { ...settings, ...FIXED_NOISE_ANALYSIS_SETTINGS };
+}
+
 export function getNoiseControlSettings(): NoiseControlSettings {
-  return getAppSettings().noiseControl;
+  return applyFixedNoiseAnalysisSettings(getAppSettings().noiseControl as NoiseControlSettings);
 }
 
 export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>): void {
   try {
-    updateNoiseSettings(settings);
+    updateNoiseSettings({ ...settings, ...FIXED_NOISE_ANALYSIS_SETTINGS });
 
     const next = getAppSettings().noiseControl;
 

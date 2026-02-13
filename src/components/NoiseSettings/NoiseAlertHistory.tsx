@@ -51,7 +51,7 @@ export const NoiseAlertHistory: React.FC = () => {
             <div key={idx} className={styles.alertItem}>
               <span className={styles.alertTime}>{it.time}</span>
               <span className={styles.alertValue}>
-                段{it.segments} / {(it.overRatio * 100).toFixed(0)}% / {it.score.toFixed(0)}分
+                段{it.segments} / {(it.overRatio * 100).toFixed(0)}% / {it.score.toFixed(1)}分
               </span>
             </div>
           ))

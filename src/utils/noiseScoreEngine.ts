@@ -1,4 +1,9 @@
 import type { NoiseScoreBreakdown, NoiseSliceRawStats } from "../types/noise";
+import {
+  NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+  NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  NOISE_SCORE_THRESHOLD_DBFS,
+} from "../constants/noise";
 
 export interface ComputeNoiseScoreOptions {
   scoreThresholdDbfs: number;
@@ -7,9 +12,9 @@ export interface ComputeNoiseScoreOptions {
 }
 
 export const DEFAULT_NOISE_SCORE_OPTIONS: ComputeNoiseScoreOptions = {
-  scoreThresholdDbfs: -35,
-  segmentMergeGapMs: 300,
-  maxSegmentsPerMin: 6,
+  scoreThresholdDbfs: NOISE_SCORE_THRESHOLD_DBFS,
+  segmentMergeGapMs: NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
 };
 
 function clamp01(value: number): number {
@@ -26,7 +31,12 @@ export function computeNoiseSliceScore(
   options?: Partial<ComputeNoiseScoreOptions>
 ): { score: number; scoreDetail: NoiseScoreBreakdown } {
   const opt: ComputeNoiseScoreOptions = { ...DEFAULT_NOISE_SCORE_OPTIONS, ...(options ?? {}) };
-  const minutes = Math.max(1e-6, durationMs / 60_000);
+  const sampledDurationMs =
+    typeof raw.sampledDurationMs === "number" && Number.isFinite(raw.sampledDurationMs)
+      ? Math.max(0, raw.sampledDurationMs)
+      : null;
+  const effectiveDurationMs = sampledDurationMs && sampledDurationMs > 0 ? sampledDurationMs : durationMs;
+  const minutes = Math.max(1e-6, effectiveDurationMs / 60_000);
   const segmentsPerMin = raw.segmentCount / minutes;
 
   const sustainedLevelDbfs = raw.p50Dbfs;
@@ -37,7 +47,8 @@ export function computeNoiseSliceScore(
   const segmentPenalty = clamp01(segmentsPerMin / Math.max(1e-6, opt.maxSegmentsPerMin));
 
   const penalty = 0.55 * sustainedPenalty + 0.3 * timePenalty + 0.15 * segmentPenalty;
-  const score = Math.max(0, Math.min(100, Math.round(100 * (1 - penalty))));
+  const rawScore = 100 * (1 - penalty);
+  const score = Math.max(0, Math.min(100, Math.round(rawScore * 10) / 10));
 
   return {
     score,
@@ -54,6 +65,10 @@ export function computeNoiseSliceScore(
       overRatioDbfs: raw.overRatioDbfs,
       segmentCount: raw.segmentCount,
       minutes,
+      durationMs,
+      sampledDurationMs: sampledDurationMs ?? undefined,
+      coverageRatio:
+        sampledDurationMs && sampledDurationMs > 0 ? clamp01(sampledDurationMs / Math.max(1, durationMs)) : undefined,
     },
   };
 }

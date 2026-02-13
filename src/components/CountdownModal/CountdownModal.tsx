@@ -120,20 +120,24 @@ export function CountdownModal() {
         <div className={styles.timeInputs}>
           {/* 小时 */}
           <div className={styles.timeInput}>
-            <label className={styles.label}>小时</label>
             <div className={styles.inputGroup}>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("hours", -1)}
                 disabled={hours === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少小时"
               />
-              <div className={styles.timeValue}>{hours.toString().padStart(2, "0")}</div>
+              <div className={styles.valueWrapper}>
+                <div className={styles.timeValue}>{hours.toString().padStart(2, "0")}</div>
+                <span className={styles.unit}>时</span>
+              </div>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("hours", 1)}
                 disabled={hours === 23}
                 icon={<PlusIcon size={16} />}
@@ -144,20 +148,24 @@ export function CountdownModal() {
 
           {/* 分钟 */}
           <div className={styles.timeInput}>
-            <label className={styles.label}>分钟</label>
             <div className={styles.inputGroup}>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("minutes", -1)}
                 disabled={minutes === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少分钟"
               />
-              <div className={styles.timeValue}>{minutes.toString().padStart(2, "0")}</div>
+              <div className={styles.valueWrapper}>
+                <div className={styles.timeValue}>{minutes.toString().padStart(2, "0")}</div>
+                <span className={styles.unit}>分</span>
+              </div>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("minutes", 1)}
                 disabled={minutes === 59}
                 icon={<PlusIcon size={16} />}
@@ -168,20 +176,24 @@ export function CountdownModal() {
 
           {/* 秒 */}
           <div className={styles.timeInput}>
-            <label className={styles.label}>秒</label>
             <div className={styles.inputGroup}>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("seconds", -1)}
                 disabled={seconds === 0}
                 icon={<MinusIcon size={16} />}
                 aria-label="减少秒"
               />
-              <div className={styles.timeValue}>{seconds.toString().padStart(2, "0")}</div>
+              <div className={styles.valueWrapper}>
+                <div className={styles.timeValue}>{seconds.toString().padStart(2, "0")}</div>
+                <span className={styles.unit}>秒</span>
+              </div>
               <FormButton
                 variant="secondary"
                 size="sm"
+                className={styles.adjustButton}
                 onClick={() => adjustTime("seconds", 1)}
                 disabled={seconds === 59}
                 icon={<PlusIcon size={16} />}
@@ -193,18 +205,19 @@ export function CountdownModal() {
       </FormSection>
 
       <FormSection title="快速设置">
-        <FormButtonGroup>
+        <div className={styles.presetsGrid}>
           {presets.map(({ label, minutes: presetMinutes }) => (
             <FormButton
               key={presetMinutes}
               variant="secondary"
+              className={styles.presetButton}
               onClick={() => handlePreset(presetMinutes)}
               title={`设置为${label}`}
             >
               {label}
             </FormButton>
           ))}
-        </FormButtonGroup>
+        </div>
       </FormSection>
     </Modal>
   );

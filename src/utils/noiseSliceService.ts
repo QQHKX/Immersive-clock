@@ -43,24 +43,34 @@ function round(value: number, digits: number): number {
 }
 
 function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
+  const sampledDurationMs = isFiniteNumber(slice.raw.sampledDurationMs)
+    ? Math.max(0, Math.round(slice.raw.sampledDurationMs))
+    : undefined;
+  const gapCount = isFiniteNumber(slice.raw.gapCount) ? Math.max(0, Math.round(slice.raw.gapCount)) : undefined;
+  const maxGapMs = isFiniteNumber(slice.raw.maxGapMs) ? Math.max(0, Math.round(slice.raw.maxGapMs)) : undefined;
+
   return {
     ...slice,
     start: Math.round(slice.start),
     end: Math.round(slice.end),
     frames: Math.max(0, Math.round(slice.frames)),
     raw: {
+      ...slice.raw,
       avgDbfs: round(slice.raw.avgDbfs, 3),
       maxDbfs: round(slice.raw.maxDbfs, 3),
       p50Dbfs: round(slice.raw.p50Dbfs, 3),
       p95Dbfs: round(slice.raw.p95Dbfs, 3),
       overRatioDbfs: round(slice.raw.overRatioDbfs, 4),
       segmentCount: Math.max(0, Math.round(slice.raw.segmentCount)),
+      sampledDurationMs,
+      gapCount,
+      maxGapMs,
     },
     display: {
       avgDb: round(slice.display.avgDb, 2),
       p95Db: round(slice.display.p95Db, 2),
     },
-    score: Math.max(0, Math.min(100, Math.round(slice.score))),
+    score: Math.max(0, Math.min(100, round(slice.score, 1))),
     scoreDetail: slice.scoreDetail,
   };
 }

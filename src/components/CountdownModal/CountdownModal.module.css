@@ -2,129 +2,144 @@
 
 .timeInputs {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
   justify-content: center;
+  padding: var(--spacing-md) 0;
 }
 
 .timeInput {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.label {
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--secondary-color);
-  text-align: center;
+  gap: var(--spacing-md);
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: var(--spacing-sm);
+  /* 移除边框和背景，更简洁 */
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
-/* 时间调整按钮样式已迁移至 FormComponents */
+/* 数值和单位的包裹容器 */
+.valueWrapper {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-width: 100px; /* 确保有足够空间，避免按钮看起来没对齐 */
+}
 
 .timeValue {
   font-family: var(--font-main);
-  font-size: 2rem;
+  font-size: 3.5rem;
   font-weight: 700;
   color: var(--primary-color);
-  text-align: center;
-  min-width: 60px;
+  text-align: right; /* 数字靠右，紧贴单位 */
   padding: var(--spacing-xs) 0;
+  font-variant-numeric: tabular-nums; /* 等宽数字 */
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.presets {
-  margin-bottom: var(--spacing-xl);
+.unit {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  opacity: 0.8;
+  transform: translateY(-2px); /* 微调对齐 */
 }
 
-/* 预设按钮与操作按钮样式已迁移至 FormComponents */
-/* 模态框动画与响应式样式已迁移至统一的 Modal 组件 */
+/* 圆形调整按钮 */
+.adjustButton {
+  width: 36px !important;  /* 强制覆盖默认按钮宽度 */
+  height: 36px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
 
-/* 倒计时模态框的响应式调整 */
+.adjustButton:hover:not(:disabled) {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 预设按钮网格布局 */
+.presetsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.presetButton {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 响应式调整 */
 @media (max-width: 768px) {
   .timeInputs {
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
   }
 
   .timeValue {
-    font-size: 1.5rem;
-    min-width: 50px;
+    font-size: 2.5rem;
+  }
+  
+  .valueWrapper {
+    min-width: 90px;
+  }
+  
+  .unit {
+    font-size: 0.85rem;
+  }
+
+  .presetsGrid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .adjustButton {
-    width: 28px;
-    height: 28px;
+    width: 32px !important;
+    height: 32px !important;
   }
 }
 
 @media (max-width: 480px) {
   .timeInputs {
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
   }
 
   .timeValue {
-    font-size: 1.2rem;
-    min-width: 40px;
+    font-size: 2rem;
   }
-
-  .adjustButton {
-    width: 24px;
-    height: 24px;
+  
+  .valueWrapper {
+    min-width: 70px;
   }
-
-  .presetButtons {
-    gap: 4px;
-  }
-
-  .presetButton {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-  }
-
-  .actions {
-    flex-direction: column;
-    gap: var(--spacing-sm);
-  }
-
-  .cancelButton,
-  .confirmButton {
-    width: 100%;
+  
+  .presetsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-height: 600px) {
   .timeInputs {
     margin-bottom: var(--spacing-md);
+    padding: 0;
   }
-
-  .presets {
-    margin-bottom: var(--spacing-md);
-  }
-}
-
-/* 降低动画模式支持 */
-@media (prefers-reduced-motion: reduce) {
-  .modal {
-    animation: none;
-  }
-
-  .modalContent {
-    animation: none;
-  }
-
-  .confirmButton:hover:not(.disabled) {
-    transform: none;
+  
+  .timeValue {
+    font-size: 2rem;
   }
 }

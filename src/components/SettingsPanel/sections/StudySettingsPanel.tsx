@@ -76,17 +76,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
   const [draftAlertSoundEnabled, setDraftAlertSoundEnabled] = useState<boolean>(
     initialControl.alertSoundEnabled ?? false
   );
-  const [draftSliceSec, setDraftSliceSec] = useState<number>(initialControl.sliceSec);
-  const [draftFrameMs, setDraftFrameMs] = useState<number>(initialControl.frameMs);
-  const [draftScoreThresholdDbfs, setDraftScoreThresholdDbfs] = useState<number>(
-    initialControl.scoreThresholdDbfs
-  );
-  const [draftSegmentMergeGapMs, setDraftSegmentMergeGapMs] = useState<number>(
-    initialControl.segmentMergeGapMs
-  );
-  const [draftMaxSegmentsPerMin, setDraftMaxSegmentsPerMin] = useState<number>(
-    initialControl.maxSegmentsPerMin
-  );
 
   // 初始化噪音设置为草稿
   useEffect(() => {
@@ -101,11 +90,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
     setDraftAvgWindowSec(currentControl.avgWindowSec);
     setDraftAlertSoundEnabled(currentControl.alertSoundEnabled ?? false);
-    setDraftSliceSec(currentControl.sliceSec);
-    setDraftFrameMs(currentControl.frameMs);
-    setDraftScoreThresholdDbfs(currentControl.scoreThresholdDbfs);
-    setDraftSegmentMergeGapMs(currentControl.segmentMergeGapMs);
-    setDraftMaxSegmentsPerMin(currentControl.maxSegmentsPerMin);
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -286,11 +270,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         showRealtimeDb: draftShowRealtimeDb,
         avgWindowSec: draftAvgWindowSec,
         alertSoundEnabled: draftAlertSoundEnabled,
-        sliceSec: draftSliceSec,
-        frameMs: draftFrameMs,
-        scoreThresholdDbfs: draftScoreThresholdDbfs,
-        segmentMergeGapMs: draftSegmentMergeGapMs,
-        maxSegmentsPerMin: draftMaxSegmentsPerMin,
       });
     });
   }, [
@@ -302,21 +281,14 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     draftShowRealtimeDb,
     draftAvgWindowSec,
     draftAlertSoundEnabled,
-    draftSliceSec,
-    draftFrameMs,
-    draftScoreThresholdDbfs,
-    draftSegmentMergeGapMs,
-    draftMaxSegmentsPerMin,
   ]);
 
   // 课表重置功能已迁移到基础设置面板
 
   return (
     <div className={styles.settingsGroup} id="study-panel" role="tabpanel" aria-labelledby="study">
-      <h3 className={styles.groupTitle}>监测设置</h3>
-
       <FormSection title="噪音控制">
-        <p className={styles.helpText}>设定环境噪音的判定标准与显示方式。</p>
+        <p className={styles.helpText}>仅用于调整噪音状态的显示与提示音触发，不会影响评分结果。</p>
 
         <FormRow gap="md" align="start">
           <div style={{ flex: 1, paddingRight: 15 }}>
@@ -332,7 +304,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
               rangeLabels={["40dB", "80dB"]}
             />
             <p className={styles.helpText} style={{ marginTop: 4 }}>
-              环境声音超过此值时视为“吵闹”。
+              环境声音超过此值时会显示为“吵闹”，并在开启提示音时播放提示音（不影响评分）。
             </p>
           </div>
 
@@ -368,98 +340,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             checked={draftAlertSoundEnabled}
             onChange={(e) => setDraftAlertSoundEnabled(e.target.checked)}
           />
-        </FormRow>
-      </FormSection>
-
-      <FormSection title="分析与评分">
-        <p className={styles.helpText}>用于连续高帧率分析与切片评分的参数，通常无需频繁调整。</p>
-
-        <FormRow gap="md" align="start">
-          <div style={{ flex: 1, paddingRight: 15 }}>
-            <FormSlider
-              label="切片长度"
-              value={draftSliceSec}
-              min={5}
-              max={60}
-              step={5}
-              onChange={setDraftSliceSec}
-              formatValue={(v: number) => `${v.toFixed(0)}秒`}
-              showRange={true}
-              rangeLabels={["5s", "60s"]}
-            />
-            <p className={styles.helpText} style={{ marginTop: 4 }}>
-              切片越长，报告曲线更平滑，落库频率更低；越短则更敏感。
-            </p>
-          </div>
-
-          <div style={{ flex: 1, paddingLeft: 15 }}>
-            <FormSlider
-              label="帧步长"
-              value={draftFrameMs}
-              min={20}
-              max={200}
-              step={10}
-              onChange={setDraftFrameMs}
-              formatValue={(v: number) => `${v.toFixed(0)}ms`}
-              showRange={true}
-              rangeLabels={["20ms", "200ms"]}
-            />
-            <p className={styles.helpText} style={{ marginTop: 4 }}>
-              帧步长越小越精细，但 CPU 占用更高。
-            </p>
-          </div>
-        </FormRow>
-
-        <FormRow gap="md" align="start">
-          <div style={{ flex: 1, paddingRight: 15 }}>
-            <FormSlider
-              label="评分阈值（dBFS）"
-              value={draftScoreThresholdDbfs}
-              min={-60}
-              max={-10}
-              step={1}
-              onChange={setDraftScoreThresholdDbfs}
-              formatValue={(v: number) => `${v.toFixed(0)} dBFS`}
-              showRange={true}
-              rangeLabels={["-60", "-10"]}
-            />
-            <p className={styles.helpText} style={{ marginTop: 4 }}>
-              仅影响纪律评分，不受校准影响；数值越小（越远离 0）越严格。
-            </p>
-          </div>
-
-          <div style={{ flex: 1, paddingLeft: 15 }}>
-            <FormSlider
-              label="事件段合并间隔"
-              value={draftSegmentMergeGapMs}
-              min={0}
-              max={1000}
-              step={50}
-              onChange={setDraftSegmentMergeGapMs}
-              formatValue={(v: number) => `${v.toFixed(0)}ms`}
-              showRange={true}
-              rangeLabels={["0ms", "1000ms"]}
-            />
-            <p className={styles.helpText} style={{ marginTop: 4 }}>
-              两段噪音间隔小于该值时视为同一事件段，用于降低“连续咳嗽”被放大的概率。
-            </p>
-          </div>
-        </FormRow>
-
-        <FormRow gap="sm" align="center">
-          <div style={{ flex: 1 }}>
-            <FormSlider
-              label="事件段频率上限"
-              value={draftMaxSegmentsPerMin}
-              min={1}
-              max={20}
-              step={1}
-              onChange={setDraftMaxSegmentsPerMin}
-              formatValue={(v: number) => `${v.toFixed(0)} 段/分钟`}
-              showRange={true}
-              rangeLabels={["1", "20"]}
-            />
-          </div>
         </FormRow>
       </FormSection>
 

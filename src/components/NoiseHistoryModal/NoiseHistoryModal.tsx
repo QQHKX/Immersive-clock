@@ -6,7 +6,7 @@ import { formatDateTimeLocal, parseDateTimeLocal } from "../../utils/dateTimeLoc
 import { buildNoiseHistoryListItems } from "../../utils/noiseHistoryBuilder";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
-import { FormButton, FormButtonGroup, FormInput, FormRow, FormSection } from "../FormComponents";
+import { FormButton, FormInput, FormRow, FormSection } from "../FormComponents";
 import Modal from "../Modal/Modal";
 import type { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
 
@@ -113,18 +113,6 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
       title="历史记录管理"
       maxWidth="xxl"
       closeButtonDataTour="noise-history-close"
-      footer={
-        <FormButtonGroup align="right">
-          <FormButton
-            variant="secondary"
-            onClick={onClose}
-            data-tour="noise-history-footer-close"
-            id="tour-noise-history-footer-close"
-          >
-            关闭
-          </FormButton>
-        </FormButtonGroup>
-      }
     >
       <div data-tour="noise-history-modal">
         <FormSection title="自定义报告">
@@ -182,7 +170,7 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
                 <div key={item.period.id} className={styles.dataRow}>
                   <div className={styles.colName}>{item.period.name}</div>
                   <div className={styles.colScore}>
-                    {item.avgScore === null ? "—" : item.avgScore.toFixed(0)}
+                    {item.avgScore === null ? "—" : item.avgScore.toFixed(1)}
                   </div>
                   <div className={styles.colTime}>
                     {formatRange(item.period.start, item.period.end)}

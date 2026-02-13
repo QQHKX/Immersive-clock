@@ -5,7 +5,6 @@ import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
 import { getNoiseStreamSnapshot, subscribeNoiseStream } from "../../services/noise/noiseStreamService";
-import { FormSection } from "../FormComponents";
 
 import styles from "./NoiseSettings.module.css";
 
@@ -74,7 +73,7 @@ export const NoiseStatsSummary: React.FC = () => {
   const thresholdDb = useMemo(() => getNoiseControlSettings().maxLevelDb, [tick]);
 
   return (
-    <FormSection title="统计模块">
+    <>
       <div className={styles.sourceNote} aria-live="polite">
         数据来源时间：
         {displaySlice ? formatTimeRange(displaySlice.start, displaySlice.end) : "暂无切片数据"}
@@ -86,7 +85,7 @@ export const NoiseStatsSummary: React.FC = () => {
           <div className={styles.sliceHeaderRow}>
             <div className={styles.sliceTitle}>
               最近切片 · {formatDuration(Math.max(0, displaySlice.end - displaySlice.start))} ·{" "}
-              {clampFiniteNumber(displaySlice.score, 0).toFixed(0)}分
+              {clampFiniteNumber(displaySlice.score, 0).toFixed(1)}分
             </div>
             <div className={styles.sliceTime}>{formatTimeRange(displaySlice.start, displaySlice.end)}</div>
           </div>
@@ -113,7 +112,13 @@ export const NoiseStatsSummary: React.FC = () => {
                 {formatPercent01(displaySlice.raw.overRatioDbfs)} ·{" "}
                 {formatDuration(
                   clampFiniteNumber(displaySlice.raw.overRatioDbfs, 0) *
-                  Math.max(0, displaySlice.end - displaySlice.start)
+                  clampFiniteNumber(
+                    typeof displaySlice.raw.sampledDurationMs === "number" &&
+                      Number.isFinite(displaySlice.raw.sampledDurationMs)
+                      ? Math.max(0, displaySlice.raw.sampledDurationMs)
+                      : Math.max(0, displaySlice.end - displaySlice.start),
+                    Math.max(0, displaySlice.end - displaySlice.start)
+                  )
                 )}
               </div>
             </div>
@@ -139,7 +144,7 @@ export const NoiseStatsSummary: React.FC = () => {
       ) : (
         <div className={styles.empty}>暂无切片数据</div>
       )}
-    </FormSection>
+    </>
   );
 };
 

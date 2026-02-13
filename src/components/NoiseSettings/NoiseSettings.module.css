@@ -134,11 +134,6 @@
   padding: 0.75rem;
 }
 
-.sliceItem[data-slice="latest"] {
-  border-color: rgba(76, 201, 240, 0.45);
-  background: rgba(76, 201, 240, 0.08);
-}
-
 .sliceHeaderRow {
   display: flex;
   justify-content: space-between;

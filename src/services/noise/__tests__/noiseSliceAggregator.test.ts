@@ -21,6 +21,7 @@ describe("noiseSliceAggregator", () => {
     });
     const aggregator = createNoiseSliceAggregator({
       sliceSec: 2,
+      frameMs: 100,
       score: { scoreThresholdDbfs: -35, segmentMergeGapMs: 300, maxSegmentsPerMin: 6 },
       baselineRms: 1e-3,
       displayBaselineDb: 40,
@@ -52,9 +53,48 @@ describe("noiseSliceAggregator", () => {
     expect(slice).not.toBeNull();
     expect(slice?.raw.segmentCount).toBe(2);
     expect(slice?.raw.overRatioDbfs).toBeGreaterThan(0);
-    expect(slice?.frames).toBeGreaterThanOrEqual(frames.length);
+    expect(slice?.frames).toBe(frames.length);
+    expect(slice?.raw.sampledDurationMs).toBe(2000);
+    expect(slice?.raw.gapCount).toBe(0);
 
     const points = ringBuffer.snapshot();
     expect(points.length).toBeGreaterThan(0);
+  });
+
+  it("出现长缺口时应切断切片并记录缺口信息", () => {
+    const ringBuffer = createNoiseRealtimeRingBuffer({
+      retentionMs: 5 * 60 * 1000,
+      capacity: 4096,
+    });
+    const aggregator = createNoiseSliceAggregator({
+      sliceSec: 60,
+      frameMs: 100,
+      score: { scoreThresholdDbfs: -35, segmentMergeGapMs: 300, maxSegmentsPerMin: 6 },
+      baselineRms: 1e-3,
+      displayBaselineDb: 40,
+      ringBuffer,
+    });
+
+    const out1 = aggregator.onFrame(frame(0, -50));
+    expect(out1).toBeNull();
+    aggregator.onFrame(frame(100, -50));
+    aggregator.onFrame(frame(200, -50));
+    aggregator.onFrame(frame(300, -50));
+    aggregator.onFrame(frame(400, -50));
+
+    const sliced = aggregator.onFrame(frame(10_000, -50));
+    expect(sliced).not.toBeNull();
+    expect(sliced?.start).toBe(0);
+    expect(sliced?.end).toBe(400);
+    expect(sliced?.raw.sampledDurationMs).toBe(400);
+    expect(sliced?.raw.gapCount).toBe(1);
+    expect(sliced?.raw.maxGapMs).toBeGreaterThan(9000);
+
+    aggregator.onFrame(frame(10_100, -50));
+    const last = aggregator.flush();
+    expect(last).not.toBeNull();
+    expect(last?.start).toBe(10_000);
+    expect(last?.end).toBe(10_100);
+    expect(last?.raw.sampledDurationMs).toBe(100);
   });
 });

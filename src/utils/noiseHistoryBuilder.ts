@@ -12,6 +12,8 @@ export interface NoiseHistoryListItem {
   period: NoiseHistoryPeriod;
   avgScore: number | null;
   totalMs: number;
+  periodMs: number;
+  coverageRatio: number;
 }
 
 function getDateKey(ts: number): string {
@@ -98,6 +100,7 @@ export function buildNoiseHistoryListItems(params: {
 
       const startTs = start.getTime();
       const endTs = end.getTime();
+      const periodMs = Math.max(1, endTs - startTs);
       if (endTs < cutoff || startTs > maxEnd) continue;
 
       const { avgScore, totalMs } = computeAvgScoreForRange(sortedSlices, startTs, endTs);
@@ -112,6 +115,8 @@ export function buildNoiseHistoryListItems(params: {
         },
         avgScore,
         totalMs,
+        periodMs,
+        coverageRatio: Math.max(0, Math.min(1, totalMs / periodMs)),
       });
     }
   }

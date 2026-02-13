@@ -6,11 +6,11 @@ import { AppContextProvider } from "../../../contexts/AppContext";
 import { ClockPage } from "../ClockPage";
 
 vi.mock("../../../utils/timeSync", () => ({
-  startTimeSyncManager: () => () => {},
+  startTimeSyncManager: () => () => { },
 }));
 
 vi.mock("../../../utils/tour", () => ({
-  startTour: () => {},
+  startTour: () => { },
   isTourActive: () => false,
 }));
 

@@ -93,15 +93,22 @@ describe("tour 守卫式下一步", () => {
 
     const steps = Array.isArray(config.steps) ? config.steps : [];
     const lastStep = steps[steps.length - 1];
-    driverInstance.getConfig = () => config;
-    driverInstance.getState = () => ({ activeIndex: steps.length - 1 } as any);
+    
+    // 模拟点击最后一步的完成按钮
+    lastStep.popover!.onNextClick!(
+      undefined, 
+      lastStep as any, 
+      { config, state: {}, driver: driverInstance } as any
+    );
 
+    // 模拟 destroy 触发 onDestroyed
     config.onDestroyed?.(
       undefined,
       lastStep as any,
-      { config, state: { activeIndex: steps.length - 1 }, driver: driverInstance } as any
+      { config, state: {}, driver: driverInstance } as any
     );
 
+    expect(driverInstance.destroy).toHaveBeenCalled();
     expect(completedListener).toHaveBeenCalledTimes(1);
 
     window.removeEventListener("tour:completed", completedListener);
@@ -122,9 +129,8 @@ describe("tour 守卫式下一步", () => {
 
     const steps = Array.isArray(config.steps) ? config.steps : [];
     const someStep = steps[2];
-    driverInstance.getConfig = () => config;
-    driverInstance.getState = () => ({ activeIndex: 2 } as any);
 
+    // 直接调用 onDestroyed（模拟非完成状态下的销毁）
     config.onDestroyed?.(undefined, someStep as any, { config, state: { activeIndex: 2 }, driver: driverInstance } as any);
 
     expect(completedListener).toHaveBeenCalledTimes(0);
@@ -328,7 +334,7 @@ describe("tour 守卫式下一步", () => {
     const modal = document.createElement("div");
     modal.setAttribute("data-tour", "noise-history-modal");
     const closeBtn = document.createElement("button");
-    closeBtn.setAttribute("data-tour", "noise-history-footer-close");
+    closeBtn.setAttribute("data-tour", "noise-history-close");
     const clickSpy = vi.spyOn(closeBtn, "click");
     closeBtn.addEventListener("click", () => {
       modal.remove();
@@ -340,9 +346,7 @@ describe("tour 守卫式下一步", () => {
     startTour(true);
 
     const config = driverMock.mock.calls[0]?.[0] as Config;
-    const step = config.steps?.find(
-      (s) => s.element === '[data-tour="noise-history-modal"] [data-tour="noise-history-footer-close"]'
-    );
+    const step = config.steps?.find((s) => s.element === '[data-tour="noise-history-close"]');
     expect(step?.popover?.onNextClick).toBeTypeOf("function");
 
     const driverInstance = driverMock.mock.results[0]?.value as Driver;

@@ -296,13 +296,17 @@ export function Study() {
       dismissedPeriodIdRef.current = reportPeriod.id;
     }
     setReportOpen(false);
+  }, [reportPeriod]);
 
-    // 如果是从历史记录打开的，关闭报告时返回历史记录
-    if (reportFromHistory) {
-      setHistoryOpen(true);
-      setReportFromHistory(false); // 重置标记
+  /** 返回历史记录（函数级注释：仅在从历史记录进入报告时提供“返回历史记录”按钮，避免关闭按钮产生隐式跳转） */
+  const handleBackToHistory = useCallback(() => {
+    if (reportPeriod) {
+      dismissedPeriodIdRef.current = reportPeriod.id;
     }
-  }, [reportPeriod, reportFromHistory]);
+    setReportOpen(false);
+    setHistoryOpen(true);
+    setReportFromHistory(false);
+  }, [reportPeriod]);
 
   const handleCloseHistory = useCallback(() => {
     setHistoryOpen(false);
@@ -440,7 +444,12 @@ export function Study() {
 
       {/* 噪音报告弹窗 */}
       {reportOpen && reportPeriod && (
-        <NoiseReportModal isOpen={reportOpen} onClose={handleCloseReport} period={reportPeriod} />
+        <NoiseReportModal
+          isOpen={reportOpen}
+          onClose={handleCloseReport}
+          onBack={reportFromHistory ? handleBackToHistory : undefined}
+          period={reportPeriod}
+        />
       )}
 
       {/* 噪音历史记录弹窗 */}

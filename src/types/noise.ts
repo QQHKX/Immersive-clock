@@ -12,6 +12,9 @@ export interface NoiseSliceRawStats {
   p95Dbfs: number;
   overRatioDbfs: number;
   segmentCount: number;
+  sampledDurationMs?: number;
+  gapCount?: number;
+  maxGapMs?: number;
 }
 
 export interface NoiseSliceDisplayStats {
@@ -32,6 +35,9 @@ export interface NoiseScoreBreakdown {
   overRatioDbfs: number;
   segmentCount: number;
   minutes: number;
+  durationMs?: number;
+  sampledDurationMs?: number;
+  coverageRatio?: number;
 }
 
 export interface NoiseSliceSummary {

@@ -17,6 +17,7 @@ export interface NoiseReportPeriod {
 interface NoiseReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onBack?: () => void;
   period: NoiseReportPeriod | null;
 }
 
@@ -120,9 +121,73 @@ function getScoreLevelText(score: number) {
 }
 
 /**
+ * 计算路径长度
+ * @param segments 路径段数组
+ */
+function calculatePathLength(segments: { x: number; y: number }[][]) {
+  let len = 0;
+  for (const seg of segments) {
+    for (let i = 1; i < seg.length; i++) {
+      const dx = seg[i].x - seg[i - 1].x;
+      const dy = seg[i].y - seg[i - 1].y;
+      len += Math.sqrt(dx * dx + dy * dy);
+    }
+  }
+  return len;
+}
+
+/**
+ * 获取平滑路径
+ * 使用 Catmull-Rom 转 贝塞尔曲线算法，提供更自然的平滑效果
+ * @param pts 点数组
+ * @param alpha 参数 (0.5 为向心，0.0 为均匀)
+ */
+function getSmoothPath(pts: { x: number; y: number }[], alpha: number = 0.5) {
+  if (pts.length < 2) return "";
+  if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = i > 0 ? pts[i - 1] : pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = i < pts.length - 2 ? pts[i + 2] : pts[i + 1];
+
+    // 计算控制点
+    const getCp = (pA: { x: number; y: number }, pB: { x: number; y: number }, pC: { x: number; y: number }, pD: { x: number; y: number }) => {
+      const d1 = Math.pow(Math.pow(pB.x - pA.x, 2) + Math.pow(pB.y - pA.y, 2), alpha * 0.5);
+      const d2 = Math.pow(Math.pow(pC.x - pB.x, 2) + Math.pow(pC.y - pB.y, 2), alpha * 0.5);
+      const d3 = Math.pow(Math.pow(pD.x - pC.x, 2) + Math.pow(pD.y - pC.y, 2), alpha * 0.5);
+
+      let cp1x = pB.x + (d2 * (pB.x - pA.x) / (d1 + d2) + (pC.x - pB.x) / 2) / 3;
+      let cp1y = pB.y + (d2 * (pB.y - pA.y) / (d1 + d2) + (pC.y - pB.y) / 2) / 3;
+      let cp2x = pC.x - (d2 * (pD.x - pC.x) / (d3 + d2) + (pC.x - pB.x) / 2) / 3;
+      let cp2y = pC.y - (d2 * (pD.y - pC.y) / (d3 + d2) + (pC.y - pB.y) / 2) / 3;
+
+      // 极端情况回退：如果距离为0
+      if (isNaN(cp1x)) { cp1x = pB.x + (pC.x - pB.x) / 3; cp1y = pB.y + (pC.y - pB.y) / 3; }
+      if (isNaN(cp2x)) { cp2x = pC.x - (pC.x - pB.x) / 3; cp2y = pC.y - (pC.y - pB.y) / 3; }
+
+      return { cp1x, cp1y, cp2x, cp2y };
+    };
+
+    const { cp1x, cp1y, cp2x, cp2y } = getCp(p0, p1, p2, p3);
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+
+  return d;
+}
+
+/**
  * 噪音统计报告弹窗组件
  */
-export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onClose, period }) => {
+export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
+  isOpen,
+  onClose,
+  onBack,
+  period,
+}) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const moreStatsRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(860);
@@ -238,7 +303,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       event: "#E57373", // 红色
     };
 
-    const series: { t: number; v: number; score: number; events: number }[] = [];
+    const series: { t: number; start: number; v: number; score: number; events: number }[] = [];
 
     for (const s of slices) {
       const overlapStart = Math.max(startTs, s.start);
@@ -271,6 +336,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
 
       series.push({
         t: Math.min(Math.max(s.end, startTs), endTs),
+        start: Math.max(s.start, startTs),
         v: s.display.avgDb,
         score: s.score,
         events: s.raw.segmentCount,
@@ -331,11 +397,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         height,
         padding,
         path: "",
+        pathLength: 0,
         areaPath: "",
         scorePath: "",
+        maskRects: [] as { x: number; w: number }[],
         pts: [] as { x: number; y: number; scoreY: number; events: number }[],
         xTicks: [] as { x: number; label: string }[],
         yTicks: [] as { y: number; label: string }[],
+        eventTicks: [] as { y: number; label: string }[],
+        maxEvents: 1,
         thresholdY: 0,
         mapX: (t: number) => 0,
         mapY: (v: number) => 0,
@@ -350,25 +420,75 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
     const mapY = (v: number) =>
       height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
+    const maxEvents = Math.max(1, ...report.series.map((s) => s.events));
+    const mapEventY = (v: number) =>
+      height - padding - (v / maxEvents) * (height - padding * 2);
 
-    const pts = report.series
-      .slice()
-      .sort((a, b) => a.t - b.t)
-      .map((p) => ({
+    const sortedSeries = report.series.slice().sort((a, b) => a.t - b.t);
+    const pts = sortedSeries.map((p, i) => {
+      // 增加滑动平均滤波 (Moving Average)，进一步平滑原始数据的剧烈抖动
+      // 窗口大小为 7，可显著减少毛刺感
+      const windowSize = 7;
+      const startIdx = Math.max(0, i - Math.floor(windowSize / 2));
+      const endIdx = Math.min(sortedSeries.length, i + Math.ceil(windowSize / 2));
+      const window = sortedSeries.slice(startIdx, endIdx);
+
+      const avgV = window.reduce((sum, n) => sum + n.v, 0) / window.length;
+      const avgScore = window.reduce((sum, n) => sum + n.score, 0) / window.length;
+
+      return {
+        t: p.t,
+        start: p.start,
         x: mapX(p.t),
-        y: mapY(p.v),
-        scoreY: mapY(p.score * 0.8), // 将 0-100 的评分缩放到 0-80 范围以保持视觉一致性
+        y: mapY(avgV),
+        scoreY: mapY(avgScore * 0.75),
         events: p.events,
-      }));
+      };
+    });
 
-    const path = pts
-      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.y}` : `L ${pt.x} ${pt.y}`))
-      .join(" ");
-    const areaPath = `${path} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`;
+    // 将点分为连续的段
+    const segments: typeof pts[] = [];
+    if (pts.length > 0) {
+      let currentSeg = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const curr = pts[i];
+        // 如果当前点开始时间 > 前一点结束时间 + 容差(例如 2秒)，则视为断开
+        if (curr.start > prev.t + 2000) {
+          segments.push(currentSeg);
+          currentSeg = [curr];
+        } else {
+          currentSeg.push(curr);
+        }
+      }
+      segments.push(currentSeg);
+    }
 
-    const scorePath = pts
-      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.scoreY}` : `L ${pt.x} ${pt.scoreY}`))
+    const path = getSmoothPath(pts);
+
+    const areaPath = segments
+      .map((seg) => {
+        if (seg.length < 1) return "";
+        const line = getSmoothPath(seg);
+        const last = seg[seg.length - 1];
+        const first = seg[0];
+        return `${line} L ${last.x} ${height - padding} L ${first.x} ${height - padding} Z`;
+      })
       .join(" ");
+
+    const scorePath = getSmoothPath(pts.map((p) => ({ x: p.x, y: p.scoreY })));
+
+    // 生成遮罩矩形，用于隐藏无数据区域
+    // 为了防止线宽被裁剪，矩形宽度稍微向两端扩展
+    const maskRects = segments.map(seg => {
+      if (seg.length === 0) return null;
+      const first = seg[0];
+      const last = seg[seg.length - 1];
+      // 扩展 2px 以覆盖线帽
+      const x = first.x - 2;
+      const w = Math.max(0, last.x - first.x) + 4;
+      return { x, w };
+    }).filter(Boolean) as { x: number; w: number }[];
 
     const xTickTs = [startTs, startTs + span / 3, startTs + (span * 2) / 3, endTs].map((t) =>
       Math.round(t)
@@ -382,21 +502,34 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       y: mapY(v),
       label: String(v),
     }));
+    const eventTickVals = [0, maxEvents / 3, (maxEvents * 2) / 3, maxEvents];
+    const eventTicks = eventTickVals.map((v) => ({
+      y: mapEventY(v),
+      label: Number(v.toFixed(1)).toString(),
+    }));
     const thresholdY = mapY(report.thresholdDb);
+
+    // 计算完整路径长度（包含跨越空隙的部分），以确保动画连续
+    // 由于使用了贝塞尔平滑曲线，实际路径长度会比直线略长，因此增加 15% 的冗余量
+    const pathLength = calculatePathLength([pts.map((p) => ({ x: p.x, y: p.y }))]) * 1.15;
 
     return {
       width,
       height,
       padding,
       path,
+      pathLength,
       areaPath,
       scorePath,
+      maskRects,
       pts,
       xTicks,
       yTicks,
+      eventTicks,
+      maxEvents,
       thresholdY,
-      mapX,
-      mapY,
+      mapX: (t: number) => mapX(t),
+      mapY: (v: number) => mapY(v),
     };
   }, [period, report, chartWidth]);
 
@@ -419,9 +552,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
         height,
         padding,
         scorePath: "",
+        scorePathLength: 0,
+        maskRects: [] as { x: number; w: number }[],
         pts: [] as { x: number; y: number; scoreY: number; events: number }[],
+        eventBuckets: [] as { x: number; events: number; count: number }[],
+        maxBucketEvents: 1,
         xTicks: [] as { x: number; label: string }[],
         yTicks: [] as { y: number; label: string }[],
+        eventTicks: [] as { y: number; label: string }[],
+        maxEvents: 1,
         mapX: (t: number) => 0,
         mapY: (v: number) => 0,
       };
@@ -436,19 +575,82 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
     const mapY = (v: number) =>
       height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
 
-    const pts = report.series
-      .slice()
-      .sort((a, b) => a.t - b.t)
-      .map((p) => ({
-        x: mapX(p.t),
-        y: mapY(p.v),
-        scoreY: mapY(p.score * 0.8),
-        events: p.events,
-      }));
+    const sortedSeries = report.series.slice().sort((a, b) => a.t - b.t);
+    const pts = sortedSeries.map((p, i) => {
+      // 增加滑动平均滤波 (Moving Average)，进一步平滑原始数据的剧烈抖动
+      const windowSize = 7;
+      const startIdx = Math.max(0, i - Math.floor(windowSize / 2));
+      const endIdx = Math.min(sortedSeries.length, i + Math.ceil(windowSize / 2));
+      const window = sortedSeries.slice(startIdx, endIdx);
 
-    const scorePath = pts
-      .map((pt, i) => (i === 0 ? `M ${pt.x} ${pt.scoreY}` : `L ${pt.x} ${pt.scoreY}`))
-      .join(" ");
+      const avgV = window.reduce((sum, n) => sum + n.v, 0) / window.length;
+      const avgScore = window.reduce((sum, n) => sum + n.score, 0) / window.length;
+
+      return {
+        t: p.t,
+        start: p.start,
+        x: mapX(p.t),
+        y: mapY(avgV),
+        scoreY: mapY(avgScore * 0.75),
+        events: p.events,
+      };
+    });
+
+    // 数据聚合逻辑：为了解决柱体过细或重叠问题，将数据按像素宽度进行桶聚合
+    // 目标是每隔约 4-6 像素显示一个柱体
+    const bucketWidth = 5;
+    const numBuckets = Math.max(1, Math.floor((width - padding * 2) / bucketWidth));
+    const eventBuckets = Array.from({ length: numBuckets }, (_, i) => ({
+      x: padding + i * bucketWidth + bucketWidth / 2,
+      events: 0,
+      count: 0,
+    }));
+
+    pts.forEach((p) => {
+      const bucketIdx = Math.min(
+        numBuckets - 1,
+        Math.floor(((p.x - padding) / (width - padding * 2)) * numBuckets)
+      );
+      if (bucketIdx >= 0) {
+        eventBuckets[bucketIdx].events += p.events;
+        eventBuckets[bucketIdx].count++;
+      }
+    });
+
+    // 重新计算聚合后的最大值用于缩放
+    const maxBucketEvents = Math.max(1, ...eventBuckets.map((b) => b.events));
+
+    const segments: typeof pts[] = [];
+    if (pts.length > 0) {
+      let currentSeg = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const curr = pts[i];
+        if (curr.start > prev.t + 2000) {
+          segments.push(currentSeg);
+          currentSeg = [curr];
+        } else {
+          currentSeg.push(curr);
+        }
+      }
+      segments.push(currentSeg);
+    }
+
+    const maskRects = segments
+      .map((seg) => {
+        if (seg.length === 0) return null;
+        const first = seg[0];
+        const last = seg[seg.length - 1];
+        const x = first.x - 2;
+        const w = Math.max(0, last.x - first.x) + 4;
+        return { x, w };
+      })
+      .filter(Boolean) as { x: number; w: number }[];
+
+    const scorePath = getSmoothPath(pts.map((p) => ({ x: p.x, y: p.scoreY })));
+
+    const scorePathLength =
+      calculatePathLength([pts.map((p) => ({ x: p.x, y: p.scoreY }))]) * 1.15;
 
     // 小图表使用较少的刻度
     const xTickTs = [startTs, endTs].map((t) => Math.round(t));
@@ -463,16 +665,29 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       label: String(v),
     }));
 
+    const maxEvents = Math.max(1, ...report.series.map((s) => s.events));
+    const eventTickVals = [0, maxEvents / 2, maxEvents];
+    const eventTicks = eventTickVals.map((v) => ({
+      y: height - padding - (v / maxEvents) * (height - padding * 2),
+      label: Math.round(v).toString(),
+    }));
+
     return {
       width,
       height,
       padding,
       scorePath,
+      scorePathLength,
+      maskRects,
       pts,
+      eventBuckets,
+      maxBucketEvents,
       xTicks,
       yTicks,
-      mapX,
-      mapY,
+      eventTicks,
+      maxEvents,
+      mapX: (t: number) => mapX(t),
+      mapY: (v: number) => mapY(v),
     };
   }, [period, report, chartWidth, isGridSingleColumn]);
 
@@ -490,9 +705,15 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
       maxWidth="xxl"
       footer={
         <div className={styles.footer}>
-          <FormButton variant="primary" size="sm" onClick={onClose}>
-            返回
-          </FormButton>
+          {onBack ? (
+            <FormButton variant="primary" size="sm" onClick={onBack}>
+              返回历史记录
+            </FormButton>
+          ) : (
+            <FormButton variant="primary" size="sm" onClick={onClose}>
+              关闭
+            </FormButton>
+          )}
         </div>
       }
     >
@@ -503,7 +724,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
             <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
               <div className={styles.cardLabel}>时长</div>
               <div className={styles.cardValue}>
-                {period ? formatMinutes(periodDurationMs) : "—"}
+                {report ? formatMinutes(report.totalMs) : "—"}
               </div>
             </div>
             <div className={`${styles.card} ${isLoaded ? styles.animateEnter : ""}`} style={{ opacity: 0 }}>
@@ -511,7 +732,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
               <div className={styles.cardValue}>
                 {scoreInfo ? (
                   <>
-                    <NumberTicker value={scoreInfo.score} duration={2000} /> 分
+                    <NumberTicker value={scoreInfo.score} duration={8000} /> 分
                   </>
                 ) : (
                   "—"
@@ -570,7 +791,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   viewBox={`0 0 ${chart.width} ${chart.height}`}
                   style={
                     {
-                      "--path-length": chart.width * 2,
+                      "--path-length": Math.ceil(chart.pathLength),
                     } as React.CSSProperties
                   }
                 >
@@ -606,6 +827,18 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         />
                       ))}
                     </linearGradient>
+                    <mask id="lineCoverageMask">
+                      {chart.maskRects.map((r, i) => (
+                        <rect
+                          key={i}
+                          x={r.x}
+                          y={0}
+                          width={r.w}
+                          height={chart.height}
+                          fill="white"
+                        />
+                      ))}
+                    </mask>
                   </defs>
 
                   {chart.yTicks.map((t) => (
@@ -640,10 +873,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     d={chart.path}
                     className={`${styles.line} ${showMainChart ? styles.animatePath : ""}`}
                     stroke="url(#lineGradient)"
+                    mask="url(#lineCoverageMask)"
                     style={{
                       stroke: "url(#lineGradient)",
                       strokeDasharray: "var(--path-length)",
-                      strokeDashoffset: showMainChart ? "var(--path-length)" : "var(--path-length)",
+                      strokeDashoffset: "var(--path-length)",
                       visibility: showMainChart ? "visible" : "hidden"
                     }}
                   />
@@ -697,6 +931,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                 统计范围：
                 {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
                 ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB
+                ； 覆盖率：{periodDurationMs > 0 ? ((report.totalMs / periodDurationMs) * 100).toFixed(1) : "0.0"}%
               </div>
             </div>
           ) : (
@@ -716,10 +951,24 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
                   style={
                     {
-                      "--path-length": smallChart.width * 3, // 增加路径长度以确保完全覆盖
+                      "--path-length": Math.ceil(smallChart.scorePathLength),
                     } as React.CSSProperties
                   }
                 >
+                  <defs>
+                    <mask id="scoreCoverageMask">
+                      {smallChart.maskRects.map((r, i) => (
+                        <rect
+                          key={i}
+                          x={r.x}
+                          y={0}
+                          width={r.w}
+                          height={smallChart.height}
+                          fill="white"
+                        />
+                      ))}
+                    </mask>
+                  </defs>
                   {/* 复用网格线 */}
                   {smallChart.yTicks.map((t) => (
                     <line
@@ -739,10 +988,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                     strokeWidth="2"
                     opacity={0.9}
                     className={showMoreStats ? styles.animatePath : ""}
+                    mask="url(#scoreCoverageMask)"
                     style={{
                       strokeDasharray: "var(--path-length)",
-                      strokeDashoffset: showMoreStats ? "var(--path-length)" : "var(--path-length)", // 初始隐藏
-                      visibility: showMoreStats ? "visible" : "hidden" // 动画开始前保持隐藏
+                      strokeDashoffset: showMoreStats ? undefined : "var(--path-length)",
+                      visibility: showMoreStats ? "visible" : "hidden"
                     }}
                   />
 
@@ -770,7 +1020,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   height={smallChart.height}
                   viewBox={`0 0 ${smallChart.width} ${smallChart.height}`}
                 >
-                  {smallChart.yTicks.map((t) => (
+                  {smallChart.eventTicks.map((t) => (
                     <line
                       key={`ey-${t.label}`}
                       x1={smallChart.padding}
@@ -782,27 +1032,30 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                   ))}
 
                   {/* 柱状图 */}
-                  {smallChart.pts.map((p, i) => {
-                    // 将事件计数 (0-20) 映射到高度
-                    const barHeight = (p.events / 20) * (smallChart.height - smallChart.padding * 2);
+                  {smallChart.eventBuckets.map((p, i) => {
+                    if (p.events === 0) return null;
+
+                    const barHeight =
+                      (p.events / Math.max(1, smallChart.maxBucketEvents)) *
+                      (smallChart.height - smallChart.padding * 2);
                     const y = smallChart.height - smallChart.padding - barHeight;
-                    const barWidth = (smallChart.width - smallChart.padding * 2) / smallChart.pts.length;
+                    // 使用固定的聚合宽度，确保不重叠且足够粗
+                    const barWidth = 3.5;
 
                     // 计算阶梯延迟，使动画从左向右波动
-                    // 为与折线图同步，波动总时长设为 4.05s
                     const totalDuration = 4.05;
-                    const progress = i / Math.max(1, smallChart.pts.length - 1);
+                    const progress = i / Math.max(1, smallChart.eventBuckets.length - 1);
 
-                    // 二分查找求出贝塞尔曲线对应的时刻 T，使 T 时刻的进度 y(T) ≈ progress
-                    // 贝塞尔参数: (0.25, 0.46), (0.45, 0.94)
-                    let low = 0, high = 1;
+                    // 二分查找求出贝塞尔曲线对应的时刻 T
+                    let low = 0,
+                      high = 1;
                     let solvedT = progress;
                     for (let k = 0; k < 8; k++) {
                       const mid = (low + high) / 2;
                       const t = mid;
                       const invT = 1 - t;
-                      const y = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
-                      if (y < progress) low = mid;
+                      const yVal = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
+                      if (yVal < progress) low = mid;
                       else high = mid;
                       solvedT = mid;
                     }
@@ -814,15 +1067,16 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({ isOpen, onCl
                         key={i}
                         x={p.x - barWidth / 2}
                         y={y}
-                        width={Math.max(1, barWidth - 1)}
+                        width={barWidth}
                         height={barHeight}
                         fill={report.COLORS.event}
-                        opacity={0.6}
+                        opacity={0.8}
                         className={showMoreStats ? styles.animateBarHeight : ""}
+                        shapeRendering="crispEdges"
                         style={{
                           transformOrigin: `center ${smallChart.height - smallChart.padding}px`,
                           animationDelay: `${delay}s`,
-                          transform: showMoreStats ? undefined : "scaleY(0)" // 初始隐藏
+                          transform: showMoreStats ? undefined : "scaleY(0)",
                         }}
                       />
                     );

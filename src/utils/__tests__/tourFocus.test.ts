@@ -25,6 +25,11 @@ const createDriverMockImpl = (): Driver => ({
   destroy: vi.fn(),
 });
 
+const createActiveDriverMockImpl = (): Driver => ({
+  ...createDriverMockImpl(),
+  isActive: () => true,
+});
+
 const driverMock = vi.fn<[Config?], Driver>(() => createDriverMockImpl());
 
 vi.mock("driver.js", async () => {
@@ -53,6 +58,7 @@ const createUsableButton = () => {
 
 describe("tour 默认焦点", () => {
   it("默认把焦点目标导向“下一步”，避免落在“上一步/X”", async () => {
+    vi.useFakeTimers();
     driverMock.mockClear();
     localStorage.clear();
 
@@ -73,19 +79,21 @@ describe("tour 默认焦点", () => {
         previousButton,
         closeButton,
       } as any,
-      { config: config!, state: {}, driver: createDriverMockImpl() } as any
+      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
     );
 
     expect(closeButton.disabled).toBe(true);
     expect(previousButton.disabled).toBe(true);
 
-    await Promise.resolve();
+    vi.advanceTimersByTime(200);
 
     expect(closeButton.disabled).toBe(false);
     expect(previousButton.disabled).toBe(false);
+    vi.useRealTimers();
   });
 
   it("当“下一步”不可用时，优先避免默认落在“X”", async () => {
+    vi.useFakeTimers();
     driverMock.mockClear();
     localStorage.clear();
 
@@ -105,15 +113,46 @@ describe("tour 默认焦点", () => {
         previousButton,
         closeButton,
       } as any,
-      { config: config!, state: {}, driver: createDriverMockImpl() } as any
+      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
     );
 
     expect(closeButton.disabled).toBe(true);
     expect(previousButton.disabled).toBe(false);
 
-    await Promise.resolve();
+    vi.advanceTimersByTime(200);
 
     expect(closeButton.disabled).toBe(false);
     expect(previousButton.disabled).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("step 自定义 onPopoverRender 时也会导向“下一步”", async () => {
+    vi.useFakeTimers();
+    driverMock.mockClear();
+    localStorage.clear();
+
+    const { startTour } = await import("../tour");
+    startTour(true);
+
+    const config = driverMock.mock.calls[0]?.[0] as Config | undefined;
+    const steps = Array.isArray(config?.steps) ? config!.steps! : [];
+    const step = steps.find((s) => s.element === "#mode-tab-study");
+    expect(step?.popover?.onPopoverRender).toBeTypeOf("function");
+
+    const nextButton = createUsableButton();
+    const previousButton = createUsableButton();
+    const closeButton = createUsableButton();
+
+    step!.popover!.onPopoverRender!(
+      { nextButton, previousButton, closeButton } as any,
+      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
+    );
+
+    expect(previousButton.disabled).toBe(true);
+
+    vi.advanceTimersByTime(200);
+
+    expect(previousButton.disabled).toBe(false);
+    vi.useRealTimers();
   });
 });

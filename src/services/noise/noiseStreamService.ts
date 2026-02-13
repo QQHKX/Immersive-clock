@@ -4,6 +4,7 @@ import { getNoiseControlSettings } from "../../utils/noiseControlSettings";
 import { DEFAULT_NOISE_SCORE_OPTIONS } from "../../utils/noiseScoreEngine";
 import { writeNoiseSlice } from "../../utils/noiseSliceService";
 import { subscribeSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+import { NOISE_REALTIME_CHART_SLICE_COUNT } from "../../constants/noise";
 
 import { startNoiseCapture, stopNoiseCapture } from "./noiseCapture";
 import { createNoiseFrameProcessor } from "./noiseFrameProcessor";
@@ -26,8 +27,15 @@ export interface NoiseStreamSnapshot {
 
 type Listener = () => void;
 
-const RETENTION_MS = 5 * 60 * 1000;
 const STOP_DEBOUNCE_MS = 400;
+
+/**
+ * 计算实时噪音曲线的保留时长（毫秒）
+ * 规则：固定为“3 个切片长度”，用于控制曲线窗口与内存占用。
+ */
+function computeRealtimeRetentionMs(sliceSec: number): number {
+  return Math.max(1000, Math.round(sliceSec * NOISE_REALTIME_CHART_SLICE_COUNT * 1000));
+}
 
 /**
  * 从 RMS 计算显示的分贝值
@@ -92,11 +100,6 @@ let processorStop: (() => void) | null = null;
 let aggregatorFlush: (() => NoiseSliceSummary | null) | null = null;
 
 let windowSamples: { t: number; v: number }[] = [];
-let ringBuffer = createNoiseRealtimeRingBuffer({
-  retentionMs: RETENTION_MS,
-  capacity:
-    Math.ceil(RETENTION_MS / Math.max(10, Math.round(getNoiseControlSettings().frameMs))) + 32,
-});
 
 let baselineRms = getAppSettings().noiseControl.baselineRms;
 let displayBaselineDb = getNoiseControlSettings().baselineDb ?? 40;
@@ -110,6 +113,12 @@ let segmentMergeGapMs =
   getNoiseControlSettings().segmentMergeGapMs ?? DEFAULT_NOISE_SCORE_OPTIONS.segmentMergeGapMs;
 let maxSegmentsPerMin =
   getNoiseControlSettings().maxSegmentsPerMin ?? DEFAULT_NOISE_SCORE_OPTIONS.maxSegmentsPerMin;
+
+const initialRetentionMs = computeRealtimeRetentionMs(sliceSec);
+let ringBuffer = createNoiseRealtimeRingBuffer({
+  retentionMs: initialRetentionMs,
+  capacity: Math.ceil(initialRetentionMs / Math.max(10, Math.round(frameMs))) + 32,
+});
 
 let settingsUnsubscribe: (() => void) | null = null;
 let baselineUnsubscribe: (() => void) | null = null;
@@ -165,12 +174,13 @@ async function hardStart() {
   stopped = false;
 
   windowSamples = [];
+  const retentionMs = computeRealtimeRetentionMs(sliceSec);
   ringBuffer = createNoiseRealtimeRingBuffer({
-    retentionMs: RETENTION_MS,
-    capacity: Math.ceil(RETENTION_MS / Math.max(10, Math.round(frameMs))) + 32,
+    retentionMs,
+    capacity: Math.ceil(retentionMs / Math.max(10, Math.round(frameMs))) + 32,
   });
 
-  setSnapshot({ status: "initializing", latestSlice: snapshot.latestSlice });
+  setSnapshot({ status: "initializing", latestSlice: snapshot.latestSlice, ringBuffer: [] });
 
   try {
     const capture = await startNoiseCapture({
@@ -182,6 +192,7 @@ async function hardStart() {
 
     const aggregator = createNoiseSliceAggregator({
       sliceSec,
+      frameMs,
       score: { scoreThresholdDbfs, segmentMergeGapMs, maxSegmentsPerMin },
       baselineRms,
       displayBaselineDb,
@@ -396,10 +407,7 @@ export function subscribeNoiseStream(listener: Listener): () => void {
  * @returns 噪音流快照
  */
 export function getNoiseStreamSnapshot(): NoiseStreamSnapshot {
-  return {
-    ...snapshot,
-    ringBuffer: ringBuffer.snapshot(),
-  };
+  return { ...snapshot };
 }
 
 /**
