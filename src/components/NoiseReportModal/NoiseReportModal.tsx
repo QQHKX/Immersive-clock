@@ -721,7 +721,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         <div className={styles.footer}>
           {onBack ? (
             <FormButton variant="primary" size="sm" onClick={onBack}>
-              返回历史记录
+              返回
             </FormButton>
           ) : (
             <FormButton variant="primary" size="sm" onClick={onClose}>
