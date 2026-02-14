@@ -16,7 +16,7 @@
 <div align="center">
 
 [![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
-[![](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
 [![](https://img.shields.io/badge/Vite-4.1.0-646CFF.svg)](https://vitejs.dev/)
@@ -188,7 +188,7 @@ We welcome all forms of contribution (feature enhancements, bug fixes, docs impr
 
 ## License & Author
 
-- License: MIT
+- License: LGPL v3
 - Author: **QQHKX**
   - 🌐 [Website](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)

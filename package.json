@@ -5,7 +5,7 @@
   "version": "3.13.0",
   "author": "QQHKX <contact@qqhkx.com>",
   "homepage": "https://qqhkx.com",
-  "license": "MIT",
+  "license": "LGPL-3.0",
   "type": "module",
   "main": "dist-electron/main.js",
   "engines": {

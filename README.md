@@ -15,7 +15,7 @@
 
 <div align="center">
 
-[![](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-5.4.0-blue.svg)](https://www.typescriptlang.org/)
 [![](https://img.shields.io/badge/Vite-5.4.0-646CFF.svg)](https://vitejs.dev/)
@@ -365,7 +365,7 @@ immersive-clock/
 
 ## 📄 许可证与作者
 
-- 许可证：MIT
+- 许可证：LGPL v3
 - 作者：**QQHKX**
   - 🌐 [个人网站](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)
