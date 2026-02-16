@@ -16,7 +16,7 @@
 <div align="center">
 
 [![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
-[![](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](LICENSE)
+[![](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
 [![](https://img.shields.io/badge/Vite-4.1.0-646CFF.svg)](https://vitejs.dev/)
@@ -28,13 +28,17 @@
   <strong>Elegant time management, focused studying</strong>
 </div>
 
+> **⏸️ Maintenance Status**
+>
+> The project is currently on hold because the author is in the final year of high school. PRs/issues are welcome, but responses may be slow. Feel free to fork and maintain your own version.
+
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
-- [Install & Run](#install--run)
+- [Quick Start](#quick-start)
 - [Usage](#usage)
 - [Config & Caching](#config--caching)
 - [Deployment](#deployment)
@@ -75,23 +79,13 @@ Immersive Clock is a lightweight desktop/web clock app built with React + TypeSc
 
 ---
 
-## Install & Run
+## Quick Start
 
-Requirements: Node.js ≥ 16 (Recommended 18+), npm ≥ 8
+You can use Immersive Clock in multiple ways:
 
-```bash
-# Install deps
-npm install
-
-# Start dev (default port 3005)
-npm run dev
-
-# Build production
-npm run build
-
-# Preview build
-npm run preview
-```
+- Live demo (Web): https://clock.qqhkx.com
+- Install as a PWA (Recommended): open the site in Chrome/Edge and click the “Install” button in the address bar/menu
+- Desktop app (Electron): download installers from https://github.com/QQHKX/immersive-clock/releases
 
 ---
 
@@ -179,16 +173,14 @@ More Q&A in [docs/faq.en-US.md](docs/faq.en-US.md).
 
 We welcome all forms of contribution (feature enhancements, bug fixes, docs improvements).
 
-1. Fork and create a feature branch
-2. Keep code style consistent and changes minimal
-3. Submit a PR with brief description and screenshots
-4. Report issues and suggestions in [Issues](https://github.com/QQHKX/immersive-clock/issues)
+- Contribution guide: [CONTRIBUTING.en-US.md](./CONTRIBUTING.en-US.md)
+- Issues & suggestions: [Issues](https://github.com/QQHKX/immersive-clock/issues)
 
 ---
 
 ## License & Author
 
-- License: LGPL v3
+- License: GPL v3
 - Author: **QQHKX**
   - 🌐 [Website](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)

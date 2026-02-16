@@ -15,7 +15,7 @@
 
 <div align="center">
 
-[![](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](LICENSE)
+[![](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![](https://img.shields.io/badge/TypeScript-5.4.0-blue.svg)](https://www.typescriptlang.org/)
 [![](https://img.shields.io/badge/Vite-5.4.0-646CFF.svg)](https://vitejs.dev/)
@@ -34,11 +34,11 @@
 > **✈️ 文档导航**
 >
 > - 我是普通用户：请跳转至 [🚀 快速使用指南](#-快速使用指南)
-> - 我是开发者：请跳转至 [🛠️ 开发与运行指南](#-开发与运行指南)
+> - 我想参与贡献/本地开发：请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 > **⏸️ 维护说明**
 >
-> 因作者高三备考，春节期间将会是高考前最后一次「大版本更新」。此后将以必要 Bug 修复为主，欢迎提交 PR，我会审核并合并。
+> 因作者目前处于高三阶段，项目已暂停开发与维护。欢迎提交 PR / Issue，但处理与合并可能较慢；如需持续迭代，建议 Fork 后自行维护。
 
 ---
 
@@ -47,7 +47,6 @@
 - [项目概述](#-项目概述)
 - [界面预览](#-界面预览)
 - [快速使用指南](#-快速使用指南)
-- [开发与运行指南](#-开发与运行指南)
 - [主要功能](#-主要功能)
 - [使用说明](#-使用说明)
 - [配置与缓存](#-配置与缓存)
@@ -56,7 +55,7 @@
 - [目录结构](#-目录结构)
 - [常见问题](#-常见问题)
 - [交流与反馈](#-交流与反馈)
-- [贡献指南](#-贡献指南)
+- [贡献与开发](#-贡献与开发)
 - [许可证与作者](#-许可证与作者)
 - [Star 历史](#-star-历史)
 
@@ -128,85 +127,6 @@
   - **Windows**: 下载 `.exe` 安装包并运行。
   - **macOS**: 下载 `.dmg` 文件并将应用拖入 Applications 文件夹。
   - **Linux**: 提供 `.AppImage` 或 `.deb` 包。
-
----
-
-## 🛠️ 开发与运行指南
-
-如果您想为项目贡献代码或在本地进行二次开发，请参考以下指南。
-
-### 1. 开发环境要求
-
-- **Node.js**: ≥ 18.0.0
-- **包管理器**: npm ≥ 8.0.0 (或 yarn / pnpm / cnpm)
-- **Git**: 用于代码版本控制
-
-### 2. 项目安装步骤
-
-```bash
-# 克隆项目仓库
-git clone https://github.com/QQHKX/immersive-clock.git
-
-# 进入项目目录
-cd immersive-clock
-
-# 复制环境变量示例文件
-# Windows
-copy .env.example .env
-# macOS/Linux
-cp .env.example .env
-
-# 安装项目依赖
-npm install
-```
-
-### 3. 开发模式运行
-
-**启动 Web 开发服务器：**
-
-```bash
-npm run dev
-# 访问 http://localhost:3005
-```
-
-**启动 Electron 开发环境：**
-
-```bash
-npm run dev:electron
-```
-
-### 4. 生产构建与测试
-
-**Web 端构建：**
-
-```bash
-# 构建生产版本
-npm run build
-
-# 预览构建产物
-npm run preview
-```
-
-**Electron 端构建：**
-
-```bash
-# 构建并打包桌面安装包（输出至 release 目录）
-# 包含自动清理旧构建文件的逻辑
-npm run dist:electron
-```
-
-**运行测试：**
-
-```bash
-# 单元测试 (Vitest)
-npm run test
-
-# 安装 E2E 测试浏览器内核 (首次运行需执行)
-npm run test:e2e:install
-
-# 端到端测试 (Playwright)
-npm run test:e2e
-```
 
 ---
 
@@ -350,22 +270,18 @@ immersive-clock/
 
 ---
 
-## 🤝 贡献指南
+## 🤝 贡献与开发
 
-欢迎任何形式的贡献（功能优化、Bug 修复、文档改进等）：
+如果你想贡献代码、修复问题或在本地进行二次开发，请阅读贡献指南：
 
-> 维护说明：由于作者高三备考，春节期间将会是高考前最后一次大版本更新；此后将以必要 Bug 修复为主。欢迎提交 PR，我会审核并合并。
-
-1. Fork 仓库并创建分支
-2. 保持代码风格一致、变更最小
-3. 提交 PR 并附带简要说明与截图
-4. 问题反馈与建议请至 [Issues](https://github.com/QQHKX/immersive-clock/issues)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- 问题反馈与建议： [Issues](https://github.com/QQHKX/immersive-clock/issues)
 
 ---
 
 ## 📄 许可证与作者
 
-- 许可证：LGPL v3
+- 许可证：GPL v3
 - 作者：**QQHKX**
   - 🌐 [个人网站](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)

@@ -2,8 +2,8 @@
 
 .authorInfo {
   position: fixed;
-  bottom: 0;
-  right: 0;
+  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  right: max(0.5rem, env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -17,43 +17,39 @@
 }
 
 .version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 
-.versionNumber {
-  background: transparent;
-  border: none;
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 2px 4px;
-  border-radius: 4px;
+.by {
   user-select: none;
-  display: inline-block;
 }
 
-.versionNumber:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
-}
-
-.versionNumber:active {
-  transform: scale(0.95);
-}
-
-.link {
+.action {
   color: inherit;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: color 0.3s ease, text-decoration-color 0.3s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+  line-height: 1;
 }
 
-.link:hover {
+.action:hover {
   color: rgba(255, 255, 255, 0.9);
   text-decoration: underline;
+}
+
+.action:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 /* 整体信息块的悬停效果 */
@@ -65,25 +61,13 @@
 /* 响应式适配 */
 @media (max-width: 768px) {
   .authorInfo {
-    bottom: 0;
-    right: 0;
     font-size: 0.7rem;
-  }
-
-  .versionNumber {
-    padding: 1px 3px;
   }
 }
 
 @media (max-width: 480px) {
   .authorInfo {
-    bottom: 0;
-    right: 0;
     font-size: 0.65rem;
-  }
-
-  .versionNumber {
-    padding: 1px 2px;
   }
 }
 
@@ -97,24 +81,15 @@
     color: #ffffff;
   }
 
-  .versionNumber:hover {
-    background: rgba(255, 255, 255, 0.2);
+  .action:hover {
     color: #ffffff;
   }
 }
 
 /* 降低动画模式支持 */
 @media (prefers-reduced-motion: reduce) {
-  .versionNumber {
+  .action {
     transition: none;
-  }
-
-  .versionNumber:hover {
-    transform: none;
-  }
-
-  .versionNumber:active {
-    transform: none;
   }
 
   .authorInfo {

@@ -28,7 +28,7 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
     <aside className={styles.authorInfo}>
       <div className={styles.version}>
         <button
-          className={styles.versionNumber}
+          className={styles.action}
           onClick={handleVersionClick}
           title="点击查看公告"
           type="button"
@@ -36,12 +36,12 @@ export function AuthorInfo({ onVersionClick }: AuthorInfoProps) {
         >
           v{appVersion}
         </button>
-        {" by "}
+        <span className={styles.by}>by</span>
         <a
           href="https://qqhkx.com"
           target="_blank"
           rel="noopener noreferrer"
-          className={styles.link}
+          className={styles.action}
         >
           qqhkx
         </a>
