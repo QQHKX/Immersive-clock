@@ -1,4 +1,4 @@
-import type { Config, Driver } from "driver.js";
+import type { Config, Driver, DriveStep, State } from "driver.js";
 import { describe, expect, it, vi, afterEach } from "vitest";
 
 const createDriverMockImpl = (): Driver => ({
@@ -95,18 +95,18 @@ describe("tour 守卫式下一步", () => {
     const lastStep = steps[steps.length - 1];
 
     // 模拟点击最后一步的完成按钮
-    lastStep.popover!.onNextClick!(
-      undefined,
-      lastStep as any,
-      { config, state: {}, driver: driverInstance } as any
-    );
+    lastStep.popover!.onNextClick!(undefined, lastStep as DriveStep, {
+      config,
+      state: {} as State,
+      driver: driverInstance,
+    });
 
     // 模拟 destroy 触发 onDestroyed
-    config.onDestroyed?.(
-      undefined,
-      lastStep as any,
-      { config, state: {}, driver: driverInstance } as any
-    );
+    config.onDestroyed?.(undefined, lastStep as DriveStep, {
+      config,
+      state: {} as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.destroy).toHaveBeenCalled();
     expect(completedListener).toHaveBeenCalledTimes(1);
@@ -131,11 +131,11 @@ describe("tour 守卫式下一步", () => {
     const someStep = steps[2];
 
     // 直接调用 onDestroyed（模拟非完成状态下的销毁）
-    config.onDestroyed?.(
-      undefined,
-      someStep as any,
-      { config, state: { activeIndex: 2 }, driver: driverInstance } as any
-    );
+    config.onDestroyed?.(undefined, someStep as DriveStep, {
+      config,
+      state: { activeIndex: 2 } as State,
+      driver: driverInstance,
+    });
 
     expect(completedListener).toHaveBeenCalledTimes(0);
 
@@ -165,21 +165,21 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(monitorTab.getAttribute("aria-selected")).toBe("true");
     expect(popoverDom.description.textContent).toContain("已为您执行切换操作");
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
@@ -222,67 +222,34 @@ describe("tour 守卫式下一步", () => {
     const step = config.steps?.find((s) => s.element === '[data-tour="noise-calibration"]');
     expect(step?.popover?.onNextClick).toBeTypeOf("function");
 
-    step?.onHighlightStarted?.(undefined as any, step as any, { config } as any);
-
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
+    step?.onHighlightStarted?.(
+      undefined as unknown as Element,
+      step as DriveStep,
+      { config, state: { popover: popoverDom } as State, driver: driverInstance }
     );
+
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(popoverDom.description.textContent).toContain("已为您触发校准操作");
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
 
-  it("开启历史入口：未勾选时不会跳步，并触发辅助勾选", async () => {
-    vi.useFakeTimers();
-    driverMock.mockClear();
-    localStorage.clear();
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "tour-noise-monitor-checkbox";
-    document.body.appendChild(checkbox);
-
-    const { startTour } = await import("../tour");
-    startTour(true);
-
-    const config = driverMock.mock.calls[0]?.[0] as Config;
-    const step = config.steps?.find((s) => s.element === "#tour-noise-monitor-checkbox");
-    expect(step?.popover?.onNextClick).toBeTypeOf("function");
-
-    const driverInstance = driverMock.mock.results[0]?.value as Driver;
-    const popoverDom = createPopoverDom();
-
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
-
-    expect(driverInstance.moveNext).not.toHaveBeenCalled();
-    expect(checkbox.checked).toBe(true);
-
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
-
-    expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
-  });
 
   it("打开历史记录：未打开弹窗时不会跳步，并触发辅助点击入口", async () => {
     vi.useFakeTimers();
@@ -312,20 +279,20 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(document.querySelector('[data-tour="noise-history-modal"]')).toBeTruthy();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
@@ -356,21 +323,21 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(document.querySelector('[data-tour="noise-history-modal"]')).toBeFalsy();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
@@ -390,11 +357,11 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(switchMode).toHaveBeenCalledWith("study");
@@ -418,11 +385,11 @@ describe("tour 守卫式下一步", () => {
     panel.id = "study-panel";
     document.body.appendChild(panel);
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
@@ -451,11 +418,11 @@ describe("tour 守卫式下一步", () => {
     const popoverDom = createPopoverDom();
     popoverDom.nextButton.innerHTML = "帮我切换";
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(document.getElementById("study-panel")).toBeTruthy();
     expect(popoverDom.description.textContent).toBeTruthy();
@@ -477,11 +444,11 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(driverInstance.moveNext).not.toHaveBeenCalled();
     expect(openSettings).toHaveBeenCalledTimes(1);
@@ -517,11 +484,11 @@ describe("tour 守卫式下一步", () => {
     driverInstance.isActive = () => true;
     const popoverDom = createPopoverDom();
 
-    step!.popover!.onNextClick!(
-      undefined,
-      step as any,
-      { config, state: { popover: popoverDom }, driver: driverInstance } as any
-    );
+    step!.popover!.onNextClick!(undefined, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(0);

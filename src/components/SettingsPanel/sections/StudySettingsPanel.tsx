@@ -68,7 +68,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
   });
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [calibrationProgress, setCalibrationProgress] = useState<number>(0);
-  const [calibrationError, setCalibrationError] = useState<string | null>(null);
+  const [, setCalibrationError] = useState<string | null>(null);
   const [autoPopupReport, setAutoPopupReport] = useState<boolean>(
     () => getNoiseReportSettings().autoPopup
   );

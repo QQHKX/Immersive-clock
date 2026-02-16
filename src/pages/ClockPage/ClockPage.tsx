@@ -110,7 +110,7 @@ export function ClockPage() {
           clearHudHideTimeout();
         },
         switchMode: (mode) => {
-          dispatch({ type: "SET_MODE", payload: mode as any });
+          dispatch({ type: "SET_MODE", payload: mode });
         },
         openSettings: () => {
           setShowSettings(true);
@@ -118,7 +118,7 @@ export function ClockPage() {
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [dispatch]);
+  }, [dispatch, clearHudHideTimeout]);
 
   /**
    * 处理页面点击事件

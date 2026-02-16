@@ -375,7 +375,7 @@ const Weather: React.FC = () => {
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <div>{opts?.showUpdatedHint ? `${line1}` : line1}</div>
             <div>
-              降水概率：{stats.probability}%　预计累计：{stats.expectedAmountMm.toFixed(1)}mm
+              降水概率：{stats.probability}% 预计累计：{stats.expectedAmountMm.toFixed(1)}mm
             </div>
             <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>数据拉取时间：{pulledAtText}</div>
           </div>

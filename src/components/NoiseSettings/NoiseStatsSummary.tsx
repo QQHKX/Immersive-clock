@@ -75,7 +75,10 @@ export const NoiseStatsSummary: React.FC = () => {
     return slices[0] ?? null;
   }, [latestSlice, tick]);
 
-  const thresholdDb = useMemo(() => getNoiseControlSettings().maxLevelDb, [tick]);
+  const thresholdDb = useMemo(() => {
+    void tick;
+    return getNoiseControlSettings().maxLevelDb;
+  }, [tick]);
 
   return (
     <>

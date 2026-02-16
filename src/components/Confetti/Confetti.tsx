@@ -2,12 +2,12 @@ import React, { useMemo } from "react";
 
 import styles from "./Confetti.module.css";
 
-type ConfettiPiece = {
+interface ConfettiPiece {
   id: string;
-  style: React.CSSProperties;
-};
-
-const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
+  style: React.CSSProperties & {
+    [key: `--${string}`]: string | number;
+  };
+}
 
 const createPieces = (count: number): ConfettiPiece[] => {
   const palette = ["#03dac6", "#ffffff", "#bb86fc", "#cf6679", "#4dd0e1", "#ffd54f", "#81c784"];
@@ -31,14 +31,14 @@ const createPieces = (count: number): ConfettiPiece[] => {
     return {
       id: `${idx}-${Math.random().toString(36).slice(2, 6)}`,
       style: {
-        ["--left" as any]: left,
-        ["--w" as any]: w,
-        ["--h" as any]: h,
-        ["--dur" as any]: dur,
-        ["--delay" as any]: delay,
-        ["--rot" as any]: rot,
-        ["--drift" as any]: drift,
-        ["--color" as any]: color,
+        "--left": left,
+        "--w": w,
+        "--h": h,
+        "--dur": dur,
+        "--delay": delay,
+        "--rot": rot,
+        "--drift": drift,
+        "--color": color,
         // 添加 will-change 提示浏览器优化
         willChange: "transform",
       },

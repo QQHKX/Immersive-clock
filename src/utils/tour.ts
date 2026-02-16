@@ -7,7 +7,8 @@ import {
   type State,
 } from "driver.js";
 import "driver.js/dist/driver.css";
-import "../styles/tour.css";
+
+import { AppMode } from "../types";
 
 const TOUR_STORAGE_KEY = "immersive-clock:has-seen-tour";
 
@@ -122,15 +123,6 @@ const isNoiseCalibrated = () => {
   const el = document.querySelector('[data-tour="noise-calibration-status"]');
   const text = el?.textContent ?? "";
   return text.includes("已校准");
-};
-
-/**
- * 判断“噪音监测”是否已开启（作为历史记录入口前置条件）
- */
-const isNoiseMonitorEnabled = () => {
-  const input = document.getElementById("tour-noise-monitor-checkbox") as HTMLInputElement | null;
-  if (!input) return false;
-  return !!input.checked;
 };
 
 /**
@@ -356,7 +348,7 @@ export const isTourActive = () => {
 
 interface TourOptions {
   onStart?: () => void;
-  switchMode?: (mode: string) => void;
+  switchMode?: (mode: AppMode) => void;
   openSettings?: () => void;
   onEnd?: () => void;
 }

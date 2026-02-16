@@ -16,8 +16,9 @@ function setupTestingEnvironment() {
   const win = globalThis as unknown as Window & typeof globalThis;
 
   if (!("matchMedia" in win)) {
-    (win as any).matchMedia = (query: string): MediaQueryList => {
-      return {
+    Object.defineProperty(win, "matchMedia", {
+      writable: true,
+      value: (query: string): MediaQueryList => ({
         matches: false,
         media: query,
         onchange: null,
@@ -26,8 +27,8 @@ function setupTestingEnvironment() {
         addEventListener: () => {},
         removeEventListener: () => {},
         dispatchEvent: () => false,
-      } as MediaQueryList;
-    };
+      }),
+    });
   }
 }
 

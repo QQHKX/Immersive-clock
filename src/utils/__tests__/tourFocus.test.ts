@@ -1,4 +1,4 @@
-import type { Config, Driver } from "driver.js";
+import type { Config, Driver, PopoverDOM, State } from "driver.js";
 import { describe, expect, it, vi } from "vitest";
 
 const createDriverMockImpl = (): Driver => ({
@@ -78,8 +78,8 @@ describe("tour 默认焦点", () => {
         nextButton,
         previousButton,
         closeButton,
-      } as any,
-      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
+      } as unknown as PopoverDOM,
+      { config: config!, state: {} as State, driver: createActiveDriverMockImpl() }
     );
 
     expect(closeButton.disabled).toBe(true);
@@ -109,11 +109,11 @@ describe("tour 默认焦点", () => {
 
     config!.onPopoverRender!(
       {
-        nextButton,
+        nextButton: undefined,
         previousButton,
         closeButton,
-      } as any,
-      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
+      } as unknown as PopoverDOM,
+      { config: config!, state: {} as State, driver: createActiveDriverMockImpl() }
     );
 
     expect(closeButton.disabled).toBe(true);
@@ -144,8 +144,12 @@ describe("tour 默认焦点", () => {
     const closeButton = createUsableButton();
 
     step!.popover!.onPopoverRender!(
-      { nextButton, previousButton, closeButton } as any,
-      { config: config!, state: {}, driver: createActiveDriverMockImpl() } as any
+      {
+        nextButton,
+        previousButton,
+        closeButton,
+      } as unknown as PopoverDOM,
+      { config: config!, state: {} as State, driver: createActiveDriverMockImpl() }
     );
 
     expect(previousButton.disabled).toBe(true);

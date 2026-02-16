@@ -62,14 +62,6 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
   }, [status, alertSoundEnabled, realtimeDisplayDb, maxLevelDb]);
 
   const statusText = useMemo(() => {
-    const isElectronRuntime = () => {
-      try {
-        return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
-      } catch {
-        return false;
-      }
-    };
-
     switch (status) {
       case "quiet":
         return "安静";
