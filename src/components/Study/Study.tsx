@@ -10,6 +10,7 @@ import { readStudyBackground } from "../../utils/studyBackgroundStorage";
 import { ensureInjectedFonts } from "../../utils/studyFontStorage";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { getAdjustedDate } from "../../utils/timeSync";
+import { getValidCoords, getValidDaily3d, getValidHourly72h } from "../../utils/weatherStorage";
 import { MotivationalQuote } from "../MotivationalQuote";
 import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
@@ -67,6 +68,8 @@ export function Study() {
   // 记录当前课时是否已弹出过报告，以及是否被手动关闭以避免重复弹出
   const lastPopupPeriodIdRef = useRef<string | null>(null);
   const dismissedPeriodIdRef = useRef<string | null>(null);
+  const forecastPopupRef = useRef<{ periodId: string; popupId: string } | null>(null);
+  const lastForecastPopupPeriodIdRef = useRef<string | null>(null);
 
   // 背景设置
   const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
@@ -117,7 +120,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch {}
+    } catch { }
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -163,6 +166,124 @@ export function Study() {
       }
     }
   }, [currentTime, reportOpen]);
+
+  useEffect(() => {
+    if (!study.classEndForecastEnabled) return;
+
+    let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
+    try {
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) schedule = data;
+    } catch { }
+
+    const now = getAdjustedDate();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    const coords = getValidCoords();
+    if (!coords) return;
+    const locationParam = `${coords.lon},${coords.lat}`;
+
+    const daily3d = getValidDaily3d(locationParam);
+    const hourly72h = getValidHourly72h(locationParam);
+
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const formatLocalDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+    const toDate = (timeStr: string) => {
+      const [h, m] = timeStr.split(":").map(Number);
+      const d = getAdjustedDate();
+      d.setHours(h, m, 0, 0);
+      return d;
+    };
+
+    const buildDailyLine = (label: string, item?: { textDay?: string; textNight?: string; tempMin?: string; tempMax?: string }) => {
+      const day = item?.textDay || "--";
+      const night = item?.textNight || "--";
+      const tMin = item?.tempMin || "--";
+      const tMax = item?.tempMax || "--";
+      return `${label}：${day}/${night} ${tMin}~${tMax}°`;
+    };
+
+    const buildMorningLine = (label: string, targetDate: string) => {
+      const list = hourly72h?.hourly || [];
+      const segments = list
+        .map((h) => {
+          const ms = h.fxTime ? Date.parse(h.fxTime) : NaN;
+          if (!Number.isFinite(ms)) return null;
+          const d = new Date(ms);
+          const dateStr = formatLocalDate(d);
+          const hour = d.getHours();
+          if (dateStr !== targetDate) return null;
+          if (hour < 5 || hour > 8) return null;
+          const timeText = `${pad2(hour)}:${pad2(d.getMinutes())}`;
+          const tempText = h.temp ? `${h.temp}°` : "--";
+          const popText = h.pop ? `${h.pop}%` : "--";
+          const text = h.text || "--";
+          return `${timeText} ${text} ${tempText} ${popText}`;
+        })
+        .filter(Boolean) as string[];
+      return segments.length > 0 ? `${label}：${segments.join("　")}` : `${label}：--`;
+    };
+
+    for (const p of schedule) {
+      const start = toDate(p.startTime);
+      const end = toDate(p.endTime);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = end.getHours() * 60 + end.getMinutes();
+
+      if (nowMin >= endMin) {
+        if (lastForecastPopupPeriodIdRef.current === p.id) {
+          lastForecastPopupPeriodIdRef.current = null;
+        }
+        if (forecastPopupRef.current?.periodId === p.id) {
+          window.dispatchEvent(
+            new CustomEvent("messagePopup:close", {
+              detail: { id: forecastPopupRef.current.popupId, dismiss: false },
+            })
+          );
+          forecastPopupRef.current = null;
+        }
+      }
+
+      if (nowMin >= startMin && nowMin < endMin && endMin - nowMin <= 5) {
+        const alreadyPopped = lastForecastPopupPeriodIdRef.current === p.id;
+        if (alreadyPopped) break;
+
+        const tomorrow = daily3d?.daily?.[1];
+        const dayAfter = daily3d?.daily?.[2];
+        const dayAfterDate = String(dayAfter?.fxDate || "");
+        const fallbackDayAfter = (() => {
+          const d = getAdjustedDate();
+          d.setDate(d.getDate() + 2);
+          return formatLocalDate(d);
+        })();
+        const targetMorningDate = dayAfterDate || fallbackDayAfter;
+
+        const message = (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div>{buildDailyLine("明天", tomorrow)}</div>
+            <div>{buildDailyLine("后天", dayAfter)}</div>
+            <div>{buildMorningLine("后天早上(5-8)", targetMorningDate)}</div>
+          </div>
+        );
+
+        const popupId = `weather:classEndForecast:${p.id}:${formatLocalDate(now)}`;
+        window.dispatchEvent(
+          new CustomEvent("messagePopup:open", {
+            detail: {
+              id: popupId,
+              type: "weatherForecast",
+              title: "下课前天气预报",
+              message,
+            },
+          })
+        );
+        lastForecastPopupPeriodIdRef.current = p.id;
+        forecastPopupRef.current = { periodId: p.id, popupId };
+        break;
+      }
+    }
+  }, [currentTime, study.classEndForecastEnabled]);
 
   /** 工具函数：计算到指定日期的剩余天数（YYYY-MM-DD） */
   const calcDaysToDate = useCallback((dateStr?: string) => {

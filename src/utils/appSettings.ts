@@ -78,6 +78,9 @@ export interface AppSettings {
       weatherAlert: boolean;
       minutelyPrecip: boolean;
       errorPopup: boolean;
+      airQuality: boolean;
+      sunriseSunset: boolean;
+      classEndForecast: boolean;
     };
     schedule: StudyPeriod[];
     background: {
@@ -171,6 +174,9 @@ const DEFAULT_SETTINGS: AppSettings = {
       weatherAlert: false,
       minutelyPrecip: false,
       errorPopup: true,
+      airQuality: false,
+      sunriseSunset: false,
+      classEndForecast: false,
     },
     schedule: DEFAULT_SCHEDULE,
     background: {
@@ -228,6 +234,18 @@ export function getAppSettings(): AppSettings {
         typeof parsedAlerts.errorPopup === "boolean"
           ? parsedAlerts.errorPopup
           : DEFAULT_SETTINGS.study.alerts.errorPopup,
+      airQuality:
+        typeof parsedAlerts.airQuality === "boolean"
+          ? parsedAlerts.airQuality
+          : DEFAULT_SETTINGS.study.alerts.airQuality,
+      sunriseSunset:
+        typeof parsedAlerts.sunriseSunset === "boolean"
+          ? parsedAlerts.sunriseSunset
+          : DEFAULT_SETTINGS.study.alerts.sunriseSunset,
+      classEndForecast:
+        typeof parsedAlerts.classEndForecast === "boolean"
+          ? parsedAlerts.classEndForecast
+          : DEFAULT_SETTINGS.study.alerts.classEndForecast,
     };
 
     // 可以在此添加简单的版本检查或结构校验逻辑

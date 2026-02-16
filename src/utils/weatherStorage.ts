@@ -4,6 +4,7 @@ import type {
   GeolocationDiagnostics,
   MinutelyPrecipResponse,
   WeatherDaily3dResponse,
+  WeatherHourly72hResponse,
   WeatherNow,
 } from "../types/weather";
 
@@ -17,6 +18,7 @@ const LOCATION_TTL = 12 * 60 * 60 * 1000; // 12小时
 const ALERT_TTL = 12 * 60 * 60 * 1000; // 12小时
 const MINUTELY_TTL = 5 * 60 * 1000; // 5分钟
 const DAILY_TTL = 3 * 60 * 60 * 1000; // 3小时
+const HOURLY72H_TTL = 60 * 60 * 1000; // 1小时
 const AIR_QUALITY_TTL = 60 * 60 * 1000; // 1小时
 const ASTRONOMY_TTL = 12 * 60 * 60 * 1000; // 12小时
 
@@ -63,6 +65,14 @@ export interface WeatherCache {
     data: WeatherDaily3dResponse;
     location: string; // 位置 (lon,lat)
     updatedAt: number;
+  };
+
+  // 4.1.1 小时级天气预报缓存（72小时）
+  hourly72h?: {
+    data: WeatherHourly72hResponse;
+    location: string; // 位置 (lon,lat)
+    updatedAt: number;
+    lastApiFetchAt?: number; // 上次 API 请求时间
   };
 
   // 4.2 空气质量缓存
@@ -276,6 +286,35 @@ export function updateMinutelyLastFetch(lastApiFetchAt: number) {
   });
 }
 
+export function updateHourly72hCache(
+  location: string,
+  data: WeatherHourly72hResponse,
+  lastApiFetchAt?: number
+) {
+  saveWeatherCache((current) => {
+    return {
+      hourly72h: {
+        data,
+        location,
+        updatedAt: Date.now(),
+        lastApiFetchAt: lastApiFetchAt ?? current.hourly72h?.lastApiFetchAt,
+      },
+    };
+  });
+}
+
+export function updateHourly72hLastFetch(lastApiFetchAt: number) {
+  saveWeatherCache((current) => {
+    if (!current.hourly72h) return {};
+    return {
+      hourly72h: {
+        ...current.hourly72h,
+        lastApiFetchAt,
+      },
+    };
+  });
+}
+
 /**
  * 更新预警 Tag
  */
@@ -341,6 +380,18 @@ export function getValidDaily3d(location: string) {
     Date.now() - cache.daily3d.updatedAt < DAILY_TTL
   ) {
     return cache.daily3d.data;
+  }
+  return null;
+}
+
+export function getValidHourly72h(location: string) {
+  const cache = getWeatherCache();
+  if (
+    cache.hourly72h &&
+    cache.hourly72h.location === location &&
+    Date.now() - cache.hourly72h.updatedAt < HOURLY72H_TTL
+  ) {
+    return cache.hourly72h.data;
   }
   return null;
 }
@@ -446,6 +497,11 @@ export function cleanupWeatherCache() {
 
     if (current.daily3d && now - current.daily3d.updatedAt > DAILY_TTL) {
       updates.daily3d = undefined;
+      changed = true;
+    }
+
+    if (current.hourly72h && now - current.hourly72h.updatedAt > HOURLY72H_TTL) {
+      updates.hourly72h = undefined;
       changed = true;
     }
 

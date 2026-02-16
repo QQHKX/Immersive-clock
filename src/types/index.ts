@@ -181,6 +181,9 @@ export interface StudyState {
   minutelyPrecipEnabled?: boolean;
   /** 错误信息弹窗开关 */
   errorPopupEnabled?: boolean;
+  airQualityAlertEnabled?: boolean;
+  sunriseSunsetAlertEnabled?: boolean;
+  classEndForecastEnabled?: boolean;
 }
 
 /**
@@ -345,4 +348,7 @@ export type AppAction =
   | { type: "SET_STUDY_DATE_COLOR"; payload: string | undefined }
   | { type: "SET_WEATHER_ALERT_ENABLED"; payload: boolean }
   | { type: "SET_MINUTELY_PRECIP_ENABLED"; payload: boolean }
-  | { type: "SET_ERROR_POPUP_ENABLED"; payload: boolean };
+  | { type: "SET_ERROR_POPUP_ENABLED"; payload: boolean }
+  | { type: "SET_AIR_QUALITY_ALERT_ENABLED"; payload: boolean }
+  | { type: "SET_SUNRISE_SUNSET_ALERT_ENABLED"; payload: boolean }
+  | { type: "SET_CLASS_END_FORECAST_ENABLED"; payload: boolean };

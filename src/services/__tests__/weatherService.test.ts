@@ -37,6 +37,32 @@ describe("weatherService", () => {
     expect(res.now?.temp).toBe("25");
   });
 
+  it("fetchWeatherHourly72h 正常返回小时预报数据", async () => {
+    vi.stubEnv("VITE_QWEATHER_API_HOST", "api.example.com");
+    vi.stubEnv("VITE_QWEATHER_API_KEY", "test-qweather-key");
+    vi.stubEnv("VITE_AMAP_API_KEY", "test-amap-key");
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () =>
+        JSON.stringify({
+          code: "200",
+          hourly: [{ fxTime: "2026-02-06T05:00+08:00", temp: "8", text: "多云", pop: "10" }],
+        }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { fetchWeatherHourly72h } = await import("../weatherService");
+    const res = await fetchWeatherHourly72h("121.5,31.2");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.code).toBe("200");
+    expect(res.hourly?.[0]?.temp).toBe("8");
+    expect(res.hourly?.[0]?.text).toBe("多云");
+  });
+
   it("fetchWeatherNow 捕获 HTTP 错误并返回 error 字段", async () => {
     vi.stubEnv("VITE_QWEATHER_API_HOST", "api.example.com");
     vi.stubEnv("VITE_QWEATHER_API_KEY", "test-qweather-key");

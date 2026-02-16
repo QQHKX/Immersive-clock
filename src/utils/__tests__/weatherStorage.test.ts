@@ -6,6 +6,7 @@ import {
   getWeatherCache,
   getValidCoords,
   getValidDaily3d,
+  getValidHourly72h,
   getValidAirQuality,
   getValidAstronomySun,
   getValidLocation,
@@ -13,6 +14,8 @@ import {
   readStationAlertRecord,
   updateCoordsCache,
   updateDaily3dCache,
+  updateHourly72hCache,
+  updateHourly72hLastFetch,
   updateAirQualityCache,
   updateAstronomySunCache,
   updateGeolocationDiagnostics,
@@ -128,6 +131,15 @@ describe("weatherStorage", () => {
     expect(getWeatherCache().minutely?.lastApiFetchAt).toBe(1200);
   });
 
+  it("updateHourly72hCache 与 updateHourly72hLastFetch 会保留/更新 lastApiFetchAt", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    updateHourly72hCache("121.5,31.2", { code: "200", hourly: [{ fxTime: "2026-02-06T05:00+08:00" }] }, 900);
+    expect(getWeatherCache().hourly72h?.lastApiFetchAt).toBe(900);
+
+    updateHourly72hLastFetch(1200);
+    expect(getWeatherCache().hourly72h?.lastApiFetchAt).toBe(1200);
+  });
+
   it("updateGeolocationDiagnostics 会写入定位诊断缓存", () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
     updateGeolocationDiagnostics({
@@ -170,6 +182,7 @@ describe("weatherStorage", () => {
         location: { signature: "1.0000,2.0000", updatedAt: 0, city: "X", address: "Y" },
         minutely: { location: "2,1", data: { code: "200" }, updatedAt: 0, lastApiFetchAt: 0 },
         daily3d: { location: "2,1", data: { code: "200" }, updatedAt: 0 },
+        hourly72h: { location: "2,1", data: { code: "200" }, updatedAt: 0, lastApiFetchAt: 0 },
         airQuality: { signature: "1.00,2.00", data: { indexes: [] }, updatedAt: 0 },
         astronomySun: { location: "2,1", date: "20260206", data: { code: "200" }, updatedAt: 0 },
         alerts: {
@@ -186,6 +199,7 @@ describe("weatherStorage", () => {
     expect(cache.location).toBeUndefined();
     expect(cache.minutely).toBeUndefined();
     expect(cache.daily3d).toBeUndefined();
+    expect(cache.hourly72h).toBeUndefined();
     expect(cache.airQuality).toBeUndefined();
     expect(cache.astronomySun).toBeUndefined();
     expect(cache.alerts).toBeUndefined();
@@ -204,6 +218,15 @@ describe("weatherStorage", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(1000 + 5 * 60 * 1000 + 1);
     expect(getValidMinutely("121.5,31.2")).toBeNull();
+  });
+
+  it("getValidHourly72h 在 TTL 内有效，超时后无效", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    updateHourly72hCache("121.5,31.2", { code: "200" }, 999);
+    expect(getValidHourly72h("121.5,31.2")).not.toBeNull();
+
+    vi.spyOn(Date, "now").mockReturnValue(1000 + 60 * 60 * 1000 + 1);
+    expect(getValidHourly72h("121.5,31.2")).toBeNull();
   });
 
   it("updateMinutelyLastFetch 在无 minutely 时不应创建新字段", () => {

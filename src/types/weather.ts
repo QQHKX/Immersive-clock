@@ -163,3 +163,21 @@ export interface MinutelyPrecipResponse {
   minutely?: Array<{ fxTime?: string; precip?: string; type?: string }>;
   error?: string;
 }
+
+export interface WeatherHourly72hResponse {
+  code?: string;
+  updateTime?: string;
+  hourly?: Array<{
+    fxTime?: string;
+    temp?: string;
+    icon?: string;
+    text?: string;
+    pop?: string;
+    precip?: string;
+  }>;
+  refer?: {
+    sources?: string[];
+    license?: string[];
+  };
+  error?: string;
+}

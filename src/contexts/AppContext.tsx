@@ -51,6 +51,9 @@ function loadStudyState(): StudyState {
     weatherAlertEnabled: study.alerts.weatherAlert,
     minutelyPrecipEnabled: study.alerts.minutelyPrecip,
     errorPopupEnabled: study.alerts.errorPopup,
+    airQualityAlertEnabled: study.alerts.airQuality,
+    sunriseSunsetAlertEnabled: study.alerts.sunriseSunset,
+    classEndForecastEnabled: study.alerts.classEndForecast,
   };
 }
 
@@ -479,6 +482,63 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: errorPopupUpdatedStudy,
+      };
+
+    case "SET_AIR_QUALITY_ALERT_ENABLED":
+      const airQualityUpdatedStudy = {
+        ...state.study,
+        airQualityAlertEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            airQuality: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: airQualityUpdatedStudy,
+      };
+
+    case "SET_SUNRISE_SUNSET_ALERT_ENABLED":
+      const sunriseSunsetUpdatedStudy = {
+        ...state.study,
+        sunriseSunsetAlertEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            sunriseSunset: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: sunriseSunsetUpdatedStudy,
+      };
+
+    case "SET_CLASS_END_FORECAST_ENABLED":
+      const classEndForecastUpdatedStudy = {
+        ...state.study,
+        classEndForecastEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            classEndForecast: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: classEndForecastUpdatedStudy,
       };
 
     case "UPDATE_QUOTE_CHANNELS":

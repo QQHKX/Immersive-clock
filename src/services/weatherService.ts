@@ -8,6 +8,7 @@ import type {
   GeolocationPermissionState,
   GeolocationResult,
   MinutelyPrecipResponse,
+  WeatherHourly72hResponse,
   WeatherAlertResponse,
   WeatherDaily3dResponse,
   WeatherNow,
@@ -27,6 +28,7 @@ export type {
   GeolocationResult,
   MinutelyPrecipResponse,
   LocationFlowOptions,
+  WeatherHourly72hResponse,
   WeatherAlertResponse,
   WeatherDaily3dResponse,
   WeatherNow,
@@ -133,6 +135,17 @@ export async function fetchMinutelyPrecip(location: string): Promise<MinutelyPre
     return data;
   } catch (e: unknown) {
     return { error: String(e) } as MinutelyPrecipResponse;
+  }
+}
+
+export async function fetchWeatherHourly72h(location: string): Promise<WeatherHourly72hResponse> {
+  try {
+    const data = (await qweatherGetJson(
+      `/v7/weather/72h?location=${encodeURIComponent(location)}&lang=zh`
+    )) as WeatherHourly72hResponse;
+    return data;
+  } catch (e: unknown) {
+    return { error: String(e) } as WeatherHourly72hResponse;
   }
 }
 

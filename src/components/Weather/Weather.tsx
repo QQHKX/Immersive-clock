@@ -6,12 +6,14 @@ import {
   buildWeatherFlow,
   fetchWeatherAlertsByCoords,
   fetchMinutelyPrecip,
+  fetchWeatherHourly72h,
 } from "../../services/weatherService";
 import type { WeatherFlowOptions } from "../../services/weatherService";
 import type { MinutelyPrecipResponse } from "../../types/weather";
 import { getAppSettings } from "../../utils/appSettings";
 import { logger } from "../../utils/logger";
 import { SETTINGS_EVENTS, subscribeSettingsEvent } from "../../utils/settingsEvents";
+import { getAdjustedDate } from "../../utils/timeSync";
 import {
   getWeatherCache,
   updateWeatherNowSnapshot,
@@ -19,6 +21,8 @@ import {
   getValidMinutely,
   getValidCoords,
   updateMinutelyLastFetch,
+  updateHourly72hCache,
+  updateHourly72hLastFetch,
   updateAlertTag,
   updateDaily3dCache,
   updateAirQualityCache,
@@ -31,6 +35,9 @@ const MINUTELY_PRECIP_POPUP_ID = "weather:minutelyPrecip";
 const MINUTELY_PRECIP_POPUP_SHOWN_KEY = "weather.minutely.popupShown";
 const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
 const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
+const AIR_QUALITY_REMINDER_KEY_PREFIX = "weather.airQuality.reminded.";
+const SUNRISE_REMINDER_KEY_PREFIX = "weather.sunrise.reminded.";
+const SUNSET_REMINDER_KEY_PREFIX = "weather.sunset.reminded.";
 
 const MINUTELY_PRECIP_MANUAL_REFRESH_EVENT = "weatherMinutelyPrecipRefresh";
 const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
@@ -84,6 +91,32 @@ function mapWeatherAlertColorToThemeColor(code?: string | null): string | undefi
   if (normalized === "blue" || normalized.includes("蓝")) return "#3b82f6";
   if (normalized === "white" || normalized.includes("白")) return "#ffffff";
   return undefined;
+}
+
+/**
+ * 根据 AQI 数值计算对应的语义颜色（函数级中文注释：按常见 AQI 分级返回用于强调文本的颜色值）
+ */
+function getAqiColor(aqi: number): string {
+  if (!Number.isFinite(aqi)) return "#ffffff";
+  if (aqi <= 50) return "#22c55e"; // 优
+  if (aqi <= 100) return "#f5a524"; // 良
+  if (aqi <= 150) return "#f97316"; // 轻度污染
+  if (aqi <= 200) return "#ef4444"; // 中度污染
+  if (aqi <= 300) return "#a855f7"; // 重度污染
+  return "#7f1d1d"; // 严重污染
+}
+
+/**
+ * 根据 AQI 数值计算对应的等级描述（函数级中文注释：用于在提醒里展示污染等级文案）
+ */
+function getAqiLevelText(aqi: number): string {
+  if (!Number.isFinite(aqi)) return "";
+  if (aqi <= 50) return "优";
+  if (aqi <= 100) return "良";
+  if (aqi <= 150) return "轻度污染";
+  if (aqi <= 200) return "中度污染";
+  if (aqi <= 300) return "重度污染";
+  return "严重污染";
 }
 
 /**
@@ -501,6 +534,103 @@ const Weather: React.FC = () => {
     ]
   );
 
+  const tickWeatherReminders = useCallback(() => {
+    const now = getAdjustedDate();
+    const todayKey = formatDateYYYYMMDD(now);
+    const nowMs = now.getTime();
+
+    if (study.airQualityAlertEnabled) {
+      const remindedKey = `${AIR_QUALITY_REMINDER_KEY_PREFIX}${todayKey}`;
+      if (!safeReadSessionFlag(remindedKey)) {
+        const cache = getWeatherCache();
+        const indexes = cache.airQuality?.data?.indexes || [];
+        const idx =
+          indexes.find((x) => typeof x.aqi === "number" && String(x.name || "").toUpperCase().includes("AQI")) ||
+          indexes.find((x) => typeof x.aqi === "number") ||
+          null;
+        const aqi = typeof idx?.aqi === "number" ? idx.aqi : null;
+        if (aqi != null && aqi >= 101) {
+          safeWriteSessionFlag(remindedKey, true);
+          const aqiColor = getAqiColor(aqi);
+          const aqiLevel = idx?.category || getAqiLevelText(aqi);
+          window.dispatchEvent(
+            new CustomEvent("messagePopup:open", {
+              detail: {
+                id: `weather:airQuality:${todayKey}`,
+                type: "weatherForecast",
+                title: "空气污染提醒",
+                message: (
+                  <div>
+                    AQI：<span style={{ color: aqiColor, fontWeight: 700 }}>{aqi}</span>
+                    {aqiLevel ? `（${aqiLevel}）` : ""}
+                  </div>
+                ),
+              },
+            })
+          );
+        }
+      }
+    }
+
+    if (study.sunriseSunsetAlertEnabled) {
+      const cache = getWeatherCache();
+      const astro = cache.astronomySun;
+      if (astro?.date === todayKey) {
+        const mkEventMs = (hhmm: string) => {
+          const parts = hhmm.split(":");
+          const hh = Number(parts[0]);
+          const mm = Number(parts[1]);
+          if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+          const d = getAdjustedDate();
+          d.setHours(hh, mm, 0, 0);
+          return d.getTime();
+        };
+
+        const windowMs = 10 * 60 * 1000;
+        const sunrise = typeof astro.data?.sunrise === "string" ? astro.data.sunrise : "";
+        const sunset = typeof astro.data?.sunset === "string" ? astro.data.sunset : "";
+
+        const sunriseMs = sunrise ? mkEventMs(sunrise) : null;
+        const sunsetMs = sunset ? mkEventMs(sunset) : null;
+
+        if (sunriseMs != null) {
+          const remindedKey = `${SUNRISE_REMINDER_KEY_PREFIX}${todayKey}`;
+          if (!safeReadSessionFlag(remindedKey) && nowMs >= sunriseMs && nowMs - sunriseMs < windowMs) {
+            safeWriteSessionFlag(remindedKey, true);
+            window.dispatchEvent(
+              new CustomEvent("messagePopup:open", {
+                detail: {
+                  id: `weather:sunrise:${todayKey}`,
+                  type: "weatherForecast",
+                  title: "日出提醒",
+                  message: `日出时间：${sunrise}`,
+                },
+              })
+            );
+          }
+        }
+
+        if (sunsetMs != null) {
+          const remindedKey = `${SUNSET_REMINDER_KEY_PREFIX}${todayKey}`;
+          const notifyMs = sunsetMs - 30 * 60 * 1000;
+          if (!safeReadSessionFlag(remindedKey) && nowMs >= notifyMs && nowMs - notifyMs < windowMs) {
+            safeWriteSessionFlag(remindedKey, true);
+            window.dispatchEvent(
+              new CustomEvent("messagePopup:open", {
+                detail: {
+                  id: `weather:sunset:${todayKey}`,
+                  type: "weatherForecast",
+                  title: "日落提醒",
+                  message: `太阳要下班啦～ 日落时间：${sunset}`,
+                },
+              })
+            );
+          }
+        }
+      }
+    }
+  }, [study.airQualityAlertEnabled, study.sunriseSunsetAlertEnabled]);
+
   /**
    * 将天气文本映射到图标代码
    * 根据时间自动选择白天或夜间图标
@@ -618,12 +748,30 @@ const Weather: React.FC = () => {
         if (result.astronomySun && !result.astronomySun.error) {
           updateAstronomySunCache(
             locationParam,
-            formatDateYYYYMMDD(new Date()),
+            formatDateYYYYMMDD(getAdjustedDate()),
             result.astronomySun
           );
         }
         if (result.airQuality && !result.airQuality.error) {
           updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
+        }
+
+        if (study.classEndForecastEnabled) {
+          const cache2 = getWeatherCache();
+          const lastFetchAt = cache2.hourly72h?.lastApiFetchAt || 0;
+          const withinInterval = lastFetchAt > 0 && ts - lastFetchAt < 60 * 60 * 1000;
+          const sameLocation = cache2.hourly72h?.location === locationParam;
+          if (!withinInterval || !sameLocation) {
+            try {
+              const hourlyResp = await fetchWeatherHourly72h(locationParam);
+              if (!hourlyResp.error && hourlyResp.code === "200") {
+                updateHourly72hLastFetch(ts);
+                updateHourly72hCache(locationParam, hourlyResp, ts);
+              }
+            } catch (e) {
+              logger.warn("小时预报拉取失败:", e);
+            }
+          }
         }
 
         // 广播刷新完成事件
@@ -668,7 +816,7 @@ const Weather: React.FC = () => {
         setLoading(false);
       }
     },
-    [mapWeatherToIcon, maybeOpenErrorPopup]
+    [mapWeatherToIcon, maybeOpenErrorPopup, study.classEndForecastEnabled]
   );
 
   /**
@@ -797,8 +945,10 @@ const Weather: React.FC = () => {
       } catch (e) {
         logger.warn("分钟级降水处理失败:", e);
       }
+
+      tickWeatherReminders();
     },
-    [refreshMinutelyPrecip, study]
+    [refreshMinutelyPrecip, study, tickWeatherReminders]
   );
 
   /**
@@ -806,11 +956,15 @@ const Weather: React.FC = () => {
    */
   useEffect(() => {
     void initializeWeather();
+    tickWeatherReminders();
 
     const intervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
     const interval = setInterval(() => void initializeWeather(), intervalMs);
     const localMinutelyInterval = setInterval(() => updateMinutelyPrecipPopupFromCache(), intervalMs);
-    const localMinutelyTickInterval = setInterval(() => updateMinutelyPrecipPopupFromCache(), 60 * 1000);
+    const localMinutelyTickInterval = setInterval(() => {
+      updateMinutelyPrecipPopupFromCache();
+      tickWeatherReminders();
+    }, 60 * 1000);
 
     // 监听天气刷新事件
     const handleWeatherRefresh = (e: Event) => {
@@ -879,6 +1033,7 @@ const Weather: React.FC = () => {
     handleAlertsAndPrecip,
     refreshMinutelyPrecip,
     updateMinutelyPrecipPopupFromCache,
+    tickWeatherReminders,
   ]);
 
   // 加载状态
