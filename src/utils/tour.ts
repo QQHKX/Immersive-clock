@@ -70,15 +70,6 @@ const focusButtonWithRetries = (button: HTMLButtonElement, retries = 3) => {
 };
 
 /**
- * 以定时器的方式延后刷新 driver.js（用于等待 React 状态更新后的 DOM 变化）
- */
-const scheduleDriverRefresh = (driverObj: { refresh: () => void }, delayMs = 80) => {
-  setTimeout(() => {
-    driverObj.refresh();
-  }, delayMs);
-};
-
-/**
  * 安全地点击一个 selector 对应的元素（用于“辅助完成”引导步骤）
  */
 const tryClickElement = (selector: string) => {
@@ -162,13 +153,20 @@ const waitForConditionThenMoveNext = (params: {
   condition: () => boolean;
   timeoutMs?: number;
   intervalMs?: number;
+  waitAfterSatisfiedMs?: number;
 }) => {
-  const { driverObj, condition, timeoutMs = 2400, intervalMs = 60 } = params;
+  const { driverObj, condition, timeoutMs = 2400, intervalMs = 60, waitAfterSatisfiedMs = 0 } = params;
   const startedAt = Date.now();
   const tick = () => {
     if (!driverObj.isActive()) return;
     if (condition()) {
-      driverObj.moveNext();
+      if (waitAfterSatisfiedMs > 0) {
+        setTimeout(() => {
+          if (driverObj.isActive()) driverObj.moveNext();
+        }, waitAfterSatisfiedMs);
+      } else {
+        driverObj.moveNext();
+      }
       return;
     }
     if (Date.now() - startedAt >= timeoutMs) {
@@ -181,42 +179,26 @@ const waitForConditionThenMoveNext = (params: {
 };
 
 /**
- * 在引导弹窗中写入提示信息（用于阻止误跳步时的反馈）
+ * 创建“自动动作”点击逻辑：点击下一步时尝试自动执行动作，等待条件满足后切步
  */
-const setPopoverHint = (opts: { state: { popover?: PopoverDOM } }, message: string) => {
-  const descriptionEl = opts.state.popover?.description;
-  if (!descriptionEl) return;
-  descriptionEl.textContent = message;
-};
-
-/**
- * 按当前状态更新“下一步”按钮文案（用于提示用户会触发辅助动作）
- */
-const setNextButtonText = (popover: PopoverDOM, text: string) => {
-  popover.nextButton.innerHTML = text;
-};
-
-/**
- * 创建“守卫式下一步”点击逻辑：未满足条件时不切步，并尝试辅助完成
- */
-const createGuardedNextClick = (params: {
-  isSatisfied: () => boolean;
-  attemptResolve: () => void;
-  hintAfterAttempt: string;
+const createAutoNextClick = (params: {
+  check: () => boolean;
+  action: () => void;
+  timeoutMs?: number;
+  waitAfterSatisfiedMs?: number;
 }): DriverHook => {
   return (_element, _step, opts) => {
-    if (params.isSatisfied()) {
+    if (params.check()) {
       opts.driver.moveNext();
       return;
     }
-
-    params.attemptResolve();
-    setPopoverHint(opts, params.hintAfterAttempt);
-    const popover = opts.state.popover;
-    if (popover) {
-      setNextButtonText(popover, "下一步");
-    }
-    scheduleDriverRefresh(opts.driver);
+    params.action();
+    waitForConditionThenMoveNext({
+      driverObj: opts.driver,
+      condition: params.check,
+      timeoutMs: params.timeoutMs,
+      waitAfterSatisfiedMs: params.waitAfterSatisfiedMs,
+    });
   };
 };
 
@@ -409,23 +391,18 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: "#mode-tab-study",
         popover: {
           title: "进入自习模式",
-          description:
-            "点击“帮我切换”可自动进入自习模式；进入成功后按钮会变为“下一步”，再继续即可。",
+          description: "自习模式是我们的特色模式，接下来带你进入。",
           side: "bottom",
           align: "center",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isInStudyMode() ? "下一步" : "帮我切换");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: isInStudyMode,
-            attemptResolve: () => {
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: isInStudyMode,
+            action: () => {
               const clicked = tryClickElement("#mode-tab-study");
               if (!clicked) {
                 options?.switchMode?.("study");
               }
             },
-            hintAfterAttempt:
-              "已为您执行切换操作；若界面未变化，请手动点击“自习”。进入自习模式后，再点击“下一步”。",
           }),
         },
       },
@@ -433,7 +410,7 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: '[data-tour="clock-area"]',
         popover: {
           title: "自习模式",
-          description: "这是专为专注学习打造的模式，支持专注统计。",
+          description: "这是专为教室多媒体大屏打造的模式，支持噪音监测与统计、在线励志语句、天气显示与预警等等。",
           side: "top",
           align: "center",
         },
@@ -446,22 +423,19 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: "#tour-settings-btn",
         popover: {
           title: "个性化设置",
-          description: "点击“帮我打开”可自动打开设置面板；打开后按钮会变为“下一步”，再继续即可。",
+          description: "在这个不起眼的角落藏着设置面板，这里有极度丰富的各种偏好设置。",
           side: "top",
           align: "end",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isSettingsPanelOpen() ? "下一步" : "帮我打开");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: isSettingsPanelOpen,
-            attemptResolve: () => {
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: isSettingsPanelOpen,
+            action: () => {
               const clicked = tryClickElement("#tour-settings-btn");
               if (!clicked) {
                 options?.openSettings?.();
               }
             },
-            hintAfterAttempt:
-              "已为您执行打开操作；若设置面板未出现，请手动点击“设置”。打开后，再点击“下一步”。",
+            waitAfterSatisfiedMs: 400, // 等待设置面板动画完成
           }),
         },
       },
@@ -473,33 +447,18 @@ export const startTour = (force = false, options?: TourOptions) => {
           side: "left",
           align: "center",
         },
-        onHighlightStarted: () => {
-          // 延迟刷新以确保 DOM 更新后能正确定位
-          setTimeout(() => {
-            if (currentDriver?.isActive()) {
-              currentDriver.refresh();
-            }
-          }, 300);
-        },
       },
       {
         element: "#monitor",
         popover: {
           title: "监测设置",
-          description:
-            "这里可以配置噪音监测、阈值、校准与报告等。点击“帮我切换”可自动打开“监测设置”。",
+          description: "上方可以切换各种类型的设置分类，比如这里可以配置噪音监测功能。",
           side: "bottom",
           align: "center",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isSettingsCategoryActive("monitor") ? "下一步" : "帮我切换");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: () => isSettingsCategoryActive("monitor"),
-            attemptResolve: () => {
-              tryClickElement("#monitor");
-            },
-            hintAfterAttempt:
-              "已为您执行切换操作；若未切换到“监测设置”，请手动点击顶部的“监测设置”标签后再继续。",
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: () => isSettingsCategoryActive("monitor"),
+            action: () => tryClickElement("#monitor"),
           }),
         },
       },
@@ -508,33 +467,24 @@ export const startTour = (force = false, options?: TourOptions) => {
         popover: {
           title: "校准噪音值",
           description:
-            "建议在安静环境下点击“开始校准”（需要麦克风权限）；若仅显示偏差，也可拖动“基准噪音值”滑块进行手动修正。完成任意一种操作后再继续。",
+            "这里是噪音校准功能，校准完成后你会获得更精确的分贝显示。",
           side: "top",
           align: "center",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            const baselineValue = getNoiseBaselineSliderValue();
-            const baselineChanged =
-              baselineValue !== null &&
-              calibrationBaselineAtEnter !== null &&
-              Math.abs(baselineValue - calibrationBaselineAtEnter) >= 0.5;
-            const satisfied = isNoiseCalibrated() || calibrationAttemptedInTour || baselineChanged;
-            setNextButtonText(popover, satisfied ? "下一步" : "帮我开始校准");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: () => {
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: () => {
               const baselineValue = getNoiseBaselineSliderValue();
               const baselineChanged =
                 baselineValue !== null &&
                 calibrationBaselineAtEnter !== null &&
                 Math.abs(baselineValue - calibrationBaselineAtEnter) >= 0.5;
-              return isNoiseCalibrated() || calibrationAttemptedInTour || baselineChanged;
+              return isNoiseCalibrated() || baselineChanged;
             },
-            attemptResolve: () => {
+            action: () => {
               calibrationAttemptedInTour = true;
               tryClickElement("#tour-noise-calibrate-btn");
             },
-            hintAfterAttempt:
-              "已为您触发校准操作；如弹出确认/权限提示，请按提示允许麦克风。若不便授权，也可拖动滑块完成手动修正后继续。",
+            timeoutMs: 8000,
           }),
         },
         onHighlightStarted: () => {
@@ -547,87 +497,35 @@ export const startTour = (force = false, options?: TourOptions) => {
         },
       },
       {
-        element: "#basic",
-        popover: {
-          title: "基础设置",
-          description: "接下来开启历史记录入口：请切回“基础设置”。点击“帮我切换”可自动切换。",
-          side: "bottom",
-          align: "center",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isSettingsCategoryActive("basic") ? "下一步" : "帮我切换");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: () => isSettingsCategoryActive("basic"),
-            attemptResolve: () => {
-              tryClickElement("#basic");
-            },
-            hintAfterAttempt:
-              "已为您执行切换操作；若未切换到“基础设置”，请手动点击顶部的“基础设置”标签后再继续。",
-          }),
-        },
-      },
-      {
-        element: "#tour-noise-monitor-checkbox",
-        popover: {
-          title: "开启历史记录入口",
-          description:
-            "请勾选“噪音监测”。开启后，自习页面左上角会出现噪音监测组件，点击即可打开历史记录管理。",
-          side: "top",
-          align: "end",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isNoiseMonitorEnabled() ? "下一步" : "帮我打开");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: isNoiseMonitorEnabled,
-            attemptResolve: () => {
-              tryClickElement("#tour-noise-monitor-checkbox");
-            },
-            hintAfterAttempt:
-              "已为您执行勾选操作；若未勾选成功，请手动点击“噪音监测”复选框后再继续。",
-          }),
-        },
-      },
-      {
         element: "#settings-save-btn",
         popover: {
           title: "保存设置",
-          description: "点击“帮我保存”会自动保存设置并返回自习页面，然后继续教您打开历史记录。",
+          description: "点击“下一步”自动保存设置并返回自习页面，然后继续教您打开历史记录。",
           side: "top",
           align: "end",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, "帮我保存");
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: () => !isSettingsPanelOpen(),
+            action: () => tryClickElement("#settings-save-btn"),
           }),
-          onNextClick: (_el, _step, opts) => {
-            tryClickElement("#settings-save-btn");
-            waitForConditionThenMoveNext({
-              driverObj: opts.driver,
-              condition: () => !isSettingsPanelOpen(),
-            });
-            scheduleDriverRefresh(opts.driver, 120);
-          },
         },
       },
       {
         element: '[data-tour="noise-monitor"]',
         popover: {
           title: "打开历史记录",
-          description:
-            "点击噪音监测左侧的小灯或状态文字即可打开“历史记录管理”。点击“帮我打开”可自动帮您点击入口。",
+          description: "看见这个会变色呼吸灯了吗，点击它就可以打开历史记录管理页面了。",
           side: "right",
           align: "center",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isNoiseHistoryModalOpen() ? "下一步" : "帮我打开");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: isNoiseHistoryModalOpen,
-            attemptResolve: () => {
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: isNoiseHistoryModalOpen,
+            action: () => {
               const clicked = tryClickElement('[data-tour="noise-history-trigger"]');
               if (!clicked) {
                 tryClickElement('[data-tour="noise-monitor"]');
               }
             },
-            hintAfterAttempt:
-              "已为您执行打开操作；若弹窗未出现，请手动点击噪音监测的小灯或状态文字后再继续。",
           }),
         },
         onHighlightStarted: () => {
@@ -639,7 +537,7 @@ export const startTour = (force = false, options?: TourOptions) => {
         popover: {
           title: "历史记录管理",
           description:
-            "这里可以查看最近保存天数内的噪音历史，或自定义时间段生成报告。接下来我会带您正确退出历史界面。",
+            "这里可以查看最近保存天数内的噪音历史，这里有目前最先进的噪音分析报告。但如果你是新用户你应该还没有任何数据。",
           side: "left",
           align: "center",
         },
@@ -648,26 +546,20 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: '[data-tour="noise-history-close"]',
         popover: {
           title: "退出历史界面",
-          description:
-            "点击右上角“×”即可关闭历史记录弹窗并返回自习页面。点击“帮我关闭”可自动帮您点击；关闭成功后按钮会变为“下一步”。",
+          description: "点击“下一步”自动关闭历史记录弹窗并返回自习页面。",
           side: "left",
           align: "end",
-          onPopoverRender: composeTourPopoverRender((popover) => {
-            setNextButtonText(popover, isNoiseHistoryModalOpen() ? "帮我关闭" : "下一步");
-          }),
-          onNextClick: createGuardedNextClick({
-            isSatisfied: () => !isNoiseHistoryModalOpen(),
-            attemptResolve: () => {
-              tryClickElement('[data-tour="noise-history-close"]');
-            },
-            hintAfterAttempt: "已为您执行关闭操作；若未关闭，请手动点击右上角“×”后再继续。",
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: () => !isNoiseHistoryModalOpen(),
+            action: () => tryClickElement('[data-tour="noise-history-close"]'),
           }),
         },
       },
       {
         popover: {
           title: "完成新手指引",
-          description: "您已完成噪音校准与历史记录的关键操作。点击“完成”结束指引并播放结束动画。",
+          description: "您已完成新手指引，感谢使用沉浸式时钟！",
           side: "left",
           align: "center",
           onNextClick: (_el, _step, opts) => {

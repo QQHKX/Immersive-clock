@@ -404,7 +404,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
       <FormSection title="校准与修正">
         <div data-tour="noise-calibration">
           <p className={styles.helpText}>
-            如果觉得显示的数值偏小或偏大，可拖动滑块调整；或在安静环境下点击校准让数值更准确。
+            请一定在安静环境下校准，或手动选择你认为当前环境所处的噪音水平。(需要麦克风权限)
           </p>
 
           {/* 手动构建 Slider 头部以实现自定义布局 */}
