@@ -1,8 +1,17 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useMemo, useRef, useState } from "react";
 
 import pkg from "../../../../package.json";
+import { useAppDispatch, useAppState } from "../../../contexts/AppContext";
 import { getAppSettings, APP_SETTINGS_KEY } from "../../../utils/appSettings";
+import {
+  clearErrorCenter,
+  exportErrorCenterJson,
+  getErrorCenterRecords,
+  subscribeErrorCenter,
+} from "../../../utils/errorCenter";
+import { getWeatherCache } from "../../../utils/weatherStorage";
 import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
+import { FormCheckbox, FormRow, FormSegmented } from "../../FormComponents";
 import { TrashIcon, SaveIcon, FileIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
 
@@ -14,7 +23,12 @@ export interface AboutSettingsPanelProps {
 }
 
 const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave }) => {
+  const { study } = useAppState();
+  const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notice, setNotice] = useState<string>("");
+  const [records, setRecords] = useState(() => getErrorCenterRecords().slice());
+  const [levelFilter, setLevelFilter] = useState<"all" | "error" | "warn" | "info" | "debug">("all");
 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
@@ -23,16 +37,41 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
     }
   }, [onRegisterSave]);
 
+  useEffect(() => {
+    const off = subscribeErrorCenter((next) => {
+      setRecords(next.slice());
+    });
+    return off;
+  }, []);
+
   const version = (appVersion && String(appVersion)) || pkg.version;
   const license = pkg.license || "MIT";
   const authorSite = pkg.homepage || "https://qqhkx.com";
   const repoUrl = "https://github.com/QQHKX/immersive-clock";
+
+  const envInfo = useMemo(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const isElectron = (() => {
+      try {
+        return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+      } catch {
+        return false;
+      }
+    })();
+    return { ua, isElectron };
+  }, []);
+
+  const filteredRecords = useMemo(() => {
+    const list = levelFilter === "all" ? records : records.filter((r) => r.level === levelFilter);
+    return list.slice().reverse().slice(0, 50);
+  }, [records, levelFilter]);
 
   /**
    * 导出设置
    */
   const handleExportSettings = useCallback(() => {
     try {
+      setNotice("");
       const settings = getAppSettings();
       const blob = new Blob([JSON.stringify(settings, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -44,8 +83,13 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("导出设置失败:", err);
-      alert("导出设置失败，请稍后重试。");
+      setNotice("导出设置失败，已记录到“错误与调试”。");
+      const msg = err instanceof Error ? err.message : String(err);
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail: { type: "error", title: "导出设置失败", message: msg },
+        })
+      );
     }
   }, []);
 
@@ -69,6 +113,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
+        setNotice("");
         const result = e.target?.result;
         if (typeof result !== "string") return;
 
@@ -86,8 +131,13 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         alert("设置导入成功，页面将刷新。");
         window.location.reload();
       } catch (err) {
-        console.error("导入设置失败:", err);
-        alert("导入设置失败：文件格式错误或内容无效。");
+        setNotice("导入设置失败，已记录到“错误与调试”。");
+        const msg = err instanceof Error ? err.message : String(err);
+        window.dispatchEvent(
+          new CustomEvent("messagePopup:open", {
+            detail: { type: "error", title: "导入设置失败", message: msg },
+          })
+        );
       }
     };
     reader.readAsText(file);
@@ -102,14 +152,69 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
     const ok = window.confirm("确定要清除所有本地缓存吗？该操作将重置设置与本地数据。");
     if (!ok) return;
     try {
+      setNotice("");
       // 直接清空 localStorage，覆盖项目内所有键
       localStorage.clear();
       alert("已清除所有缓存。建议刷新页面以确保设置重置。");
     } catch (err) {
-      console.error("清除缓存失败:", err);
-      alert("清除缓存失败，请稍后重试。");
+      setNotice("清除缓存失败，已记录到“错误与调试”。");
+      const msg = err instanceof Error ? err.message : String(err);
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail: { type: "error", title: "清除缓存失败", message: msg },
+        })
+      );
     }
   }, []);
+
+  const handleClearErrorRecords = useCallback(() => {
+    setNotice("");
+    clearErrorCenter();
+    setNotice("已清空错误记录。");
+  }, []);
+
+  const handleExportErrorRecords = useCallback(() => {
+    setNotice("");
+    try {
+      const text = exportErrorCenterJson();
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "immersive-clock-error-records.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setNotice("导出错误记录失败。");
+      const msg = err instanceof Error ? err.message : String(err);
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail: { type: "error", title: "导出错误记录失败", message: msg },
+        })
+      );
+    }
+  }, []);
+
+  const handleCopyErrorSummary = useCallback(async () => {
+    setNotice("");
+    const lines = records
+      .slice()
+      .reverse()
+      .slice(0, 50)
+      .map((r) => {
+        const t = new Date(r.ts).toLocaleString();
+        return `[${t}] ${r.level.toUpperCase()} ${r.source} ${r.title} x${r.count} - ${r.message}`;
+      })
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(lines);
+      setNotice("已复制错误摘要到剪贴板。");
+    } catch {
+      setNotice("复制失败（浏览器可能未授予剪贴板权限）。");
+    }
+  }, [records]);
 
   return (
     <div id="about-panel" role="tabpanel" aria-labelledby="about">
@@ -180,6 +285,106 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
             清除所有缓存
           </FormButton>
         </FormButtonGroup>
+      </FormSection>
+
+      <FormSection title="错误与调试">
+        <p className={styles.helpText}>
+          这里会集中记录应用运行中的错误与告警信息，便于排查问题与导出反馈。
+        </p>
+
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="错误弹窗提示"
+            checked={!!study.errorPopupEnabled}
+            onChange={(e) => {
+              dispatch({ type: "SET_ERROR_POPUP_ENABLED", payload: e.target.checked });
+            }}
+          />
+        </FormRow>
+
+        <FormRow gap="sm" align="center">
+          <FormSegmented
+            label="级别筛选"
+            value={levelFilter}
+            options={[
+              { label: "全部", value: "all" },
+              { label: "错误", value: "error" },
+              { label: "告警", value: "warn" },
+              { label: "信息", value: "info" },
+            ]}
+            onChange={(v) => setLevelFilter(v as typeof levelFilter)}
+          />
+        </FormRow>
+
+        <FormButtonGroup align="left">
+          <FormButton variant="secondary" size="md" onClick={handleCopyErrorSummary}>
+            复制摘要
+          </FormButton>
+          <FormButton variant="secondary" size="md" onClick={handleExportErrorRecords}>
+            导出记录
+          </FormButton>
+          <FormButton variant="danger" size="md" onClick={handleClearErrorRecords}>
+            清空记录
+          </FormButton>
+        </FormButtonGroup>
+
+        {notice ? (
+          <p className={styles.infoText} style={{ opacity: 0.9, marginTop: 8 }}>
+            {notice}
+          </p>
+        ) : null}
+
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+          {filteredRecords.length === 0 ? (
+            <p className={styles.infoText} style={{ opacity: 0.7 }}>
+              暂无记录
+            </p>
+          ) : (
+            filteredRecords.map((r) => (
+              <details key={r.id} style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 8px" }}>
+                <summary style={{ cursor: "pointer", color: "var(--text-color)" }}>
+                  {new Date(r.ts).toLocaleString()} [{r.level}] {r.title} ({r.source}) x{r.count}
+                </summary>
+                <div style={{ marginTop: 8 }}>
+                  <p className={styles.infoText} style={{ opacity: 0.9 }}>
+                    {r.message || "--"}
+                  </p>
+                  {r.stack ? (
+                    <pre
+                      style={{
+                        marginTop: 8,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        fontSize: "0.75rem",
+                        opacity: 0.85,
+                      }}
+                    >
+                      {r.stack}
+                    </pre>
+                  ) : null}
+                </div>
+              </details>
+            ))
+          )}
+        </div>
+
+        <div className={styles.weatherInfo} style={{ marginTop: 10 }}>
+          <p className={styles.infoText}>环境：{envInfo.isElectron ? "Electron" : "Web"}</p>
+          <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.75 }}>
+            UA：{envInfo.ua || "--"}
+          </p>
+          {(() => {
+            const cache = getWeatherCache();
+            const diag = cache.geolocation?.diagnostics;
+            if (!diag) return null;
+            return (
+              <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.85 }}>
+                定位诊断：权限={diag.permissionState}{" "}
+                {diag.errorMessage ? `(${diag.errorMessage})` : ""}
+              </p>
+            );
+          })()}
+        </div>
       </FormSection>
     </div>
   );

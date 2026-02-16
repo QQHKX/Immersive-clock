@@ -5,6 +5,7 @@ import {
   NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
   NOISE_SCORE_THRESHOLD_DBFS,
 } from "../constants/noise";
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 import { QuoteSourceConfig, StudyDisplaySettings, CountdownItem, AppMode } from "../types";
 import { DEFAULT_SCHEDULE, type StudyPeriod } from "../types/studySchedule";
 import { DeepPartial } from "../types/utilityTypes";
@@ -74,9 +75,9 @@ export interface AppSettings {
       dateColor?: string;
     };
     alerts: {
-      messagePopup: boolean;
       weatherAlert: boolean;
       minutelyPrecip: boolean;
+      errorPopup: boolean;
     };
     schedule: StudyPeriod[];
     background: {
@@ -101,6 +102,7 @@ export interface AppSettings {
     baselineDisplayDb: number;
     baselineRms: number;
     reportAutoPopup: boolean;
+    reportRetentionDays: number;
     alertSoundEnabled: boolean;
   };
 }
@@ -166,9 +168,9 @@ const DEFAULT_SETTINGS: AppSettings = {
       digitOpacity: 1,
     },
     alerts: {
-      messagePopup: false,
       weatherAlert: false,
       minutelyPrecip: false,
+      errorPopup: true,
     },
     schedule: DEFAULT_SCHEDULE,
     background: {
@@ -188,6 +190,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     baselineDisplayDb: 40,
     baselineRms: 0.000414581087327115,
     reportAutoPopup: true,
+    reportRetentionDays: DEFAULT_NOISE_REPORT_RETENTION_DAYS,
     alertSoundEnabled: false,
   },
 };
@@ -203,6 +206,29 @@ export function getAppSettings(): AppSettings {
     }
     const parsed = JSON.parse(raw);
     const parsedStudy = parsed.study || {};
+    const parsedAlerts = parsedStudy.alerts || {};
+    const legacyMinutelyForecast =
+      typeof parsedAlerts.minutelyForecast === "boolean" ? parsedAlerts.minutelyForecast : undefined;
+    const legacyPrecipDuration =
+      typeof parsedAlerts.precipDuration === "boolean" ? parsedAlerts.precipDuration : undefined;
+    const legacyMergedMinutely =
+      legacyMinutelyForecast != null || legacyPrecipDuration != null
+        ? !!(legacyMinutelyForecast || legacyPrecipDuration)
+        : undefined;
+    const mergedStudyAlerts: AppSettings["study"]["alerts"] = {
+      weatherAlert:
+        typeof parsedAlerts.weatherAlert === "boolean"
+          ? parsedAlerts.weatherAlert
+          : DEFAULT_SETTINGS.study.alerts.weatherAlert,
+      minutelyPrecip:
+        typeof parsedAlerts.minutelyPrecip === "boolean"
+          ? parsedAlerts.minutelyPrecip
+          : (legacyMergedMinutely ?? DEFAULT_SETTINGS.study.alerts.minutelyPrecip),
+      errorPopup:
+        typeof parsedAlerts.errorPopup === "boolean"
+          ? parsedAlerts.errorPopup
+          : DEFAULT_SETTINGS.study.alerts.errorPopup,
+    };
 
     // 可以在此添加简单的版本检查或结构校验逻辑
     // 目前先信任存储结构，如有新增字段则通过与默认配置合并补齐
@@ -227,7 +253,7 @@ export function getAppSettings(): AppSettings {
         ...parsedStudy,
         display: { ...DEFAULT_SETTINGS.study.display, ...(parsedStudy.display || {}) },
         style: { ...DEFAULT_SETTINGS.study.style, ...(parsedStudy.style || {}) },
-        alerts: { ...DEFAULT_SETTINGS.study.alerts, ...(parsedStudy.alerts || {}) },
+        alerts: mergedStudyAlerts,
         background: { ...DEFAULT_SETTINGS.study.background, ...(parsedStudy.background || {}) },
       },
       noiseControl: { ...DEFAULT_SETTINGS.noiseControl, ...parsed.noiseControl },

@@ -119,6 +119,7 @@
 }
 
 @keyframes shake {
+
   0%,
   100% {
     transform: translateX(0);
@@ -246,12 +247,12 @@
   transform: scale(1.05);
 }
 
-.checkboxInput:checked + .checkboxCustom {
+.checkboxInput:checked+.checkboxCustom {
   background: var(--accent-color, #03dac6);
   border-color: var(--accent-color, #03dac6);
 }
 
-.checkboxInput:focus + .checkboxCustom {
+.checkboxInput:focus+.checkboxCustom {
   border-color: var(--accent-color, #03dac6);
 }
 
@@ -263,11 +264,11 @@
   color: var(--background-color, #121212);
 }
 
-.checkboxInput:checked + .checkboxCustom .checkboxIcon {
+.checkboxInput:checked+.checkboxCustom .checkboxIcon {
   opacity: 1;
 }
 
-.checkboxInput:disabled + .checkboxCustom {
+.checkboxInput:disabled+.checkboxCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -356,20 +357,20 @@
   transform: scale(1.05);
 }
 
-.radioInput:checked + .radioCustom {
+.radioInput:checked+.radioCustom {
   background: var(--accent-color, #03dac6);
   border-color: var(--accent-color, #03dac6);
 }
 
-.radioInput:checked + .radioCustom::after {
+.radioInput:checked+.radioCustom::after {
   opacity: 1;
 }
 
-.radioInput:focus + .radioCustom {
+.radioInput:focus+.radioCustom {
   border-color: var(--accent-color, #03dac6);
 }
 
-.radioInput:disabled + .radioCustom {
+.radioInput:disabled+.radioCustom {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -445,6 +446,17 @@
   width: 120px;
   text-align: center;
   letter-spacing: 0.05em;
+}
+
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 .errorText {
@@ -765,7 +777,7 @@
 }
 
 /* 按钮组内的按钮间距优化 */
-.buttonGroup .button + .button {
+.buttonGroup .button+.button {
   margin-left: 0;
 }
 

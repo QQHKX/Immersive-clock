@@ -47,7 +47,6 @@ describe("appReducer", () => {
         textFontFamily: "",
         timeColor: "",
         dateColor: "",
-        messagePopupEnabled: true,
         weatherAlertEnabled: true,
         minutelyPrecipEnabled: true,
       },

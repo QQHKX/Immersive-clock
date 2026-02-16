@@ -90,6 +90,7 @@ export default function MessagePopup({
   const typeClass =
     {
       general: styles.general,
+      error: styles.error,
       weatherAlert: styles.weatherAlert,
       weatherForecast: styles.weatherForecast,
       coolingReminder: styles.coolingReminder,

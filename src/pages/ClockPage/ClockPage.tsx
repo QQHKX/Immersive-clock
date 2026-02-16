@@ -27,7 +27,7 @@ const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
  * 根据当前模式显示相应的时钟组件，处理HUD显示逻辑
  */
 export function ClockPage() {
-  const { mode, isModalOpen } = useAppState();
+  const { mode, isModalOpen, study } = useAppState();
   const dispatch = useAppDispatch();
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hudContainerRef = useRef<HTMLDivElement | null>(null);
@@ -233,12 +233,13 @@ export function ClockPage() {
     }
   };
 
-  // 全局消息弹窗事件监听：仅在自习模式下响应（堆叠显示）
+  // 全局消息弹窗事件监听：自习模式下全量响应，非自习模式仅响应天气相关弹窗
   useEffect(() => {
     const onOpen = (e: Event) => {
-      if (mode !== "study") return;
       const detail = (e as CustomEvent<MessagePopupOpenDetail>).detail || {};
       const type: MessagePopupType = detail.type ?? "general";
+      if (mode !== "study" && type !== "weatherForecast" && type !== "weatherAlert") return;
+      if (type === "error" && !study.errorPopupEnabled) return;
       const title = (detail.title as string) || "消息提醒";
       const message = (detail.message as React.ReactNode) || "";
       const themeColor = typeof detail.themeColor === "string" ? detail.themeColor : undefined;
@@ -275,18 +276,14 @@ export function ClockPage() {
       window.removeEventListener("messagePopup:open", onOpen as EventListener);
       window.removeEventListener("messagePopup:close", onClose as EventListener);
     };
-  }, [mode]);
+  }, [mode, study.errorPopupEnabled]);
 
-  // 模式切换到非自习时自动关闭全局弹窗
+  // 非自习模式下仅保留天气相关弹窗，避免其它业务弹窗打扰
   useEffect(() => {
-    if (mode !== "study" && globalPopups.length > 0) {
-      setGlobalPopups([]);
-      try {
-        sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
-      } catch {
-        /* 忽略错误 */
-      }
-    }
+    if (mode === "study") return;
+    setGlobalPopups((prev) =>
+      prev.filter((p) => p.type === "weatherForecast" || p.type === "weatherAlert")
+    );
   }, [mode, globalPopups.length]);
 
   return (
@@ -367,7 +364,7 @@ export function ClockPage() {
       />
 
       {/* 全局消息弹窗堆叠容器：通过事件触发，不受设置面板卸载影响 */}
-      {mode === "study" && globalPopups.length > 0 && (
+      {globalPopups.length > 0 && (
         <div
           style={{
             position: "fixed",

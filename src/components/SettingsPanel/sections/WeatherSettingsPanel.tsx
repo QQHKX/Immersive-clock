@@ -31,10 +31,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   const [cache, setCache] = useState(() => getWeatherCache());
   const [_weatherRefreshStatus, setWeatherRefreshStatus] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [lastRefreshError, setLastRefreshError] = useState<string>("");
-  const [messagePopupEnabled, setMessagePopupEnabled] = useState<boolean>(
-    !!study.messagePopupEnabled
-  );
   const [weatherAlertEnabled, setWeatherAlertEnabled] = useState<boolean>(
     !!study.weatherAlertEnabled
   );
@@ -73,21 +69,21 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
    * 刷新天气数据（不强制更新地理位置缓存）
    */
   const handleRefreshWeather = useCallback(() => {
-    const weatherRefreshEvent = new CustomEvent("weatherRefresh");
-    window.dispatchEvent(weatherRefreshEvent);
-    setWeatherRefreshStatus("刷新中");
-    setIsRefreshing(true);
-    setLastRefreshError("");
-  }, []);
-
-  const handleRefreshLocationAuto = useCallback(() => {
-    const weatherRefreshEvent = new CustomEvent("weatherLocationRefresh", {
-      detail: { preferredLocationMode: "auto" },
+    const weatherRefreshEvent = new CustomEvent("weatherRefresh", {
+      detail: { showErrorPopup: true },
     });
     window.dispatchEvent(weatherRefreshEvent);
     setWeatherRefreshStatus("刷新中");
     setIsRefreshing(true);
-    setLastRefreshError("");
+  }, []);
+
+  const handleRefreshLocationAuto = useCallback(() => {
+    const weatherRefreshEvent = new CustomEvent("weatherLocationRefresh", {
+      detail: { preferredLocationMode: "auto", showErrorPopup: true },
+    });
+    window.dispatchEvent(weatherRefreshEvent);
+    setWeatherRefreshStatus("刷新中");
+    setIsRefreshing(true);
   }, []);
 
   useEffect(() => {
@@ -96,7 +92,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const status = detail.status || "";
       setWeatherRefreshStatus(status);
       setIsRefreshing(false);
-      setLastRefreshError(String(detail.errorMessage || ""));
       refreshDisplayData();
     };
     window.addEventListener("weatherRefreshDone", onDone as EventListener);
@@ -107,10 +102,9 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
     };
   }, [refreshDisplayData]);
 
-  // 注册保存：将“消息弹窗 Beta / 天气提醒”开关持久化
+  // 注册保存：将天气提醒开关持久化
   useEffect(() => {
     onRegisterSave?.(() => {
-      dispatch({ type: "SET_MESSAGE_POPUP_ENABLED", payload: messagePopupEnabled });
       dispatch({ type: "SET_WEATHER_ALERT_ENABLED", payload: weatherAlertEnabled });
       dispatch({ type: "SET_MINUTELY_PRECIP_ENABLED", payload: minutelyPrecipEnabled });
 
@@ -121,18 +115,18 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const manualLocation =
         manualType === "coords"
           ? {
-              type: "coords" as const,
-              lat: Number.isFinite(Number.parseFloat(manualLat))
-                ? Number.parseFloat(manualLat)
-                : undefined,
-              lon: Number.isFinite(Number.parseFloat(manualLon))
-                ? Number.parseFloat(manualLon)
-                : undefined,
-            }
+            type: "coords" as const,
+            lat: Number.isFinite(Number.parseFloat(manualLat))
+              ? Number.parseFloat(manualLat)
+              : undefined,
+            lon: Number.isFinite(Number.parseFloat(manualLon))
+              ? Number.parseFloat(manualLon)
+              : undefined,
+          }
           : {
-              type: "city" as const,
-              cityName: String(manualCityName || "").trim(),
-            };
+            type: "city" as const,
+            cityName: String(manualCityName || "").trim(),
+          };
 
       updateGeneralSettings({
         weather: {
@@ -151,7 +145,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   }, [
     onRegisterSave,
     dispatch,
-    messagePopupEnabled,
     weatherAlertEnabled,
     minutelyPrecipEnabled,
     autoRefreshIntervalMin,
@@ -175,25 +168,18 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   return (
     <div id="weather-panel" role="tabpanel" aria-labelledby="weather">
       <FormSection title="基本设置">
-        <FormCheckbox
-          label="启用消息弹窗 (Beta)"
-          checked={messagePopupEnabled}
-          onChange={(e) => setMessagePopupEnabled(e.target.checked)}
-        />
         <p className={styles.helpText}>
-          开启后，系统可在适当时机显示消息提醒。当前主要用于天气预警与降雨提醒。
+          用于控制天气预警与分钟级降水提醒弹窗显示。
         </p>
         <FormCheckbox
           label="天气预警弹窗"
           checked={weatherAlertEnabled}
           onChange={(e) => setWeatherAlertEnabled(e.target.checked)}
-          disabled={!messagePopupEnabled}
         />
         <FormCheckbox
-          label="降雨提醒弹窗"
+          label="分钟级降水提醒"
           checked={minutelyPrecipEnabled}
           onChange={(e) => setMinutelyPrecipEnabled(e.target.checked)}
-          disabled={!messagePopupEnabled}
         />
       </FormSection>
 
@@ -285,12 +271,12 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             当前坐标：
             {cache.coords
               ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}`
-              : "未获取"}
+              : "--"}
             <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
             来源：
             {(() => {
               const source = cache.coords?.source;
-              if (!source) return "未获取";
+              if (!source) return "--";
               if (source === "geolocation") return "浏览器定位";
               if (source === "amap_ip") return "高德IP定位";
               if (source === "ip") return "公共IP定位";
@@ -299,7 +285,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               return source;
             })()}
           </p>
-          <p className={styles.infoText}>地址：{cache.location?.address || "未获取"}</p>
+          <p className={styles.infoText}>地址：{cache.location?.address || "--"}</p>
           {geoDiag ? (
             <p className={styles.infoText} style={{ fontSize: "0.85rem", opacity: 0.8 }}>
               诊断：权限={geoDiag.permissionState}{" "}
@@ -337,8 +323,8 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               gap: "8px 16px",
             }}
           >
-            <p className={styles.infoText}>时间：{now?.obsTime || "未获取"}</p>
-            <p className={styles.infoText}>天气：{now?.text || "未获取"}</p>
+            <p className={styles.infoText}>时间：{now?.obsTime || "--"}</p>
+            <p className={styles.infoText}>天气：{now?.text || "--"}</p>
             <p className={styles.infoText}>
               气温：{now?.temp ? `${now.temp}°C` : "--"}{" "}
               <span style={{ opacity: 0.5, margin: "0 4px" }}>/</span> 体感：
@@ -352,7 +338,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               空气质量：
               {(() => {
                 const idx = cache.airQuality?.data?.indexes?.[0];
-                if (!idx) return "未获取";
+                if (!idx) return "--";
                 return `${idx.name || "AQI"} ${idx.aqi ?? ""} ${idx.category || ""}`;
               })()}
             </p>
@@ -360,7 +346,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               日出日落：
               {cache.astronomySun?.data?.sunrise && cache.astronomySun?.data?.sunset
                 ? `${cache.astronomySun.data.sunrise} - ${cache.astronomySun.data.sunset}`
-                : "未获取"}
+                : "--"}
             </p>
           </div>
 
@@ -438,7 +424,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               未来三日：
               {(() => {
                 const daily = cache.daily3d?.data?.daily;
-                if (!daily || daily.length === 0) return "未获取";
+                if (!daily || daily.length === 0) return "--";
                 return daily
                   .slice(0, 3)
                   .map((d) => `${d.textDay} ${d.tempMin}~${d.tempMax}°`)
@@ -448,16 +434,10 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           </div>
         </div>
 
-        {lastRefreshError ? (
-          <p className={styles.infoText} style={{ color: "#ff5252", marginTop: 8 }}>
-            刷新失败：{lastRefreshError}
-          </p>
-        ) : (
-          <p className={styles.infoText} style={{ opacity: 0.5, fontSize: "0.8rem", marginTop: 4 }}>
-            数据更新于：
-            {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "未成功"}
-          </p>
-        )}
+        <p className={styles.infoText} style={{ opacity: 0.5, fontSize: "0.8rem", marginTop: 4 }}>
+          数据更新于：
+          {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "--"}
+        </p>
       </FormSection>
     </div>
   );

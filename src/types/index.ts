@@ -175,12 +175,12 @@ export interface StudyState {
   timeColor?: string;
   /** 中央日期颜色（覆盖自习页面默认主题色） */
   dateColor?: string;
-  // 新增：消息弹窗启用开关
-  messagePopupEnabled?: boolean;
   /** 天气预警弹窗开关 */
   weatherAlertEnabled?: boolean;
-  /** 降雨提醒弹窗开关 */
+  /** 分钟级降水提醒弹窗开关 */
   minutelyPrecipEnabled?: boolean;
+  /** 错误信息弹窗开关 */
+  errorPopupEnabled?: boolean;
 }
 
 /**
@@ -343,6 +343,6 @@ export type AppAction =
   | { type: "SET_STUDY_TEXT_FONT"; payload: string | undefined }
   | { type: "SET_STUDY_TIME_COLOR"; payload: string | undefined }
   | { type: "SET_STUDY_DATE_COLOR"; payload: string | undefined }
-  | { type: "SET_MESSAGE_POPUP_ENABLED"; payload: boolean }
   | { type: "SET_WEATHER_ALERT_ENABLED"; payload: boolean }
-  | { type: "SET_MINUTELY_PRECIP_ENABLED"; payload: boolean };
+  | { type: "SET_MINUTELY_PRECIP_ENABLED"; payload: boolean }
+  | { type: "SET_ERROR_POPUP_ENABLED"; payload: boolean };

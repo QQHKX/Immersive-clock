@@ -48,9 +48,9 @@ function loadStudyState(): StudyState {
     textFontFamily: study.style.textFontFamily,
     timeColor: study.style.timeColor,
     dateColor: study.style.dateColor,
-    messagePopupEnabled: study.alerts.messagePopup,
     weatherAlertEnabled: study.alerts.weatherAlert,
     minutelyPrecipEnabled: study.alerts.minutelyPrecip,
+    errorPopupEnabled: study.alerts.errorPopup,
   };
 }
 
@@ -424,25 +424,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         study: dateColorUpdatedStudy,
       };
 
-    case "SET_MESSAGE_POPUP_ENABLED":
-      const msgUpdatedStudy = {
-        ...state.study,
-        messagePopupEnabled: !!action.payload,
-      };
-      updateAppSettings((current) => ({
-        study: {
-          ...current.study,
-          alerts: {
-            ...current.study.alerts,
-            messagePopup: !!action.payload,
-          },
-        },
-      }));
-      return {
-        ...state,
-        study: msgUpdatedStudy,
-      };
-
     case "SET_WEATHER_ALERT_ENABLED":
       const alertUpdatedStudy = {
         ...state.study,
@@ -479,6 +460,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: precipUpdatedStudy,
+      };
+
+    case "SET_ERROR_POPUP_ENABLED":
+      const errorPopupUpdatedStudy = {
+        ...state.study,
+        errorPopupEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            errorPopup: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: errorPopupUpdatedStudy,
       };
 
     case "UPDATE_QUOTE_CHANNELS":

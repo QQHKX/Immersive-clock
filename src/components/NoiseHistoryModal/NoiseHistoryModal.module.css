@@ -20,6 +20,41 @@
   opacity: 0.95;
 }
 
+.customDetails {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.customSummary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.customSummary::-webkit-details-marker {
+  display: none;
+}
+
+.customSummary::before {
+  content: "▶";
+  display: inline-block;
+  width: 14px;
+  margin-right: 6px;
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.customDetails[open] > .customSummary::before {
+  content: "▼";
+}
+
+.customBody {
+  margin-top: 10px;
+}
+
 .list {
   display: flex;
   flex-direction: column;

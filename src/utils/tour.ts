@@ -270,12 +270,7 @@ const ensureCloseButton = (popover: PopoverDOM, driver: Driver) => {
  * 让引导弹窗默认焦点落在“下一步”，而不是“上一步”或“X”
  */
 const preferTourNextButtonAsDefaultFocus = (
-  popover: {
-    nextButton: HTMLButtonElement;
-    previousButton: HTMLButtonElement;
-    closeButton: HTMLButtonElement;
-    wrapper: HTMLElement;
-  },
+  popover: PopoverDOM,
   opts: { driver: Driver }
 ) => {
   // 确保关闭按钮存在（因为 allowClose: false）
@@ -292,12 +287,8 @@ const preferTourNextButtonAsDefaultFocus = (
     const manualCloseBtn = popover.wrapper?.querySelector(
       ".driver-popover-close-btn"
     ) as HTMLButtonElement | null;
-    const restore = temporarilyDisableButtons([
-      popover.closeButton,
-      manualCloseBtn,
-      popover.previousButton,
-    ]);
-    focusButtonWithRetries(popover.nextButton, 4);
+    const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn, popover.previousButton]);
+    if (popover.nextButton) focusButtonWithRetries(popover.nextButton, 4);
     setTimeout(() => restore(), 160);
     return;
   }
@@ -307,7 +298,7 @@ const preferTourNextButtonAsDefaultFocus = (
       ".driver-popover-close-btn"
     ) as HTMLButtonElement | null;
     const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn]);
-    focusButtonWithRetries(popover.previousButton, 3);
+    if (popover.previousButton) focusButtonWithRetries(popover.previousButton, 3);
     setTimeout(() => restore(), 160);
   }
 };
@@ -354,18 +345,6 @@ interface TourOptions {
   openSettings?: () => void;
   onEnd?: () => void;
 }
-
-/**
- * 判断本次销毁是否属于"完成指引"（停留在最后一步结束）
- */
-const _isTourCompleted = (opts: {
-  config: { steps?: unknown[] };
-  state: { activeIndex?: number };
-}) => {
-  const totalSteps = Array.isArray(opts.config.steps) ? opts.config.steps.length : 0;
-  const activeIndex = typeof opts.state.activeIndex === "number" ? opts.state.activeIndex : -1;
-  return totalSteps > 0 && activeIndex === totalSteps - 1;
-};
 
 /**
  * 启动新手指引
@@ -660,7 +639,7 @@ export const startTour = (force = false, options?: TourOptions) => {
         popover: {
           title: "历史记录管理",
           description:
-            "这里可以查看最近24小时的噪音历史，或自定义时间段生成报告。接下来我会带您正确退出历史界面。",
+            "这里可以查看最近保存天数内的噪音历史，或自定义时间段生成报告。接下来我会带您正确退出历史界面。",
           side: "left",
           align: "center",
         },

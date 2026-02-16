@@ -1,9 +1,63 @@
 import type { NoiseSliceSummary } from "../types/noise";
 
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
+import { getAppSettings } from "./appSettings";
+
 const STORAGE_KEY = "noise-slices";
 export const NOISE_SLICE_STORAGE_KEY = STORAGE_KEY;
 export const NOISE_SLICES_UPDATED_EVENT = "noise-slices-updated";
-const RETENTION_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_RETENTION_DAYS = DEFAULT_NOISE_REPORT_RETENTION_DAYS;
+
+let cachedQuotaBytes: number | null = null;
+let quotaEstimateStarted = false;
+
+function ensureQuotaEstimated(): void {
+  if (quotaEstimateStarted) return;
+  quotaEstimateStarted = true;
+  try {
+    if (!("storage" in navigator) || typeof navigator.storage.estimate !== "function") return;
+    void navigator.storage
+      .estimate()
+      .then((estimate) => {
+        const quota = typeof estimate.quota === "number" ? estimate.quota : undefined;
+        if (typeof quota === "number" && Number.isFinite(quota) && quota > 0) {
+          cachedQuotaBytes = quota;
+        }
+      })
+      .catch(() => {
+        quotaEstimateStarted = true;
+      });
+  } catch {
+    quotaEstimateStarted = true;
+  }
+}
+
+function getRetentionMs(): number {
+  try {
+    const raw = getAppSettings().noiseControl.reportRetentionDays;
+    const days =
+      typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : DEFAULT_RETENTION_DAYS;
+    return Math.max(1, days) * DAY_MS;
+  } catch {
+    return DEFAULT_RETENTION_DAYS * DAY_MS;
+  }
+}
+
+function estimateStringBytes(str: string): number {
+  return str.length * 2;
+}
+
+function trimByMaxBytes(list: NoiseSliceSummary[], maxBytes: number): NoiseSliceSummary[] {
+  if (!Number.isFinite(maxBytes) || maxBytes <= 0) return list;
+  let trimmed = list;
+  let serialized = JSON.stringify(trimmed);
+  while (trimmed.length > 0 && estimateStringBytes(serialized) > maxBytes) {
+    trimmed = trimmed.slice(1);
+    serialized = JSON.stringify(trimmed);
+  }
+  return trimmed;
+}
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -99,15 +153,31 @@ export function readNoiseSlices(): NoiseSliceSummary[] {
  */
 export function writeNoiseSlice(slice: NoiseSliceSummary): NoiseSliceSummary[] {
   try {
+    ensureQuotaEstimated();
     const list = readNoiseSlices();
     const normalized = normalizeSlice(slice);
     list.push(normalized);
 
-    const cutoff = normalized.end - RETENTION_MS;
-    const trimmed = list.filter((item) => item.end >= cutoff);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    const cutoff = normalized.end - getRetentionMs();
+    const timeTrimmed = list.filter((item) => item.end >= cutoff);
+
+    const quotaBytes = cachedQuotaBytes;
+    const maxBytes = quotaBytes ? quotaBytes * 0.9 : null;
+    let trimmed = maxBytes ? trimByMaxBytes(timeTrimmed, maxBytes) : timeTrimmed;
+
+    while (trimmed.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+        window.dispatchEvent(new CustomEvent(NOISE_SLICES_UPDATED_EVENT));
+        return trimmed;
+      } catch {
+        trimmed = trimmed.slice(1);
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEY, "[]");
     window.dispatchEvent(new CustomEvent(NOISE_SLICES_UPDATED_EVENT));
-    return trimmed;
+    return [];
   } catch {
     return readNoiseSlices();
   }

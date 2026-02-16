@@ -1,5 +1,6 @@
 export type MessagePopupType =
   | "general"
+  | "error"
   | "weatherAlert"
   | "weatherForecast"
   | "coolingReminder"

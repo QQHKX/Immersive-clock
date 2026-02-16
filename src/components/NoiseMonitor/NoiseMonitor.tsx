@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
+import { useAppState } from "../../contexts/AppContext";
 import { useAudio } from "../../hooks/useAudio";
 import { useNoiseStream } from "../../hooks/useNoiseStream";
+import { pushErrorCenterRecord } from "../../utils/errorCenter";
 
 import styles from "./NoiseMonitor.module.css";
 
@@ -18,6 +20,7 @@ const MAX_ALERT_INTERVAL = 2000;
 const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onStatusClick }) => {
   const { status, realtimeDisplayDb, maxLevelDb, showRealtimeDb, alertSoundEnabled, retry } =
     useNoiseStream();
+  const { study } = useAppState();
 
   const [playNoisyAlert] = useAudio("/ding-2.mp3");
   const playNoisyAlertRef = useRef<(() => void) | null>(playNoisyAlert);
@@ -73,14 +76,31 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
       case "noisy":
         return "吵闹";
       case "permission-denied":
-        return isElectronRuntime() ? "需要麦克风权限（系统设置中允许）" : "需要麦克风权限";
+        return "--";
       case "error":
-        return "监测失败";
+        return "--";
       case "initializing":
       default:
         return "初始化中...";
     }
   }, [status]);
+
+  const openErrorPopup = useCallback(
+    (title: string, message: string) => {
+      pushErrorCenterRecord({ level: "error", source: "noise", title, message });
+      if (!study.errorPopupEnabled) return;
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail: {
+            type: "error",
+            title,
+            message,
+          },
+        })
+      );
+    },
+    [study.errorPopupEnabled]
+  );
 
   const statusClassName = useMemo(() => {
     switch (status) {
@@ -115,6 +135,21 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (status === "permission-denied" || status === "error") {
+        if (status === "permission-denied") {
+          const isElectronRuntime = (() => {
+            try {
+              return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+            } catch {
+              return false;
+            }
+          })();
+          openErrorPopup(
+            "麦克风权限不可用",
+            isElectronRuntime ? "请在系统设置中允许麦克风权限后重试。" : "请允许浏览器麦克风权限后重试。"
+          );
+        } else {
+          openErrorPopup("噪音监测失败", "请点击重试。");
+        }
         retry();
         return;
       }
@@ -122,7 +157,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
         onStatusClick?.();
       }
     },
-    [status, retry, onStatusClick]
+    [status, retry, onStatusClick, openErrorPopup]
   );
 
   const breathingLightTooltip = useMemo(() => {

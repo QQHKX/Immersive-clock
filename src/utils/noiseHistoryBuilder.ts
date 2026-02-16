@@ -1,5 +1,6 @@
 import type { NoiseSliceSummary } from "../types/noise";
 import type { StudyPeriod } from "../types/studySchedule";
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 
 export interface NoiseHistoryPeriod {
   id: string;
@@ -80,7 +81,7 @@ export function buildNoiseHistoryListItems(params: {
   const windowMs =
     typeof params.windowMs === "number" && params.windowMs > 0
       ? params.windowMs
-      : 24 * 60 * 60 * 1000;
+      : DEFAULT_NOISE_REPORT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
   if (slices.length === 0 || schedule.length === 0) return [];
 

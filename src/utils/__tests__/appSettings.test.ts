@@ -87,6 +87,20 @@ describe("appSettings", () => {
     expect(s.general.weather.manualLocation.type).toBe("city");
   });
 
+  it("getAppSettings 能兼容拆分版 alerts 字段，并合并到 minutelyPrecip", () => {
+    localStorage.setItem(
+      APP_SETTINGS_KEY,
+      JSON.stringify({
+        study: {
+          alerts: { minutelyForecast: true, precipDuration: false },
+        },
+      })
+    );
+
+    const s = getAppSettings();
+    expect(s.study.alerts.minutelyPrecip).toBe(true);
+  });
+
   it("updateTimeSyncSettings 会深合并 timeSync，避免覆盖丢字段", () => {
     localStorage.setItem(
       APP_SETTINGS_KEY,

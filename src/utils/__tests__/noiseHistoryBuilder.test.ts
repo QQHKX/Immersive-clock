@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../../constants/noiseReport";
 import type { NoiseSliceSummary } from "../../types/noise";
 import type { StudyPeriod } from "../../types/studySchedule";
 import { buildNoiseHistoryListItems } from "../noiseHistoryBuilder";
@@ -93,5 +94,25 @@ describe("noiseHistoryBuilder", () => {
 
     const items = buildNoiseHistoryListItems({ slices, schedule });
     expect(items.length).toBe(0);
+  });
+
+  it("默认窗口应为最近指定天数", () => {
+    const schedule: StudyPeriod[] = [
+      { id: "1", name: "第1节自习", startTime: "10:00", endTime: "11:00" },
+    ];
+    const dayMs = 24 * 60 * 60 * 1000;
+    const recentStart = new Date(2026, 0, 20, 10, 0, 0, 0).getTime();
+    const recentEnd = new Date(2026, 0, 20, 11, 0, 0, 0).getTime();
+    const oldStart = recentStart - (DEFAULT_NOISE_REPORT_RETENTION_DAYS + 1) * dayMs;
+    const oldEnd = recentEnd - (DEFAULT_NOISE_REPORT_RETENTION_DAYS + 1) * dayMs;
+
+    const slices: NoiseSliceSummary[] = [
+      makeSlice({ start: oldStart, end: oldEnd, score: 80 }),
+      makeSlice({ start: recentStart, end: recentEnd, score: 90 }),
+    ];
+
+    const items = buildNoiseHistoryListItems({ slices, schedule });
+    expect(items.length).toBe(1);
+    expect(items[0].period.start.getTime()).toBe(recentStart);
   });
 });

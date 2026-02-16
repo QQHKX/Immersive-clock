@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import { useAppState } from "../../contexts/AppContext";
 import { buildLocationFlow } from "../../services/locationService";
@@ -31,6 +31,7 @@ const MINUTELY_PRECIP_POPUP_ID = "weather:minutelyPrecip";
 const MINUTELY_PRECIP_POPUP_SHOWN_KEY = "weather.minutely.popupShown";
 const MINUTELY_PRECIP_POPUP_OPEN_KEY = "weather.minutely.popupOpen";
 const MINUTELY_PRECIP_POPUP_DISMISSED_KEY = "weather.minutely.popupDismissed";
+
 const MINUTELY_PRECIP_MANUAL_REFRESH_EVENT = "weatherMinutelyPrecipRefresh";
 const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
 const WEATHER_LOCATION_REFRESH_EVENT = "weatherLocationRefresh";
@@ -239,9 +240,40 @@ const Weather: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { study } = useAppState();
+  const showErrorPopupRef = useRef<boolean>(false);
+  const lastErrorPopupAtRef = useRef<number>(0);
+  const lastErrorPopupSignatureRef = useRef<string>("");
   const [autoRefreshIntervalMin, setAutoRefreshIntervalMin] = useState<number>(() => {
     return clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180);
   });
+
+  const maybeOpenErrorPopup = useCallback(
+    (title: string, message: string) => {
+      if (!study.errorPopupEnabled) return;
+      if (!showErrorPopupRef.current) return;
+
+      showErrorPopupRef.current = false;
+
+      const now = Date.now();
+      const signature = `${title}::${message}`;
+      if (signature === lastErrorPopupSignatureRef.current && now - lastErrorPopupAtRef.current < 5000) {
+        return;
+      }
+      lastErrorPopupAtRef.current = now;
+      lastErrorPopupSignatureRef.current = signature;
+
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail: {
+            type: "error",
+            title,
+            message,
+          },
+        })
+      );
+    },
+    [study.errorPopupEnabled]
+  );
 
   useEffect(() => {
     const updateInterval = () => {
@@ -285,22 +317,37 @@ const Weather: React.FC = () => {
     }
   }, []);
 
-  const buildMinutelyPopupMessage = useCallback(
-    (
-      cache: MinutelyPrecipCache,
-      opts?: {
-        showUpdatedHint?: boolean;
-      }
-    ): React.ReactNode => {
+  /**
+   * 构建“降水提醒”弹窗内容
+   * - 未降水：展示分钟级降水预报（概率/摘要）
+   * - 正在降水：展示降水量与持续时间（剩余/预计累计）
+   */
+  const buildMinutelyPrecipPopupMessage = useCallback(
+    (cache: MinutelyPrecipCache, opts?: { showUpdatedHint?: boolean }): React.ReactNode => {
       const nowMs = Date.now();
       const stats = computeMinutelyRainStats(cache, nowMs);
       const lastUpdateMs = parseTimeMs(cache.updateTime) ?? cache.fetchedAt ?? nowMs;
       const lastUpdateText = formatTimestampHm(lastUpdateMs);
 
+      const isRainingNow = stats.startInMinutes === 0 && stats.remainingMinutes != null;
+      if (isRainingNow) {
+        const line1 = `正在${stats.intensityLabel}，预计${stats.remainingMinutes}分钟后结束。`;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div>{opts?.showUpdatedHint ? `${line1}` : line1}</div>
+            <div>
+              预计持续：{stats.durationMinutes ?? 0}分钟　预计累计：{stats.expectedAmountMm.toFixed(1)}mm
+            </div>
+            <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>上次更新：{lastUpdateText}</div>
+          </div>
+        );
+      }
+
+      const summary = stats.hasRain ? stats.summary : "未来两小时暂无降水。";
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div>{opts?.showUpdatedHint ? `${stats.summary}` : stats.summary}</div>
-          <div>降雨概率：{stats.probability}%</div>
+          <div>{opts?.showUpdatedHint ? `${summary}` : summary}</div>
+          <div>降水概率：{stats.probability}%</div>
           <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>上次更新：{lastUpdateText}</div>
         </div>
       );
@@ -308,32 +355,30 @@ const Weather: React.FC = () => {
     []
   );
 
-  const updateMinutelyPopupFromCache = useCallback(
+  /**
+   * 从缓存刷新“降水提醒”弹窗（仅在弹窗处于打开状态时更新内容）
+   */
+  const updateMinutelyPrecipPopupFromCache = useCallback(
     (opts?: { showUpdatedHint?: boolean }) => {
-      if (!study?.messagePopupEnabled || !study.minutelyPrecipEnabled) return;
+      if (!study?.minutelyPrecipEnabled) return;
       if (!safeReadSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY)) return;
       if (safeReadSessionFlag(MINUTELY_PRECIP_POPUP_DISMISSED_KEY)) return;
 
       const cache = readMinutelyCache();
       if (!cache) return;
-      const message = buildMinutelyPopupMessage(cache, { showUpdatedHint: opts?.showUpdatedHint });
+      const message = buildMinutelyPrecipPopupMessage(cache, { showUpdatedHint: opts?.showUpdatedHint });
       const ev = new CustomEvent("messagePopup:open", {
         detail: {
           id: MINUTELY_PRECIP_POPUP_ID,
           type: "weatherForecast",
-          title: "降雨提醒",
+          title: "分钟级降水提醒",
           message,
           themeColor: "#ffffff",
         },
       });
       window.dispatchEvent(ev);
     },
-    [
-      buildMinutelyPopupMessage,
-      readMinutelyCache,
-      study?.messagePopupEnabled,
-      study?.minutelyPrecipEnabled,
-    ]
+    [buildMinutelyPrecipPopupMessage, readMinutelyCache, study?.minutelyPrecipEnabled]
   );
 
   const refreshMinutelyPrecip = useCallback(
@@ -345,7 +390,7 @@ const Weather: React.FC = () => {
         showUpdatedHint?: boolean;
       }
     ) => {
-      if (!study?.messagePopupEnabled || !study.minutelyPrecipEnabled) return;
+      if (!study?.minutelyPrecipEnabled) return;
 
       const nowMs = Date.now();
       const minutelyApiIntervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
@@ -354,18 +399,19 @@ const Weather: React.FC = () => {
         if (!opts?.openIfRain) return;
         if (safeReadSessionFlag(MINUTELY_PRECIP_POPUP_DISMISSED_KEY)) return;
         if (safeReadSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY)) return;
+
         const stats = computeMinutelyRainStats(cache, nowMs);
         if (!stats.hasRain) return;
+
+        const message = buildMinutelyPrecipPopupMessage(cache, { showUpdatedHint: !!opts?.showUpdatedHint });
+
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY, true);
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY, true);
-        const message = buildMinutelyPopupMessage(cache, {
-          showUpdatedHint: !!opts?.showUpdatedHint,
-        });
         const ev = new CustomEvent("messagePopup:open", {
           detail: {
             id: MINUTELY_PRECIP_POPUP_ID,
             type: "weatherForecast",
-            title: "降雨提醒",
+            title: "分钟级降水提醒",
             message,
             themeColor: "#ffffff",
           },
@@ -373,7 +419,7 @@ const Weather: React.FC = () => {
         window.dispatchEvent(ev);
       };
 
-      updateMinutelyPopupFromCache();
+      updateMinutelyPrecipPopupFromCache();
       const existing = readMinutelyCache();
       if (existing) {
         openPopupIfEligible(existing);
@@ -382,7 +428,7 @@ const Weather: React.FC = () => {
       if (!opts?.forceApi) {
         const cache = getWeatherCache();
         const lastFetchAt = cache.minutely?.lastApiFetchAt || 0;
-        if (lastFetchAt > 0 && nowMs - lastFetchAt < minutelyApiIntervalMs) {
+        if (existing && lastFetchAt > 0 && nowMs - lastFetchAt < minutelyApiIntervalMs) {
           return;
         }
       }
@@ -414,25 +460,24 @@ const Weather: React.FC = () => {
         const exceedThreshold = diffProb >= MINUTELY_PRECIP_DIFF_THRESHOLD_PROB;
         if (exceedThreshold) {
           writeMinutelyCache(minResp, nowMs);
-          updateMinutelyPopupFromCache({ showUpdatedHint: true });
+          updateMinutelyPrecipPopupFromCache({ showUpdatedHint: true });
         } else if (opts?.showUpdatedHint) {
-          updateMinutelyPopupFromCache({ showUpdatedHint: true });
+          updateMinutelyPrecipPopupFromCache({ showUpdatedHint: true });
         } else {
-          updateMinutelyPopupFromCache();
+          updateMinutelyPrecipPopupFromCache();
         }
       } else if (opts?.showUpdatedHint) {
-        updateMinutelyPopupFromCache({ showUpdatedHint: true });
+        updateMinutelyPrecipPopupFromCache({ showUpdatedHint: true });
       } else {
-        updateMinutelyPopupFromCache();
+        updateMinutelyPrecipPopupFromCache();
       }
     },
     [
       autoRefreshIntervalMin,
-      buildMinutelyPopupMessage,
+      buildMinutelyPrecipPopupMessage,
       readMinutelyCache,
-      study?.messagePopupEnabled,
       study?.minutelyPrecipEnabled,
-      updateMinutelyPopupFromCache,
+      updateMinutelyPrecipPopupFromCache,
       writeMinutelyCache,
     ]
   );
@@ -580,10 +625,12 @@ const Weather: React.FC = () => {
           },
         });
         window.dispatchEvent(event);
+        showErrorPopupRef.current = false;
       } catch (error) {
         logger.error("天气初始化失败:", error);
         const errorMessage = error instanceof Error ? error.message : "未知错误";
         setError(errorMessage);
+        maybeOpenErrorPopup("天气获取失败", errorMessage);
 
         const cache = getWeatherCache();
         const event = new CustomEvent("weatherRefreshDone", {
@@ -602,7 +649,7 @@ const Weather: React.FC = () => {
         setLoading(false);
       }
     },
-    [mapWeatherToIcon]
+    [mapWeatherToIcon, maybeOpenErrorPopup]
   );
 
   /**
@@ -627,8 +674,10 @@ const Weather: React.FC = () => {
         },
       });
       window.dispatchEvent(event);
+      showErrorPopupRef.current = false;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
+      maybeOpenErrorPopup("定位失败", errorMessage);
       const cache = getWeatherCache();
       const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
         detail: {
@@ -643,14 +692,14 @@ const Weather: React.FC = () => {
       });
       window.dispatchEvent(event);
     }
-  }, []);
+  }, [maybeOpenErrorPopup]);
 
   /**
    * 处理天气预警与降雨提醒
    */
   const handleAlertsAndPrecip = useCallback(
     async (coords?: { lat: number; lon: number } | null) => {
-      if (!coords || !study?.messagePopupEnabled) return;
+      if (!coords) return;
       const locationParam = `${coords.lon},${coords.lat}`;
       try {
         if (study.weatherAlertEnabled) {
@@ -741,12 +790,13 @@ const Weather: React.FC = () => {
 
     const intervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
     const interval = setInterval(() => void initializeWeather(), intervalMs);
-    const localMinutelyInterval = setInterval(() => updateMinutelyPopupFromCache(), intervalMs);
-    const localMinutelyTickInterval = setInterval(() => updateMinutelyPopupFromCache(), 60 * 1000);
+    const localMinutelyInterval = setInterval(() => updateMinutelyPrecipPopupFromCache(), intervalMs);
+    const localMinutelyTickInterval = setInterval(() => updateMinutelyPrecipPopupFromCache(), 60 * 1000);
 
     // 监听天气刷新事件
     const handleWeatherRefresh = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
+      showErrorPopupRef.current = detail.showErrorPopup === true;
       const preferredLocationMode =
         detail.preferredLocationMode === "auto" || detail.preferredLocationMode === "manual"
           ? (detail.preferredLocationMode as "auto" | "manual")
@@ -757,6 +807,7 @@ const Weather: React.FC = () => {
     window.addEventListener("weatherRefresh", handleWeatherRefresh);
     const handleLocationRefresh = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
+      showErrorPopupRef.current = detail.showErrorPopup === true;
       const preferredLocationMode =
         detail.preferredLocationMode === "auto" || detail.preferredLocationMode === "manual"
           ? (detail.preferredLocationMode as "auto" | "manual")
@@ -808,7 +859,7 @@ const Weather: React.FC = () => {
     refreshLocationOnly,
     handleAlertsAndPrecip,
     refreshMinutelyPrecip,
-    updateMinutelyPopupFromCache,
+    updateMinutelyPrecipPopupFromCache,
   ]);
 
   // 加载状态
@@ -822,31 +873,30 @@ const Weather: React.FC = () => {
     );
   }
 
-  // 错误状态
-  if (error || !weatherData) {
-    return (
-      <div className={styles.weather}>
-        <div className={styles.error}>
-          <span className={styles.errorIcon}>⚠</span>
-        </div>
-      </div>
-    );
-  }
+  const displayTempText = !error && weatherData?.temperature ? `${weatherData.temperature}°` : "--";
+  const displayTextRaw = !error && weatherData?.text ? weatherData.text : "--";
+  const displayIconCode = !error && weatherData?.icon ? weatherData.icon : null;
+  const titleText =
+    !error && weatherData ? `${weatherData.text} ${weatherData.temperature}°C` : "--";
 
   return (
-    <div className={styles.weather} title={`${weatherData.text} ${weatherData.temperature}°C`}>
-      <div className={styles.temperature}>{weatherData.temperature}°</div>
+    <div className={styles.weather} title={titleText}>
+      <div className={styles.temperature}>{displayTempText}</div>
       <div className={styles.divider}></div>
       <div className={styles.icon}>
-        <img
-          src={getWeatherIconUrl(weatherData.icon)}
-          alt={weatherData.text}
-          loading="lazy"
-          decoding="async"
-          className={styles.weatherIcon}
-        />
+        {displayIconCode ? (
+          <img
+            src={getWeatherIconUrl(displayIconCode)}
+            alt={displayTextRaw}
+            loading="lazy"
+            decoding="async"
+            className={styles.weatherIcon}
+          />
+        ) : null}
       </div>
-      <div className={styles.weatherText}>{getSimplifiedWeatherText(weatherData.text)}</div>
+      <div className={styles.weatherText}>
+        {displayTextRaw === "--" ? "--" : getSimplifiedWeatherText(displayTextRaw)}
+      </div>
     </div>
   );
 };

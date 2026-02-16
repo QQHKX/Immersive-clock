@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
 import { AppContextProvider } from "./contexts/AppContext";
+import { initErrorCenterGlobalCapture } from "./utils/errorCenter";
 import { initializeStorage } from "./utils/storageInitializer";
 
 import "./styles/global.css";
@@ -16,6 +17,7 @@ if (import.meta.env.PROD) {
 
 // 在应用启动前初始化本地存储
 initializeStorage();
+initErrorCenterGlobalCapture();
 
 /**
  * 应用程序入口点

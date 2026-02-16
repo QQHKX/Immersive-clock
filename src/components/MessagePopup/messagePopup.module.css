@@ -63,7 +63,13 @@
   }
 }
 
-.general {
+.general {}
+
+/* 错误提示：红色语义 */
+.error {
+  --message-popup-theme-color: #ff5252;
+  border-left: 3px solid var(--message-popup-theme-color);
+  background: linear-gradient(to right, rgba(255, 82, 82, 0.08), rgba(20, 20, 20, 0.95));
 }
 
 /* 天气预警：强调黄色语义色与左侧色条 */
@@ -95,15 +101,15 @@
 }
 
 @supports (background: color-mix(in srgb, white 10%, transparent)) {
+
+  .error,
   .weatherAlert,
   .weatherForecast,
   .coolingReminder,
   .systemUpdate {
-    background: linear-gradient(
-      to right,
-      color-mix(in srgb, var(--message-popup-theme-color) 12%, transparent),
-      rgba(20, 20, 20, 0.95)
-    );
+    background: linear-gradient(to right,
+        color-mix(in srgb, var(--message-popup-theme-color) 12%, transparent),
+        rgba(20, 20, 20, 0.95));
   }
 }
 

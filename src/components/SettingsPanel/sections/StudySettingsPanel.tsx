@@ -1,12 +1,20 @@
 import React, { useCallback, useEffect, useState } from "react";
 
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../../../constants/noiseReport";
+import { useAppState } from "../../../contexts/AppContext";
 import { getAppSettings, updateNoiseSettings } from "../../../utils/appSettings";
+import { pushErrorCenterRecord } from "../../../utils/errorCenter";
 import { logger } from "../../../utils/logger";
 import {
   getNoiseControlSettings,
   saveNoiseControlSettings,
 } from "../../../utils/noiseControlSettings";
-import { getNoiseReportSettings, setAutoPopupSetting } from "../../../utils/noiseReportSettings";
+import {
+  estimateMaxRetentionDaysByQuota,
+  getNoiseReportSettings,
+  setAutoPopupSetting,
+  setRetentionDaysSetting,
+} from "../../../utils/noiseReportSettings";
 import {
   broadcastSettingsEvent,
   SETTINGS_EVENTS,
@@ -17,6 +25,7 @@ import {
   FormButton,
   FormButtonGroup,
   FormCheckbox,
+  FormInput,
   FormSlider,
   FormRow,
 } from "../../FormComponents";
@@ -46,6 +55,7 @@ export interface StudySettingsPanelProps {
  * - 课程表编辑
  */
 export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegisterSave }) => {
+  const { study } = useAppState();
   const [_effectiveBaselineRms, setEffectiveBaselineRms] = useState<number>(() => {
     return getAppSettings().noiseControl.baselineRms ?? 0;
   });
@@ -62,6 +72,10 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
   const [autoPopupReport, setAutoPopupReport] = useState<boolean>(
     () => getNoiseReportSettings().autoPopup
   );
+  const [reportRetentionDays, setReportRetentionDays] = useState<number>(
+    () => getNoiseReportSettings().retentionDays
+  );
+  const [maxReportRetentionDays, setMaxReportRetentionDays] = useState<number | null>(null);
 
   // 噪音控制（自动噪音限制 & 手动基准噪音）
   const initialControl = getNoiseControlSettings();
@@ -77,6 +91,26 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     initialControl.alertSoundEnabled ?? false
   );
 
+  const openMessagePopup = useCallback(
+    (detail: { type: "general" | "error"; title: string; message: string }) => {
+      if (detail.type === "error") {
+        pushErrorCenterRecord({
+          level: "error",
+          source: "noise",
+          title: detail.title,
+          message: detail.message,
+        });
+        if (!study.errorPopupEnabled) return;
+      }
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail,
+        })
+      );
+    },
+    [study.errorPopupEnabled]
+  );
+
   // 初始化噪音设置为草稿
   useEffect(() => {
     const noiseSettings = getAppSettings().noiseControl;
@@ -85,11 +119,24 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     setBaselineRms(noiseSettings.baselineRms ?? 0);
     setNoiseBaseline(noiseSettings.baselineRms > 0 ? noiseSettings.baselineDisplayDb : 0);
     setAutoPopupReport(getNoiseReportSettings().autoPopup);
+    setReportRetentionDays(getNoiseReportSettings().retentionDays);
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
     setDraftAvgWindowSec(currentControl.avgWindowSec);
     setDraftAlertSoundEnabled(currentControl.alertSoundEnabled ?? false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const maxDays = await estimateMaxRetentionDaysByQuota();
+      if (cancelled) return;
+      setMaxReportRetentionDays(maxDays);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -122,9 +169,9 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     if (confirm("确定要清除噪音校准吗？这将重置为未校准状态。")) {
       setNoiseBaseline(0);
       setBaselineRms(0);
-      alert("噪音校准已清除（未保存）");
+      openMessagePopup({ type: "general", title: "提示", message: "噪音校准已清除（未保存）" });
     }
-  }, []);
+  }, [openMessagePopup]);
 
   const performCalibration = useCallback(async () => {
     setCalibrationError(null);
@@ -193,7 +240,11 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         setBaselineRms(avgRms);
         // 使用当前手动显示基准作为校准后的显示基线
         setNoiseBaseline(draftManualBaselineDb);
-        alert(`噪音校准完成！基准值设置为 ${draftManualBaselineDb}dB（未保存）`);
+        openMessagePopup({
+          type: "general",
+          title: "噪音校准完成",
+          message: `基准值设置为 ${draftManualBaselineDb}dB（未保存）`,
+        });
       } else {
         throw new Error("校准过程中未能获取有效的音频数据");
       }
@@ -212,19 +263,19 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             ? "需要麦克风权限才能进行噪音校准（请在系统设置中允许麦克风）"
             : "需要麦克风权限才能进行噪音校准";
           setCalibrationError(msg);
-          alert(`校准失败：${msg}`);
+          openMessagePopup({ type: "error", title: "校准失败", message: msg });
         } else {
           setCalibrationError(error.message);
-          alert(`校准失败：${error.message}`);
+          openMessagePopup({ type: "error", title: "校准失败", message: error.message });
         }
       } else {
         setCalibrationError("未知错误");
-        alert("校准失败：未知错误");
+        openMessagePopup({ type: "error", title: "校准失败", message: "未知错误" });
       }
     } finally {
       setIsCalibrating(false);
     }
-  }, [draftManualBaselineDb]);
+  }, [draftManualBaselineDb, openMessagePopup]);
 
   const handleRecalibrate = useCallback(async () => {
     if (isCalibrating) return;
@@ -263,6 +314,11 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
 
       // 自动弹出报告设置
       setAutoPopupSetting(autoPopupReport);
+      if (maxReportRetentionDays && maxReportRetentionDays > 0) {
+        setRetentionDaysSetting(Math.max(1, Math.min(maxReportRetentionDays, reportRetentionDays)));
+      } else {
+        setRetentionDaysSetting(Math.max(1, reportRetentionDays));
+      }
       // 噪音控制设置
       saveNoiseControlSettings({
         maxLevelDb: draftMaxNoiseLevel,
@@ -276,6 +332,8 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
     onRegisterSave,
     baselineRms,
     autoPopupReport,
+    reportRetentionDays,
+    maxReportRetentionDays,
     draftManualBaselineDb,
     draftMaxNoiseLevel,
     draftShowRealtimeDb,
@@ -404,12 +462,6 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             </div>
           </FormRow>
 
-          {calibrationError && (
-            <p className={styles.errorText} style={{ marginTop: 8 }}>
-              {calibrationError}
-            </p>
-          )}
-
           <FormButtonGroup align="left">
             <FormButton
               id="tour-noise-calibrate-btn"
@@ -443,7 +495,29 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
             }}
           />
         </FormRow>
+        <FormRow gap="sm" align="center">
+          <FormInput
+            label="历史保存天数"
+            type="number"
+            value={String(reportRetentionDays)}
+            onChange={(e) => {
+              const next = parseInt(e.target.value, 10);
+              const normalized = Number.isFinite(next) ? Math.max(1, next) : 1;
+              const capped =
+                maxReportRetentionDays && maxReportRetentionDays > 0
+                  ? Math.min(maxReportRetentionDays, normalized)
+                  : normalized;
+              setReportRetentionDays(capped);
+            }}
+            min={1}
+            max={maxReportRetentionDays ?? undefined}
+          />
+        </FormRow>
         <p className={styles.helpText}>学习结束后自动显示噪音分析报告。</p>
+        <p className={styles.helpText}>
+          默认 {DEFAULT_NOISE_REPORT_RETENTION_DAYS} 天；实际最大可保存范围会受本地容量限制（按可用容量的 90% 自动裁剪旧数据）。
+          {maxReportRetentionDays ? ` 当前建议上限：${maxReportRetentionDays} 天。` : ""}
+        </p>
       </FormSection>
 
       {/* 背景设置已迁移到基础设置 */}
