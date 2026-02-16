@@ -392,6 +392,21 @@
   }
 }
 
+/* Checkbox Grid Layout */
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .checkboxGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* 桌面端紧凑布局：两列网格与更小的间距 */
 @media (min-width: 1024px) {
   .settingsContainer {

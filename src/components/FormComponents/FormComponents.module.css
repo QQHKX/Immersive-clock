@@ -190,7 +190,7 @@
 .checkboxGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs, 0.25rem);
+  gap: var(--spacing-sm, 0.5rem);
 }
 
 .checkboxWrapper {
@@ -216,6 +216,8 @@
   color: var(--text-color, #ffffff);
   transition: color var(--transition-fast, 0.2s);
   user-select: none;
+  min-height: 2rem;
+  padding: 0.15rem 0.25rem;
 }
 
 .checkboxLabel:hover {
@@ -807,15 +809,18 @@
 }
 
 .row.gap-sm {
-  gap: var(--spacing-xs, 0.5rem);
+  column-gap: var(--spacing-xs, 0.5rem);
+  row-gap: var(--spacing-sm, 0.625rem);
 }
 
 .row.gap-md {
-  gap: var(--spacing-sm, 0.75rem);
+  column-gap: var(--spacing-sm, 0.75rem);
+  row-gap: var(--spacing-md, 1rem);
 }
 
 .row.gap-lg {
-  gap: var(--spacing-md, 1rem);
+  column-gap: var(--spacing-md, 1rem);
+  row-gap: var(--spacing-md, 1rem);
 }
 
 .row.align-start {

@@ -58,6 +58,7 @@ export interface WeatherNow {
     text?: string;
     temp?: string;
     feelsLike?: string;
+    wind360?: string;
     windDir?: string;
     windScale?: string;
     windSpeed?: string;

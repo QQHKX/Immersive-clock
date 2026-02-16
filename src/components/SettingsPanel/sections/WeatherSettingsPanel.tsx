@@ -20,6 +20,119 @@ export interface WeatherSettingsPanelProps {
   onRegisterSave?: (fn: () => void) => void;
 }
 
+function formatDateHM(iso?: string): string {
+  if (!iso) return "--";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${dd} ${hh}:${mm}`;
+}
+
+function formatSunHM(iso?: string): string {
+  if (!iso) return "--";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+const WindIcon: React.FC<{ size?: number; angle?: number; className?: string }> = ({
+  size = 20,
+  angle = 0,
+  className,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={{ transform: `rotate(${angle + 180}deg)`, transition: "transform 0.3s ease" }}
+  >
+    <path d="M12 19V5" />
+    <path d="M5 12l7 7 7-7" />
+  </svg>
+);
+
+const SunriseIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={style}
+  >
+    <path d="M17 18a5 5 0 0 0-10 0" />
+    <line x1="12" y1="2" x2="12" y2="9" />
+    <line x1="4.22" y1="10.22" x2="5.64" y2="11.64" />
+    <line x1="1" y1="18" x2="3" y2="18" />
+    <line x1="21" y1="18" x2="23" y2="18" />
+    <line x1="18.36" y1="11.64" x2="19.78" y2="10.22" />
+    <line x1="23" y1="22" x2="1" y2="22" />
+    <polyline points="8 6 12 2 16 6" />
+  </svg>
+);
+
+const SunsetIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={style}
+  >
+    <path d="M17 18a5 5 0 0 0-10 0" />
+    <line x1="12" y1="9" x2="12" y2="2" />
+    <line x1="4.22" y1="10.22" x2="5.64" y2="11.64" />
+    <line x1="1" y1="18" x2="3" y2="18" />
+    <line x1="21" y1="18" x2="23" y2="18" />
+    <line x1="18.36" y1="11.64" x2="19.78" y2="10.22" />
+    <line x1="23" y1="22" x2="1" y2="22" />
+    <polyline points="16 5 12 9 8 5" />
+  </svg>
+);
+
+/**
+ * 根据 AQI 数值获取对应的颜色
+ * @param aqi AQI 数值
+ */
+function getAqiColor(aqi: number): string {
+  if (!Number.isFinite(aqi)) return "#9e9e9e";
+  if (aqi <= 50) return "#4caf50"; // 优 - 绿色
+  if (aqi <= 100) return "#ffc107"; // 良 - 黄色
+  if (aqi <= 150) return "#ff9800"; // 轻度 - 橙色
+  if (aqi <= 200) return "#f44336"; // 中度 - 红色
+  if (aqi <= 300) return "#9c27b0"; // 重度 - 紫色
+  return "#7f0000"; // 严重 - 深红
+}
+
 /**
  * 天气设置分段组件
  * - 展示当前天气信息与定位来源
@@ -186,31 +299,33 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
         <p className={styles.helpText}>
           用于控制天气预警与分钟级降水提醒弹窗显示。
         </p>
-        <FormCheckbox
-          label="天气预警弹窗"
-          checked={weatherAlertEnabled}
-          onChange={(e) => setWeatherAlertEnabled(e.target.checked)}
-        />
-        <FormCheckbox
-          label="分钟级降水提醒"
-          checked={minutelyPrecipEnabled}
-          onChange={(e) => setMinutelyPrecipEnabled(e.target.checked)}
-        />
-        <FormCheckbox
-          label="空气污染提醒"
-          checked={airQualityAlertEnabled}
-          onChange={(e) => setAirQualityAlertEnabled(e.target.checked)}
-        />
-        <FormCheckbox
-          label="日出日落提醒"
-          checked={sunriseSunsetAlertEnabled}
-          onChange={(e) => setSunriseSunsetAlertEnabled(e.target.checked)}
-        />
-        <FormCheckbox
-          label="下课前5分钟预报提醒"
-          checked={classEndForecastEnabled}
-          onChange={(e) => setClassEndForecastEnabled(e.target.checked)}
-        />
+        <div className={styles.checkboxGrid}>
+          <FormCheckbox
+            label="天气预警弹窗"
+            checked={weatherAlertEnabled}
+            onChange={(e) => setWeatherAlertEnabled(e.target.checked)}
+          />
+          <FormCheckbox
+            label="分钟级降水提醒"
+            checked={minutelyPrecipEnabled}
+            onChange={(e) => setMinutelyPrecipEnabled(e.target.checked)}
+          />
+          <FormCheckbox
+            label="空气污染提醒"
+            checked={airQualityAlertEnabled}
+            onChange={(e) => setAirQualityAlertEnabled(e.target.checked)}
+          />
+          <FormCheckbox
+            label="日出日落提醒"
+            checked={sunriseSunsetAlertEnabled}
+            onChange={(e) => setSunriseSunsetAlertEnabled(e.target.checked)}
+          />
+          <FormCheckbox
+            label="下课前5分钟预报提醒"
+            checked={classEndForecastEnabled}
+            onChange={(e) => setClassEndForecastEnabled(e.target.checked)}
+          />
+        </div>
       </FormSection>
 
       <FormSection title="刷新设置">
@@ -344,129 +459,281 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
 
         <div
           className={styles.weatherInfo}
-          style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}
         >
+          {/* 顶部：时间与概况 */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              paddingBottom: "8px",
+            }}
+          >
+            <div style={{ fontSize: "0.95rem", fontWeight: 500 }}>
+              {now?.obsTime ? formatDateHM(now.obsTime) : "--"}
+            </div>
+            <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>{now?.text || "--"}</div>
+          </div>
+
+          {/* 主要数据区域：三列布局 */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "8px 16px",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "12px",
+              alignItems: "center",
             }}
           >
-            <p className={styles.infoText}>时间：{now?.obsTime || "--"}</p>
-            <p className={styles.infoText}>天气：{now?.text || "--"}</p>
-            <p className={styles.infoText}>
-              气温：{now?.temp ? `${now.temp}°C` : "--"}{" "}
-              <span style={{ opacity: 0.5, margin: "0 4px" }}>/</span> 体感：
-              {now?.feelsLike ? `${now.feelsLike}°C` : "--"}
-            </p>
-            <p className={styles.infoText}>
-              风况：{now?.windDir || "--"} {now?.windScale || "--"}级 (
-              {now?.windSpeed ? `${now.windSpeed}km/h` : "--"})
-            </p>
-            <p className={styles.infoText}>
-              空气质量：
+            {/* 气温 */}
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  fontSize: "2rem",
+                  fontWeight: "bold",
+                  lineHeight: 1,
+                  color: "var(--accent-color, #4fc3f7)",
+                }}
+              >
+                {now?.temp || "--"}°
+              </div>
+              <div style={{ fontSize: "0.8rem", opacity: 0.7, marginTop: 4 }}>
+                体感 {now?.feelsLike || "--"}°
+              </div>
+            </div>
+
+            {/* 风况与空气质量 */}
+            <div
+              style={{
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <WindIcon
+                  size={20}
+                  angle={Number(now?.wind360) || 0}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <div style={{ fontSize: "0.85rem" }}>
+                    {now?.windDir || "--"} {now?.windScale ? `${now.windScale}级` : ""}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+                    {now?.windSpeed ? `${now.windSpeed}km/h` : ""}
+                  </div>
+                </div>
+              </div>
+
               {(() => {
                 const idx = cache.airQuality?.data?.indexes?.[0];
-                if (!idx) return "--";
-                return `${idx.name || "AQI"} ${idx.aqi ?? ""} ${idx.category || ""}`;
+                if (!idx || typeof idx.aqi !== "number")
+                  return <div style={{ fontSize: "0.8rem", opacity: 0.5 }}>AQI --</div>;
+                const color = getAqiColor(idx.aqi);
+                return (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: color,
+                        boxShadow: `0 0 4px ${color}`,
+                      }}
+                    />
+                    <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                      AQI {idx.aqi}
+                    </span>
+                    <span style={{ opacity: 0.8, fontSize: "0.7rem" }}>{idx.category}</span>
+                  </div>
+                );
               })()}
-            </p>
-            <p className={styles.infoText}>
-              日出日落：
-              {cache.astronomySun?.data?.sunrise && cache.astronomySun?.data?.sunset
-                ? `${cache.astronomySun.data.sunrise} - ${cache.astronomySun.data.sunset}`
-                : "--"}
-            </p>
+            </div>
+
+            {/* 日出日落 */}
+            <div
+              style={{
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <SunriseIcon size={18} style={{ opacity: 0.7 }} />
+                <div style={{ fontSize: "0.9rem", fontFamily: "var(--font-main)" }}>
+                  {cache.astronomySun?.data?.sunrise
+                    ? formatSunHM(cache.astronomySun.data.sunrise)
+                    : "--:--"}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <SunsetIcon size={18} style={{ opacity: 0.7 }} />
+                <div style={{ fontSize: "0.9rem", fontFamily: "var(--font-main)" }}>
+                  {cache.astronomySun?.data?.sunset
+                    ? formatSunHM(cache.astronomySun.data.sunset)
+                    : "--:--"}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* 湿度与气压条 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 4 }}>
+          {/* 湿度与气压 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              background: "rgba(0,0,0,0.1)",
+              padding: "8px",
+              borderRadius: "8px",
+            }}
+          >
+            {/* 湿度 */}
             {(() => {
               const humidity = now?.humidity ? Number.parseFloat(String(now.humidity)) : NaN;
-              if (!Number.isFinite(humidity)) return null;
+              if (!Number.isFinite(humidity))
+                return (
+                  <div style={{ opacity: 0.5, fontSize: "0.8rem", textAlign: "center" }}>
+                    湿度 --
+                  </div>
+                );
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>湿度</div>
+                  <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>湿度</div>
                   <div
                     style={{
                       flex: 1,
                       height: 4,
-                      borderRadius: 2,
                       background: "rgba(255,255,255,0.1)",
-                      overflow: "hidden",
+                      borderRadius: 2,
                     }}
                   >
                     <div
                       style={{
                         width: `${Math.min(100, Math.max(0, humidity))}%`,
                         height: "100%",
-                        background: "rgba(255,255,255,0.6)",
+                        background: "#4fc3f7",
+                        borderRadius: 2,
                       }}
                     />
                   </div>
-                  <div
-                    style={{ width: 40, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}
-                  >
+                  <div style={{ fontSize: "0.8rem", minWidth: 24, textAlign: "right" }}>
                     {Math.round(humidity)}%
                   </div>
                 </div>
               );
             })()}
+
+            {/* 气压 */}
             {(() => {
               const pressure = now?.pressure ? Number.parseFloat(String(now.pressure)) : NaN;
-              if (!Number.isFinite(pressure)) return null;
+              if (!Number.isFinite(pressure))
+                return (
+                  <div style={{ opacity: 0.5, fontSize: "0.8rem", textAlign: "center" }}>
+                    气压 --
+                  </div>
+                );
               const ratio = Math.min(1, Math.max(0, (pressure - 900) / 200));
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 40, opacity: 0.85, fontSize: "0.85rem" }}>气压</div>
+                  <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>气压</div>
                   <div
                     style={{
                       flex: 1,
                       height: 4,
-                      borderRadius: 2,
                       background: "rgba(255,255,255,0.1)",
-                      overflow: "hidden",
+                      borderRadius: 2,
                     }}
                   >
                     <div
                       style={{
                         width: `${Math.round(ratio * 100)}%`,
                         height: "100%",
-                        background: "rgba(255,255,255,0.6)",
+                        background: "#81c784",
+                        borderRadius: 2,
                       }}
                     />
                   </div>
-                  <div
-                    style={{ width: 60, textAlign: "right", opacity: 0.85, fontSize: "0.85rem" }}
-                  >
-                    {Math.round(pressure)}hPa
+                  <div style={{ fontSize: "0.8rem", minWidth: 40, textAlign: "right" }}>
+                    {Math.round(pressure)}
                   </div>
                 </div>
               );
             })()}
           </div>
 
-          <div
-            style={{ marginTop: 4, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.1)" }}
-          >
-            <p className={styles.infoText} style={{ opacity: 0.8 }}>
-              未来三日：
+          {/* 未来预报 */}
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: "0.8rem", opacity: 0.6, marginBottom: 6 }}>
+              未来三日
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {(() => {
                 const daily = cache.daily3d?.data?.daily;
-                if (!daily || daily.length === 0) return "--";
-                return daily
-                  .slice(0, 3)
-                  .map((d) => `${d.textDay} ${d.tempMin}~${d.tempMax}°`)
-                  .join("  |  ");
+                if (!daily || daily.length === 0)
+                  return (
+                    <div
+                      style={{ gridColumn: "1 / -1", textAlign: "center", opacity: 0.5 }}
+                    >
+                      暂无预报数据
+                    </div>
+                  );
+                return daily.slice(0, 3).map((d, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      padding: "6px",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                      {d.textDay}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", marginTop: 2 }}>
+                      {d.tempMin}°~{d.tempMax}°
+                    </div>
+                  </div>
+                ));
               })()}
-            </p>
+            </div>
           </div>
         </div>
 
-        <p className={styles.infoText} style={{ opacity: 0.5, fontSize: "0.8rem", marginTop: 4 }}>
+        <p
+          className={styles.infoText}
+          style={{
+            opacity: 0.4,
+            fontSize: "0.75rem",
+            marginTop: 8,
+            textAlign: "right",
+          }}
+        >
           数据更新于：
-          {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "--"}
+          {cache.now?.updatedAt
+            ? new Date(cache.now.updatedAt).toLocaleTimeString()
+            : "--"}
         </p>
       </FormSection>
     </div>
