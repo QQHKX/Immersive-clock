@@ -20,6 +20,7 @@
     fall var(--dur) linear var(--delay) forwards,
     drift calc(var(--dur) * 0.9) ease-in-out var(--delay) forwards,
     spin calc(var(--dur) * 0.6) linear var(--delay) forwards;
+  will-change: transform;
 }
 
 @keyframes fall {
