@@ -89,13 +89,13 @@ export default function MessagePopup({
   // 类型样式扩展点
   const typeClass =
     {
-      general: styles.general,
+      general: "",
       error: styles.error,
       weatherAlert: styles.weatherAlert,
       weatherForecast: styles.weatherForecast,
       coolingReminder: styles.coolingReminder,
       systemUpdate: styles.systemUpdate,
-    }[type] || styles.general;
+    }[type] || "";
 
   const rootClass = `${styles.container} ${exiting ? styles.exit : styles.enter} ${typeClass} ${!usePortal ? styles.inline : ""} ${className}`;
   const rootStyle = themeColor

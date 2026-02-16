@@ -63,8 +63,6 @@
   }
 }
 
-.general {}
-
 /* 错误提示：红色语义 */
 .error {
   --message-popup-theme-color: #ff5252;
