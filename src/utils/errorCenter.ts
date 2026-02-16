@@ -1,4 +1,5 @@
 export type ErrorCenterLevel = "error" | "warn" | "info" | "debug";
+export type ErrorCenterMode = "off" | "memory" | "persist";
 
 export interface ErrorCenterRecord {
   id: string;
@@ -20,6 +21,7 @@ const MAX_RECORDS = 200;
 const MERGE_WINDOW_MS = 5000;
 
 let initialized = false;
+let errorCenterMode: ErrorCenterMode = "off";
 let records: ErrorCenterRecord[] = [];
 const listeners = new Set<ErrorCenterListener>();
 
@@ -73,12 +75,54 @@ function loadFromStorage(): ErrorCenterRecord[] {
   }
 }
 
+/**
+ * 清理错误中心的本地存储
+ */
+function clearErrorCenterStorage(): void {
+  try {
+    localStorage.removeItem(ERROR_CENTER_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 function persistToStorage() {
+  if (errorCenterMode !== "persist") return;
   try {
     localStorage.setItem(ERROR_CENTER_STORAGE_KEY, JSON.stringify(records.slice(-MAX_RECORDS)));
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * 设置错误与调试记录模式
+ */
+export function setErrorCenterMode(mode: ErrorCenterMode): void {
+  const nextMode: ErrorCenterMode =
+    mode === "persist" || mode === "memory" ? mode : "off";
+  if (errorCenterMode === nextMode) return;
+  const prevMode = errorCenterMode;
+  errorCenterMode = nextMode;
+  if (prevMode === "persist" && nextMode !== "persist") {
+    clearErrorCenterStorage();
+  }
+  if (nextMode === "persist") {
+    records = loadFromStorage();
+  } else if (nextMode === "off") {
+    records = [];
+    clearErrorCenterStorage();
+  } else if (prevMode === "off") {
+    records = [];
+  }
+  notify();
+}
+
+/**
+ * 判断错误与调试记录是否启用
+ */
+export function isErrorCenterActive(): boolean {
+  return errorCenterMode !== "off";
 }
 
 export function getErrorCenterRecords(): ReadonlyArray<ErrorCenterRecord> {
@@ -99,7 +143,11 @@ export function subscribeErrorCenter(listener: ErrorCenterListener): () => void 
 
 export function clearErrorCenter(): void {
   records = [];
-  persistToStorage();
+  if (errorCenterMode === "persist") {
+    persistToStorage();
+  } else {
+    clearErrorCenterStorage();
+  }
   notify();
 }
 
@@ -115,7 +163,10 @@ export function pushErrorCenterRecord(input: {
   stack?: unknown;
   extra?: Record<string, unknown>;
   ts?: number;
-}): ErrorCenterRecord {
+}): ErrorCenterRecord | null {
+  if (errorCenterMode === "off") {
+    return null;
+  }
   const ts = typeof input.ts === "number" ? input.ts : Date.now();
   const normalized = {
     level: input.level,
@@ -187,7 +238,12 @@ export function initErrorCenterGlobalCapture(): void {
   if (initialized) return;
   initialized = true;
 
-  records = loadFromStorage();
+  if (errorCenterMode === "persist") {
+    records = loadFromStorage();
+  } else if (errorCenterMode === "off") {
+    records = [];
+    clearErrorCenterStorage();
+  }
 
   window.addEventListener("messagePopup:open", (e: Event) => {
     const detail = (e as CustomEvent).detail || {};
@@ -267,4 +323,3 @@ export function initErrorCenterGlobalCapture(): void {
     });
   });
 }
-

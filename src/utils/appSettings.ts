@@ -78,6 +78,7 @@ export interface AppSettings {
       weatherAlert: boolean;
       minutelyPrecip: boolean;
       errorPopup: boolean;
+      errorCenterMode: "off" | "memory" | "persist";
       airQuality: boolean;
       sunriseSunset: boolean;
       classEndForecast: boolean;
@@ -174,6 +175,7 @@ const DEFAULT_SETTINGS: AppSettings = {
       weatherAlert: false,
       minutelyPrecip: false,
       errorPopup: true,
+      errorCenterMode: "off",
       airQuality: false,
       sunriseSunset: false,
       classEndForecast: false,
@@ -217,6 +219,8 @@ export function getAppSettings(): AppSettings {
       typeof parsedAlerts.minutelyForecast === "boolean" ? parsedAlerts.minutelyForecast : undefined;
     const legacyPrecipDuration =
       typeof parsedAlerts.precipDuration === "boolean" ? parsedAlerts.precipDuration : undefined;
+    const legacyErrorCenterEnabled =
+      typeof parsedAlerts.errorCenterEnabled === "boolean" ? parsedAlerts.errorCenterEnabled : undefined;
     const legacyMergedMinutely =
       legacyMinutelyForecast != null || legacyPrecipDuration != null
         ? !!(legacyMinutelyForecast || legacyPrecipDuration)
@@ -234,6 +238,13 @@ export function getAppSettings(): AppSettings {
         typeof parsedAlerts.errorPopup === "boolean"
           ? parsedAlerts.errorPopup
           : DEFAULT_SETTINGS.study.alerts.errorPopup,
+      errorCenterMode:
+        typeof parsedAlerts.errorCenterMode === "string" &&
+        ["off", "memory", "persist"].includes(parsedAlerts.errorCenterMode)
+          ? parsedAlerts.errorCenterMode
+          : legacyErrorCenterEnabled
+            ? "persist"
+            : DEFAULT_SETTINGS.study.alerts.errorCenterMode,
       airQuality:
         typeof parsedAlerts.airQuality === "boolean"
           ? parsedAlerts.airQuality

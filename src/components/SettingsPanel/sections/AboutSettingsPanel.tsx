@@ -29,6 +29,8 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   const [notice, setNotice] = useState<string>("");
   const [records, setRecords] = useState(() => getErrorCenterRecords().slice());
   const [levelFilter, setLevelFilter] = useState<"all" | "error" | "warn" | "info" | "debug">("all");
+  const errorCenterMode = study.errorCenterMode ?? "off";
+  const isErrorCenterActive = errorCenterMode !== "off";
 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
@@ -83,7 +85,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setNotice("导出设置失败，已记录到“错误与调试”。");
+      setNotice(isErrorCenterActive ? "导出设置失败，已记录到“错误与调试”。" : "导出设置失败。");
       const msg = err instanceof Error ? err.message : String(err);
       window.dispatchEvent(
         new CustomEvent("messagePopup:open", {
@@ -91,7 +93,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         })
       );
     }
-  }, []);
+  }, [isErrorCenterActive]);
 
   /**
    * 触发文件选择
@@ -131,7 +133,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         alert("设置导入成功，页面将刷新。");
         window.location.reload();
       } catch (err) {
-        setNotice("导入设置失败，已记录到“错误与调试”。");
+        setNotice(isErrorCenterActive ? "导入设置失败，已记录到“错误与调试”。" : "导入设置失败。");
         const msg = err instanceof Error ? err.message : String(err);
         window.dispatchEvent(
           new CustomEvent("messagePopup:open", {
@@ -141,7 +143,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       }
     };
     reader.readAsText(file);
-  }, []);
+  }, [isErrorCenterActive]);
 
   /**
    * 清除所有本地缓存（localStorage）
@@ -157,7 +159,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       localStorage.clear();
       alert("已清除所有缓存。建议刷新页面以确保设置重置。");
     } catch (err) {
-      setNotice("清除缓存失败，已记录到“错误与调试”。");
+      setNotice(isErrorCenterActive ? "清除缓存失败，已记录到“错误与调试”。" : "清除缓存失败。");
       const msg = err instanceof Error ? err.message : String(err);
       window.dispatchEvent(
         new CustomEvent("messagePopup:open", {
@@ -165,7 +167,7 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         })
       );
     }
-  }, []);
+  }, [isErrorCenterActive]);
 
   const handleClearErrorRecords = useCallback(() => {
     setNotice("");
@@ -288,10 +290,6 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
       </FormSection>
 
       <FormSection title="错误与调试">
-        <p className={styles.helpText}>
-          这里会集中记录应用运行中的错误与告警信息，便于排查问题与导出反馈。
-        </p>
-
         <FormRow gap="sm" align="center">
           <FormCheckbox
             label="错误弹窗提示"
@@ -304,87 +302,104 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
 
         <FormRow gap="sm" align="center">
           <FormSegmented
-            label="级别筛选"
-            value={levelFilter}
+            label="记录方式"
+            value={errorCenterMode}
             options={[
-              { label: "全部", value: "all" },
-              { label: "错误", value: "error" },
-              { label: "告警", value: "warn" },
-              { label: "信息", value: "info" },
+              { label: "关闭", value: "off" },
+              { label: "仅内存", value: "memory" },
+              { label: "持久化", value: "persist" },
             ]}
-            onChange={(v) => setLevelFilter(v as typeof levelFilter)}
+            onChange={(v) => dispatch({ type: "SET_ERROR_CENTER_MODE", payload: v as typeof errorCenterMode })}
           />
         </FormRow>
 
-        <FormButtonGroup align="left">
-          <FormButton variant="secondary" size="md" onClick={handleCopyErrorSummary}>
-            复制摘要
-          </FormButton>
-          <FormButton variant="secondary" size="md" onClick={handleExportErrorRecords}>
-            导出记录
-          </FormButton>
-          <FormButton variant="danger" size="md" onClick={handleClearErrorRecords}>
-            清空记录
-          </FormButton>
-        </FormButtonGroup>
+        {isErrorCenterActive ? (
+          <>
+            <FormRow gap="sm" align="center">
+              <FormSegmented
+                label="级别筛选"
+                value={levelFilter}
+                options={[
+                  { label: "全部", value: "all" },
+                  { label: "错误", value: "error" },
+                  { label: "告警", value: "warn" },
+                  { label: "信息", value: "info" },
+                ]}
+                onChange={(v) => setLevelFilter(v as typeof levelFilter)}
+              />
+            </FormRow>
 
-        {notice ? (
-          <p className={styles.infoText} style={{ opacity: 0.9, marginTop: 8 }}>
-            {notice}
-          </p>
-        ) : null}
+            <FormButtonGroup align="left">
+              <FormButton variant="secondary" size="md" onClick={handleCopyErrorSummary}>
+                复制摘要
+              </FormButton>
+              <FormButton variant="secondary" size="md" onClick={handleExportErrorRecords}>
+                导出记录
+              </FormButton>
+              <FormButton variant="danger" size="md" onClick={handleClearErrorRecords}>
+                清空记录
+              </FormButton>
+            </FormButtonGroup>
 
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          {filteredRecords.length === 0 ? (
-            <p className={styles.infoText} style={{ opacity: 0.7 }}>
-              暂无记录
-            </p>
-          ) : (
-            filteredRecords.map((r) => (
-              <details key={r.id} style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 8px" }}>
-                <summary style={{ cursor: "pointer", color: "var(--text-color)" }}>
-                  {new Date(r.ts).toLocaleString()} [{r.level}] {r.title} ({r.source}) x{r.count}
-                </summary>
-                <div style={{ marginTop: 8 }}>
-                  <p className={styles.infoText} style={{ opacity: 0.9 }}>
-                    {r.message || "--"}
-                  </p>
-                  {r.stack ? (
-                    <pre
-                      style={{
-                        marginTop: 8,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        fontSize: "0.75rem",
-                        opacity: 0.85,
-                      }}
-                    >
-                      {r.stack}
-                    </pre>
-                  ) : null}
-                </div>
-              </details>
-            ))
-          )}
-        </div>
-
-        <div className={styles.weatherInfo} style={{ marginTop: 10 }}>
-          <p className={styles.infoText}>环境：{envInfo.isElectron ? "Electron" : "Web"}</p>
-          <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-            UA：{envInfo.ua || "--"}
-          </p>
-          {(() => {
-            const cache = getWeatherCache();
-            const diag = cache.geolocation?.diagnostics;
-            if (!diag) return null;
-            return (
-              <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.85 }}>
-                定位诊断：权限={diag.permissionState}{" "}
-                {diag.errorMessage ? `(${diag.errorMessage})` : ""}
+            {notice ? (
+              <p className={styles.infoText} style={{ opacity: 0.9, marginTop: 8 }}>
+                {notice}
               </p>
-            );
-          })()}
-        </div>
+            ) : null}
+
+            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+              {filteredRecords.length === 0 ? (
+                <p className={styles.infoText} style={{ opacity: 0.7 }}>
+                  暂无记录
+                </p>
+              ) : (
+                filteredRecords.map((r) => (
+                  <details key={r.id} style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 8px" }}>
+                    <summary style={{ cursor: "pointer", color: "var(--text-color)" }}>
+                      {new Date(r.ts).toLocaleString()} [{r.level}] {r.title} ({r.source}) x{r.count}
+                    </summary>
+                    <div style={{ marginTop: 8 }}>
+                      <p className={styles.infoText} style={{ opacity: 0.9 }}>
+                        {r.message || "--"}
+                      </p>
+                      {r.stack ? (
+                        <pre
+                          style={{
+                            marginTop: 8,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            fontSize: "0.75rem",
+                            opacity: 0.85,
+                          }}
+                        >
+                          {r.stack}
+                        </pre>
+                      ) : null}
+                    </div>
+                  </details>
+                ))
+              )}
+            </div>
+
+            <div className={styles.weatherInfo} style={{ marginTop: 10 }}>
+              <p className={styles.infoText}>环境：{envInfo.isElectron ? "Electron" : "Web"}</p>
+              <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.75 }}>
+                UA：{envInfo.ua || "--"}
+              </p>
+              {(() => {
+                const cache = getWeatherCache();
+                const diag = cache.geolocation?.diagnostics;
+                if (!diag) return null;
+                return (
+                  <p className={styles.infoText} style={{ fontSize: "0.8rem", opacity: 0.85 }}>
+                    定位诊断：权限={diag.permissionState}{" "}
+                    {diag.errorMessage ? `(${diag.errorMessage})` : ""}
+                  </p>
+                );
+              })()}
+            </div>
+          </>
+        ) : null}
       </FormSection>
     </div>
   );

@@ -184,6 +184,7 @@ const waitForConditionThenMoveNext = (params: {
 const createAutoNextClick = (params: {
   check: () => boolean;
   action: () => void;
+  hint?: string;
   timeoutMs?: number;
   waitAfterSatisfiedMs?: number;
 }): DriverHook => {
@@ -193,6 +194,10 @@ const createAutoNextClick = (params: {
       return;
     }
     params.action();
+    if (params.hint) {
+      applyTourAutoActionHint(opts.state?.popover, params.hint);
+    }
+    normalizeTourNextButtonLabel(opts.state?.popover);
     waitForConditionThenMoveNext({
       driverObj: opts.driver,
       condition: params.check,
@@ -200,6 +205,28 @@ const createAutoNextClick = (params: {
       waitAfterSatisfiedMs: params.waitAfterSatisfiedMs,
     });
   };
+};
+
+/**
+ * 更新引导弹窗的辅助提示文案
+ */
+const applyTourAutoActionHint = (popover: PopoverDOM | undefined, hint: string) => {
+  const desc = popover?.description;
+  if (!desc) return;
+  const current = desc.textContent ?? "";
+  if (current.includes(hint)) return;
+  desc.textContent = current ? `${current} ${hint}` : hint;
+};
+
+/**
+ * 统一“下一步”按钮文案（例如从“帮我切换”恢复为“下一步”）
+ */
+const normalizeTourNextButtonLabel = (popover: PopoverDOM | undefined) => {
+  const nextButton = popover?.nextButton;
+  if (!nextButton) return;
+  const current = nextButton.innerHTML || "";
+  if (!current || current === "下一步") return;
+  nextButton.innerHTML = "下一步";
 };
 
 /**
@@ -403,6 +430,7 @@ export const startTour = (force = false, options?: TourOptions) => {
                 options?.switchMode?.("study");
               }
             },
+            hint: "已为您执行切换操作",
           }),
         },
       },
@@ -435,6 +463,7 @@ export const startTour = (force = false, options?: TourOptions) => {
                 options?.openSettings?.();
               }
             },
+            hint: "已为您执行打开操作",
             waitAfterSatisfiedMs: 400, // 等待设置面板动画完成
           }),
         },
@@ -459,6 +488,21 @@ export const startTour = (force = false, options?: TourOptions) => {
           onNextClick: createAutoNextClick({
             check: () => isSettingsCategoryActive("monitor"),
             action: () => tryClickElement("#monitor"),
+            hint: "已为您执行切换操作",
+          }),
+        },
+      },
+      {
+        element: "#tour-noise-monitor-checkbox",
+        popover: {
+          title: "开启历史入口",
+          description: "先开启噪音监测功能，稍后会演示如何查看历史记录。",
+          side: "bottom",
+          align: "center",
+          onPopoverRender: composeTourPopoverRender(),
+          onNextClick: createAutoNextClick({
+            check: isNoiseMonitorEnabled,
+            action: () => tryClickElement("#tour-noise-monitor-checkbox"),
           }),
         },
       },
@@ -484,6 +528,7 @@ export const startTour = (force = false, options?: TourOptions) => {
               calibrationAttemptedInTour = true;
               tryClickElement("#tour-noise-calibrate-btn");
             },
+            hint: "已为您触发校准操作",
             timeoutMs: 8000,
           }),
         },

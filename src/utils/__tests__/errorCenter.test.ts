@@ -45,6 +45,7 @@ describe("errorCenter", () => {
   it("pushErrorCenterRecord 会在时间窗内合并重复记录", async () => {
     vi.resetModules();
     const mod = await import("../errorCenter");
+    mod.setErrorCenterMode("persist");
     mod.clearErrorCenter();
 
     vi.setSystemTime(1000);
@@ -60,6 +61,7 @@ describe("errorCenter", () => {
   it("ErrorCenter 会裁剪到最大记录数", async () => {
     vi.resetModules();
     const mod = await import("../errorCenter");
+    mod.setErrorCenterMode("persist");
     mod.clearErrorCenter();
 
     for (let i = 0; i < 260; i++) {
@@ -78,13 +80,14 @@ describe("errorCenter", () => {
   it("initErrorCenterGlobalCapture 会从 localStorage 回放记录", async () => {
     vi.resetModules();
     const first = await import("../errorCenter");
+    first.setErrorCenterMode("persist");
     first.pushErrorCenterRecord({ level: "error", source: "test", title: "T", message: "M" });
 
     vi.resetModules();
     const second = await import("../errorCenter");
+    second.setErrorCenterMode("persist");
     second.initErrorCenterGlobalCapture();
     expect(second.getErrorCenterRecords().length).toBe(1);
     expect(second.getErrorCenterRecords()[0].title).toBe("T");
   });
 });
-

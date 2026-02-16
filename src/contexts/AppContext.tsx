@@ -3,6 +3,7 @@ import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { STOPWATCH_TICK_MS } from "../constants/timer";
 import { AppState, AppAction, StudyState, QuoteChannelState, QuoteSettingsState } from "../types";
 import { getAppSettings, updateAppSettings, updateStudySettings } from "../utils/appSettings";
+import { setErrorCenterMode } from "../utils/errorCenter";
 import { getStartupModeFromSettings } from "../utils/startupMode";
 import { nowMs } from "../utils/timeSource";
 
@@ -51,6 +52,7 @@ function loadStudyState(): StudyState {
     weatherAlertEnabled: study.alerts.weatherAlert,
     minutelyPrecipEnabled: study.alerts.minutelyPrecip,
     errorPopupEnabled: study.alerts.errorPopup,
+    errorCenterMode: study.alerts.errorCenterMode,
     airQualityAlertEnabled: study.alerts.airQuality,
     sunriseSunsetAlertEnabled: study.alerts.sunriseSunset,
     classEndForecastEnabled: study.alerts.classEndForecast,
@@ -482,6 +484,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: errorPopupUpdatedStudy,
+      };
+
+    case "SET_ERROR_CENTER_MODE":
+      const errorCenterUpdatedStudy = {
+        ...state.study,
+        errorCenterMode: action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            errorCenterMode: action.payload,
+          },
+        },
+      }));
+      setErrorCenterMode(action.payload);
+      return {
+        ...state,
+        study: errorCenterUpdatedStudy,
       };
 
     case "SET_AIR_QUALITY_ALERT_ENABLED":
