@@ -262,12 +262,26 @@ export function ClockPage() {
         }
       }
     };
-    const onClose = () => {
-      setGlobalPopups([]);
-      try {
-        sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
-      } catch {
-        /* 忽略错误 */
+    const onClose = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const id = typeof detail.id === "string" ? detail.id : "";
+      const dismiss = detail.dismiss === true;
+
+      if (id) {
+        setGlobalPopups((prev) => prev.filter((x) => x.id !== id));
+      } else {
+        setGlobalPopups([]);
+      }
+
+      if (!id || id === MINUTELY_PRECIP_POPUP_ID) {
+        try {
+          sessionStorage.setItem(MINUTELY_PRECIP_POPUP_OPEN_KEY, "0");
+          if (dismiss) {
+            sessionStorage.setItem(MINUTELY_PRECIP_POPUP_DISMISSED_KEY, "1");
+          }
+        } catch {
+          /* 忽略错误 */
+        }
       }
     };
     window.addEventListener("messagePopup:open", onOpen as EventListener);

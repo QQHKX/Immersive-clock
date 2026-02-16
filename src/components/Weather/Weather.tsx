@@ -243,6 +243,7 @@ const Weather: React.FC = () => {
   const showErrorPopupRef = useRef<boolean>(false);
   const lastErrorPopupAtRef = useRef<number>(0);
   const lastErrorPopupSignatureRef = useRef<string>("");
+  const minutelyPopupHasRainRef = useRef<boolean | null>(null);
   const [autoRefreshIntervalMin, setAutoRefreshIntervalMin] = useState<number>(() => {
     return clampInt(getAppSettings().general.weather.autoRefreshIntervalMin, 15, 180);
   });
@@ -298,11 +299,13 @@ const Weather: React.FC = () => {
       const location = `${coords.lon.toFixed(2)},${coords.lat.toFixed(2)}`;
       const data = getValidMinutely(location);
       if (data) {
+        const cache = getWeatherCache();
+        const meta = cache.minutely?.location === location ? cache.minutely : undefined;
         return {
           updateTime: data.updateTime,
           summary: data.summary,
           minutely: data.minutely,
-          fetchedAt: Date.now(),
+          fetchedAt: meta?.lastApiFetchAt ?? meta?.updatedAt ?? Date.now(),
         };
       }
     }
@@ -326,8 +329,8 @@ const Weather: React.FC = () => {
     (cache: MinutelyPrecipCache, opts?: { showUpdatedHint?: boolean }): React.ReactNode => {
       const nowMs = Date.now();
       const stats = computeMinutelyRainStats(cache, nowMs);
-      const lastUpdateMs = parseTimeMs(cache.updateTime) ?? cache.fetchedAt ?? nowMs;
-      const lastUpdateText = formatTimestampHm(lastUpdateMs);
+      const pulledAtMs = cache.fetchedAt ?? nowMs;
+      const pulledAtText = formatTimestampHm(pulledAtMs);
 
       const isRainingNow = stats.startInMinutes === 0 && stats.remainingMinutes != null;
       if (isRainingNow) {
@@ -336,9 +339,9 @@ const Weather: React.FC = () => {
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <div>{opts?.showUpdatedHint ? `${line1}` : line1}</div>
             <div>
-              预计持续：{stats.durationMinutes ?? 0}分钟　预计累计：{stats.expectedAmountMm.toFixed(1)}mm
+              降水概率：{stats.probability}%　预计累计：{stats.expectedAmountMm.toFixed(1)}mm
             </div>
-            <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>上次更新：{lastUpdateText}</div>
+            <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>数据拉取时间：{pulledAtText}</div>
           </div>
         );
       }
@@ -348,7 +351,7 @@ const Weather: React.FC = () => {
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div>{opts?.showUpdatedHint ? `${summary}` : summary}</div>
           <div>降水概率：{stats.probability}%</div>
-          <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>上次更新：{lastUpdateText}</div>
+          <div style={{ opacity: 0.8, fontSize: "0.72rem" }}>数据拉取时间：{pulledAtText}</div>
         </div>
       );
     },
@@ -366,6 +369,21 @@ const Weather: React.FC = () => {
 
       const cache = readMinutelyCache();
       if (!cache) return;
+
+      const nowMs = Date.now();
+      const stats = computeMinutelyRainStats(cache, nowMs);
+      if (minutelyPopupHasRainRef.current === true && !stats.hasRain) {
+        minutelyPopupHasRainRef.current = false;
+        safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY, false);
+        window.dispatchEvent(
+          new CustomEvent("messagePopup:close", {
+            detail: { id: MINUTELY_PRECIP_POPUP_ID, dismiss: false },
+          })
+        );
+        return;
+      }
+      minutelyPopupHasRainRef.current = stats.hasRain;
+
       const message = buildMinutelyPrecipPopupMessage(cache, { showUpdatedHint: opts?.showUpdatedHint });
       const ev = new CustomEvent("messagePopup:open", {
         detail: {
@@ -407,6 +425,7 @@ const Weather: React.FC = () => {
 
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY, true);
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY, true);
+        minutelyPopupHasRainRef.current = true;
         const ev = new CustomEvent("messagePopup:open", {
           detail: {
             id: MINUTELY_PRECIP_POPUP_ID,
