@@ -145,7 +145,9 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
           })();
           openErrorPopup(
             "麦克风权限不可用",
-            isElectronRuntime ? "请在系统设置中允许麦克风权限后重试。" : "请允许浏览器麦克风权限后重试。"
+            isElectronRuntime
+              ? "请在系统设置中允许麦克风权限后重试。"
+              : "请允许浏览器麦克风权限后重试。"
           );
         } else {
           openErrorPopup("噪音监测失败", "请点击重试。");

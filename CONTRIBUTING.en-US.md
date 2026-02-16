@@ -176,4 +176,3 @@ This runs an Electron-mode build and packages artifacts via `electron-builder`. 
 
 - For bugs: include steps to reproduce + screenshots/recordings + browser/OS versions if relevant
 - For security issues: do not post secrets/tokens/private data in public issues; report via the author’s public contact channels instead
-

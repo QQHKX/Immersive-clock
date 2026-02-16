@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import type { NoiseSliceSummary } from "../../types/noise";
 import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../../constants/noiseReport";
+import type { NoiseSliceSummary } from "../../types/noise";
 import { StudyPeriod, DEFAULT_SCHEDULE } from "../../types/studySchedule";
 import { formatDateTimeLocal, parseDateTimeLocal } from "../../utils/dateTimeLocal";
-import { getNoiseReportSettings } from "../../utils/noiseReportSettings";
 import { buildNoiseHistoryListItems } from "../../utils/noiseHistoryBuilder";
+import { getNoiseReportSettings } from "../../utils/noiseReportSettings";
 import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { FormButton, FormButtonGroup, FormInput, FormRow, FormSection } from "../FormComponents";
@@ -86,7 +86,7 @@ const NoiseHistoryModal: React.FC<NoiseHistoryModalProps> = ({ isOpen, onClose, 
     try {
       const s = readStudySchedule();
       if (Array.isArray(s) && s.length > 0) schedule = s;
-    } catch { }
+    } catch {}
     return buildNoiseHistoryListItems({ slices, schedule, windowMs: maxCustomRangeMs });
   }, [isOpen, slices, maxCustomRangeMs]);
 

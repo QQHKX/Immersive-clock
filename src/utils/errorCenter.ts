@@ -44,7 +44,9 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function signatureOf(input: Pick<ErrorCenterRecord, "level" | "source" | "title" | "message">): string {
+function signatureOf(
+  input: Pick<ErrorCenterRecord, "level" | "source" | "title" | "message">
+): string {
   return `${input.level}::${input.source}::${input.title}::${input.message}`;
 }
 
@@ -68,7 +70,10 @@ function loadFromStorage(): ErrorCenterRecord[] {
     return parsed
       .filter((x) => x && typeof x === "object")
       .map((x) => x as ErrorCenterRecord)
-      .filter((x) => typeof x.ts === "number" && typeof x.title === "string" && typeof x.message === "string")
+      .filter(
+        (x) =>
+          typeof x.ts === "number" && typeof x.title === "string" && typeof x.message === "string"
+      )
       .slice(-MAX_RECORDS);
   } catch {
     return [];
@@ -99,8 +104,7 @@ function persistToStorage() {
  * 设置错误与调试记录模式
  */
 export function setErrorCenterMode(mode: ErrorCenterMode): void {
-  const nextMode: ErrorCenterMode =
-    mode === "persist" || mode === "memory" ? mode : "off";
+  const nextMode: ErrorCenterMode = mode === "persist" || mode === "memory" ? mode : "off";
   if (errorCenterMode === nextMode) return;
   const prevMode = errorCenterMode;
   errorCenterMode = nextMode;
@@ -216,7 +220,11 @@ export function pushErrorCenterRecord(input: {
   return rec;
 }
 
-export function dispatchErrorPopup(detail: { title: string; message: unknown; source?: string }): void {
+export function dispatchErrorPopup(detail: {
+  title: string;
+  message: unknown;
+  source?: string;
+}): void {
   pushErrorCenterRecord({
     level: "error",
     source: detail.source || "errorPopup",

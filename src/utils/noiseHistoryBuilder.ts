@@ -1,6 +1,6 @@
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 import type { NoiseSliceSummary } from "../types/noise";
 import type { StudyPeriod } from "../types/studySchedule";
-import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 
 export interface NoiseHistoryPeriod {
   id: string;

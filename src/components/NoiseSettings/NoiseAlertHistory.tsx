@@ -54,7 +54,9 @@ export const NoiseAlertHistory: React.FC = () => {
   return (
     <FormSection title="提醒记录">
       <div className={styles.alertHeader}>
-        <div>最近{retentionDays}天事件段数：{totalSegments}</div>
+        <div>
+          最近{retentionDays}天事件段数：{totalSegments}
+        </div>
       </div>
       <div className={styles.alertList}>
         {items.length === 0 ? (

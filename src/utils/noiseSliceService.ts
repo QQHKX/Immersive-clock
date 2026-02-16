@@ -1,6 +1,6 @@
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 import type { NoiseSliceSummary } from "../types/noise";
 
-import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../constants/noiseReport";
 import { getAppSettings } from "./appSettings";
 
 const STORAGE_KEY = "noise-slices";
@@ -37,7 +37,9 @@ function getRetentionMs(): number {
   try {
     const raw = getAppSettings().noiseControl.reportRetentionDays;
     const days =
-      typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : DEFAULT_RETENTION_DAYS;
+      typeof raw === "number" && Number.isFinite(raw) && raw > 0
+        ? Math.round(raw)
+        : DEFAULT_RETENTION_DAYS;
     return Math.max(1, days) * DAY_MS;
   } catch {
     return DEFAULT_RETENTION_DAYS * DAY_MS;

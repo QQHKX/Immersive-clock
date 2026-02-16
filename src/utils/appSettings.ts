@@ -216,11 +216,15 @@ export function getAppSettings(): AppSettings {
     const parsedStudy = parsed.study || {};
     const parsedAlerts = parsedStudy.alerts || {};
     const legacyMinutelyForecast =
-      typeof parsedAlerts.minutelyForecast === "boolean" ? parsedAlerts.minutelyForecast : undefined;
+      typeof parsedAlerts.minutelyForecast === "boolean"
+        ? parsedAlerts.minutelyForecast
+        : undefined;
     const legacyPrecipDuration =
       typeof parsedAlerts.precipDuration === "boolean" ? parsedAlerts.precipDuration : undefined;
     const legacyErrorCenterEnabled =
-      typeof parsedAlerts.errorCenterEnabled === "boolean" ? parsedAlerts.errorCenterEnabled : undefined;
+      typeof parsedAlerts.errorCenterEnabled === "boolean"
+        ? parsedAlerts.errorCenterEnabled
+        : undefined;
     const legacyMergedMinutely =
       legacyMinutelyForecast != null || legacyPrecipDuration != null
         ? !!(legacyMinutelyForecast || legacyPrecipDuration)

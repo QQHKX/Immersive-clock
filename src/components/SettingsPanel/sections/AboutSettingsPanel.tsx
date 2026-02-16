@@ -10,8 +10,14 @@ import {
   subscribeErrorCenter,
 } from "../../../utils/errorCenter";
 import { getWeatherCache } from "../../../utils/weatherStorage";
-import { FormSection, FormButton, FormButtonGroup } from "../../FormComponents";
-import { FormCheckbox, FormRow, FormSegmented } from "../../FormComponents";
+import {
+  FormSection,
+  FormButton,
+  FormButtonGroup,
+  FormCheckbox,
+  FormRow,
+  FormSegmented,
+} from "../../FormComponents";
 import { TrashIcon, SaveIcon, FileIcon } from "../../Icons";
 import styles from "../SettingsPanel.module.css";
 
@@ -28,14 +34,16 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<string>("");
   const [records, setRecords] = useState(() => getErrorCenterRecords().slice());
-  const [levelFilter, setLevelFilter] = useState<"all" | "error" | "warn" | "info" | "debug">("all");
+  const [levelFilter, setLevelFilter] = useState<"all" | "error" | "warn" | "info" | "debug">(
+    "all"
+  );
   const errorCenterMode = study.errorCenterMode ?? "off";
   const isErrorCenterActive = errorCenterMode !== "off";
 
   useEffect(() => {
     // 关于页无保存逻辑，注册一个空操作以保持接口一致性
     if (onRegisterSave) {
-      onRegisterSave(() => { });
+      onRegisterSave(() => {});
     }
   }, [onRegisterSave]);
 
@@ -105,45 +113,50 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   /**
    * 导入设置
    */
-  const handleImportSettings = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImportSettings = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    // 清除 value，以便重复选择同一文件触发 onChange
-    event.target.value = "";
+      // 清除 value，以便重复选择同一文件触发 onChange
+      event.target.value = "";
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        setNotice("");
-        const result = e.target?.result;
-        if (typeof result !== "string") return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          setNotice("");
+          const result = e.target?.result;
+          if (typeof result !== "string") return;
 
-        const importedSettings = JSON.parse(result);
+          const importedSettings = JSON.parse(result);
 
-        // 简单校验：检查是否为对象且包含基本字段
-        if (typeof importedSettings !== "object" || !importedSettings) {
-          throw new Error("无效的设置文件格式");
+          // 简单校验：检查是否为对象且包含基本字段
+          if (typeof importedSettings !== "object" || !importedSettings) {
+            throw new Error("无效的设置文件格式");
+          }
+
+          const ok = window.confirm("确定要导入该设置文件吗？这将覆盖当前的配置并刷新页面。");
+          if (!ok) return;
+
+          localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(importedSettings));
+          alert("设置导入成功，页面将刷新。");
+          window.location.reload();
+        } catch (err) {
+          setNotice(
+            isErrorCenterActive ? "导入设置失败，已记录到“错误与调试”。" : "导入设置失败。"
+          );
+          const msg = err instanceof Error ? err.message : String(err);
+          window.dispatchEvent(
+            new CustomEvent("messagePopup:open", {
+              detail: { type: "error", title: "导入设置失败", message: msg },
+            })
+          );
         }
-
-        const ok = window.confirm("确定要导入该设置文件吗？这将覆盖当前的配置并刷新页面。");
-        if (!ok) return;
-
-        localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(importedSettings));
-        alert("设置导入成功，页面将刷新。");
-        window.location.reload();
-      } catch (err) {
-        setNotice(isErrorCenterActive ? "导入设置失败，已记录到“错误与调试”。" : "导入设置失败。");
-        const msg = err instanceof Error ? err.message : String(err);
-        window.dispatchEvent(
-          new CustomEvent("messagePopup:open", {
-            detail: { type: "error", title: "导入设置失败", message: msg },
-          })
-        );
-      }
-    };
-    reader.readAsText(file);
-  }, [isErrorCenterActive]);
+      };
+      reader.readAsText(file);
+    },
+    [isErrorCenterActive]
+  );
 
   /**
    * 清除所有本地缓存（localStorage）
@@ -309,7 +322,9 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
               { label: "仅内存", value: "memory" },
               { label: "持久化", value: "persist" },
             ]}
-            onChange={(v) => dispatch({ type: "SET_ERROR_CENTER_MODE", payload: v as typeof errorCenterMode })}
+            onChange={(v) =>
+              dispatch({ type: "SET_ERROR_CENTER_MODE", payload: v as typeof errorCenterMode })
+            }
           />
         </FormRow>
 
@@ -354,9 +369,17 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
                 </p>
               ) : (
                 filteredRecords.map((r) => (
-                  <details key={r.id} style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 8px" }}>
+                  <details
+                    key={r.id}
+                    style={{
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 8,
+                      padding: "6px 8px",
+                    }}
+                  >
                     <summary style={{ cursor: "pointer", color: "var(--text-color)" }}>
-                      {new Date(r.ts).toLocaleString()} [{r.level}] {r.title} ({r.source}) x{r.count}
+                      {new Date(r.ts).toLocaleString()} [{r.level}] {r.title} ({r.source}) x
+                      {r.count}
                     </summary>
                     <div style={{ marginTop: 8 }}>
                       <p className={styles.infoText} style={{ opacity: 0.9 }}>

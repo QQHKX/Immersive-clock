@@ -12,7 +12,6 @@ import "../styles/tour.css";
 const TOUR_STORAGE_KEY = "immersive-clock:has-seen-tour";
 
 let currentDriver: Driver | null = null;
-let calibrationAttemptedInTour = false;
 let calibrationBaselineAtEnter: number | null = null;
 
 /**
@@ -155,7 +154,13 @@ const waitForConditionThenMoveNext = (params: {
   intervalMs?: number;
   waitAfterSatisfiedMs?: number;
 }) => {
-  const { driverObj, condition, timeoutMs = 2400, intervalMs = 60, waitAfterSatisfiedMs = 0 } = params;
+  const {
+    driverObj,
+    condition,
+    timeoutMs = 2400,
+    intervalMs = 60,
+    waitAfterSatisfiedMs = 0,
+  } = params;
   const startedAt = Date.now();
   const tick = () => {
     if (!driverObj.isActive()) return;
@@ -278,10 +283,7 @@ const ensureCloseButton = (popover: PopoverDOM, driver: Driver) => {
 /**
  * 让引导弹窗默认焦点落在“下一步”，而不是“上一步”或“X”
  */
-const preferTourNextButtonAsDefaultFocus = (
-  popover: PopoverDOM,
-  opts: { driver: Driver }
-) => {
+const preferTourNextButtonAsDefaultFocus = (popover: PopoverDOM, opts: { driver: Driver }) => {
   // 确保关闭按钮存在（因为 allowClose: false）
   ensureCloseButton(popover, opts.driver);
 
@@ -296,7 +298,11 @@ const preferTourNextButtonAsDefaultFocus = (
     const manualCloseBtn = popover.wrapper?.querySelector(
       ".driver-popover-close-btn"
     ) as HTMLButtonElement | null;
-    const restore = temporarilyDisableButtons([popover.closeButton, manualCloseBtn, popover.previousButton]);
+    const restore = temporarilyDisableButtons([
+      popover.closeButton,
+      manualCloseBtn,
+      popover.previousButton,
+    ]);
     if (popover.nextButton) focusButtonWithRetries(popover.nextButton, 4);
     setTimeout(() => restore(), 160);
     return;
@@ -365,7 +371,6 @@ export const startTour = (force = false, options?: TourOptions) => {
     return;
   }
 
-  calibrationAttemptedInTour = false;
   calibrationBaselineAtEnter = null;
   let isDoneClicked = false;
 
@@ -438,7 +443,8 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: '[data-tour="clock-area"]',
         popover: {
           title: "自习模式",
-          description: "这是专为教室多媒体大屏打造的模式，支持噪音监测与统计、在线励志语句、天气显示与预警等等。",
+          description:
+            "这是专为教室多媒体大屏打造的模式，支持噪音监测与统计、在线励志语句、天气显示与预警等等。",
           side: "top",
           align: "center",
         },
@@ -510,8 +516,7 @@ export const startTour = (force = false, options?: TourOptions) => {
         element: '[data-tour="noise-calibration"]',
         popover: {
           title: "校准噪音值",
-          description:
-            "这里是噪音校准功能，校准完成后你会获得更精确的分贝显示。",
+          description: "这里是噪音校准功能，校准完成后你会获得更精确的分贝显示。",
           side: "top",
           align: "center",
           onPopoverRender: composeTourPopoverRender(),
@@ -525,7 +530,7 @@ export const startTour = (force = false, options?: TourOptions) => {
               return isNoiseCalibrated() || baselineChanged;
             },
             action: () => {
-              calibrationAttemptedInTour = true;
+              // 移除 calibrationAttemptedInTour = true;
               tryClickElement("#tour-noise-calibrate-btn");
             },
             hint: "已为您触发校准操作",

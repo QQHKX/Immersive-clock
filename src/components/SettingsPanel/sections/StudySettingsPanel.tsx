@@ -515,7 +515,8 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegist
         </FormRow>
         <p className={styles.helpText}>学习结束后自动显示噪音分析报告。</p>
         <p className={styles.helpText}>
-          默认 {DEFAULT_NOISE_REPORT_RETENTION_DAYS} 天；实际最大可保存范围会受本地容量限制（按可用容量的 90% 自动裁剪旧数据）。
+          默认 {DEFAULT_NOISE_REPORT_RETENTION_DAYS}{" "}
+          天；实际最大可保存范围会受本地容量限制（按可用容量的 90% 自动裁剪旧数据）。
           {maxReportRetentionDays ? ` 当前建议上限：${maxReportRetentionDays} 天。` : ""}
         </p>
       </FormSection>

@@ -290,7 +290,10 @@ const Weather: React.FC = () => {
 
       const now = Date.now();
       const signature = `${title}::${message}`;
-      if (signature === lastErrorPopupSignatureRef.current && now - lastErrorPopupAtRef.current < 5000) {
+      if (
+        signature === lastErrorPopupSignatureRef.current &&
+        now - lastErrorPopupAtRef.current < 5000
+      ) {
         return;
       }
       lastErrorPopupAtRef.current = now;
@@ -417,7 +420,9 @@ const Weather: React.FC = () => {
       }
       minutelyPopupHasRainRef.current = stats.hasRain;
 
-      const message = buildMinutelyPrecipPopupMessage(cache, { showUpdatedHint: opts?.showUpdatedHint });
+      const message = buildMinutelyPrecipPopupMessage(cache, {
+        showUpdatedHint: opts?.showUpdatedHint,
+      });
       const ev = new CustomEvent("messagePopup:open", {
         detail: {
           id: MINUTELY_PRECIP_POPUP_ID,
@@ -454,7 +459,9 @@ const Weather: React.FC = () => {
         const stats = computeMinutelyRainStats(cache, nowMs);
         if (!stats.hasRain) return;
 
-        const message = buildMinutelyPrecipPopupMessage(cache, { showUpdatedHint: !!opts?.showUpdatedHint });
+        const message = buildMinutelyPrecipPopupMessage(cache, {
+          showUpdatedHint: !!opts?.showUpdatedHint,
+        });
 
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_SHOWN_KEY, true);
         safeWriteSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY, true);
@@ -545,7 +552,13 @@ const Weather: React.FC = () => {
         const cache = getWeatherCache();
         const indexes = cache.airQuality?.data?.indexes || [];
         const idx =
-          indexes.find((x) => typeof x.aqi === "number" && String(x.name || "").toUpperCase().includes("AQI")) ||
+          indexes.find(
+            (x) =>
+              typeof x.aqi === "number" &&
+              String(x.name || "")
+                .toUpperCase()
+                .includes("AQI")
+          ) ||
           indexes.find((x) => typeof x.aqi === "number") ||
           null;
         const aqi = typeof idx?.aqi === "number" ? idx.aqi : null;
@@ -595,7 +608,11 @@ const Weather: React.FC = () => {
 
         if (sunriseMs != null) {
           const remindedKey = `${SUNRISE_REMINDER_KEY_PREFIX}${todayKey}`;
-          if (!safeReadSessionFlag(remindedKey) && nowMs >= sunriseMs && nowMs - sunriseMs < windowMs) {
+          if (
+            !safeReadSessionFlag(remindedKey) &&
+            nowMs >= sunriseMs &&
+            nowMs - sunriseMs < windowMs
+          ) {
             safeWriteSessionFlag(remindedKey, true);
             window.dispatchEvent(
               new CustomEvent("messagePopup:open", {
@@ -613,7 +630,11 @@ const Weather: React.FC = () => {
         if (sunsetMs != null) {
           const remindedKey = `${SUNSET_REMINDER_KEY_PREFIX}${todayKey}`;
           const notifyMs = sunsetMs - 30 * 60 * 1000;
-          if (!safeReadSessionFlag(remindedKey) && nowMs >= notifyMs && nowMs - notifyMs < windowMs) {
+          if (
+            !safeReadSessionFlag(remindedKey) &&
+            nowMs >= notifyMs &&
+            nowMs - notifyMs < windowMs
+          ) {
             safeWriteSessionFlag(remindedKey, true);
             window.dispatchEvent(
               new CustomEvent("messagePopup:open", {
@@ -824,42 +845,45 @@ const Weather: React.FC = () => {
    * - 只更新坐标与地址缓存，不触发天气接口请求；
    * - 用于设置页“自动模式-刷新定位”按钮。
    */
-  const refreshLocationOnly = useCallback(async (options?: WeatherFlowOptions) => {
-    try {
-      const result = await buildLocationFlow(options);
-      const cache = getWeatherCache();
-      const geoDiag = cache.geolocation?.diagnostics || null;
-      const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
-        detail: {
-          status: result.coords ? "成功" : "失败",
-          errorMessage: result.coords ? "" : "定位失败",
-          address: cache.location?.address || "",
-          ts: Date.now(),
-          coords: result.coords || null,
-          coordsSource: result.coordsSource || null,
-          geolocationDiagnostics: geoDiag,
-        },
-      });
-      window.dispatchEvent(event);
-      showErrorPopupRef.current = false;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "未知错误";
-      maybeOpenErrorPopup("定位失败", errorMessage);
-      const cache = getWeatherCache();
-      const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
-        detail: {
-          status: "失败",
-          errorMessage,
-          address: cache.location?.address || "",
-          ts: Date.now(),
-          coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
-          coordsSource: cache.coords?.source || null,
-          geolocationDiagnostics: cache.geolocation?.diagnostics || null,
-        },
-      });
-      window.dispatchEvent(event);
-    }
-  }, [maybeOpenErrorPopup]);
+  const refreshLocationOnly = useCallback(
+    async (options?: WeatherFlowOptions) => {
+      try {
+        const result = await buildLocationFlow(options);
+        const cache = getWeatherCache();
+        const geoDiag = cache.geolocation?.diagnostics || null;
+        const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
+          detail: {
+            status: result.coords ? "成功" : "失败",
+            errorMessage: result.coords ? "" : "定位失败",
+            address: cache.location?.address || "",
+            ts: Date.now(),
+            coords: result.coords || null,
+            coordsSource: result.coordsSource || null,
+            geolocationDiagnostics: geoDiag,
+          },
+        });
+        window.dispatchEvent(event);
+        showErrorPopupRef.current = false;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "未知错误";
+        maybeOpenErrorPopup("定位失败", errorMessage);
+        const cache = getWeatherCache();
+        const event = new CustomEvent(WEATHER_LOCATION_REFRESH_DONE_EVENT, {
+          detail: {
+            status: "失败",
+            errorMessage,
+            address: cache.location?.address || "",
+            ts: Date.now(),
+            coords: cache.coords ? { lat: cache.coords.lat, lon: cache.coords.lon } : null,
+            coordsSource: cache.coords?.source || null,
+            geolocationDiagnostics: cache.geolocation?.diagnostics || null,
+          },
+        });
+        window.dispatchEvent(event);
+      }
+    },
+    [maybeOpenErrorPopup]
+  );
 
   /**
    * 处理天气预警与降雨提醒
@@ -960,7 +984,10 @@ const Weather: React.FC = () => {
 
     const intervalMs = clampInt(autoRefreshIntervalMin, 15, 180) * 60 * 1000;
     const interval = setInterval(() => void initializeWeather(), intervalMs);
-    const localMinutelyInterval = setInterval(() => updateMinutelyPrecipPopupFromCache(), intervalMs);
+    const localMinutelyInterval = setInterval(
+      () => updateMinutelyPrecipPopupFromCache(),
+      intervalMs
+    );
     const localMinutelyTickInterval = setInterval(() => {
       updateMinutelyPrecipPopupFromCache();
       tickWeatherReminders();

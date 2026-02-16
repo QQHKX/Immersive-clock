@@ -120,7 +120,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch { }
+    } catch {}
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -174,7 +174,7 @@ export function Study() {
     try {
       const data = readStudySchedule();
       if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch { }
+    } catch {}
 
     const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -187,7 +187,8 @@ export function Study() {
     const hourly72h = getValidHourly72h(locationParam);
 
     const pad2 = (n: number) => String(n).padStart(2, "0");
-    const formatLocalDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const formatLocalDate = (d: Date) =>
+      `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
     const toDate = (timeStr: string) => {
       const [h, m] = timeStr.split(":").map(Number);
@@ -196,7 +197,10 @@ export function Study() {
       return d;
     };
 
-    const buildDailyLine = (label: string, item?: { textDay?: string; textNight?: string; tempMin?: string; tempMax?: string }) => {
+    const buildDailyLine = (
+      label: string,
+      item?: { textDay?: string; textNight?: string; tempMin?: string; tempMax?: string }
+    ) => {
       const day = item?.textDay || "--";
       const night = item?.textNight || "--";
       const tMin = item?.tempMin || "--";

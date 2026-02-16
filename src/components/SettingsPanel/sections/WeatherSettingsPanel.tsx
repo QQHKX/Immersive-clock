@@ -240,18 +240,18 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       const manualLocation =
         manualType === "coords"
           ? {
-            type: "coords" as const,
-            lat: Number.isFinite(Number.parseFloat(manualLat))
-              ? Number.parseFloat(manualLat)
-              : undefined,
-            lon: Number.isFinite(Number.parseFloat(manualLon))
-              ? Number.parseFloat(manualLon)
-              : undefined,
-          }
+              type: "coords" as const,
+              lat: Number.isFinite(Number.parseFloat(manualLat))
+                ? Number.parseFloat(manualLat)
+                : undefined,
+              lon: Number.isFinite(Number.parseFloat(manualLon))
+                ? Number.parseFloat(manualLon)
+                : undefined,
+            }
           : {
-            type: "city" as const,
-            cityName: String(manualCityName || "").trim(),
-          };
+              type: "city" as const,
+              cityName: String(manualCityName || "").trim(),
+            };
 
       updateGeneralSettings({
         weather: {
@@ -296,9 +296,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   return (
     <div id="weather-panel" role="tabpanel" aria-labelledby="weather">
       <FormSection title="基本设置">
-        <p className={styles.helpText}>
-          用于控制天气预警与分钟级降水提醒弹窗显示。
-        </p>
+        <p className={styles.helpText}>用于控制天气预警与分钟级降水提醒弹窗显示。</p>
         <div className={styles.checkboxGrid}>
           <FormCheckbox
             label="天气预警弹窗"
@@ -414,9 +412,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
         <div className={styles.weatherInfo} style={{ marginTop: "0.5rem" }}>
           <p className={styles.infoText}>
             当前坐标：
-            {cache.coords
-              ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}`
-              : "--"}
+            {cache.coords ? `${cache.coords.lat.toFixed(4)}, ${cache.coords.lon.toFixed(4)}` : "--"}
             <span style={{ margin: "0 8px", opacity: 0.3 }}>|</span>
             来源：
             {(() => {
@@ -514,10 +510,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <WindIcon
-                  size={20}
-                  angle={Number(now?.wind360) || 0}
-                />
+                <WindIcon size={20} angle={Number(now?.wind360) || 0} />
                 <div
                   style={{
                     display: "flex",
@@ -684,17 +677,13 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
 
           {/* 未来预报 */}
           <div style={{ marginTop: 4 }}>
-            <div style={{ fontSize: "0.8rem", opacity: 0.6, marginBottom: 6 }}>
-              未来三日
-            </div>
+            <div style={{ fontSize: "0.8rem", opacity: 0.6, marginBottom: 6 }}>未来三日</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {(() => {
                 const daily = cache.daily3d?.data?.daily;
                 if (!daily || daily.length === 0)
                   return (
-                    <div
-                      style={{ gridColumn: "1 / -1", textAlign: "center", opacity: 0.5 }}
-                    >
+                    <div style={{ gridColumn: "1 / -1", textAlign: "center", opacity: 0.5 }}>
                       暂无预报数据
                     </div>
                   );
@@ -708,9 +697,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
                       textAlign: "center",
                     }}
                   >
-                    <div style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                      {d.textDay}
-                    </div>
+                    <div style={{ fontSize: "0.85rem", fontWeight: 500 }}>{d.textDay}</div>
                     <div style={{ fontSize: "0.8rem", marginTop: 2 }}>
                       {d.tempMin}°~{d.tempMax}°
                     </div>
@@ -731,9 +718,7 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
           }}
         >
           数据更新于：
-          {cache.now?.updatedAt
-            ? new Date(cache.now.updatedAt).toLocaleTimeString()
-            : "--"}
+          {cache.now?.updatedAt ? new Date(cache.now.updatedAt).toLocaleTimeString() : "--"}
         </p>
       </FormSection>
     </div>

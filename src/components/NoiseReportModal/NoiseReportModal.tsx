@@ -396,11 +396,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       distribution:
         totalMs > 0
           ? {
-            quiet: distribution.quiet / totalMs,
-            normal: distribution.normal / totalMs,
-            loud: distribution.loud / totalMs,
-            severe: distribution.severe / totalMs,
-          }
+              quiet: distribution.quiet / totalMs,
+              normal: distribution.normal / totalMs,
+              loud: distribution.loud / totalMs,
+              severe: distribution.severe / totalMs,
+            }
           : { quiet: 0, normal: 0, loud: 0, severe: 0 },
       series,
       scoreText,
@@ -912,7 +912,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     </mask>
                     <mask id="scoreCoverageMaskMain">
                       {chart.maskRects.map((r, i) => (
-                        <rect key={i} x={r.x} y={0} width={r.w} height={chart.height} fill="white" />
+                        <rect
+                          key={i}
+                          x={r.x}
+                          y={0}
+                          width={r.w}
+                          height={chart.height}
+                          fill="white"
+                        />
                       ))}
                     </mask>
                   </defs>
@@ -973,13 +980,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     />
                   </mask>
                   <mask id="warningMask">
-                    <rect
-                      x="0"
-                      y="0"
-                      width={chart.width}
-                      height={chart.thresholdY}
-                      fill="white"
-                    />
+                    <rect x="0" y="0" width={chart.width} height={chart.thresholdY} fill="white" />
                   </mask>
 
                   <g className={showMainChart ? styles.animateArea : ""} style={{ opacity: 0 }}>
@@ -1021,9 +1022,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                                 const t = mid;
                                 const invT = 1 - t;
                                 const yVal =
-                                  3 * invT * invT * t * 0.46 +
-                                  3 * invT * t * t * 0.94 +
-                                  t * t * t;
+                                  3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
                                 if (yVal < progress) low = mid;
                                 else high = mid;
                                 solvedT = mid;
@@ -1049,7 +1048,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                                 />
                               );
                             })}
-
                           </>
                         );
                       })()}
@@ -1100,7 +1098,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
               <div className={styles.rangeText}>
                 <div>
                   统计范围：
-                  {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
+                  {period
+                    ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}`
+                    : "—"}
                   ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB ； 覆盖率：
                   {periodDurationMs > 0
                     ? ((report.totalMs / periodDurationMs) * 100).toFixed(1)
@@ -1195,7 +1195,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       key={`sx-${idx}`}
                       x={t.x}
                       y={smallChart.height - 10}
-                      textAnchor={idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"}
+                      textAnchor={
+                        idx === 0
+                          ? "start"
+                          : idx === smallChart.xTicks.length - 1
+                            ? "end"
+                            : "middle"
+                      }
                       className={styles.axisLabel}
                     >
                       {t.label}
@@ -1241,8 +1247,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       const mid = (low + high) / 2;
                       const t = mid;
                       const invT = 1 - t;
-                      const yVal =
-                        3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
+                      const yVal = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
                       if (yVal < progress) low = mid;
                       else high = mid;
                       solvedT = mid;
@@ -1275,7 +1280,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       key={`ex-${idx}`}
                       x={t.x}
                       y={smallChart.height - 10}
-                      textAnchor={idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"}
+                      textAnchor={
+                        idx === 0
+                          ? "start"
+                          : idx === smallChart.xTicks.length - 1
+                            ? "end"
+                            : "middle"
+                      }
                       className={styles.axisLabel}
                     >
                       {t.label}

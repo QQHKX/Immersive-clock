@@ -133,7 +133,11 @@ describe("weatherStorage", () => {
 
   it("updateHourly72hCache 与 updateHourly72hLastFetch 会保留/更新 lastApiFetchAt", () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
-    updateHourly72hCache("121.5,31.2", { code: "200", hourly: [{ fxTime: "2026-02-06T05:00+08:00" }] }, 900);
+    updateHourly72hCache(
+      "121.5,31.2",
+      { code: "200", hourly: [{ fxTime: "2026-02-06T05:00+08:00" }] },
+      900
+    );
     expect(getWeatherCache().hourly72h?.lastApiFetchAt).toBe(900);
 
     updateHourly72hLastFetch(1200);
