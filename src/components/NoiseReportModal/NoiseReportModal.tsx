@@ -205,6 +205,18 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [showMainChart, setShowMainChart] = useState(false);
   const [showMoreStats, setShowMoreStats] = useState(false);
+  const [isMainChartCombined, setIsMainChartCombined] = useState(() => {
+    try {
+      const saved = localStorage.getItem("noise-report.is-main-chart-combined");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("noise-report.is-main-chart-combined", String(isMainChartCombined));
+  }, [isMainChartCombined]);
 
   useEffect(() => {
     if (isOpen) {
@@ -384,11 +396,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       distribution:
         totalMs > 0
           ? {
-              quiet: distribution.quiet / totalMs,
-              normal: distribution.normal / totalMs,
-              loud: distribution.loud / totalMs,
-              severe: distribution.severe / totalMs,
-            }
+            quiet: distribution.quiet / totalMs,
+            normal: distribution.normal / totalMs,
+            loud: distribution.loud / totalMs,
+            severe: distribution.severe / totalMs,
+          }
           : { quiet: 0, normal: 0, loud: 0, severe: 0 },
       series,
       scoreText,
@@ -410,10 +422,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         pathLength: 0,
         areaPath: "",
         scorePath: "",
+        scorePathLength: 0,
         maskRects: [] as { x: number; w: number }[],
         pts: [] as { x: number; y: number; scoreY: number; events: number }[],
+        eventRateBuckets: [] as { x: number; rate: number; count: number }[],
+        maxBucketEventRate: 1,
         xTicks: [] as { x: number; label: string }[],
         yTicks: [] as { y: number; label: string }[],
+        scoreTicks: [] as { y: number; label: string }[],
         eventTicks: [] as { y: number; label: string }[],
         maxEvents: 1,
         thresholdY: 0,
@@ -430,6 +446,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
     const mapY = (v: number) =>
       height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
+    const mapScoreY = (v: number) =>
+      height - padding - (Math.max(0, Math.min(100, v)) / 100) * (height - padding * 2) * 0.5;
     const maxEvents = Math.max(1, ...report.series.map((s) => s.events));
     const mapEventY = (v: number) => height - padding - (v / maxEvents) * (height - padding * 2);
 
@@ -450,7 +468,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         start: p.start,
         x: mapX(p.t),
         y: mapY(avgV),
-        scoreY: mapY(avgScore * 0.75),
+        scoreY: mapScoreY(avgScore),
         events: p.events,
       };
     });
@@ -490,6 +508,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       .join(" ");
 
     const scorePath = getSmoothPath(pts.map((p) => ({ x: p.x, y: p.scoreY })));
+    const scorePathLength = calculatePathLength([pts.map((p) => ({ x: p.x, y: p.scoreY }))]) * 1.15;
 
     // 生成遮罩矩形，用于隐藏无数据区域
     // 为了防止线宽被裁剪，矩形宽度稍微向两端扩展
@@ -517,6 +536,13 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       y: mapY(v),
       label: String(v),
     }));
+
+    const scoreTickVals = [0, 50, 100];
+    const scoreTicks = scoreTickVals.map((v) => ({
+      y: mapScoreY(v),
+      label: String(v),
+    }));
+
     const eventTickVals = [0, maxEvents / 3, (maxEvents * 2) / 3, maxEvents];
     const eventTicks = eventTickVals.map((v) => ({
       y: mapEventY(v),
@@ -528,6 +554,33 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
     // 由于使用了贝塞尔平滑曲线，实际路径长度会比直线略长，因此增加 15% 的冗余量
     const pathLength = calculatePathLength([pts.map((p) => ({ x: p.x, y: p.y }))]) * 1.15;
 
+    const bucketWidth = 4;
+    const numBuckets = Math.max(1, Math.floor((width - padding * 2) / bucketWidth));
+    const eventRateBuckets = Array.from({ length: numBuckets }, (_, i) => ({
+      x: padding + i * bucketWidth + bucketWidth / 2,
+      rate: 0,
+      count: 0,
+    }));
+
+    pts.forEach((p) => {
+      const durationMs = Math.max(1, p.t - p.start);
+      const rate = p.events / Math.max(0.1, durationMs / 60_000);
+      const bucketIdx = Math.min(
+        numBuckets - 1,
+        Math.floor(((p.x - padding) / (width - padding * 2)) * numBuckets)
+      );
+      if (bucketIdx >= 0) {
+        eventRateBuckets[bucketIdx].rate += rate;
+        eventRateBuckets[bucketIdx].count++;
+      }
+    });
+
+    eventRateBuckets.forEach((b) => {
+      if (b.count > 0) b.rate = b.rate / b.count;
+    });
+
+    const maxBucketEventRate = Math.max(1, ...eventRateBuckets.map((b) => b.rate));
+
     return {
       width,
       height,
@@ -536,10 +589,14 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       pathLength,
       areaPath,
       scorePath,
+      scorePathLength,
       maskRects,
       pts,
+      eventRateBuckets,
+      maxBucketEventRate,
       xTicks,
       yTicks,
+      scoreTicks,
       eventTicks,
       maxEvents,
       thresholdY,
@@ -549,11 +606,9 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
   }, [period, report, chartWidth]);
 
   const smallChart = useMemo(() => {
-    // 确定网格中小图表的宽度
     const containerPadding = 24;
     const gridGap = 12;
 
-    // 移动端单列显示，否则双列
     const width = isGridSingleColumn
       ? chartWidth - containerPadding
       : (chartWidth - gridGap) / 2 - containerPadding;
@@ -569,71 +624,38 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
         scorePath: "",
         scorePathLength: 0,
         maskRects: [] as { x: number; w: number }[],
-        pts: [] as { x: number; y: number; scoreY: number; events: number }[],
+        pts: [] as { x: number; scoreY: number; events: number }[],
         eventBuckets: [] as { x: number; events: number; count: number }[],
         maxBucketEvents: 1,
         xTicks: [] as { x: number; label: string }[],
         yTicks: [] as { y: number; label: string }[],
         eventTicks: [] as { y: number; label: string }[],
-        maxEvents: 1,
-        mapX: (_t: number) => 0,
-        mapY: (_v: number) => 0,
       };
     }
 
-    const minDb = 0;
-    const maxDb = 80;
     const startTs = period.start.getTime();
     const endTs = period.end.getTime();
     const span = Math.max(1, endTs - startTs);
     const mapX = (t: number) => padding + ((t - startTs) / span) * (width - padding * 2);
-    const mapY = (v: number) =>
-      height - padding - ((v - minDb) / (maxDb - minDb)) * (height - padding * 2);
+    const mapScoreY = (v: number) =>
+      height - padding - (Math.max(0, Math.min(100, v)) / 100) * (height - padding * 2);
 
     const sortedSeries = report.series.slice().sort((a, b) => a.t - b.t);
     const pts = sortedSeries.map((p, i) => {
-      // 增加滑动平均滤波 (Moving Average)，进一步平滑原始数据的剧烈抖动
       const windowSize = 7;
       const startIdx = Math.max(0, i - Math.floor(windowSize / 2));
       const endIdx = Math.min(sortedSeries.length, i + Math.ceil(windowSize / 2));
       const window = sortedSeries.slice(startIdx, endIdx);
-
-      const avgV = window.reduce((sum, n) => sum + n.v, 0) / window.length;
       const avgScore = window.reduce((sum, n) => sum + n.score, 0) / window.length;
 
       return {
         t: p.t,
         start: p.start,
         x: mapX(p.t),
-        y: mapY(avgV),
-        scoreY: mapY(avgScore * 0.75),
+        scoreY: mapScoreY(avgScore),
         events: p.events,
       };
     });
-
-    // 数据聚合逻辑：为了解决柱体过细或重叠问题，将数据按像素宽度进行桶聚合
-    // 目标是每隔约 4-6 像素显示一个柱体
-    const bucketWidth = 5;
-    const numBuckets = Math.max(1, Math.floor((width - padding * 2) / bucketWidth));
-    const eventBuckets = Array.from({ length: numBuckets }, (_, i) => ({
-      x: padding + i * bucketWidth + bucketWidth / 2,
-      events: 0,
-      count: 0,
-    }));
-
-    pts.forEach((p) => {
-      const bucketIdx = Math.min(
-        numBuckets - 1,
-        Math.floor(((p.x - padding) / (width - padding * 2)) * numBuckets)
-      );
-      if (bucketIdx >= 0) {
-        eventBuckets[bucketIdx].events += p.events;
-        eventBuckets[bucketIdx].count++;
-      }
-    });
-
-    // 重新计算聚合后的最大值用于缩放
-    const maxBucketEvents = Math.max(1, ...eventBuckets.map((b) => b.events));
 
     const segments: (typeof pts)[] = [];
     if (pts.length > 0) {
@@ -663,19 +685,38 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       .filter(Boolean) as { x: number; w: number }[];
 
     const scorePath = getSmoothPath(pts.map((p) => ({ x: p.x, y: p.scoreY })));
-
     const scorePathLength = calculatePathLength([pts.map((p) => ({ x: p.x, y: p.scoreY }))]) * 1.15;
 
-    // 小图表使用较少的刻度
+    const bucketWidth = 5;
+    const numBuckets = Math.max(1, Math.floor((width - padding * 2) / bucketWidth));
+    const eventBuckets = Array.from({ length: numBuckets }, (_, i) => ({
+      x: padding + i * bucketWidth + bucketWidth / 2,
+      events: 0,
+      count: 0,
+    }));
+
+    pts.forEach((p) => {
+      const bucketIdx = Math.min(
+        numBuckets - 1,
+        Math.floor(((p.x - padding) / (width - padding * 2)) * numBuckets)
+      );
+      if (bucketIdx >= 0) {
+        eventBuckets[bucketIdx].events += p.events;
+        eventBuckets[bucketIdx].count++;
+      }
+    });
+
+    const maxBucketEvents = Math.max(1, ...eventBuckets.map((b) => b.events));
+
     const xTickTs = [startTs, endTs].map((t) => Math.round(t));
     const xTicks = xTickTs.map((t) => ({
       x: mapX(t),
       label: formatTimeHHMM(new Date(t)),
     }));
 
-    const yTickVals = [20, 40, 60, 80];
+    const yTickVals = [0, 50, 100];
     const yTicks = yTickVals.map((v) => ({
-      y: mapY(v),
+      y: mapScoreY(v),
       label: String(v),
     }));
 
@@ -693,15 +734,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       scorePath,
       scorePathLength,
       maskRects,
-      pts,
+      pts: pts.map((p) => ({ x: p.x, scoreY: p.scoreY, events: p.events })),
       eventBuckets,
       maxBucketEvents,
       xTicks,
       yTicks,
       eventTicks,
-      maxEvents,
-      mapX: (t: number) => mapX(t),
-      mapY: (v: number) => mapY(v),
     };
   }, [period, report, chartWidth, isGridSingleColumn]);
 
@@ -872,6 +910,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                         />
                       ))}
                     </mask>
+                    <mask id="scoreCoverageMaskMain">
+                      {chart.maskRects.map((r, i) => (
+                        <rect key={i} x={r.x} y={0} width={r.w} height={chart.height} fill="white" />
+                      ))}
+                    </mask>
                   </defs>
 
                   {chart.yTicks.map((t) => (
@@ -902,6 +945,117 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     className={styles.threshold}
                   />
 
+                  {isMainChartCombined && (
+                    <path
+                      d={chart.scorePath}
+                      fill="none"
+                      stroke={report.COLORS.score}
+                      strokeWidth="1.5"
+                      opacity={0.5}
+                      className={showMainChart ? styles.animatePath : ""}
+                      mask="url(#scoreCoverageMaskMain)"
+                      style={
+                        {
+                          "--path-length": Math.ceil(chart.scorePathLength),
+                          visibility: showMainChart ? "visible" : "hidden",
+                        } as React.CSSProperties
+                      }
+                    />
+                  )}
+
+                  <mask id="normalMask">
+                    <rect
+                      x="0"
+                      y={chart.thresholdY}
+                      width={chart.width}
+                      height={chart.height}
+                      fill="white"
+                    />
+                  </mask>
+                  <mask id="warningMask">
+                    <rect
+                      x="0"
+                      y="0"
+                      width={chart.width}
+                      height={chart.thresholdY}
+                      fill="white"
+                    />
+                  </mask>
+
+                  <g className={showMainChart ? styles.animateArea : ""} style={{ opacity: 0 }}>
+                    <path
+                      d={chart.areaPath}
+                      fill="url(#noiseAreaGradient)"
+                      className={styles.area}
+                      mask="url(#normalMask)"
+                    />
+                    <path
+                      d={chart.areaPath}
+                      fill="url(#noiseAreaGradientWarning)"
+                      className={styles.area}
+                      mask="url(#warningMask)"
+                    />
+                  </g>
+
+                  {isMainChartCombined ? (
+                    <>
+                      {(() => {
+                        const maxRate = Math.max(1, chart.maxBucketEventRate);
+                        const totalDuration = 4.05;
+                        const barWidth = 3;
+
+                        return (
+                          <>
+                            {chart.eventRateBuckets.map((b, i) => {
+                              if (b.count === 0 || b.rate <= 0) return null;
+                              const barHeight =
+                                (b.rate / maxRate) * (chart.height - chart.padding * 2) * 0.7;
+                              const y = chart.height - chart.padding - barHeight;
+
+                              const progress = i / Math.max(1, chart.eventRateBuckets.length - 1);
+                              let low = 0,
+                                high = 1;
+                              let solvedT = progress;
+                              for (let k = 0; k < 8; k++) {
+                                const mid = (low + high) / 2;
+                                const t = mid;
+                                const invT = 1 - t;
+                                const yVal =
+                                  3 * invT * invT * t * 0.46 +
+                                  3 * invT * t * t * 0.94 +
+                                  t * t * t;
+                                if (yVal < progress) low = mid;
+                                else high = mid;
+                                solvedT = mid;
+                              }
+                              const delay = solvedT * totalDuration;
+
+                              return (
+                                <rect
+                                  key={i}
+                                  x={b.x - barWidth / 2}
+                                  y={y}
+                                  width={barWidth}
+                                  height={barHeight}
+                                  fill={report.COLORS.event}
+                                  opacity={0.42}
+                                  className={showMainChart ? styles.animateBarHeight : ""}
+                                  shapeRendering="crispEdges"
+                                  style={{
+                                    transformOrigin: `center ${chart.height - chart.padding}px`,
+                                    animationDelay: `${delay}s`,
+                                    transform: showMainChart ? undefined : "scaleY(0)",
+                                  }}
+                                />
+                              );
+                            })}
+
+                          </>
+                        );
+                      })()}
+                    </>
+                  ) : null}
+
                   <path
                     d={chart.path}
                     className={`${styles.line} ${showMainChart ? styles.animatePath : ""}`}
@@ -926,35 +1080,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       visibility: showMainChart ? "visible" : "hidden",
                     }}
                   />
-                  {/* 正常区域 */}
-                  <mask id="normalMask">
-                    <rect
-                      x="0"
-                      y={chart.thresholdY}
-                      width={chart.width}
-                      height={chart.height}
-                      fill="white"
-                    />
-                  </mask>
-                  {/* 预警区域 */}
-                  <mask id="warningMask">
-                    <rect x="0" y="0" width={chart.width} height={chart.thresholdY} fill="white" />
-                  </mask>
-
-                  <g className={showMainChart ? styles.animateArea : ""} style={{ opacity: 0 }}>
-                    <path
-                      d={chart.areaPath}
-                      fill="url(#noiseAreaGradient)"
-                      className={styles.area}
-                      mask="url(#normalMask)"
-                    />
-                    <path
-                      d={chart.areaPath}
-                      fill="url(#noiseAreaGradientWarning)"
-                      className={styles.area}
-                      mask="url(#warningMask)"
-                    />
-                  </g>
 
                   {chart.xTicks.map((t, idx) => (
                     <text
@@ -973,13 +1098,34 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
               </div>
 
               <div className={styles.rangeText}>
-                统计范围：
-                {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
-                ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB ； 覆盖率：
-                {periodDurationMs > 0
-                  ? ((report.totalMs / periodDurationMs) * 100).toFixed(1)
-                  : "0.0"}
-                %
+                <div>
+                  统计范围：
+                  {period ? `${period.start.toLocaleString()} - ${period.end.toLocaleString()}` : "—"}
+                  ； 噪音报警阈值：{report.thresholdDb.toFixed(1)} dB ； 覆盖率：
+                  {periodDurationMs > 0
+                    ? ((report.totalMs / periodDurationMs) * 100).toFixed(1)
+                    : "0.0"}
+                  %
+                </div>
+
+                <div className={styles.chartSwitch} role="group" aria-label="主图绘制模式">
+                  <button
+                    type="button"
+                    className={`${styles.chartSwitchButton} ${!isMainChartCombined ? styles.chartSwitchActive : ""}`}
+                    onClick={() => setIsMainChartCombined(false)}
+                    aria-pressed={!isMainChartCombined}
+                  >
+                    单图
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.chartSwitchButton} ${isMainChartCombined ? styles.chartSwitchActive : ""}`}
+                    onClick={() => setIsMainChartCombined(true)}
+                    aria-pressed={isMainChartCombined}
+                  >
+                    三图合一
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -1004,7 +1150,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                   }
                 >
                   <defs>
-                    <mask id="scoreCoverageMask">
+                    <mask id="scoreCoverageMaskSmall">
                       {smallChart.maskRects.map((r, i) => (
                         <rect
                           key={i}
@@ -1017,7 +1163,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       ))}
                     </mask>
                   </defs>
-                  {/* 复用网格线 */}
+
                   {smallChart.yTicks.map((t) => (
                     <line
                       key={`sy-${t.label}`}
@@ -1028,7 +1174,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       className={styles.gridLine}
                     />
                   ))}
-                  {/* 评分路径 */}
+
                   <path
                     d={smallChart.scorePath}
                     fill="none"
@@ -1036,7 +1182,7 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     strokeWidth="2"
                     opacity={0.9}
                     className={showMoreStats ? styles.animatePath : ""}
-                    mask="url(#scoreCoverageMask)"
+                    mask="url(#scoreCoverageMaskSmall)"
                     style={{
                       strokeDasharray: "var(--path-length)",
                       strokeDashoffset: showMoreStats ? undefined : "var(--path-length)",
@@ -1044,19 +1190,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     }}
                   />
 
-                  {/* 坐标轴标签 */}
                   {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`sx-${idx}`}
                       x={t.x}
                       y={smallChart.height - 10}
-                      textAnchor={
-                        idx === 0
-                          ? "start"
-                          : idx === smallChart.xTicks.length - 1
-                            ? "end"
-                            : "middle"
-                      }
+                      textAnchor={idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"}
                       className={styles.axisLabel}
                     >
                       {t.label}
@@ -1083,7 +1222,6 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     />
                   ))}
 
-                  {/* 柱状图 */}
                   {smallChart.eventBuckets.map((p, i) => {
                     if (p.events === 0) return null;
 
@@ -1091,14 +1229,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       (p.events / Math.max(1, smallChart.maxBucketEvents)) *
                       (smallChart.height - smallChart.padding * 2);
                     const y = smallChart.height - smallChart.padding - barHeight;
-                    // 使用固定的聚合宽度，确保不重叠且足够粗
                     const barWidth = 3.5;
 
-                    // 计算阶梯延迟，使动画从左向右波动
                     const totalDuration = 4.05;
                     const progress = i / Math.max(1, smallChart.eventBuckets.length - 1);
 
-                    // 二分查找求出贝塞尔曲线对应的时刻 T
                     let low = 0,
                       high = 1;
                     let solvedT = progress;
@@ -1106,7 +1241,8 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                       const mid = (low + high) / 2;
                       const t = mid;
                       const invT = 1 - t;
-                      const yVal = 3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
+                      const yVal =
+                        3 * invT * invT * t * 0.46 + 3 * invT * t * t * 0.94 + t * t * t;
                       if (yVal < progress) low = mid;
                       else high = mid;
                       solvedT = mid;
@@ -1134,19 +1270,12 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
                     );
                   })}
 
-                  {/* 坐标轴标签 */}
                   {smallChart.xTicks.map((t, idx) => (
                     <text
                       key={`ex-${idx}`}
                       x={t.x}
                       y={smallChart.height - 10}
-                      textAnchor={
-                        idx === 0
-                          ? "start"
-                          : idx === smallChart.xTicks.length - 1
-                            ? "end"
-                            : "middle"
-                      }
+                      textAnchor={idx === 0 ? "start" : idx === smallChart.xTicks.length - 1 ? "end" : "middle"}
                       className={styles.axisLabel}
                     >
                       {t.label}

@@ -177,6 +177,7 @@
 
 .chartWrap {
   width: 100%;
+  position: relative;
 }
 
 .chart {
@@ -218,6 +219,49 @@
   stroke-dasharray: 3 3;
 }
 
+.chartSwitch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.chartSwitchButton {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.chartSwitchButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chartSwitchButton.chartSwitchActive,
+.chartSwitchButton.chartSwitchActive:hover {
+  background: rgba(3, 218, 198, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.chartSwitchButton:focus-visible {
+  outline: 2px solid rgba(3, 218, 198, 0.8);
+  outline-offset: -2px;
+}
+
+.chartSwitchActive {
+  background: rgba(3, 218, 198, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .distributionChart {
   width: 100%;
   margin-bottom: 12px;
@@ -241,6 +285,9 @@
   margin-top: 6px;
   font-size: 0.85rem;
   color: var(--secondary-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chartGrid {
