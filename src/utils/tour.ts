@@ -498,20 +498,7 @@ export const startTour = (force = false, options?: TourOptions) => {
           }),
         },
       },
-      {
-        element: "#tour-noise-monitor-checkbox",
-        popover: {
-          title: "开启历史入口",
-          description: "先开启噪音监测功能，稍后会演示如何查看历史记录。",
-          side: "bottom",
-          align: "center",
-          onPopoverRender: composeTourPopoverRender(),
-          onNextClick: createAutoNextClick({
-            check: isNoiseMonitorEnabled,
-            action: () => tryClickElement("#tour-noise-monitor-checkbox"),
-          }),
-        },
-      },
+
       {
         element: '[data-tour="noise-calibration"]',
         popover: {
