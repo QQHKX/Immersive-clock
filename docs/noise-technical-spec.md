@@ -1,33 +1,59 @@
-# 噪音计算与评分技术规格文档
+# 沉浸式时钟噪音计算与评分技术文档
+
+Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它内置了一个基于心理声学与专注力理论的评分引擎。该引擎旨在客观、多维度地量化环境噪音对学习心流的干扰程度。
+
+本文档从用户视角和技术实现两个层面，详细解析了该系统的计算原理、核心指标定义、评分算法及完整的技术架构。
 
 ## 目录
 
-1. [系统概述](#1-系统概述)
-2. [数据采集层](#2-数据采集层)
-3. [数据聚合层](#3-数据聚合层)
-4. [评分算法核心](#4-评分算法核心)
-5. [数据存储层](#5-数据存储层)
-6. [历史报告生成](#6-历史报告生成)
-7. [流服务整合](#7-流服务整合)
-8. [配置参数体系](#8-配置参数体系)
-9. [类型定义](#9-类型定义)
-10. [测试覆盖](#10-测试覆盖)
+1. [核心理念](#1-核心理念)
+2. [系统架构](#2-系统架构)
+3. [数据采集层](#3-数据采集层)
+4. [数据聚合层](#4-数据聚合层)
+5. [评分算法核心](#5-评分算法核心)
+6. [数据存储层](#6-数据存储层)
+7. [历史报告生成](#7-历史报告生成)
+8. [流服务整合](#8-流服务整合)
+9. [配置参数体系](#9-配置参数体系)
+10. [类型定义](#10-类型定义)
+11. [测试覆盖](#11-测试覆盖)
 
 ---
 
-## 1. 系统概述
+## 1. 核心理念
 
-### 1.1 核心理念
+### 1.1 设计原则
 
-Immersive Clock 的噪音监测系统采用**多维度加权扣分制**评分模型，满分 100 分，根据环境噪音对学习心流的干扰程度进行综合评估。
+系统认为，并非所有"响声"都是一样的。对于专注力而言：
 
-**核心设计原则：**
-
-- **持续噪音**（如嘈杂的人群）比**偶尔的噪音**（如掉笔声）更具破坏性
+- **持续的嗡嗡声**（如嘈杂的人群）比**偶尔的掉笔声**更具破坏性
 - **频繁的打断**（如每分钟都有人说话）比**单次的大声喧哗**更让人烦躁
 - **评分与校准分离**：评分使用原始 DBFS 数据，校准仅影响显示分贝
 
-### 1.2 系统架构
+因此，评分系统采用了 **多维度加权扣分制**，满分 100 分，根据环境表现进行扣分。
+
+### 1.2 评分与校准分离
+
+项目通过"原始数据（用于评分）"与"显示数据（用于展示）"的**严格分层**，杜绝了校准值导致的评分偏差：
+
+1. **评分只依赖原始 DBFS（设备输出的相对电平）**
+   - 评分的三项核心指标（`p50Dbfs`、`overRatioDbfs`、`segmentCount`）都来自原始 `dbfs` 统计
+   - "超阈时长占比"判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-50 dBFS`），与校准无关
+   - 这意味着即使用户把"显示分贝基准"调高/调低，评分侧的 `dbfs` 不会变化，因此得分与超阈时长也不会被"调参刷分"
+
+2. **校准仅影响 Display dB（UI 展示口径），不进入评分链路**
+   - 校准（`baselineRms` / `baselineDb`）只用于将 `rms` 映射为 `displayDb`，用于实时显示与报告中的"噪音等级分布"等图表展示
+   - 这些展示口径变化不会反向影响评分输入，也不会改变切片摘要中的 `raw.*` 字段
+
+3. **统计报告中"超阈时长"取自 raw.overRatioDbfs**
+   - 报告里展示的"超阈时长"是对每个切片 `raw.overRatioDbfs` 按有效采样时长加权汇总得到，仍然完全基于 DBFS
+   - 相比之下，"噪音等级分布"使用的是 `display.avgDb`（校准后的显示分贝），因此它会随校准变化——这是为了更贴近用户直觉的 dB 区间划分
+
+---
+
+## 2. 系统架构
+
+### 2.1 整体架构图
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -92,7 +118,7 @@ Immersive Clock 的噪音监测系统采用**多维度加权扣分制**评分模
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.3 关键文件索引
+### 2.2 关键文件索引
 
 | 模块 | 文件路径 | 说明 |
 |------|---------|------|
@@ -111,11 +137,11 @@ Immersive Clock 的噪音监测系统采用**多维度加权扣分制**评分模
 
 ---
 
-## 2. 数据采集层
+## 3. 数据采集层
 
-### 2.1 麦克风采集 (noiseCapture.ts)
+### 3.1 麦克风采集 (noiseCapture.ts)
 
-#### 2.1.1 Web Audio API 使用
+#### 3.1.1 Web Audio API 使用
 
 系统使用 Web Audio API 获取麦克风输入，构建完整的音频处理链路：
 
@@ -126,21 +152,21 @@ Immersive Clock 的噪音监测系统采用**多维度加权扣分制**评分模
        → AnalyserNode (FFT Size 2048)
 ```
 
-#### 2.1.2 音频滤波器配置
+#### 3.1.2 音频滤波器配置
 
 | 滤波器类型 | 截止频率 | 作用 |
 |-----------|---------|------|
 | 高通滤波器 | 80 Hz | 过滤低频噪音（如空调嗡嗡声） |
 | 低通滤波器 | 8000 Hz | 过滤高频噪音（如电子设备啸叫） |
 
-#### 2.1.3 AnalyserNode 配置
+#### 3.1.3 AnalyserNode 配置
 
 ```typescript
 analyser.fftSize = 2048;           // FFT 窗口大小
 analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 ```
 
-#### 2.1.4 权限处理与错误处理
+#### 3.1.4 权限处理与错误处理
 
 ```typescript
 // 麦克风权限请求配置
@@ -163,7 +189,7 @@ analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 - `NotAllowedError` / `SecurityError` → 权限拒绝
 - `AudioContext not supported` → 浏览器不支持
 
-#### 2.1.5 核心函数
+#### 3.1.5 核心函数
 
 ```typescript
 /**
@@ -186,14 +212,14 @@ export async function stopNoiseCapture(
 
 ---
 
-### 2.2 帧处理器 (noiseFrameProcessor.ts)
+### 3.2 帧处理器 (noiseFrameProcessor.ts)
 
-#### 2.2.1 采样频率
+#### 3.2.1 采样频率
 
 - **帧间隔**：50ms（约 20 fps）
 - **数据来源**：AnalyserNode.getFloatTimeDomainData()
 
-#### 2.2.2 RMS（均方根）计算
+#### 3.2.2 RMS（均方根）计算
 
 RMS 是衡量音频信号强度的标准方法：
 
@@ -220,7 +246,7 @@ function computeRmsAndPeak(data: Float32Array): { rms: number; peak: number } {
 **公式：**
 $$ \text{RMS} = \sqrt{\frac{1}{N} \sum_{i=1}^{N} x_i^2} $$
 
-#### 2.2.3 dBFS（分贝满刻度）转换
+#### 3.2.3 dBFS（分贝满刻度）转换
 
 dBFS 是数字音频的标准分贝单位，范围 -100 到 0 dB：
 
@@ -244,7 +270,7 @@ $$ \text{dBFS} = 20 \times \log_{10}(\text{RMS}) $$
 - 最小值：-100 dBFS（静音）
 - 最大值：0 dBFS（满刻度）
 
-#### 2.2.4 峰值检测
+#### 3.2.4 峰值检测
 
 峰值用于检测突发噪音：
 
@@ -258,7 +284,7 @@ for (let i = 0; i < data.length; i++) {
 }
 ```
 
-#### 2.2.5 核心函数
+#### 3.2.5 核心函数
 
 ```typescript
 /**
@@ -273,16 +299,16 @@ export function createNoiseFrameProcessor(
 
 ---
 
-## 3. 数据聚合层
+## 4. 数据聚合层
 
-### 3.1 切片聚合器 (noiseSliceAggregator.ts)
+### 4.1 切片聚合器 (noiseSliceAggregator.ts)
 
-#### 3.1.1 切片时长
+#### 4.1.1 切片时长
 
 - **默认切片时长**：30 秒
 - **可配置范围**：≥ 1 秒
 
-#### 3.1.2 统计指标计算
+#### 4.1.2 统计指标计算
 
 切片聚合器为每个切片计算以下统计指标：
 
@@ -298,7 +324,7 @@ export function createNoiseFrameProcessor(
 | gapCount | 缺口数量 | 数据缺口次数 |
 | maxGapMs | 最大缺口时长 | 最长数据缺口时长 |
 
-#### 3.1.3 能量平均计算（avgDbfs）
+#### 4.1.3 能量平均计算（avgDbfs）
 
 ```typescript
 /**
@@ -321,7 +347,7 @@ $$ \text{avgDbfs} = 20 \times \log_{10}\left(\sqrt{\frac{1}{N} \sum_{i=1}^{N} 10
 
 **物理意义：** 在线性域（RMS）上做平均，符合能量守恒定律
 
-#### 3.1.4 线性域分位数计算
+#### 4.1.4 线性域分位数计算
 
 ```typescript
 /**
@@ -357,7 +383,7 @@ $$ Q_{\text{RMS}}(p) = x_{\lfloor i \rfloor} \times (1 - w) + x_{\lceil i \rceil
 
 **物理意义：** 在线性域（RMS）上计算分位数，符合能量统计的严谨性
 
-#### 3.1.5 超阈值比例计算（时间加权）
+#### 4.1.5 超阈值比例计算（时间加权）
 
 ```typescript
 // 在切片聚合器中记录超阈值时长
@@ -378,7 +404,7 @@ $$ \text{overRatioDbfs} = \frac{\text{超阈值时长}}{\text{采样时长}} $$
 
 **物理意义：** 使用实际时长而非帧数计算比例，更精确
 
-#### 3.1.6 事件段检测与合并算法
+#### 4.1.6 事件段检测与合并算法
 
 事件段检测用于识别独立的噪音事件：
 
@@ -412,7 +438,7 @@ if (isAbove) {
 合并后：  └─────── 事件段1 ───────┘  └── 事件段2 ──┘
 ```
 
-#### 3.1.7 显示分贝映射（校准机制）
+#### 4.1.7 显示分贝映射（校准机制）
 
 显示分贝用于用户界面展示，支持校准：
 
@@ -455,7 +481,7 @@ $$ \text{displayDb} = 20 \times \log_{10}\left(\frac{\text{rms}}{10^{-3}}\right)
 3. 设置为 baselineRms
 4. 设置对应的显示分贝为 baselineDb
 
-#### 3.1.8 缺口检测与采样时长统计
+#### 4.1.8 缺口检测与采样时长统计
 
 ```typescript
 const gapThresholdMs = Math.max(1000, Math.round(frameMs * 5));
@@ -477,7 +503,7 @@ if (lastFrameTs !== null) {
 
 **缺口阈值：** `max(1000ms, frameMs × 5)` = **1000ms**（默认）
 
-#### 3.1.9 无效帧过滤
+#### 4.1.9 无效帧过滤
 
 ```typescript
 const INVALID_DBFS_THRESHOLD = -90;
@@ -494,7 +520,7 @@ if (frame.dbfs < INVALID_DBFS_THRESHOLD) {
 - `DBFS_MIN_POSSIBLE = -100`：物理最小可表示值（用于 clamp）
 - `DBFS_MAX_POSSIBLE = 0`：物理最大可表示值（用于 clamp）
 
-#### 3.1.10 核心函数
+#### 4.1.10 核心函数
 
 ```typescript
 /**
@@ -509,9 +535,9 @@ export function createNoiseSliceAggregator(
 
 ---
 
-### 3.2 实时环形缓冲区 (noiseRealtimeRingBuffer.ts)
+### 4.2 实时环形缓冲区 (noiseRealtimeRingBuffer.ts)
 
-#### 3.2.1 数据结构设计
+#### 4.2.1 数据结构设计
 
 环形缓冲区使用固定容量数组实现：
 
@@ -521,7 +547,7 @@ let start = 0;   // 起始索引
 let length = 0;  // 当前长度
 ```
 
-#### 3.2.2 时间窗口裁剪策略
+#### 4.2.2 时间窗口裁剪策略
 
 ```typescript
 const prune = (cutoffTs: number) => {
@@ -536,7 +562,7 @@ const prune = (cutoffTs: number) => {
 
 **裁剪规则：** 移除时间戳早于 `当前时间 - retentionMs` 的数据点
 
-#### 3.2.3 核心函数
+#### 4.2.3 核心函数
 
 ```typescript
 /**
@@ -552,11 +578,38 @@ export function createNoiseRealtimeRingBuffer(params: {
 
 ---
 
-## 4. 评分算法核心
+## 5. 评分算法核心
 
-### 4.1 评分引擎 (noiseScoreEngine.ts)
+### 5.1 三大核心指标
 
-#### 4.1.1 三维度评分模型
+评分引擎从以下三个维度对噪音数据进行分析：
+
+#### A. 持续噪音水平 (Sustained Level)
+
+- **定义**：剔除突发噪音后的环境"底噪"水平
+- **算法**：使用时段内所有帧的中位数电平 (`p50Dbfs`)
+- **意义**：反映环境本身是否安静。如果环境中有持续的风扇声或交谈声，该指标会升高
+
+#### B. 超阈值时长占比 (Over Threshold Ratio)
+
+- **定义**：原始 `DBFS` 超过评分阈值（`scoreThresholdDbfs`）的时间比例
+- **算法**：`超阈值时长 / 采样时长`（超标判定：`dbfs > scoreThresholdDbfs`）
+- **意义**：反映环境的"纯净度"。即使是 0.1 秒的尖叫也会被精确计入，无法被平均值掩盖
+
+> **提示**：评分阈值（`scoreThresholdDbfs`，单位 dBFS）与"界面报警/提示音"使用的显示分贝阈值（`maxLevelDb`，单位 dB）不是同一个概念；前者只用于评分，后者用于判定 noisy/quiet 与提示音触发。
+
+#### C. 打断次数密度 (Interruption Density)
+
+- **定义**：单位时间内（每分钟）发生的独立噪音事件次数
+- **智能合并算法**：
+  - 系统设有 **500ms** (默认) 的合并窗口
+  - 如果两次响声间隔小于该窗口（如拉椅子的一连串声音），会被合并为 **1 次打断**
+  - 只有间隔较长的响声才会被计为新的打断
+- **意义**：反映环境的干扰频率。频繁的打断（如断断续续的说话声）比连续的噪音更易打断心流
+
+### 5.2 评分引擎 (noiseScoreEngine.ts)
+
+#### 5.2.1 三维度评分模型
 
 评分系统从三个维度对噪音进行评估：
 
@@ -566,7 +619,7 @@ export function createNoiseRealtimeRingBuffer(params: {
 | **超阈时长** | 30% | overRatioDbfs | 超阈时间占比 30% |
 | **打断频次** | 30% | segmentCount | 6 次/分钟 |
 
-#### 4.1.2 评分公式
+#### 5.2.2 评分公式
 
 **总惩罚系数：**
 $$ \text{TotalPenalty} = 0.40 \times P_{\text{sustained}} + 0.30 \times P_{\text{time}} + 0.30 \times P_{\text{segment}} $$
@@ -574,7 +627,7 @@ $$ \text{TotalPenalty} = 0.40 \times P_{\text{sustained}} + 0.30 \times P_{\text
 **最终得分：**
 $$ \text{Score} = 100 \times (1 - \text{TotalPenalty}) $$
 
-#### 4.1.3 惩罚系数计算
+#### 5.2.3 惩罚系数计算
 
 ##### A. 持续噪音惩罚
 
@@ -614,7 +667,13 @@ $$ P_{\text{segment}} = \text{clamp}_{[0,1]}\left(\frac{\text{segmentCount} / \t
 
 **满扣分条件：** `segmentsPerMin ≥ 6 次/分钟`
 
-#### 4.1.4 边界条件处理
+#### 5.2.4 权重解读
+
+- **持续噪音 (40%)**：持续底噪仍会明显拉低分数
+- **超阈时长 (30%)**：只要大部分时间安静，偶尔的噪音仍可被容忍
+- **打断频次 (30%)**：强调"被频繁打断"对心流的破坏，提升对碎片化干扰的惩罚力度
+
+#### 5.2.5 边界条件处理
 
 ```typescript
 // DBFS 范围限制
@@ -633,7 +692,7 @@ function clamp01(value: number): number {
 const score = Math.max(0, Math.min(100, Math.round(rawScore * 10) / 10));
 ```
 
-#### 4.1.5 有效时长处理
+#### 5.2.6 有效时长处理
 
 ```typescript
 const sampledDurationMs =
@@ -646,7 +705,7 @@ const effectiveDurationMs =
 
 优先使用采样有效时长，不存在时回退到物理时长。
 
-#### 4.1.6 核心函数
+#### 5.2.7 核心函数
 
 ```typescript
 /**
@@ -664,7 +723,7 @@ export function computeNoiseSliceScore(
 ): { score: number; scoreDetail: NoiseScoreBreakdown }
 ```
 
-#### 4.1.7 评分示例
+#### 5.2.8 评分示例
 
 **场景 1：安静环境**
 - p50Dbfs = -60 dBFS, threshold = -50 dBFS
@@ -696,11 +755,11 @@ Score = 100 × (1 - 0.933) = 6.7 分
 
 ---
 
-## 5. 数据存储层
+## 6. 数据存储层
 
-### 5.1 切片服务 (noiseSliceService.ts)
+### 6.1 切片服务 (noiseSliceService.ts)
 
-#### 5.1.1 localStorage 存储策略
+#### 6.1.1 localStorage 存储策略
 
 ```typescript
 const STORAGE_KEY = "noise-slices";
@@ -713,7 +772,7 @@ const STORAGE_KEY = "noise-slices";
 - 风险：可能泄露位置/日程信息
 - 建议：在 UI 中提供"清除历史"功能
 
-#### 5.1.2 时间窗口清理
+#### 6.1.2 时间窗口清理
 
 ```typescript
 function getRetentionMs(): number {
@@ -733,7 +792,7 @@ const timeTrimmed = list.filter((item) => item.end >= cutoff);
 **默认保留时长：** 14 天
 **可配置范围：** 1 ~ 365 天
 
-#### 5.1.3 容量限制
+#### 6.1.3 容量限制
 
 ```typescript
 // 估算本地存储配额
@@ -746,7 +805,7 @@ let trimmed = maxBytes ? trimByMaxBytes(timeTrimmed, maxBytes) : timeTrimmed;
 
 **容量上限：** 本地存储配额的 90%
 
-#### 5.1.4 数据规范化与校验
+#### 6.1.4 数据规范化与校验
 
 ```typescript
 function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
@@ -783,7 +842,7 @@ function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
 - 显示分贝：2 位小数
 - 评分：1 位小数
 
-#### 5.1.5 类型校验
+#### 6.1.5 类型校验
 
 ```typescript
 function isNoiseSliceSummary(value: unknown): value is NoiseSliceSummary {
@@ -815,7 +874,7 @@ function isNoiseSliceSummary(value: unknown): value is NoiseSliceSummary {
 }
 ```
 
-#### 5.1.6 核心函数
+#### 6.1.6 核心函数
 
 ```typescript
 /**
@@ -847,11 +906,11 @@ export function subscribeNoiseSlicesUpdated(handler: () => void): () => void
 
 ---
 
-## 6. 历史报告生成
+## 7. 历史报告生成
 
-### 6.1 历史构建器 (noiseHistoryBuilder.ts)
+### 7.1 历史构建器 (noiseHistoryBuilder.ts)
 
-#### 6.1.1 与课表关联逻辑
+#### 7.1.1 与课表关联逻辑
 
 ```typescript
 export function buildNoiseHistoryListItems(params: {
@@ -866,7 +925,7 @@ export function buildNoiseHistoryListItems(params: {
 2. 对每个日期的每个课时，查找重叠的切片
 3. 计算该课时的平均评分
 
-#### 6.1.2 时段平均评分计算（加权平均）
+#### 7.1.2 时段平均评分计算（加权平均）
 
 ```typescript
 /**
@@ -904,7 +963,7 @@ $$ \text{avgScore} = \frac{\sum_{i} \text{score}_i \times \text{effectiveMs}_i}{
 其中：
 $$ \text{effectiveMs}_i = \text{sampledDurationMs}_i \times \frac{\text{overlapMs}_i}{\text{sliceMs}_i} $$
 
-#### 6.1.3 覆盖率计算
+#### 7.1.3 覆盖率计算
 
 ```typescript
 coverageRatio: Math.max(0, Math.min(1, totalMs / periodMs))
@@ -915,7 +974,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 
 **含义：** 课时内有效采样时长占课时总时长的比例
 
-#### 6.1.4 日期时间处理
+#### 7.1.4 日期时间处理
 
 ```typescript
 function getDateKey(ts: number): string {
@@ -940,7 +999,7 @@ function buildDateTime(dateKey: string, timeStr: string): Date | null {
 **日期格式：** `YYYY-MM-DD`
 **时间格式：** `HH:MM`
 
-#### 6.1.5 跨天课时处理
+#### 7.1.5 跨天课时处理
 
 ```typescript
 const end =
@@ -951,13 +1010,22 @@ const end =
 
 如果结束时间 ≤ 开始时间，则课时跨越到次日。
 
+#### 7.1.6 报告中的图表
+
+在噪音统计报告中，您可以直观地看到这些数据：
+
+- **评分走势图**：展示了 `Score` 随时间的变化，帮助您回顾专注状态
+- **噪音等级分布**：将每一帧归类为安静/正常/吵闹/极吵，直观展示时间占比
+- **扣分归因**：直接显示上述三个维度的扣分比例，告诉您为什么分低（是因为一直吵，还是因为总被打断）
+- **打断次数密度**：展示每分钟被干扰的次数
+
 ---
 
-## 7. 流服务整合
+## 8. 流服务整合
 
-### 7.1 噪音流服务 (noiseStreamService.ts)
+### 8.1 噪音流服务 (noiseStreamService.ts)
 
-#### 7.1.1 订阅/发布模式
+#### 8.1.1 订阅/发布模式
 
 ```typescript
 const listeners = new Set<Listener>();
@@ -982,7 +1050,7 @@ function emit() {
 - 多个组件可同时订阅
 - 最后一个订阅者取消时自动停止采集
 
-#### 7.1.2 生命周期管理
+#### 8.1.2 生命周期管理
 
 ```typescript
 // 启动
@@ -1011,7 +1079,7 @@ export async function restartNoiseStream(): Promise<void> {
 }
 ```
 
-#### 7.1.3 预热帧处理
+#### 8.1.3 预热帧处理
 
 ```typescript
 const WARMUP_FRAME_COUNT = 10; // 约 500ms
@@ -1033,7 +1101,7 @@ const processor = createNoiseFrameProcessor({
 
 **目的：** 丢弃麦克风启动后的不稳定数据
 
-#### 7.1.4 设置热更新响应
+#### 8.1.4 设置热更新响应
 
 ```typescript
 settingsUnsubscribe = subscribeSettingsEvent(
@@ -1068,7 +1136,7 @@ settingsUnsubscribe = subscribeSettingsEvent(
 - avgWindowSec
 - baselineDb
 
-#### 7.1.5 时间加权平均
+#### 8.1.5 时间加权平均
 
 ```typescript
 function computeTimeWeightedAverage(windowArr: { t: number; v: number }[], now: number): number {
@@ -1089,7 +1157,7 @@ function computeTimeWeightedAverage(windowArr: { t: number; v: number }[], now: 
 **公式：**
 $$ \text{avg} = \frac{\sum_{i} v_i \times (t_{i+1} - t_i)}{\sum_{i} (t_{i+1} - t_i)} $$
 
-#### 7.1.6 核心函数
+#### 8.1.6 核心函数
 
 ```typescript
 /**
@@ -1113,11 +1181,11 @@ export async function restartNoiseStream(): Promise<void>
 
 ---
 
-## 8. 配置参数体系
+## 9. 配置参数体系
 
-### 8.1 常量定义
+### 9.1 常量定义
 
-#### 8.1.1 分析参数 (constants/noise.ts)
+#### 9.1.1 分析参数 (constants/noise.ts)
 
 ```typescript
 export const NOISE_ANALYSIS_SLICE_SEC = 30;           // 切片时长 30 秒
@@ -1131,7 +1199,7 @@ export const NOISE_REALTIME_CHART_SLICE_COUNT = 1;     // 实时图表切片数 
 **常量说明：**
 - `NOISE_REALTIME_CHART_SLICE_COUNT = 1`：实时图表显示的切片数量
 
-#### 8.1.2 报告参数 (constants/noiseReport.ts)
+#### 9.1.2 报告参数 (constants/noiseReport.ts)
 
 ```typescript
 export const DEFAULT_NOISE_REPORT_RETENTION_DAYS = 14;        // 默认保留 14 天
@@ -1139,9 +1207,9 @@ export const MIN_NOISE_REPORT_RETENTION_DAYS = 1;             // 最小保留 1 
 export const MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365;  // 最大保留 365 天
 ```
 
-### 8.2 设置管理 (noiseControlSettings.ts)
+### 9.2 设置管理 (noiseControlSettings.ts)
 
-#### 8.2.1 固定参数
+#### 9.2.1 固定参数
 
 ```typescript
 const FIXED_NOISE_ANALYSIS_SETTINGS: Pick<
@@ -1158,7 +1226,7 @@ const FIXED_NOISE_ANALYSIS_SETTINGS: Pick<
 
 **固定原因：** 保证评分口径稳定，避免用户通过调整参数"刷分"
 
-#### 8.2.2 可配置参数
+#### 9.2.2 可配置参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
@@ -1168,7 +1236,7 @@ const FIXED_NOISE_ANALYSIS_SETTINGS: Pick<
 | avgWindowSec | number | 1 | 噪音平均时间窗（秒） |
 | alertSoundEnabled | boolean | false | 超阈值提示音开关 |
 
-#### 8.2.3 设置接口
+#### 9.2.3 设置接口
 
 ```typescript
 export interface NoiseControlSettings {
@@ -1185,7 +1253,7 @@ export interface NoiseControlSettings {
 }
 ```
 
-#### 8.2.4 核心函数
+#### 9.2.4 核心函数
 
 ```typescript
 /**
@@ -1208,11 +1276,11 @@ export function resetNoiseControlSettings(): void
 
 ---
 
-## 9. 类型定义
+## 10. 类型定义
 
-### 9.1 核心类型 (types/noise.ts)
+### 10.1 核心类型 (types/noise.ts)
 
-#### 9.1.1 噪音帧采样
+#### 10.1.1 噪音帧采样
 
 ```typescript
 export interface NoiseFrameSample {
@@ -1223,7 +1291,7 @@ export interface NoiseFrameSample {
 }
 ```
 
-#### 9.1.2 噪音切片原始统计
+#### 10.1.2 噪音切片原始统计
 
 ```typescript
 export interface NoiseSliceRawStats {
@@ -1239,7 +1307,7 @@ export interface NoiseSliceRawStats {
 }
 ```
 
-#### 9.1.3 噪音切片显示统计
+#### 10.1.3 噪音切片显示统计
 
 ```typescript
 export interface NoiseSliceDisplayStats {
@@ -1248,7 +1316,7 @@ export interface NoiseSliceDisplayStats {
 }
 ```
 
-#### 9.1.4 噪音评分明细
+#### 10.1.4 噪音评分明细
 
 ```typescript
 export interface NoiseScoreBreakdown {
@@ -1270,7 +1338,7 @@ export interface NoiseScoreBreakdown {
 }
 ```
 
-#### 9.1.5 噪音切片摘要
+#### 10.1.5 噪音切片摘要
 
 ```typescript
 export interface NoiseSliceSummary {
@@ -1284,7 +1352,7 @@ export interface NoiseSliceSummary {
 }
 ```
 
-#### 9.1.6 实时数据点
+#### 10.1.6 实时数据点
 
 ```typescript
 export interface NoiseRealtimePoint {
@@ -1294,7 +1362,7 @@ export interface NoiseRealtimePoint {
 }
 ```
 
-#### 9.1.7 噪音流快照
+#### 10.1.7 噪音流快照
 
 ```typescript
 export interface NoiseStreamSnapshot {
@@ -1309,7 +1377,7 @@ export interface NoiseStreamSnapshot {
 }
 ```
 
-#### 9.1.8 噪音流状态
+#### 10.1.8 噪音流状态
 
 ```typescript
 export type NoiseStreamStatus =
@@ -1322,9 +1390,9 @@ export type NoiseStreamStatus =
 
 ---
 
-## 10. 测试覆盖
+## 11. 测试覆盖
 
-### 10.1 测试文件列表
+### 11.1 测试文件列表
 
 | 测试文件 | 测试内容 |
 |---------|---------|
@@ -1335,23 +1403,23 @@ export type NoiseStreamStatus =
 | [src/utils/__tests__/noiseSliceService.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseSliceService.test.ts) | 切片服务测试 |
 | [src/utils/__tests__/noiseHistoryBuilder.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseHistoryBuilder.test.ts) | 历史构建测试 |
 
-### 10.2 测试场景
+### 11.2 测试场景
 
-#### 10.2.1 评分引擎测试
+#### 11.2.1 评分引擎测试
 
 - 边界条件测试（最小/最大值）
 - 三维度惩罚独立测试
 - 综合评分测试
 - 有效时长处理测试
 
-#### 10.2.2 帧处理器测试
+#### 11.2.2 帧处理器测试
 
 - RMS 计算正确性
 - dBFS 转换正确性
 - 峰值检测正确性
 - 定时器精度测试
 
-#### 10.2.3 切片聚合器测试
+#### 11.2.3 切片聚合器测试
 
 - 统计指标计算正确性
 - 分位数计算正确性
@@ -1359,28 +1427,28 @@ export type NoiseStreamStatus =
 - 显示分贝映射
 - 缺口检测
 
-#### 10.2.4 流服务测试
+#### 11.2.4 流服务测试
 
 - 订阅/发布机制
 - 生命周期管理
 - 设置热更新
 - 预热帧处理
 
-#### 10.2.5 切片服务测试
+#### 11.2.5 切片服务测试
 
 - 读写操作
 - 时间窗口清理
 - 容量限制
 - 数据规范化
 
-#### 10.2.6 历史构建测试
+#### 11.2.6 历史构建测试
 
 - 课表关联
 - 加权平均评分
 - 覆盖率计算
 - 跨天课时处理
 
-### 10.3 测试覆盖建议
+### 11.3 测试覆盖建议
 
 - 浏览器兼容性矩阵（Chrome/Firefox/Safari/Edge/iOS Safari/Android WebView）
 - 性能测试（CPU、内存、持续运行对电池的影响）
@@ -1402,25 +1470,7 @@ export type NoiseStreamStatus =
 | 帧 | Frame | 单次音频采样（默认 50ms） |
 | 事件段 | Segment | 独立的噪音事件，通过合并窗口（500ms）合并 |
 
-### B. 评分与校准分离说明
-
-系统通过"原始数据（用于评分）"与"显示数据（用于展示）"的严格分层，杜绝了校准值导致的评分偏差：
-
-1. **评分只依赖原始 DBFS**
-   - 评分的三项核心指标都来自原始 `dbfs` 统计
-   - "超阈时长占比"判定条件固定为 `dbfs > scoreThresholdDbfs`
-   - 校准值不影响评分
-
-2. **校准仅影响 Display dB**
-   - 校准只用于将 `rms` 映射为 `displayDb`
-   - 用于实时显示与报告中的"噪音等级分布"
-   - 不进入评分链路
-
-3. **统计报告中的"超阈时长"取自 raw.overRatioDbfs**
-   - 完全基于 DBFS
-   - "噪音等级分布"使用 `display.avgDb`（会随校准变化）
-
-### C. 参数固定策略
+### B. 参数固定策略
 
 为保证统计口径稳定，当前版本将"分析与评分"的高级参数固定为程序内常量：
 
@@ -1431,14 +1481,3 @@ export type NoiseStreamStatus =
 | scoreThresholdDbfs | -50 dBFS | 评分阈值 |
 | segmentMergeGapMs | 500ms | 事件段合并间隔 |
 | maxSegmentsPerMin | 6 | 每分钟最大事件段数 |
-
-### D. 相关文档
-
-- [噪音评分系统详解](file:///d:/Desktop/Immersive-clock/docs/noise-scoring.md) - 用户视角的评分说明
-
----
-
-**文档版本：** 2.0  
-**最后更新：** 2026-02-17  
-**对应代码版本：** Immersive Clock  
-**更新说明：** 整合外部审查反馈，更新能量平均、线性域分位数、时间加权等计算方法
