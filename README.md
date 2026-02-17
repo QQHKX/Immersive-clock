@@ -196,7 +196,17 @@
 
 ## ☁️ 部署
 
-### Docker 部署（推荐）
+### 静态托管部署(推荐)
+
+```bash
+# 构建后将 dist 目录上传到任意静态托管平台
+# 例如：Vercel / Netlify / GitHub Pages
+```
+
+建议使用 HTTPS 以获得完整 PWA 功能。
+已提供 `vercel.json` 可直接导入部署。
+
+### Docker 部署
 
 项目提供了 Dockerfile，可通过 Docker 快速部署：
 
@@ -228,16 +238,6 @@ services:
       - "8080:80"
     restart: unless-stopped
 ```
-
-### 静态托管部署
-
-```bash
-# 构建后将 dist 目录上传到任意静态托管平台
-# 例如：Vercel / Netlify / GitHub Pages
-```
-
-建议使用 HTTPS 以获得完整 PWA 功能。
-已提供 `vercel.json` 可直接导入部署。
 
 ---
 
