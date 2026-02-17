@@ -97,4 +97,55 @@ describe("noiseSliceAggregator", () => {
     expect(last?.end).toBe(10_100);
     expect(last?.raw.sampledDurationMs).toBe(100);
   });
+
+  it("应过滤低于 -90 dB 的无效帧", () => {
+    const ringBuffer = createNoiseRealtimeRingBuffer({
+      retentionMs: 5 * 60 * 1000,
+      capacity: 4096,
+    });
+    const aggregator = createNoiseSliceAggregator({
+      sliceSec: 2,
+      frameMs: 100,
+      score: { scoreThresholdDbfs: -35, segmentMergeGapMs: 300, maxSegmentsPerMin: 6 },
+      baselineRms: 1e-3,
+      displayBaselineDb: 40,
+      ringBuffer,
+    });
+
+    aggregator.onFrame(frame(0, -50));
+    aggregator.onFrame(frame(100, -95));
+    aggregator.onFrame(frame(200, -50));
+    aggregator.onFrame(frame(300, -135));
+    aggregator.onFrame(frame(400, -50));
+
+    const slice = aggregator.flush();
+    expect(slice).not.toBeNull();
+    expect(slice?.frames).toBe(3);
+    expect(slice?.raw.avgDbfs).toBeGreaterThan(-90);
+  });
+
+  it("Display dB 应始终限制在 20-100 范围内", () => {
+    const ringBuffer = createNoiseRealtimeRingBuffer({
+      retentionMs: 5 * 60 * 1000,
+      capacity: 4096,
+    });
+    const aggregator = createNoiseSliceAggregator({
+      sliceSec: 2,
+      frameMs: 100,
+      score: { scoreThresholdDbfs: -35, segmentMergeGapMs: 300, maxSegmentsPerMin: 6 },
+      baselineRms: 1e-3,
+      displayBaselineDb: 40,
+      ringBuffer,
+    });
+
+    aggregator.onFrame(frame(0, -50));
+    aggregator.onFrame(frame(100, -10));
+    aggregator.onFrame(frame(200, -50));
+
+    const points = ringBuffer.snapshot();
+    for (const p of points) {
+      expect(p.displayDb).toBeGreaterThanOrEqual(20);
+      expect(p.displayDb).toBeLessThanOrEqual(100);
+    }
+  });
 });

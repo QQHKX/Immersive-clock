@@ -43,7 +43,7 @@ function quantileSorted(sorted: number[], p: number): number {
 /**
  * 从 RMS 计算显示的分贝值
  * @param params 包含当前 RMS、基准 RMS 和基准分贝的对象
- * @returns 显示的分贝值
+ * @returns 显示的分贝值，范围限制在 20 到 100 dB
  */
 function computeDisplayDbFromRms(params: {
   rms: number;
@@ -51,12 +51,14 @@ function computeDisplayDbFromRms(params: {
   displayBaselineDb: number;
 }): number {
   const safeRms = Math.max(1e-12, params.rms);
+  let displayDb: number;
   if (params.baselineRms > 0) {
-    return (
-      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms))
-    );
+    displayDb =
+      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms));
+  } else {
+    displayDb = 20 * Math.log10(safeRms / 1e-3) + 60;
   }
-  return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
+  return Math.max(20, Math.min(100, displayDb));
 }
 
 /**
@@ -93,6 +95,9 @@ export function createNoiseSliceAggregator(
   let maxGapMs = 0;
   const dbfsValues: number[] = [];
   const displayValues: number[] = [];
+
+  /** 无效帧阈值：低于此值视为静音/无效信号，跳过统计 */
+  const INVALID_DBFS_THRESHOLD = -90;
 
   const reset = () => {
     sliceStart = null;
@@ -176,6 +181,10 @@ export function createNoiseSliceAggregator(
 
     const displayDb = computeDisplayDbFromRms({ rms: frame.rms, baselineRms, displayBaselineDb });
     ringBuffer.push({ t: frame.t, dbfs: frame.dbfs, displayDb });
+
+    if (frame.dbfs < INVALID_DBFS_THRESHOLD) {
+      return pendingSlice;
+    }
 
     frames += 1;
     sumDbfs += frame.dbfs;

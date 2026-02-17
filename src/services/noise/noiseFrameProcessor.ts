@@ -33,11 +33,12 @@ function computeRmsAndPeak(data: Float32Array): { rms: number; peak: number } {
 /**
  * 将 RMS 转换为分贝 (dBFS)
  * @param rms 均方根值
- * @returns 分贝值
+ * @returns 分贝值，范围限制在 -100 到 0 dB
  */
 function computeDbfsFromRms(rms: number): number {
   const safe = Math.max(1e-12, rms);
-  return 20 * Math.log10(safe);
+  const dbfs = 20 * Math.log10(safe);
+  return Math.max(-100, Math.min(0, dbfs));
 }
 
 /**

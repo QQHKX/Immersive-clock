@@ -40,7 +40,7 @@ function computeRealtimeRetentionMs(sliceSec: number): number {
 /**
  * 从 RMS 计算显示的分贝值
  * @param params 包含当前 RMS、基准 RMS 和基准分贝的对象
- * @returns 显示的分贝值
+ * @returns 显示的分贝值，范围限制在 20 到 100 dB
  */
 function computeDisplayDbFromRms(params: {
   rms: number;
@@ -48,12 +48,14 @@ function computeDisplayDbFromRms(params: {
   displayBaselineDb: number;
 }): number {
   const safeRms = Math.max(1e-12, params.rms);
+  let displayDb: number;
   if (params.baselineRms > 0) {
-    return (
-      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms))
-    );
+    displayDb =
+      params.displayBaselineDb + 20 * Math.log10(safeRms / Math.max(1e-12, params.baselineRms));
+  } else {
+    displayDb = 20 * Math.log10(safeRms / 1e-3) + 60;
   }
-  return Math.max(20, Math.min(100, 20 * Math.log10(safeRms / 1e-3) + 60));
+  return Math.max(20, Math.min(100, displayDb));
 }
 
 /**
@@ -94,6 +96,11 @@ let stopTimer: number | null = null;
 
 let running = false;
 let stopped = false;
+
+/** 预热帧计数器：麦克风启动后丢弃前几帧不稳定数据 */
+let warmupFramesRemaining = 0;
+/** 预热帧数：约 500ms 的数据（按 50ms/帧 = 10 帧） */
+const WARMUP_FRAME_COUNT = 10;
 
 let captureCleanup: (() => Promise<void>) | null = null;
 let processorStop: (() => void) | null = null;
@@ -172,6 +179,7 @@ async function hardStart() {
   if (running) return;
   running = true;
   stopped = false;
+  warmupFramesRemaining = WARMUP_FRAME_COUNT;
 
   windowSamples = [];
   const retentionMs = computeRealtimeRetentionMs(sliceSec);
@@ -205,6 +213,11 @@ async function hardStart() {
       frameMs,
       onFrame: (frame) => {
         if (stopped) return;
+
+        if (warmupFramesRemaining > 0) {
+          warmupFramesRemaining -= 1;
+          return;
+        }
 
         const displayDb = computeDisplayDbFromRms({
           rms: frame.rms,
