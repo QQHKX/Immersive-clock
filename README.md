@@ -38,7 +38,7 @@
 
 > **⏸️ 维护说明**
 >
-> 因作者目前处于高三阶段，项目已暂停开发与维护。欢迎提交 PR / Issue，但处理与合并可能较慢；如需持续迭代，建议 Fork 后自行维护。
+> 因作者目前处于高三阶段，项目已暂停非必要开发与维护。欢迎提交 PR / Issue，但处理与合并可能较慢。
 
 ---
 
@@ -320,6 +320,18 @@ immersive-clock/
 - 作者：**QQHKX**
   - 🌐 [个人网站](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)
+
+---
+
+## 🧬 衍生项目
+
+### 沉浸式噪音监测 (Immersive-clock-monitor)
+
+- **项目地址**：[https://github.com/QQHKX/Immersive-clock-monitor](https://github.com/QQHKX/Immersive-clock-monitor)
+
+本项目从 **沉浸式时钟** 项目中提取并独立了噪音监测模块，旨在公开其基于心理声学与专注力理论的噪音评分引擎，为社区提供了一个高质量的噪音监测算法实现参考。
+
+该算法不仅仅是一个简单的分贝计，而是通过多维度加权扣分制，客观量化环境噪音对学习心流的干扰程度。
 
 ---
 
