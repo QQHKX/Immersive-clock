@@ -196,6 +196,41 @@
 
 ## ☁️ 部署
 
+### Docker 部署（推荐）
+
+项目提供了 Dockerfile，可通过 Docker 快速部署：
+
+```bash
+# 构建镜像
+docker build -t immersive-clock .
+
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
+```
+
+或使用预构建的镜像
+
+```bash
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app ghcr.io/QQHKX/immersive-clock:latest
+```
+
+访问 http://localhost:8080 即可。
+
+**可选：使用 docker-compose**
+
+```yaml
+version: "3.8"
+services:
+  immersive-clock:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
+### 静态托管部署
+
 ```bash
 # 构建后将 dist 目录上传到任意静态托管平台
 # 例如：Vercel / Netlify / GitHub Pages

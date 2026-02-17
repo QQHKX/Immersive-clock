@@ -15,11 +15,12 @@
 
 <div align="center">
 
-[![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
+[![](https://img.shields.io/badge/version-3.13.0-blue.svg)](https://github.com/QQHKX/immersive-clock)
 [![](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
-[![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
-[![](https://img.shields.io/badge/Vite-4.1.0-646CFF.svg)](https://vitejs.dev/)
+[![](https://img.shields.io/badge/TypeScript-5.4.0-blue.svg)](https://www.typescriptlang.org/)
+[![](https://img.shields.io/badge/Vite-5.4.0-646CFF.svg)](https://vitejs.dev/)
+[![](https://img.shields.io/badge/Electron-39.2.7-47848F.svg?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![](https://img.shields.io/badge/PWA-enabled-5A0FC8.svg)](https://web.dev/progressive-web-apps/)
 
 </div>
@@ -118,6 +119,41 @@ More details:
 ---
 
 ## Deployment
+
+### Docker Deployment (Recommended)
+
+The project includes a Dockerfile for quick deployment:
+
+```bash
+# Build the image
+docker build -t immersive-clock .
+
+# Run the container
+docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
+```
+
+Visit http://localhost:8080 to access the app.
+
+**Or use pre-built image**
+
+```bash
+# Run the container
+docker run -d -p 8080:80 --name immersive-clock-app ghcr.io/QQHKX/immersive-clock:latest
+```
+
+**Optional: docker-compose**
+
+```yaml
+version: "3.8"
+services:
+  immersive-clock:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
+### Static Hosting Deployment
 
 ```bash
 # Upload the dist folder to any static hosting platform
