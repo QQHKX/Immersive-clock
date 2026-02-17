@@ -225,11 +225,11 @@ describe("tour 守卫式下一步", () => {
     const driverInstance = driverMock.mock.results[0]?.value as Driver;
     const popoverDom = createPopoverDom();
 
-    step?.onHighlightStarted?.(
-      undefined as unknown as Element,
-      step as DriveStep,
-      { config, state: { popover: popoverDom } as State, driver: driverInstance }
-    );
+    step?.onHighlightStarted?.(undefined as unknown as Element, step as DriveStep, {
+      config,
+      state: { popover: popoverDom } as State,
+      driver: driverInstance,
+    });
 
     step!.popover!.onNextClick!(undefined, step as DriveStep, {
       config,
@@ -249,7 +249,6 @@ describe("tour 守卫式下一步", () => {
 
     expect(driverInstance.moveNext).toHaveBeenCalledTimes(1);
   });
-
 
   it("打开历史记录：未打开弹窗时不会跳步，并触发辅助点击入口", async () => {
     vi.useFakeTimers();

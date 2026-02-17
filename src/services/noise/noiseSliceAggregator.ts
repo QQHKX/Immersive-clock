@@ -63,7 +63,7 @@ function computeAvgDbfsFromDbfsArray(dbfsArr: number[]): number {
 function computeQuantileFromDbfsArray(dbfsArr: number[], p: number): number {
   if (dbfsArr.length === 0) return -100;
   // 转换到线性域
-  const rmsArr = dbfsArr.map(db => Math.pow(10, db / 20));
+  const rmsArr = dbfsArr.map((db) => Math.pow(10, db / 20));
   rmsArr.sort((a, b) => a - b);
   // 计算分位数
   const idx = (rmsArr.length - 1) * p;
