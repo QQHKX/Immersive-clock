@@ -17,8 +17,22 @@ export const DEFAULT_NOISE_SCORE_OPTIONS: ComputeNoiseScoreOptions = {
   maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
 };
 
+/** DBFS 有效范围下限，低于此值视为无效/静音 */
+const DBFS_MIN_VALID = -100;
+/** DBFS 有效范围上限 */
+const DBFS_MAX_VALID = 0;
+
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+/**
+ * 将 DBFS 值限制在有效范围内
+ * @param dbfs 原始 DBFS 值
+ * @returns 限制后的 DBFS 值
+ */
+function clampDbfs(dbfs: number): number {
+  return Math.max(DBFS_MIN_VALID, Math.min(DBFS_MAX_VALID, dbfs));
 }
 
 /**
@@ -40,7 +54,8 @@ export function computeNoiseSliceScore(
   const minutes = Math.max(1e-6, effectiveDurationMs / 60_000);
   const segmentsPerMin = raw.segmentCount / minutes;
 
-  const sustainedLevelDbfs = raw.p50Dbfs;
+  const clampedP50Dbfs = clampDbfs(raw.p50Dbfs);
+  const sustainedLevelDbfs = clampedP50Dbfs;
   const sustainedOver = Math.max(0, sustainedLevelDbfs - opt.scoreThresholdDbfs);
   const sustainedPenalty = clamp01(sustainedOver / 6);
 

@@ -111,4 +111,23 @@ describe("noiseScoreEngine", () => {
     expect(score).toBeCloseTo(96.0, 6);
     expect(score * 10).toBeCloseTo(Math.round(score * 10), 8);
   });
+
+  it("异常低值 p50Dbfs 应被限制在有效范围内", () => {
+    const { score, scoreDetail } = computeNoiseSliceScore(
+      {
+        avgDbfs: -135,
+        maxDbfs: -100,
+        p50Dbfs: -135,
+        p95Dbfs: -120,
+        overRatioDbfs: 0,
+        segmentCount: 0,
+      },
+      30_000
+    );
+
+    expect(scoreDetail.sustainedLevelDbfs).toBeGreaterThanOrEqual(-100);
+    expect(scoreDetail.sustainedLevelDbfs).toBeLessThanOrEqual(0);
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
 });
