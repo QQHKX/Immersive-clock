@@ -119,6 +119,34 @@ More details:
 
 ## Deployment
 
+### Docker Deployment (Recommended)
+
+The project includes a Dockerfile for quick deployment:
+
+```bash
+# Build the image
+docker build -t immersive-clock .
+
+# Run the container
+docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
+```
+
+Visit http://localhost:8080 to access the app.
+
+**Optional: docker-compose**
+
+```yaml
+version: "3.8"
+services:
+  immersive-clock:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
+### Static Hosting Deployment
+
 ```bash
 # Upload the dist folder to any static hosting platform
 # e.g., Vercel / Netlify / GitHub Pages
