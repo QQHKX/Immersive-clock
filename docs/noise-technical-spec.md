@@ -154,6 +154,11 @@ analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 }
 ```
 
+**浏览器兼容性说明：**
+- 部分浏览器/设备可能忽略上述约束设置
+- 建议在 UI 中提示用户实际生效的约束
+- 需要测试矩阵验证：Chrome/Firefox/Safari/Edge/iOS Safari/Android WebView
+
 **错误处理：**
 - `NotAllowedError` / `SecurityError` → 权限拒绝
 - `AudioContext not supported` → 浏览器不支持
@@ -283,61 +288,97 @@ export function createNoiseFrameProcessor(
 
 | 指标 | 说明 | 计算方法 |
 |------|------|---------|
-| avgDbfs | 平均分贝 | 所有帧 dBFS 的算术平均 |
+| avgDbfs | 平均分贝 | 能量平均（线性域 RMS 平均后转回 dBFS） |
 | maxDbfs | 最大分贝 | 所有帧 dBFS 的最大值 |
-| p50Dbfs | 中位数分贝 | 排序后第 50% 分位数值 |
-| p95Dbfs | 95分位数分贝 | 排序后第 95% 分位数值 |
-| overRatioDbfs | 超阈值比例 | 超阈值帧数 / 总帧数 |
+| p50Dbfs | 中位数分贝 | 线性域分位数（RMS 域计算后转回 dBFS） |
+| p95Dbfs | 95分位数分贝 | 线性域分位数（RMS 域计算后转回 dBFS） |
+| overRatioDbfs | 超阈值比例 | 超阈值时长 / 采样时长 |
 | segmentCount | 事件段数量 | 独立噪音事件次数 |
 | sampledDurationMs | 采样时长 | 有效采样时间（排除缺口） |
 | gapCount | 缺口数量 | 数据缺口次数 |
 | maxGapMs | 最大缺口时长 | 最长数据缺口时长 |
 
-#### 3.1.3 分位数计算
+#### 3.1.3 能量平均计算（avgDbfs）
 
 ```typescript
 /**
- * 计算已排序数组的分位数
- * @param sorted 已排序的数值数组
- * @param p 分位数 (0-1)
- * @returns 分位数值
+ * 从 dBFS 数组计算能量平均后的 dBFS 值
+ * @param dbfsArr dBFS 值数组
+ * @returns 能量平均后的 dBFS 值
  */
-function quantileSorted(sorted: number[], p: number): number {
-  if (!sorted.length) return 0;
-  const pp = Math.max(0, Math.min(1, p));
-  if (sorted.length === 1) return sorted[0];
-  const idx = (sorted.length - 1) * pp;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  const w = idx - lo;
-  return sorted[lo] * (1 - w) + sorted[hi] * w;
+function computeAvgDbfsFromDbfsArray(dbfsArr: number[]): number {
+  if (dbfsArr.length === 0) return -100;
+  // 在线性能量域求平均
+  const meanSquare = dbfsArr.reduce((s, db) => s + Math.pow(10, db / 10), 0) / dbfsArr.length;
+  const overallRms = Math.sqrt(meanSquare);
+  const avgDbfs = 20 * Math.log10(Math.max(overallRms, 1e-12));
+  return Math.max(-100, Math.min(0, avgDbfs));
 }
-```
-
-**公式（线性插值）：**
-$$ Q(p) = x_{\lfloor i \rfloor} \times (1 - w) + x_{\lceil i \rceil} \times w $$
-
-其中：
-- $i = (n-1) \times p$
-- $w = i - \lfloor i \rfloor$
-
-#### 3.1.4 超阈值比例计算
-
-```typescript
-const isAbove = frame.dbfs > scoreOpt.scoreThresholdDbfs;
-if (isAbove) {
-  aboveFrames += 1;
-}
-
-// 切片完成时计算
-overRatioDbfs: aboveFrames / frames
 ```
 
 **公式：**
-$$ \text{overRatioDbfs} = \frac{\text{超阈值帧数}}{\text{总帧数}} $$
+$$ \text{avgDbfs} = 20 \times \log_{10}\left(\sqrt{\frac{1}{N} \sum_{i=1}^{N} 10^{\text{dBFS}_i / 10}}\right) $$
 
-#### 3.1.5 事件段检测与合并算法
+**物理意义：** 在线性域（RMS）上做平均，符合能量守恒定律
+
+#### 3.1.4 线性域分位数计算
+
+```typescript
+/**
+ * 从 dBFS 数组计算线性域分位数后的 dBFS 值
+ * @param dbfsArr dBFS 值数组
+ * @param p 分位数 (0-1)
+ * @returns 线性域分位数后的 dBFS 值
+ */
+function computeQuantileFromDbfsArray(dbfsArr: number[], p: number): number {
+  if (dbfsArr.length === 0) return -100;
+  // 转换到线性域
+  const rmsArr = dbfsArr.map(db => Math.pow(10, db / 20));
+  rmsArr.sort((a, b) => a - b);
+  // 计算分位数
+  const idx = (rmsArr.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const w = idx - lo;
+  const quantileRms = lo === hi ? rmsArr[lo] : rmsArr[lo] * (1 - w) + rmsArr[hi] * w;
+  // 转回 dBFS
+  return 20 * Math.log10(Math.max(quantileRms, 1e-12));
+}
+```
+
+**公式：**
+$$ \text{quantileDbfs} = 20 \times \log_{10}(Q_{\text{RMS}}(p)) $$
+
+其中 $Q_{\text{RMS}}(p)$ 是 RMS 域的分位数，使用线性插值计算：
+$$ Q_{\text{RMS}}(p) = x_{\lfloor i \rfloor} \times (1 - w) + x_{\lceil i \rceil} \times w $$
+
+- $i = (n-1) \times p$
+- $w = i - \lfloor i \rfloor$
+
+**物理意义：** 在线性域（RMS）上计算分位数，符合能量统计的严谨性
+
+#### 3.1.5 超阈值比例计算（时间加权）
+
+```typescript
+// 在切片聚合器中记录超阈值时长
+let aboveDurationMs = 0;
+
+const isAbove = frame.dbfs > scoreOpt.scoreThresholdDbfs;
+if (isAbove) {
+  aboveFrames += 1;
+  aboveDurationMs += frameMs; // 累积超阈值时长
+}
+
+// 切片完成时计算
+overRatioDbfs: sampledDurationMs > 0 ? aboveDurationMs / sampledDurationMs : 0
+```
+
+**公式：**
+$$ \text{overRatioDbfs} = \frac{\text{超阈值时长}}{\text{采样时长}} $$
+
+**物理意义：** 使用实际时长而非帧数计算比例，更精确
+
+#### 3.1.6 事件段检测与合并算法
 
 事件段检测用于识别独立的噪音事件：
 
@@ -371,7 +412,7 @@ if (isAbove) {
 合并后：  └─────── 事件段1 ───────┘  └── 事件段2 ──┘
 ```
 
-#### 3.1.6 显示分贝映射（校准机制）
+#### 3.1.7 显示分贝映射（校准机制）
 
 显示分贝用于用户界面展示，支持校准：
 
@@ -408,7 +449,13 @@ $$ \text{displayDb} = 20 \times \log_{10}\left(\frac{\text{rms}}{10^{-3}}\right)
 
 **范围限制：** 20 dB ~ 100 dB
 
-#### 3.1.7 缺口检测与采样时长统计
+**校准流程说明：**
+1. 使用标准声源（如 60 dB 的白噪音）
+2. 测量对应的 RMS 值
+3. 设置为 baselineRms
+4. 设置对应的显示分贝为 baselineDb
+
+#### 3.1.8 缺口检测与采样时长统计
 
 ```typescript
 const gapThresholdMs = Math.max(1000, Math.round(frameMs * 5));
@@ -428,9 +475,9 @@ if (lastFrameTs !== null) {
 }
 ```
 
-**缺口阈值：** `max(1000ms, frameMs × 5)` = 1000ms（默认）
+**缺口阈值：** `max(1000ms, frameMs × 5)` = **1000ms**（默认）
 
-#### 3.1.8 无效帧过滤
+#### 3.1.9 无效帧过滤
 
 ```typescript
 const INVALID_DBFS_THRESHOLD = -90;
@@ -442,7 +489,12 @@ if (frame.dbfs < INVALID_DBFS_THRESHOLD) {
 
 低于 -90 dBFS 的帧被视为静音/无效信号，不参与统计。
 
-#### 3.1.9 核心函数
+**常量说明：**
+- `INVALID_DBFS_THRESHOLD = -90`：统计意义上的"静音"阈值
+- `DBFS_MIN_POSSIBLE = -100`：物理最小可表示值（用于 clamp）
+- `DBFS_MAX_POSSIBLE = 0`：物理最大可表示值（用于 clamp）
+
+#### 3.1.10 核心函数
 
 ```typescript
 /**
@@ -567,10 +619,10 @@ $$ P_{\text{segment}} = \text{clamp}_{[0,1]}\left(\frac{\text{segmentCount} / \t
 ```typescript
 // DBFS 范围限制
 function clampDbfs(dbfs: number): number {
-  return Math.max(DBFS_MIN_VALID, Math.min(DBFS_MAX_VALID, dbfs));
+  return Math.max(DBFS_MIN_POSSIBLE, Math.min(DBFS_MAX_POSSIBLE, dbfs));
 }
-// DBFS_MIN_VALID = -100
-// DBFS_MAX_VALID = 0
+// DBFS_MIN_POSSIBLE = -100
+// DBFS_MAX_POSSIBLE = 0
 
 // 0-1 范围限制
 function clamp01(value: number): number {
@@ -656,6 +708,11 @@ const STORAGE_KEY = "noise-slices";
 
 存储键：`noise-slices`
 
+**隐私说明：**
+- 存储内容：时间戳、噪音统计（不包含音频数据）
+- 风险：可能泄露位置/日程信息
+- 建议：在 UI 中提供"清除历史"功能
+
 #### 5.1.2 时间窗口清理
 
 ```typescript
@@ -667,6 +724,11 @@ function getRetentionMs(): number {
 const cutoff = normalized.end - getRetentionMs();
 const timeTrimmed = list.filter((item) => item.end >= cutoff);
 ```
+
+**变量说明：**
+- `normalized` 是新写入的切片（经过 `normalizeSlice` 处理）
+- 使用新切片的 `end` 作为基准计算 cutoff
+- 这样可以确保新切片不会被清理
 
 **默认保留时长：** 14 天
 **可配置范围：** 1 ~ 365 天
@@ -710,6 +772,10 @@ function normalizeSlice(slice: NoiseSliceSummary): NoiseSliceSummary {
   };
 }
 ```
+
+**工具函数说明：**
+- `round(value, digits)`：四舍五入到指定小数位
+- `isFiniteNumber(value)`：检查是否为有限数字
 
 **精度控制：**
 - dBFS：3 位小数
@@ -865,6 +931,11 @@ function buildDateTime(dateKey: string, timeStr: string): Date | null {
   return new Date(parsed.year, parsed.month - 1, parsed.day, h, m, 0, 0);
 }
 ```
+
+**时区说明：**
+- 使用本地时区
+- 内部存储使用 UTC 时间戳
+- 对外展示使用本地时间
 
 **日期格式：** `YYYY-MM-DD`
 **时间格式：** `HH:MM`
@@ -1056,6 +1127,9 @@ export const NOISE_SCORE_SEGMENT_MERGE_GAP_MS = 500;  // 事件段合并间隔 5
 export const NOISE_SCORE_MAX_SEGMENTS_PER_MIN = 6;    // 每分钟最大事件段数 6
 export const NOISE_REALTIME_CHART_SLICE_COUNT = 1;     // 实时图表切片数 1
 ```
+
+**常量说明：**
+- `NOISE_REALTIME_CHART_SLICE_COUNT = 1`：实时图表显示的切片数量
 
 #### 8.1.2 报告参数 (constants/noiseReport.ts)
 
@@ -1306,11 +1380,29 @@ export type NoiseStreamStatus =
 - 覆盖率计算
 - 跨天课时处理
 
+### 10.3 测试覆盖建议
+
+- 浏览器兼容性矩阵（Chrome/Firefox/Safari/Edge/iOS Safari/Android WebView）
+- 性能测试（CPU、内存、持续运行对电池的影响）
+- 集成/端到端测试（从权限请求到历史生成流程）
+- 跨浏览器、移动端、电池/性能测试
+
 ---
 
 ## 附录
 
-### A. 评分与校准分离说明
+### A. 术语表
+
+| 术语 | 英文 | 说明 |
+|------|------|------|
+| 均方根 | RMS (Root Mean Square) | 衡量音频信号强度的标准方法 |
+| 分贝满刻度 | dBFS (Decibels relative to Full Scale) | 数字音频的标准分贝单位，范围 -100 到 0 dB |
+| 显示分贝 | Display dB | 用于用户界面展示的分贝值，范围 20 到 100 dB |
+| 切片 | Slice | 固定时间窗口（默认 30 秒）内的噪音数据聚合 |
+| 帧 | Frame | 单次音频采样（默认 50ms） |
+| 事件段 | Segment | 独立的噪音事件，通过合并窗口（500ms）合并 |
+
+### B. 评分与校准分离说明
 
 系统通过"原始数据（用于评分）"与"显示数据（用于展示）"的严格分层，杜绝了校准值导致的评分偏差：
 
@@ -1328,7 +1420,7 @@ export type NoiseStreamStatus =
    - 完全基于 DBFS
    - "噪音等级分布"使用 `display.avgDb`（会随校准变化）
 
-### B. 参数固定策略
+### C. 参数固定策略
 
 为保证统计口径稳定，当前版本将"分析与评分"的高级参数固定为程序内常量：
 
@@ -1340,12 +1432,13 @@ export type NoiseStreamStatus =
 | segmentMergeGapMs | 500ms | 事件段合并间隔 |
 | maxSegmentsPerMin | 6 | 每分钟最大事件段数 |
 
-### C. 相关文档
+### D. 相关文档
 
 - [噪音评分系统详解](file:///d:/Desktop/Immersive-clock/docs/noise-scoring.md) - 用户视角的评分说明
 
 ---
 
-**文档版本：** 1.0  
+**文档版本：** 2.0  
 **最后更新：** 2026-02-17  
-**对应代码版本：** Immersive Clock
+**对应代码版本：** Immersive Clock  
+**更新说明：** 整合外部审查反馈，更新能量平均、线性域分位数、时间加权等计算方法
