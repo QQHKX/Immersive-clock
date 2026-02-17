@@ -10,6 +10,7 @@ import { initErrorCenterGlobalCapture, setErrorCenterMode } from "./utils/errorC
 import { initializeStorage } from "./utils/storageInitializer";
 
 import "./styles/global.css";
+import "./styles/tour.css";
 
 // 初始化 Microsoft Clarity
 if (import.meta.env.PROD) {
