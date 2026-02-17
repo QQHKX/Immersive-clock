@@ -208,6 +208,13 @@ docker build -t immersive-clock .
 docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
 ```
 
+或使用预构建的镜像
+
+```bash
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app ghcr.io/QQHKX/immersive-clock:latest
+```
+
 访问 http://localhost:8080 即可。
 
 **可选：使用 docker-compose**
