@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 import type { MessagePopupType } from "../../types/messagePopup";
@@ -56,6 +56,7 @@ export default function MessagePopup({
   const [mounted, setMounted] = useState<boolean>(isOpen);
   const [exiting, setExiting] = useState<boolean>(false);
   const closeTimerRef = useRef<number | null>(null);
+  const autoCloseTimerRef = useRef<number | null>(null);
 
   // 打开时挂载并进入动画；关闭时触发退出动画
   useEffect(() => {
@@ -75,14 +76,31 @@ export default function MessagePopup({
     };
   }, [isOpen, mounted]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setExiting(true);
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => {
-      setMounted(false);
       onClose && onClose();
     }, 300);
-  };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+    if (!isOpen) return;
+    if (type !== "general") return;
+    if (!onClose) return;
+    if (Array.isArray(actions) && actions.length > 0) return;
+    autoCloseTimerRef.current = window.setTimeout(() => {
+      handleClose();
+    }, 4000);
+    return () => {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    };
+  }, [actions, handleClose, isOpen, onClose, type]);
 
   if (!mounted) return null;
 

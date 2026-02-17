@@ -28,7 +28,7 @@
 }
 
 .exit {
-  animation: mp-bubble-out 220ms cubic-bezier(0.4, 0, 1, 1);
+  animation: mp-bubble-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes mp-bubble-in {
