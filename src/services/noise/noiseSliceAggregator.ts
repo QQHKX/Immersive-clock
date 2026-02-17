@@ -41,6 +41,41 @@ function quantileSorted(sorted: number[], p: number): number {
 }
 
 /**
+ * 从 dBFS 数组计算能量平均后的 dBFS 值
+ * @param dbfsArr dBFS 值数组
+ * @returns 能量平均后的 dBFS 值
+ */
+function computeAvgDbfsFromDbfsArray(dbfsArr: number[]): number {
+  if (dbfsArr.length === 0) return -100;
+  // 在线性能量域求平均
+  const meanSquare = dbfsArr.reduce((s, db) => s + Math.pow(10, db / 10), 0) / dbfsArr.length;
+  const overallRms = Math.sqrt(meanSquare);
+  const avgDbfs = 20 * Math.log10(Math.max(overallRms, 1e-12));
+  return Math.max(-100, Math.min(0, avgDbfs));
+}
+
+/**
+ * 从 dBFS 数组计算线性域分位数后的 dBFS 值
+ * @param dbfsArr dBFS 值数组
+ * @param p 分位数 (0-1)
+ * @returns 线性域分位数后的 dBFS 值
+ */
+function computeQuantileFromDbfsArray(dbfsArr: number[], p: number): number {
+  if (dbfsArr.length === 0) return -100;
+  // 转换到线性域
+  const rmsArr = dbfsArr.map(db => Math.pow(10, db / 20));
+  rmsArr.sort((a, b) => a - b);
+  // 计算分位数
+  const idx = (rmsArr.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const w = idx - lo;
+  const quantileRms = lo === hi ? rmsArr[lo] : rmsArr[lo] * (1 - w) + rmsArr[hi] * w;
+  // 转回 dBFS
+  return 20 * Math.log10(Math.max(quantileRms, 1e-12));
+}
+
+/**
  * 从 RMS 计算显示的分贝值
  * @param params 包含当前 RMS、基准 RMS 和基准分贝的对象
  * @returns 显示的分贝值，范围限制在 20 到 100 dB
@@ -86,6 +121,7 @@ export function createNoiseSliceAggregator(
   let sumDisplayDb = 0;
   let maxDbfs = -Infinity;
   let aboveFrames = 0;
+  let aboveDurationMs = 0;
   let segmentCount = 0;
   let lastAbove = false;
   let lastSegmentEndTs: number | null = null;
@@ -106,6 +142,7 @@ export function createNoiseSliceAggregator(
     sumDisplayDb = 0;
     maxDbfs = -Infinity;
     aboveFrames = 0;
+    aboveDurationMs = 0;
     segmentCount = 0;
     lastAbove = false;
     lastSegmentEndTs = null;
@@ -125,15 +162,12 @@ export function createNoiseSliceAggregator(
     const startTs = sliceStart;
     const durationMs = Math.max(1, endTs - startTs);
 
-    dbfsValues.sort((a, b) => a - b);
-    displayValues.sort((a, b) => a - b);
-
     const raw: NoiseSliceRawStats = {
-      avgDbfs: sumDbfs / frames,
+      avgDbfs: computeAvgDbfsFromDbfsArray(dbfsValues),
       maxDbfs: maxDbfs === -Infinity ? 0 : maxDbfs,
-      p50Dbfs: quantileSorted(dbfsValues, 0.5),
-      p95Dbfs: quantileSorted(dbfsValues, 0.95),
-      overRatioDbfs: aboveFrames / frames,
+      p50Dbfs: computeQuantileFromDbfsArray(dbfsValues, 0.5),
+      p95Dbfs: computeQuantileFromDbfsArray(dbfsValues, 0.95),
+      overRatioDbfs: sampledDurationMs > 0 ? aboveDurationMs / sampledDurationMs : 0,
       segmentCount,
       sampledDurationMs: Math.max(0, Math.round(sampledDurationMs)),
       gapCount: Math.max(0, Math.round(gapCount)),
@@ -196,6 +230,7 @@ export function createNoiseSliceAggregator(
     const isAbove = frame.dbfs > scoreOpt.scoreThresholdDbfs;
     if (isAbove) {
       aboveFrames += 1;
+      aboveDurationMs += frameMs;
       if (!lastAbove) {
         const merged =
           lastSegmentEndTs !== null && frame.t - lastSegmentEndTs <= scoreOpt.segmentMergeGapMs;

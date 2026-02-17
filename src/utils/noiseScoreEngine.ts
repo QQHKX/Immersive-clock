@@ -17,10 +17,10 @@ export const DEFAULT_NOISE_SCORE_OPTIONS: ComputeNoiseScoreOptions = {
   maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
 };
 
-/** DBFS 有效范围下限，低于此值视为无效/静音 */
-const DBFS_MIN_VALID = -100;
-/** DBFS 有效范围上限 */
-const DBFS_MAX_VALID = 0;
+/** DBFS 物理最小可表示值 */
+const DBFS_MIN_POSSIBLE = -100;
+/** DBFS 物理最大可表示值 */
+const DBFS_MAX_POSSIBLE = 0;
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -32,7 +32,7 @@ function clamp01(value: number): number {
  * @returns 限制后的 DBFS 值
  */
 function clampDbfs(dbfs: number): number {
-  return Math.max(DBFS_MIN_VALID, Math.min(DBFS_MAX_VALID, dbfs));
+  return Math.max(DBFS_MIN_POSSIBLE, Math.min(DBFS_MAX_POSSIBLE, dbfs));
 }
 
 /**
