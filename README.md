@@ -198,7 +198,7 @@
 
 ### 静态托管部署(推荐)
 
-#### 🚀 Vercel（推荐）
+#### 🚀 Vercel
 
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/QQHKX/immersive-clock)
 
