@@ -196,9 +196,42 @@
 
 ## ☁️ 部署
 
-### 静态托管部署(推荐)
+### Docker 部署
 
-#### 🚀 Vercel（推荐）
+项目提供了 Dockerfile，可通过 Docker 快速部署：
+
+```bash
+# 构建镜像
+docker build -t immersive-clock .
+
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
+```
+
+或使用预构建的镜像
+
+```bash
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app ghcr.io/QQHKX/immersive-clock:latest
+```
+
+访问 http://localhost:8080 即可。
+
+**可选：使用 docker-compose**
+
+```yaml
+version: "3.8"
+services:
+  immersive-clock:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
+### 静态托管部署
+
+#### 🚀 Vercel
 
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/QQHKX/immersive-clock)
 
@@ -207,8 +240,6 @@
 [![Deploy with EdgeOne Pages](https://camo.githubusercontent.com/823c1cff835803f4f496377113449241c418079a84ba67a789068e643b74cb73/68747470733a2f2f63646e7374617469632e74656e63656e7463732e636f6d2f656467656f6e652f70616765732f6465706c6f792e737667)](https://edgeone.ai/pages/new?repository-url=https://github.com/QQHKX/immersive-clock)
 
 > 建议使用 HTTPS 以获得完整 PWA 功能。
-
-### Docker 部署
 
 项目提供了 Dockerfile，可通过 Docker 快速部署：
 
