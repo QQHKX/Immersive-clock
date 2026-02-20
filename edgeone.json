@@ -123,5 +123,5 @@
     }
   ],
   "trailingSlash": false,
-  "nodeVersion": "24.5.0"
+  "nodeVersion": "18"
 }

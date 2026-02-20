@@ -198,7 +198,11 @@
 
 ### 静态托管部署(推荐)
 
+#### 🚀 Vercel（推荐）
+
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/QQHKX/immersive-clock)
+
+#### ☁️ EdgeOne Pages
 
 [![Deploy with EdgeOne Pages](https://camo.githubusercontent.com/823c1cff835803f4f496377113449241c418079a84ba67a789068e643b74cb73/68747470733a2f2f63646e7374617469632e74656e63656e7463732e636f6d2f656467656f6e652f70616765732f6465706c6f792e737667)](https://edgeone.ai/pages/new?repository-url=https://github.com/QQHKX/immersive-clock)
 

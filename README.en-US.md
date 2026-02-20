@@ -120,7 +120,19 @@ More details:
 
 ## Deployment
 
-### Docker Deployment (Recommended)
+### Static Hosting Deployment (Recommended)
+
+#### 🚀 Vercel (Recommended)
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/QQHKX/immersive-clock)
+
+#### ☁️ EdgeOne Pages
+
+[![Deploy with EdgeOne Pages](https://camo.githubusercontent.com/823c1cff835803f4f496377113449241c418079a84ba67a789068e643b74cb73/68747470733a2f2f63646e7374617469632e74656e63656e7463732e636f6d2f656467656f6e652f70616765732f6465706c6f792e737667)](https://edgeone.ai/pages/new?repository-url=https://github.com/QQHKX/immersive-clock)
+
+> Use HTTPS to enable full PWA features.
+
+### Docker Deployment
 
 The project includes a Dockerfile for quick deployment:
 
@@ -152,15 +164,6 @@ services:
       - "8080:80"
     restart: unless-stopped
 ```
-
-### Static Hosting Deployment
-
-```bash
-# Upload the dist folder to any static hosting platform
-# e.g., Vercel / Netlify / GitHub Pages
-```
-
-Use HTTPS to enable full PWA features. `vercel.json` is provided for one-click import.
 
 ---
 
