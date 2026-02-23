@@ -738,7 +738,15 @@ const Weather: React.FC = () => {
           }
         }
 
-        const result = await buildWeatherFlow(options);
+        // 根据用户设置决定是否请求对应API
+        const weatherOptions: WeatherFlowOptions = {
+          ...options,
+          fetchDaily3d: true, // 三日预报始终请求（用于UI展示）
+          fetchAstronomySun: study.sunriseSunsetAlertEnabled, // 仅在开启日出日落提醒时请求
+          fetchAirQuality: study.airQualityAlertEnabled, // 仅在开启空气质量提醒时请求
+        };
+
+        const result = await buildWeatherFlow(weatherOptions);
 
         if (
           !result.coords ||
@@ -766,6 +774,7 @@ const Weather: React.FC = () => {
         if (result.daily3d && !result.daily3d.error) {
           updateDaily3dCache(locationParam, result.daily3d);
         }
+        // 仅在请求了日出日落数据时才缓存（根据功能开关）
         if (result.astronomySun && !result.astronomySun.error) {
           updateAstronomySunCache(
             locationParam,
@@ -773,6 +782,7 @@ const Weather: React.FC = () => {
             result.astronomySun
           );
         }
+        // 仅在请求了空气质量数据时才缓存（根据功能开关）
         if (result.airQuality && !result.airQuality.error) {
           updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
         }
@@ -837,7 +847,13 @@ const Weather: React.FC = () => {
         setLoading(false);
       }
     },
-    [mapWeatherToIcon, maybeOpenErrorPopup, study.classEndForecastEnabled]
+    [
+      mapWeatherToIcon,
+      maybeOpenErrorPopup,
+      study.classEndForecastEnabled,
+      study.airQualityAlertEnabled,
+      study.sunriseSunsetAlertEnabled,
+    ]
   );
 
   /**

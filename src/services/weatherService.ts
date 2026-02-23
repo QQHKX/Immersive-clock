@@ -47,9 +47,9 @@ export {
 
 export interface WeatherFlowOptions extends LocationFlowOptions {
   // 功能开关：控制是否请求对应的API
-  fetchDaily3d?: boolean;      // 是否请求三日预报
-  fetchAstronomySun?: boolean;  // 是否请求日出日落
-  fetchAirQuality?: boolean;     // 是否请求空气质量
+  fetchDaily3d?: boolean; // 是否请求三日预报
+  fetchAstronomySun?: boolean; // 是否请求日出日落
+  fetchAirQuality?: boolean; // 是否请求空气质量
 }
 
 /**
@@ -167,6 +167,7 @@ function formatDateYYYYMMDD(d: Date): string {
 /**
  * 构建天气数据获取流程
  * 包含坐标获取、实时天气、预报、天文及空气质量
+ * 根据功能开关按需请求对应的API
  */
 export async function buildWeatherFlow(options?: WeatherFlowOptions): Promise<{
   coords: Coords | null;
@@ -185,29 +186,69 @@ export async function buildWeatherFlow(options?: WeatherFlowOptions): Promise<{
 
   const locationParam = `${loc.coords.lon},${loc.coords.lat}`;
   const date = formatDateYYYYMMDD(new Date());
-  const results = await Promise.allSettled([
-    fetchWeatherNow(locationParam),
-    fetchWeatherDaily3d(locationParam),
-    fetchAstronomySun(locationParam, date),
-    fetchAirQualityCurrent(loc.coords.lat, loc.coords.lon),
-  ]);
 
-  const weather =
-    results[0].status === "fulfilled"
-      ? results[0].value
-      : ({ error: String(results[0].reason) } as WeatherNow);
-  const daily3d =
-    results[1].status === "fulfilled"
-      ? results[1].value
-      : ({ error: String(results[1].reason) } as WeatherDaily3dResponse);
-  const astronomySun =
-    results[2].status === "fulfilled"
-      ? results[2].value
-      : ({ error: String(results[2].reason) } as AstronomySunResponse);
-  const airQuality =
-    results[3].status === "fulfilled"
-      ? results[3].value
-      : ({ error: String(results[3].reason) } as AirQualityCurrentResponse);
+  // 构建请求列表：根据功能开关决定是否请求
+  const requests: Array<Promise<unknown>> = [
+    fetchWeatherNow(locationParam), // 实时天气始终请求
+  ];
+
+  if (options?.fetchDaily3d !== false) {
+    requests.push(fetchWeatherDaily3d(locationParam));
+  }
+
+  if (options?.fetchAstronomySun !== false) {
+    requests.push(fetchAstronomySun(locationParam, date));
+  }
+
+  if (options?.fetchAirQuality !== false) {
+    requests.push(fetchAirQualityCurrent(loc.coords.lat, loc.coords.lon));
+  }
+
+  const results = await Promise.allSettled(requests);
+
+  // 解析结果（保持原有逻辑，但需要处理可能缺失的结果）
+  let weather: WeatherNow;
+  const weatherResult = results[0];
+  if (weatherResult.status === "fulfilled") {
+    weather = weatherResult.value as WeatherNow;
+  } else {
+    weather = { error: String(weatherResult.reason) } as WeatherNow;
+  }
+
+  let daily3d: WeatherDaily3dResponse | null = null;
+  let astronomySun: AstronomySunResponse | null = null;
+  let airQuality: AirQualityCurrentResponse | null = null;
+
+  let resultIndex = 1;
+
+  if (options?.fetchDaily3d !== false) {
+    const result = results[resultIndex];
+    if (result.status === "fulfilled") {
+      daily3d = result.value as WeatherDaily3dResponse;
+    } else {
+      daily3d = { error: String(result.reason) } as WeatherDaily3dResponse;
+    }
+    resultIndex++;
+  }
+
+  if (options?.fetchAstronomySun !== false) {
+    const result = results[resultIndex];
+    if (result.status === "fulfilled") {
+      astronomySun = result.value as AstronomySunResponse;
+    } else {
+      astronomySun = { error: String(result.reason) } as AstronomySunResponse;
+    }
+    resultIndex++;
+  }
+
+  if (options?.fetchAirQuality !== false) {
+    const result = results[resultIndex];
+    if (result.status === "fulfilled") {
+      airQuality = result.value as AirQualityCurrentResponse;
+    } else {
+      airQuality = { error: String(result.reason) } as AirQualityCurrentResponse;
+    }
+  }
 
   return {
     coords: loc.coords,

@@ -396,11 +396,11 @@ export const NoiseReportModal: React.FC<NoiseReportModalProps> = ({
       distribution:
         totalMs > 0
           ? {
-            quiet: distribution.quiet / totalMs,
-            normal: distribution.normal / totalMs,
-            loud: distribution.loud / totalMs,
-            severe: distribution.severe / totalMs,
-          }
+              quiet: distribution.quiet / totalMs,
+              normal: distribution.normal / totalMs,
+              loud: distribution.loud / totalMs,
+              severe: distribution.severe / totalMs,
+            }
           : { quiet: 0, normal: 0, loud: 0, severe: 0 },
       series,
       scoreText,

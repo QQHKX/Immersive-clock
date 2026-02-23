@@ -43,9 +43,8 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   const [draftErrorPopupEnabled, setDraftErrorPopupEnabled] = useState<boolean>(
     !!study.errorPopupEnabled
   );
-  const [draftErrorCenterMode, setDraftErrorCenterMode] = useState<ErrorCenterMode>(
-    appliedErrorCenterMode
-  );
+  const [draftErrorCenterMode, setDraftErrorCenterMode] =
+    useState<ErrorCenterMode>(appliedErrorCenterMode);
 
   useEffect(() => {
     setDraftErrorPopupEnabled(!!study.errorPopupEnabled);
