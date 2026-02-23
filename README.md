@@ -1,46 +1,25 @@
-<h1 align="center">
-  <br/>
+<div align="center">
   <img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
-  <br/>
-  沉浸式时钟 | Immersive Clock ⏰
-</h1>
+  <h1>沉浸式时钟 | Immersive Clock ⏰</h1>
+  <p>简体中文 ｜ <a href="./README.en-US.md">English</a></p>
 
-<p align="center">
-  <a href="https://qqhkx.com">官网</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a> ｜ <a href="https://clock.qqhkx.com">在线体验</a> ｜ <a href="https://qm.qq.com/q/fawykipRhm">QQ 交流群</a>
-</p>
+[🖥️ 在线体验](https://clock.qqhkx.com)
 
-<p align="center">
-  简体中文 ｜ <a href="./README.en-US.md">English</a>
-</p>
+[![](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
+[![](https://img.shields.io/badge/React-18.2.0-61dafb?logo=react)](https://reactjs.org/)
+[![](https://img.shields.io/badge/TypeScript-5.4.0-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![](https://img.shields.io/badge/Vite-5.4.0-9135ff?logo=vite)](https://vitejs.dev/)
+[![](https://img.shields.io/badge/Electron-39.2.7-9feaf9?logo=electron)](https://www.electronjs.org/)
+[![](https://img.shields.io/badge/Platform-Win%20%7C%20Mac%20%7C%20Linux-blue)](https://github.com/QQHKX/immersive-clock/releases)
+[![](https://img.shields.io/badge/PWA-enabled-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
 
-<div align="center">
-
-[![](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
-[![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
-[![](https://img.shields.io/badge/TypeScript-5.4.0-blue.svg)](https://www.typescriptlang.org/)
-[![](https://img.shields.io/badge/Vite-5.4.0-646CFF.svg)](https://vitejs.dev/)
-[![](https://img.shields.io/badge/Electron-39.2.7-47848F.svg?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![](https://img.shields.io/badge/Platform-Win%20%7C%20Mac%20%7C%20Linux-lightgrey.svg)](https://github.com/QQHKX/immersive-clock/releases)
-[![](https://img.shields.io/badge/PWA-enabled-5A0FC8.svg)](https://web.dev/progressive-web-apps/)
+**让时间管理更优雅，让学习更专注**
 
 </div>
-
-<div align="center">
-  <strong>让时间管理更优雅，让学习更专注</strong>
-</div>
-
-<br/>
-
-> **✈️ 文档导航**
->
-> - 我是普通用户：请跳转至 [🚀 快速使用指南](#-快速使用指南)
-> - 我想参与贡献/本地开发：请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 > **⏸️ 维护说明**
 >
 > 因作者目前处于高三阶段，项目已暂停非必要开发与维护。欢迎提交 PR / Issue，但处理与合并可能较慢。
-
----
 
 ## 📑 目录
 
@@ -56,8 +35,6 @@
 - [贡献与开发](#-贡献与开发)
 - [许可证与作者](#-许可证与作者)
 - [Star 历史](#-star-历史)
-
----
 
 ## 🕒 项目概述
 
@@ -93,8 +70,6 @@
   <img src="docs/demo/公告-更新日志弹窗.jpeg" width="48%" alt="公告-更新日志弹窗" />
 </div>
 
----
-
 ## 🚀 快速使用指南
 
 我们提供多种使用方式，满足不同场景的需求。
@@ -105,7 +80,7 @@
 
 **安装步骤：**
 
-1. 使用 Chrome 或 Edge 浏览器访问 [https://clock.qqhkx.com](https://clock.qqhkx.com)。
+1. 使用 Chrome、Edge 等浏览器访问演示站。
 2. 点击浏览器地址栏右侧的 **"安装 Immersive Clock"** 图标（通常是一个带有加号的小显示器图标）。
 3. 确认安装后，应用将以独立窗口运行，并自动在桌面/开始菜单生成图标。
 
@@ -113,20 +88,17 @@
 
 如果您不想安装任何内容，可以直接访问网页版。
 
-- **访问地址**：[https://clock.qqhkx.com](https://clock.qqhkx.com)
-- **兼容性**：推荐使用 **Chrome**、**Edge** 或 **Safari** 的最新版本以获得最佳性能和动画体验。
+> 推荐使用 **Chrome**、**Edge** 或 **Safari** 的最新版本以获得最佳性能和动画体验。
 
 ### 💻 方式三：Electron 桌面版
 
-如果您需要更传统的桌面软件体验（支持 .exe / .dmg / .AppImage），可以下载 Electron 打包版本。
+如果您需要更传统的桌面软件体验（支持 Windows/macOS/Linux），可以下载 Electron 打包版本。
 
-- **下载地址**：[GitHub Releases](https://github.com/QQHKX/immersive-clock/releases)
+- **下载地址**：[GitHub Releases](https://github.com/QQHKX/immersive-clock/releases/latest)
 - **安装说明**：
   - **Windows**: 下载 `.exe` 安装包并运行。
   - **macOS**: 下载 `.dmg` 文件并将应用拖入 Applications 文件夹。
   - **Linux**: 提供 `.AppImage` 或 `.deb` 包。
-
----
 
 ## 💡 主要功能
 
@@ -158,8 +130,6 @@
 - **资源优化**：静态资源（图片/字体/音频）分级缓存策略，秒级加载。
 - **无障碍设计**：全键盘导航支持（Space/Enter 唤出 HUD），优化 ARIA 属性。
 
----
-
 ## 📘 使用说明
 
 - **模式切换**：点击页面或按 `Space/Enter` 唤出 HUD
@@ -172,13 +142,8 @@
 
 详细说明请见：
 
-- [使用说明（中文）](docs/usage.zh-CN.md)
-- [Usage Guide (English)](docs/usage.en-US.md)
-- [常见问题（中文）](docs/faq.zh-CN.md)
-- [FAQ (English)](docs/faq.en-US.md)
+- [使用说明](docs/usage.zh-CN.md)
 - [🎙️ 评分系统原理](public/docs/noise-scoring.md)
-
----
 
 ## ♿ 无障碍支持
 
@@ -188,8 +153,6 @@
 | `Enter / Esc`   | 确认或关闭模态 |
 | 双击时间        | 打开倒计时设置 |
 | 触摸双击        | 移动端交互支持 |
-
----
 
 ## 🗂️ 目录结构
 
@@ -214,8 +177,6 @@ immersive-clock/
 └── package.json       # 项目元数据与脚本
 ```
 
----
-
 ## ❓ 常见问题
 
 - 无法定位城市？检查浏览器定位授权或使用手动刷新。
@@ -223,35 +184,25 @@ immersive-clock/
 - HUD 未出现？确保未打开模态框，点击页面或按 `Space/Enter`。
 - 如何查看公告与更新日志？点击右下角版本号或在菜单中打开弹窗。
 
-更多问题与解答请查看 [docs/faq.zh-CN.md](docs/faq.zh-CN.md)。
-
----
+更多问题与解答请查看 [常见问题 (FAQ)](docs/faq.zh-CN.md)。
 
 ## 💬 交流与反馈
 
 欢迎加入我们的官方交流群，分享使用心得、反馈 Bug 或提出功能建议。
 
+![QQ Group](public/assets/qq-group.png)
+
+<p align="center"><a href="https://qm.qq.com/q/fawykipRhm">QQ 群 | 965931796</a></p>
+
 也可以通过以下方式进行反馈（建议附上复现步骤与截图/录屏，方便快速定位）：
 
-- QQ 群内直接反馈： [https://qm.qq.com/q/fawykipRhm](https://qm.qq.com/q/fawykipRhm)
 - GitHub Issues： [https://github.com/QQHKX/immersive-clock/issues](https://github.com/QQHKX/immersive-clock/issues)
 - 应用内反馈：点击右下角“版本号”打开公告弹窗 → 切到「意见反馈」
 - 直接问卷链接： [https://wj.qq.com/s2/25666249/lj9p/](https://wj.qq.com/s2/25666249/lj9p/)
 
-|   QQ 交流群   |                                     二维码                                      |
-| :-----------: | :-----------------------------------------------------------------------------: |
-| **965931796** | <img src="public/assets/qq-group.png.jpg" width="200" alt="QQ Group QR Code" /> |
-
----
-
 ## 🤝 贡献与开发
 
-如果你想贡献代码、修复问题或在本地进行二次开发，请阅读贡献指南：
-
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
-- 问题反馈与建议： [Issues](https://github.com/QQHKX/immersive-clock/issues)
-
----
+如果你想贡献代码、修复问题或在本地进行二次开发，请阅读[贡献指南](CONTRIBUTING.md)。
 
 ## 📄 许可证与作者
 
@@ -259,8 +210,6 @@ immersive-clock/
 - 作者：**QQHKX**
   - 🌐 [个人网站](https://qqhkx.com)
   - 💻 [GitHub](https://github.com/QQHKX)
-
----
 
 ## 🧬 衍生项目
 
@@ -272,18 +221,18 @@ immersive-clock/
 
 该算法不仅仅是一个简单的分贝计，而是通过多维度加权扣分制，客观量化环境噪音对学习心流的干扰程度。
 
----
-
 ## 🔗 友情链接
 
-- [SECTL](https://sectl.top/)
-
----
+- <img src="https://sectl.top/logo.svg" width="16px"> [SECTL](https://sectl.top/)
 
 ## ⭐️ Star 历史
 
 <div align="center">
-  <a href="https://star-history.com/#QQHKX/Immersive-clock" target="_blank">
-    <img src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=Date" alt="Star History Chart" />
+  <a href="https://www.star-history.com/#QQHKX/Immersive-clock&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
+  </picture>
   </a>
 </div>

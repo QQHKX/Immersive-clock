@@ -51,8 +51,10 @@ coverage
 .temp
 .vercel
 
-# Trae AI 配置文件夹
+# AI 配置文件夹
 .trae
+.github/*instructions.md
+.github/skills/
 
 # 其他
 .env
