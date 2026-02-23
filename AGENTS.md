@@ -466,7 +466,9 @@ useTimer(callback, isActive, 1000); // 1秒间隔
 
 ---
 
-## 环境变量与版本管理
+## 环境变量与缓存配置
+
+### 环境变量
 
 从 `.env.example` 创建 `.env`：
 
@@ -479,6 +481,63 @@ VITE_APP_VERSION=3.12.4  # 如未设置，自动从 package.json 读取
 - 运行时版本：通过 `import.meta.env.VITE_APP_VERSION` 注入
 - Manifest 统一：`index.html` 使用 `<link rel="manifest" href="/manifest.json" />`
 - 参数注入：页面链接的 `manifest.json`、`.webmanifest` 及 `favicon.svg` 均追加 `?v=<version>`
+
+### 缓存策略
+
+项目使用 `vite-plugin-pwa` 提供 PWA 缓存能力，缓存策略如下：
+
+- **静态资源**（图片、字体、音频）：`CacheFirst` - 优先使用缓存，适合不常变化的资源
+- **文档**（`/docs/*.md`）：`NetworkFirst` - 优先从网络获取，失败时使用缓存，并设定 24 小时过期
+- **版本控制**：忽略版本参数 `v`，优化离线体验
+
+---
+
+## 部署
+
+### 静态托管部署（推荐）
+
+#### 🚀 Vercel
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/QQHKX/immersive-clock)
+
+#### ☁️ EdgeOne Pages
+
+[![Deploy with EdgeOne Pages](https://camo.githubusercontent.com/823c1cff835803f4f496377113449241c418079a84ba67a789068e643b74cb73/68747470733a2f2f63646e7374617469632e74656e63656e7463732e636f6d2f656467656f6e652f70616765732f6465706c6f792e737667)](https://edgeone.ai/pages/new?repository-url=https://github.com/QQHKX/immersive-clock)
+
+> 建议使用 HTTPS 以获得完整 PWA 功能。
+
+### Docker 部署
+
+项目提供了 Dockerfile，可通过 Docker 快速部署：
+
+```bash
+# 构建镜像
+docker build -t immersive-clock .
+
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app immersive-clock
+```
+
+或使用预构建的镜像：
+
+```bash
+# 运行容器
+docker run -d -p 8080:80 --name immersive-clock-app ghcr.io/QQHKX/immersive-clock:latest
+```
+
+访问 http://localhost:8080 即可。
+
+**可选：使用 docker-compose**
+
+```yaml
+version: "3.8"
+services:
+  immersive-clock:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
 
 ---
 
