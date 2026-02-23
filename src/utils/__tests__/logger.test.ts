@@ -4,10 +4,10 @@ import { debug, error, info, logger, warn } from "../logger";
 
 /** logger 单元测试（函数级注释：验证各级别日志函数会调用对应 console 方法） */
 describe("logger", () => {
-  let debugSpy: ReturnType<typeof vi.spyOn>;
-  let infoSpy: ReturnType<typeof vi.spyOn>;
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let debugSpy: any;
+  let infoSpy: any;
+  let warnSpy: any;
+  let errorSpy: any;
 
   beforeEach(() => {
     debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
