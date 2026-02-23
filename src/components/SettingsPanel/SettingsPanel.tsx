@@ -42,6 +42,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const weatherSaveRef = useRef<() => void>(() => {});
   const monitorSaveRef = useRef<() => void>(() => {});
   const quotesSaveRef = useRef<() => void>(() => {});
+  const aboutSaveRef = useRef<() => void>(() => {});
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -64,6 +65,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       weatherSaveRef.current?.();
       monitorSaveRef.current?.();
       quotesSaveRef.current?.();
+      aboutSaveRef.current?.();
     } catch (e) {
       logger.error("保存分区设置失败:", e);
       alert("保存设置时出现错误，请重试");
@@ -172,8 +174,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {/* 关于 */}
           {activeCategory === "about" && (
             <AboutSettingsPanel
-              onRegisterSave={() => {
-                /* 空操作 */
+              onRegisterSave={(fn) => {
+                aboutSaveRef.current = fn;
               }}
             />
           )}

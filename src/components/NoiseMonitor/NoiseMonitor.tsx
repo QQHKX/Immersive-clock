@@ -26,6 +26,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
   const playNoisyAlertRef = useRef<(() => void) | null>(playNoisyAlert);
   const lastNoisyAlertPlayedAtRef = useRef<number>(0);
   const lastIsNoisyRef = useRef<boolean>(false);
+  const hasShownPermissionErrorRef = useRef<boolean>(false);
 
   useEffect(() => {
     playNoisyAlertRef.current = playNoisyAlert;
@@ -94,6 +95,30 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
     [study.errorPopupEnabled]
   );
 
+  /**
+   * 监听权限状态变化，自动弹出权限提示（函数级注释：当麦克风权限被拒绝时自动提示用户）
+   */
+  useEffect(() => {
+    if (status === "permission-denied" && !hasShownPermissionErrorRef.current) {
+      hasShownPermissionErrorRef.current = true;
+      const isElectronRuntime = (() => {
+        try {
+          return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+        } catch {
+          return false;
+        }
+      })();
+      openErrorPopup(
+        "麦克风权限不可用",
+        isElectronRuntime
+          ? "请在系统设置中允许麦克风权限后重试。"
+          : "请允许浏览器麦克风权限后重试。"
+      );
+    } else if (status !== "permission-denied" && status !== "error") {
+      hasShownPermissionErrorRef.current = false;
+    }
+  }, [status, openErrorPopup]);
+
   const statusClassName = useMemo(() => {
     switch (status) {
       case "quiet":
@@ -127,23 +152,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (status === "permission-denied" || status === "error") {
-        if (status === "permission-denied") {
-          const isElectronRuntime = (() => {
-            try {
-              return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
-            } catch {
-              return false;
-            }
-          })();
-          openErrorPopup(
-            "麦克风权限不可用",
-            isElectronRuntime
-              ? "请在系统设置中允许麦克风权限后重试。"
-              : "请允许浏览器麦克风权限后重试。"
-          );
-        } else {
-          openErrorPopup("噪音监测失败", "请点击重试。");
-        }
+        hasShownPermissionErrorRef.current = false;
         retry();
         return;
       }
@@ -151,7 +160,7 @@ const NoiseMonitor: React.FC<NoiseMonitorProps> = ({ onBreathingLightClick, onSt
         onStatusClick?.();
       }
     },
-    [status, retry, onStatusClick, openErrorPopup]
+    [status, retry, onStatusClick]
   );
 
   const breathingLightTooltip = useMemo(() => {

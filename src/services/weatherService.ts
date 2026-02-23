@@ -45,7 +45,12 @@ export {
   reverseGeocodeOSM,
 } from "./locationService";
 
-export type WeatherFlowOptions = LocationFlowOptions;
+export interface WeatherFlowOptions extends LocationFlowOptions {
+  // 功能开关：控制是否请求对应的API
+  fetchDaily3d?: boolean;      // 是否请求三日预报
+  fetchAstronomySun?: boolean;  // 是否请求日出日落
+  fetchAirQuality?: boolean;     // 是否请求空气质量
+}
 
 /**
  * 获取实时天气

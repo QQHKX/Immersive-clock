@@ -227,6 +227,7 @@
   border-radius: 999px;
   overflow: hidden;
   backdrop-filter: blur(8px);
+  flex-shrink: 0;
 }
 
 .chartSwitchButton {
@@ -240,6 +241,7 @@
   padding: 6px 10px;
   cursor: pointer;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .chartSwitchButton:hover {
@@ -288,6 +290,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rangeInfo {
+  flex: 1;
+  min-width: 200px;
 }
 
 .chartGrid {

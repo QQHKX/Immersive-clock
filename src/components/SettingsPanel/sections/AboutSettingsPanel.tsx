@@ -8,6 +8,7 @@ import {
   exportErrorCenterJson,
   getErrorCenterRecords,
   subscribeErrorCenter,
+  type ErrorCenterMode,
 } from "../../../utils/errorCenter";
 import { getWeatherCache } from "../../../utils/weatherStorage";
 import {
@@ -37,15 +38,30 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
   const [levelFilter, setLevelFilter] = useState<"all" | "error" | "warn" | "info" | "debug">(
     "all"
   );
-  const errorCenterMode = study.errorCenterMode ?? "off";
-  const isErrorCenterActive = errorCenterMode !== "off";
+  const appliedErrorCenterMode = (study.errorCenterMode ?? "off") as ErrorCenterMode;
+  const isErrorCenterActive = appliedErrorCenterMode !== "off";
+  const [draftErrorPopupEnabled, setDraftErrorPopupEnabled] = useState<boolean>(
+    !!study.errorPopupEnabled
+  );
+  const [draftErrorCenterMode, setDraftErrorCenterMode] = useState<ErrorCenterMode>(
+    appliedErrorCenterMode
+  );
 
   useEffect(() => {
-    // 关于页无保存逻辑，注册一个空操作以保持接口一致性
-    if (onRegisterSave) {
-      onRegisterSave(() => {});
-    }
-  }, [onRegisterSave]);
+    setDraftErrorPopupEnabled(!!study.errorPopupEnabled);
+  }, [study.errorPopupEnabled]);
+
+  useEffect(() => {
+    setDraftErrorCenterMode(appliedErrorCenterMode);
+  }, [appliedErrorCenterMode]);
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    onRegisterSave(() => {
+      dispatch({ type: "SET_ERROR_POPUP_ENABLED", payload: draftErrorPopupEnabled });
+      dispatch({ type: "SET_ERROR_CENTER_MODE", payload: draftErrorCenterMode });
+    });
+  }, [onRegisterSave, dispatch, draftErrorPopupEnabled, draftErrorCenterMode]);
 
   useEffect(() => {
     const off = subscribeErrorCenter((next) => {
@@ -306,9 +322,9 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         <FormRow gap="sm" align="center">
           <FormCheckbox
             label="错误弹窗提示"
-            checked={!!study.errorPopupEnabled}
+            checked={draftErrorPopupEnabled}
             onChange={(e) => {
-              dispatch({ type: "SET_ERROR_POPUP_ENABLED", payload: e.target.checked });
+              setDraftErrorPopupEnabled(e.target.checked);
             }}
           />
         </FormRow>
@@ -316,15 +332,13 @@ const AboutSettingsPanel: React.FC<AboutSettingsPanelProps> = ({ onRegisterSave 
         <FormRow gap="sm" align="center">
           <FormSegmented
             label="记录方式"
-            value={errorCenterMode}
+            value={draftErrorCenterMode}
             options={[
               { label: "关闭", value: "off" },
               { label: "仅内存", value: "memory" },
               { label: "持久化", value: "persist" },
             ]}
-            onChange={(v) =>
-              dispatch({ type: "SET_ERROR_CENTER_MODE", payload: v as typeof errorCenterMode })
-            }
+            onChange={(v) => setDraftErrorCenterMode(v as ErrorCenterMode)}
           />
         </FormRow>
 
