@@ -1,9 +1,6 @@
 <div align="center">
-  <img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
-  <h1>Immersive Clock | 沉浸式时钟 ⏰</h1>
-  <p>English ｜ <a href="./README.md">简体中文</a></p>
-
-[🖥️ Live Demo](https://clock.qqhkx.com)
+<img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
+<h1>Immersive Clock | 沉浸式时钟 ⏰</h1>
 
 [![](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb?logo=react)](https://reactjs.org/)
@@ -12,8 +9,14 @@
 [![](https://img.shields.io/badge/Electron-39.2.7-9feaf9?logo=electron)](https://www.electronjs.org/)
 [![](https://img.shields.io/badge/Platform-Win%20%7C%20Mac%20%7C%20Linux-blue)](https://github.com/QQHKX/immersive-clock/releases)
 [![](https://img.shields.io/badge/PWA-enabled-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QQHKX/Immersive-clock)
+![Deploy Badge](https://deploy-badge.vercel.app/?url=https://github.com/QQHKX/Immersive-clock&logo=vercel&name=Vercel)
 
-**Elegant time management, focused studying**
+[🖥️ Live Demo](https://clock.qqhkx.com) | 🇨🇳 [简体中文](README.md) ｜ 🇺🇸 English
+
+<pre>
+Elegant time management, focused studying
+</pre>
 
 </div>
 
@@ -23,26 +26,29 @@
 
 
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Gallery](#gallery)
-- [Quick Start Guide](#quick-start-guide)
-- [Features](#features)
-- [Usage](#usage)
-- [Accessibility](#accessibility)
-- [Project Structure](#project-structure)
-- [FAQ](#faq)
-- [Feedback & Discussion](#feedback--discussion)
-- [Contributing & Development](#contributing--development)
-- [License & Author](#license--author)
-- [Star History](#star-history)
 
 ---
 
-## Overview
+## 📑 Table of Contents
+
+- [🕒 Overview](#overview)
+- [🌠 Gallery](#gallery)
+- [🚀 Quick Start Guide](#quick-start-guide)
+- [💡 Features](#features)
+- [📘 Usage](#usage)
+- [♿ Accessibility](#accessibility)
+- [🗂️ Project Structure](#project-structure)
+- [❓ FAQ](#faq)
+- [💬 Feedback & Discussion](#feedback--discussion)
+- [🤝 Contributing & Development](#contributing--development)
+- [📄 License & Author](#license--author)
+- [🧬 Derivative Projects](#derivative-projects)
+- [🔗 Friendly Links](#friendly-links)
+- [⭐️ Star History](#star-history)
+
+---
+
+## 🕒 Overview
 
 **Immersive Clock** is a lightweight desktop/web clock app built with **React + TypeScript + Vite**.  
 It supports Clock, Countdown, Stopwatch, and Study Mode with built-in weather monitoring, noise analysis, multi-channel motivational quotes, and multi-target countdown carousel features.  
@@ -50,7 +56,7 @@ With PWA technology, it supports offline use, automatic updates, and desktop ins
 
 > Use cases: campus self-study, focused learning, Pomodoro timer, presentation dashboard, desktop clock.
 
-## Gallery
+## 🌠 Gallery
 
 <div align="center">
   <img src="docs/demo/极简界面.jpeg" width="48%" alt="Minimal Interface" />
@@ -76,7 +82,7 @@ With PWA technology, it supports offline use, automatic updates, and desktop ins
   <img src="docs/demo/公告-更新日志弹窗.jpeg" width="48%" alt="Announcement & Changelog Modal" />
 </div>
 
-## Features
+## 💡 Features
 
 ### ⏰ Time Management Modes
 
@@ -108,7 +114,7 @@ With PWA technology, it supports offline use, automatic updates, and desktop ins
 
 ---
 
-## Quick Start Guide
+## 🚀 Quick Start Guide
 
 We offer multiple usage options for different scenarios.
 
@@ -140,7 +146,7 @@ If you need a more traditional desktop software experience (Windows/macOS/Linux)
 
 ---
 
-## Usage
+## 📘 Usage
 
 - **Mode Switch**: Click page or press `Space/Enter` to show HUD
 - **Countdown**: Double-click time to configure; supports presets and chimes
@@ -157,7 +163,7 @@ For detailed instructions:
 
 ---
 
-## Accessibility
+## ♿ Accessibility
 
 | Shortcut          | Action                     |
 | ----------------- | -------------------------- |
@@ -168,7 +174,7 @@ For detailed instructions:
 
 ---
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```text
 immersive-clock/
@@ -193,45 +199,48 @@ immersive-clock/
 
 ---
 
-## FAQ
+## ❓ FAQ
 
 - Can't locate city? Check browser location permissions or use manual refresh.
 - No noise monitoring data? Ensure microphone is granted and your device supports it.
 - HUD not showing? Make sure no modal is open; click page or press `Space/Enter`.
 - How to view announcements and changelog? Click the version number at bottom-right or open the modal from menu.
 
-More Q&A in [docs/faq.en-US.md](docs/faq.en-US.md).
+More Q&A in [FAQ](docs/faq.en-US.md).
 
 ---
 
-## Feedback & Discussion
+## 💬 Feedback & Discussion
 
 Welcome to join our official communication group to share experiences, report bugs, or suggest features.
 
-![QQ Group](public/assets/qq-group.png)
+- QQ Group: [965931796](https://qm.qq.com/q/fawykipRhm)
 
-<p align="center"><a href="https://qm.qq.com/q/fawykipRhm">QQ Group | 965931796</a></p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/assets/qq-group-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="public/assets/qq-group-light.png" />
+    <img alt="QQ Group" src="public/assets/qq-group-light.png" width="400px" />
+  </picture>
 
 You can also provide feedback through the following channels (it's recommended to include reproduction steps, screenshots, or screen recordings for quick resolution):
 
-- GitHub Issues: [https://github.com/QQHKX/immersive-clock/issues](https://github.com/QQHKX/immersive-clock/issues)
+- [GitHub Issues](https://github.com/QQHKX/immersive-clock/issues)
 - In-app Feedback: Click the "version number" at bottom-right to open the announcement modal → switch to "Feedback"
-- Direct Survey Link: [https://wj.qq.com/s2/25666249/lj9p/](https://wj.qq.com/s2/25666249/lj9p/)
+- [Tencent Survey](https://wj.qq.com/s2/25666249/lj9p/)
 
-## Contributing & Development
+## 🤝 Contributing & Development
 
 If you want to contribute code, fix issues, or do secondary development locally, please read the [Contribution Guide](CONTRIBUTING.en-US.md).
 
 ---
 
-## License & Author
+## 📄 License & Author
 
 - License: GPL v3
-- Author: **QQHKX**
+- Author: [**QQHKX**](https://github.com/QQHKX)
   - 🌐 [Personal Website](https://qqhkx.com)
-  - 💻 [GitHub](https://github.com/QQHKX)
 
-## Derivative Projects
+## 🧬 Derivative Projects
 
 ### Immersive Noise Monitoring (Immersive-clock-monitor)
 
@@ -241,7 +250,7 @@ This project extracts and independently maintains the noise monitoring module fr
 
 The algorithm is not just a simple decibel meter, but quantifies the interference level of environmental noise on learning flow through a multi-dimensional weighted deduction system.
 
-## Friendly Links
+## 🔗 Friendly Links
 
 - <img src="https://sectl.top/logo.svg" width="16px"> [SECTL](https://sectl.top/)
 
@@ -255,4 +264,7 @@ The algorithm is not just a simple decibel meter, but quantifies the interferenc
     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
   </picture>
   </a>
+  <p>
+    If this project is helpful to you, please light the Star ⭐
+  </p>
 </div>

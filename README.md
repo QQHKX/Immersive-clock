@@ -1,9 +1,6 @@
 <div align="center">
-  <img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
-  <h1>沉浸式时钟 | Immersive Clock ⏰</h1>
-  <p>简体中文 ｜ <a href="./README.en-US.md">English</a></p>
-
-[🖥️ 在线体验](https://clock.qqhkx.com)
+<img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
+<h1>沉浸式时钟 | Immersive Clock ⏰</h1>
 
 [![](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
 [![](https://img.shields.io/badge/React-18.2.0-61dafb?logo=react)](https://reactjs.org/)
@@ -12,8 +9,14 @@
 [![](https://img.shields.io/badge/Electron-39.2.7-9feaf9?logo=electron)](https://www.electronjs.org/)
 [![](https://img.shields.io/badge/Platform-Win%20%7C%20Mac%20%7C%20Linux-blue)](https://github.com/QQHKX/immersive-clock/releases)
 [![](https://img.shields.io/badge/PWA-enabled-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QQHKX/Immersive-clock)
+![Deploy Badge](https://deploy-badge.vercel.app/?url=https://github.com/QQHKX/Immersive-clock&logo=vercel&name=Vercel)
 
-**让时间管理更优雅，让学习更专注**
+[🖥️ 在线体验](https://clock.qqhkx.com) | 🇨🇳 简体中文 ｜ [🇺🇸 English](README.en-US.md)
+
+<pre>
+让时间管理更优雅，让学习更专注
+</pre>
 
 </div>
 
@@ -140,10 +143,9 @@
   - **环境监测**：开启噪音监测后，超过阈值将自动记录并提示；雨雪天气会有弹窗预警。
 - **设置面板**：调整目标年份、噪音基线、语录刷新间隔、自定义背景图等。
 
-详细说明请见：
-
-- [使用说明](docs/usage.zh-CN.md)
-- [🎙️ 评分系统原理](public/docs/noise-scoring.md)
+> 详细说明请见：
+> - [使用说明](docs/usage.zh-CN.md)
+> - [🎙️ 评分系统原理](public/docs/noise-scoring.md)
 
 ## ♿ 无障碍支持
 
@@ -184,21 +186,24 @@ immersive-clock/
 - HUD 未出现？确保未打开模态框，点击页面或按 `Space/Enter`。
 - 如何查看公告与更新日志？点击右下角版本号或在菜单中打开弹窗。
 
-更多问题与解答请查看 [常见问题 (FAQ)](docs/faq.zh-CN.md)。
+> 更多问题与解答请查看 [常见问题 (FAQ)](docs/faq.zh-CN.md)。
 
 ## 💬 交流与反馈
 
 欢迎加入我们的官方交流群，分享使用心得、反馈 Bug 或提出功能建议。
+- QQ 群：[965931796](https://qm.qq.com/q/fawykipRhm)
 
-![QQ Group](public/assets/qq-group.png)
-
-<p align="center"><a href="https://qm.qq.com/q/fawykipRhm">QQ 群 | 965931796</a></p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/assets/qq-group-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="public/assets/qq-group-light.png" />
+    <img alt="QQ Group" src="public/assets/qq-group-light.png" width="400px" />
+  </picture>
 
 也可以通过以下方式进行反馈（建议附上复现步骤与截图/录屏，方便快速定位）：
 
-- GitHub Issues： [https://github.com/QQHKX/immersive-clock/issues](https://github.com/QQHKX/immersive-clock/issues)
+- [GitHub Issues](https://github.com/QQHKX/immersive-clock/issues)
 - 应用内反馈：点击右下角“版本号”打开公告弹窗 → 切到「意见反馈」
-- 直接问卷链接： [https://wj.qq.com/s2/25666249/lj9p/](https://wj.qq.com/s2/25666249/lj9p/)
+- [腾讯问卷](https://wj.qq.com/s2/25666249/lj9p/)
 
 ## 🤝 贡献与开发
 
@@ -207,9 +212,8 @@ immersive-clock/
 ## 📄 许可证与作者
 
 - 许可证：GPL v3
-- 作者：**QQHKX**
+- 作者：[**QQHKX**](https://github.com/QQHKX)
   - 🌐 [个人网站](https://qqhkx.com)
-  - 💻 [GitHub](https://github.com/QQHKX)
 
 ## 🧬 衍生项目
 
@@ -235,4 +239,7 @@ immersive-clock/
     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
   </picture>
   </a>
+  <p>
+    如果这个项目对您有帮助，请点亮 Star ⭐
+  </p>
 </div>
