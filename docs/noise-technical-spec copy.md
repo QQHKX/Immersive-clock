@@ -37,7 +37,7 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 
 1. **评分只依赖原始 DBFS（设备输出的相对电平）**
    - 评分的三项核心指标（`p50Dbfs`、`overRatioDbfs`、`segmentCount`）都来自原始 `dbfs` 统计
-   - "超阈时长占比"判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-50 dBFS`），与校准无关
+   - "超阈时长占比"判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-40 dBFS`），与校准无关
    - 这意味着即使用户把"显示分贝基准"调高/调低，评分侧的 `dbfs` 不会变化，因此得分与超阈时长也不会被"调参刷分"
 
 2. **校准仅影响 Display dB（UI 展示口径），不进入评分链路**
@@ -115,19 +115,19 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 
 ### 2.2 模块说明
 
-| 模块 | 功能 |
-|------|------|
-| 类型定义 | 核心类型定义 |
-| 常量定义 | 分析参数常量、报告参数常量 |
-| 麦克风采集 | 音频采集 |
-| 帧处理器 | 帧处理 |
-| 切片聚合器 | 切片聚合 |
-| 环形缓冲区 | 实时数据 |
-| 流服务 | 流管理 |
-| 评分引擎 | 评分算法 |
-| 切片服务 | 存储服务 |
-| 历史构建 | 历史报告 |
-| 设置管理 | 设置管理 |
+| 模块       | 功能                       |
+| ---------- | -------------------------- |
+| 类型定义   | 核心类型定义               |
+| 常量定义   | 分析参数常量、报告参数常量 |
+| 麦克风采集 | 音频采集                   |
+| 帧处理器   | 帧处理                     |
+| 切片聚合器 | 切片聚合                   |
+| 环形缓冲区 | 实时数据                   |
+| 流服务     | 流管理                     |
+| 评分引擎   | 评分算法                   |
+| 切片服务   | 存储服务                   |
+| 历史构建   | 历史报告                   |
+| 设置管理   | 设置管理                   |
 
 ---
 
@@ -140,22 +140,22 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 系统使用 Web Audio API 获取麦克风输入，构建完整的音频处理链路：
 
 ```
-麦克风 → MediaStream → MediaStreamAudioSourceNode 
-       → 高通滤波器 (80Hz) → 低通滤波器 (8000Hz) 
+麦克风 → MediaStream → MediaStreamAudioSourceNode
+       → 高通滤波器 (80Hz) → 低通滤波器 (8000Hz)
        → AnalyserNode (FFT Size 2048)
 ```
 
 #### 3.1.2 音频滤波器配置
 
-| 滤波器类型 | 截止频率 | 作用 |
-|-----------|---------|------|
-| 高通滤波器 | 80 Hz | 过滤低频噪音（如空调嗡嗡声） |
-| 低通滤波器 | 8000 Hz | 过滤高频噪音（如电子设备啸叫） |
+| 滤波器类型 | 截止频率 | 作用                           |
+| ---------- | -------- | ------------------------------ |
+| 高通滤波器 | 80 Hz    | 过滤低频噪音（如空调嗡嗡声）   |
+| 低通滤波器 | 8000 Hz  | 过滤高频噪音（如电子设备啸叫） |
 
 #### 3.1.3 AnalyserNode 配置
 
 ```typescript
-analyser.fftSize = 2048;           // FFT 窗口大小
+analyser.fftSize = 2048; // FFT 窗口大小
 analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 ```
 
@@ -174,11 +174,13 @@ analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 ```
 
 **浏览器兼容性说明：**
+
 - 部分浏览器/设备可能忽略上述约束设置
 - 建议在 UI 中提示用户实际生效的约束
 - 需要测试矩阵验证：Chrome/Firefox/Safari/Edge/iOS Safari/Android WebView
 
 **错误处理：**
+
 - `NotAllowedError` / `SecurityError` → 权限拒绝
 - `AudioContext not supported` → 浏览器不支持
 
@@ -196,16 +198,17 @@ analyser.smoothingTimeConstant = 0; // 无平滑，实时响应
 RMS 是衡量音频信号强度的标准方法：
 
 **公式：**
-$$ \text{RMS} = \sqrt{\frac{1}{N} \sum_{i=1}^{N} x_i^2} $$
+$$ \text{RMS} = \sqrt{\frac{1}{N} \sum\_{i=1}^{N} x_i^2} $$
 
 #### 3.2.3 dBFS（分贝满刻度）转换
 
 dBFS 是数字音频的标准分贝单位，范围 -100 到 0 dB：
 
 **公式：**
-$$ \text{dBFS} = 20 \times \log_{10}(\text{RMS}) $$
+$$ \text{dBFS} = 20 \times \log\_{10}(\text{RMS}) $$
 
 **范围限制：**
+
 - 最小值：-100 dBFS（静音）
 - 最大值：0 dBFS（满刻度）
 
@@ -228,32 +231,32 @@ $$ \text{dBFS} = 20 \times \log_{10}(\text{RMS}) $$
 
 切片聚合器为每个切片计算以下统计指标：
 
-| 指标 | 说明 | 计算方法 |
-|------|------|---------|
-| avgDbfs | 平均分贝 | 能量平均（线性域 RMS 平均后转回 dBFS） |
-| maxDbfs | 最大分贝 | 所有帧 dBFS 的最大值 |
-| p50Dbfs | 中位数分贝 | 线性域分位数（RMS 域计算后转回 dBFS） |
-| p95Dbfs | 95分位数分贝 | 线性域分位数（RMS 域计算后转回 dBFS） |
-| overRatioDbfs | 超阈值比例 | 超阈值时长 / 采样时长 |
-| segmentCount | 事件段数量 | 独立噪音事件次数 |
-| sampledDurationMs | 采样时长 | 有效采样时间（排除缺口） |
-| gapCount | 缺口数量 | 数据缺口次数 |
-| maxGapMs | 最大缺口时长 | 最长数据缺口时长 |
+| 指标              | 说明         | 计算方法                               |
+| ----------------- | ------------ | -------------------------------------- |
+| avgDbfs           | 平均分贝     | 能量平均（线性域 RMS 平均后转回 dBFS） |
+| maxDbfs           | 最大分贝     | 所有帧 dBFS 的最大值                   |
+| p50Dbfs           | 中位数分贝   | 线性域分位数（RMS 域计算后转回 dBFS）  |
+| p95Dbfs           | 95分位数分贝 | 线性域分位数（RMS 域计算后转回 dBFS）  |
+| overRatioDbfs     | 超阈值比例   | 超阈值时长 / 采样时长                  |
+| segmentCount      | 事件段数量   | 独立噪音事件次数                       |
+| sampledDurationMs | 采样时长     | 有效采样时间（排除缺口）               |
+| gapCount          | 缺口数量     | 数据缺口次数                           |
+| maxGapMs          | 最大缺口时长 | 最长数据缺口时长                       |
 
 #### 4.1.3 能量平均计算（avgDbfs）
 
 **公式：**
-$$ \text{avgDbfs} = 20 \times \log_{10}\left(\sqrt{\frac{1}{N} \sum_{i=1}^{N} 10^{\text{dBFS}_i / 10}}\right) $$
+$$ \text{avgDbfs} = 20 \times \log*{10}\left(\sqrt{\frac{1}{N} \sum*{i=1}^{N} 10^{\text{dBFS}\_i / 10}}\right) $$
 
 **物理意义：** 在线性域（RMS）上做平均，符合能量守恒定律
 
 #### 4.1.4 线性域分位数计算
 
 **公式：**
-$$ \text{quantileDbfs} = 20 \times \log_{10}(Q_{\text{RMS}}(p)) $$
+$$ \text{quantileDbfs} = 20 \times \log*{10}(Q*{\text{RMS}}(p)) $$
 
 其中 $Q_{\text{RMS}}(p)$ 是 RMS 域的分位数，使用线性插值计算：
-$$ Q_{\text{RMS}}(p) = x_{\lfloor i \rfloor} \times (1 - w) + x_{\lceil i \rceil} \times w $$
+$$ Q*{\text{RMS}}(p) = x*{\lfloor i \rfloor} \times (1 - w) + x\_{\lceil i \rceil} \times w $$
 
 - $i = (n-1) \times p$
 - $w = i - \lfloor i \rfloor$
@@ -272,11 +275,13 @@ $$ \text{overRatioDbfs} = \frac{\text{超阈值时长}}{\text{采样时长}} $$
 事件段检测用于识别独立的噪音事件：
 
 **合并规则：**
+
 - **合并窗口**：500ms（默认）
 - 如果两次超阈值事件间隔 ≤ 500ms，合并为同一事件段
 - 否则计为新的独立事件段
 
 **示例：**
+
 ```
 时间轴：  0ms    200ms   400ms   600ms   800ms   1000ms
 状态：    [噪音] [噪音] [安静] [噪音] [噪音] [安静]
@@ -288,14 +293,15 @@ $$ \text{overRatioDbfs} = \frac{\text{超阈值时长}}{\text{采样时长}} $$
 显示分贝用于用户界面展示，支持校准：
 
 **公式（有校准）：**
-$$ \text{displayDb} = \text{baselineDb} + 20 \times \log_{10}\left(\frac{\text{rms}}{\text{baselineRms}}\right) $$
+$$ \text{displayDb} = \text{baselineDb} + 20 \times \log\_{10}\left(\frac{\text{rms}}{\text{baselineRms}}\right) $$
 
 **公式（无校准）：**
-$$ \text{displayDb} = 20 \times \log_{10}\left(\frac{\text{rms}}{10^{-3}}\right) + 60 $$
+$$ \text{displayDb} = 20 \times \log\_{10}\left(\frac{\text{rms}}{10^{-3}}\right) + 60 $$
 
 **范围限制：** 20 dB ~ 100 dB
 
 **校准流程说明：**
+
 1. 使用标准声源（如 60 dB 的白噪音）
 2. 测量对应的 RMS 值
 3. 设置为 baselineRms
@@ -312,6 +318,7 @@ $$ \text{displayDb} = 20 \times \log_{10}\left(\frac{\text{rms}}{10^{-3}}\right)
 低于 -90 dBFS 的帧被视为静音/无效信号，不参与统计。
 
 **常量说明：**
+
 - `INVALID_DBFS_THRESHOLD = -90`：统计意义上的"静音"阈值
 - `DBFS_MIN_POSSIBLE = -100`：物理最小可表示值（用于 clamp）
 - `DBFS_MAX_POSSIBLE = 0`：物理最大可表示值（用于 clamp）
@@ -365,16 +372,16 @@ $$ \text{displayDb} = 20 \times \log_{10}\left(\frac{\text{rms}}{10^{-3}}\right)
 
 评分系统从三个维度对噪音进行评估：
 
-| 维度 | 权重 | 指标 | 满扣分条件 |
-|------|------|------|-----------|
-| **持续噪音** | 40% | p50Dbfs | 中位数超过阈值 6 dBFS |
-| **超阈时长** | 30% | overRatioDbfs | 超阈时间占比 30% |
-| **打断频次** | 30% | segmentCount | 6 次/分钟 |
+| 维度         | 权重 | 指标          | 满扣分条件            |
+| ------------ | ---- | ------------- | --------------------- |
+| **持续噪音** | 40%  | p50Dbfs       | 中位数超过阈值 6 dBFS |
+| **超阈时长** | 30%  | overRatioDbfs | 超阈时间占比 30%      |
+| **打断频次** | 30%  | segmentCount  | 6 次/分钟             |
 
 #### 5.2.2 评分公式
 
 **总惩罚系数：**
-$$ \text{TotalPenalty} = 0.40 \times P_{\text{sustained}} + 0.30 \times P_{\text{time}} + 0.30 \times P_{\text{segment}} $$
+$$ \text{TotalPenalty} = 0.40 \times P*{\text{sustained}} + 0.30 \times P*{\text{time}} + 0.30 \times P\_{\text{segment}} $$
 
 **最终得分：**
 $$ \text{Score} = 100 \times (1 - \text{TotalPenalty}) $$
@@ -384,21 +391,21 @@ $$ \text{Score} = 100 \times (1 - \text{TotalPenalty}) $$
 ##### A. 持续噪音惩罚
 
 **公式：**
-$$ P_{\text{sustained}} = \text{clamp}_{[0,1]}\left(\frac{\text{p50Dbfs} - \text{threshold}}{6}\right) $$
+$$ P*{\text{sustained}} = \text{clamp}*{[0,1]}\left(\frac{\text{p50Dbfs} - \text{threshold}}{6}\right) $$
 
 **满扣分条件：** `p50Dbfs - threshold ≥ 6 dBFS`
 
 ##### B. 超阈时长惩罚
 
 **公式：**
-$$ P_{\text{time}} = \text{clamp}_{[0,1]}\left(\frac{\text{overRatioDbfs}}{0.3}\right) $$
+$$ P*{\text{time}} = \text{clamp}*{[0,1]}\left(\frac{\text{overRatioDbfs}}{0.3}\right) $$
 
 **满扣分条件：** `overRatioDbfs ≥ 30%`
 
 ##### C. 打断频次惩罚
 
 **公式：**
-$$ P_{\text{segment}} = \text{clamp}_{[0,1]}\left(\frac{\text{segmentCount} / \text{minutes}}{\text{maxSegmentsPerMin}}\right) $$
+$$ P*{\text{segment}} = \text{clamp}*{[0,1]}\left(\frac{\text{segmentCount} / \text{minutes}}{\text{maxSegmentsPerMin}}\right) $$
 
 **满扣分条件：** `segmentsPerMin ≥ 6 次/分钟`
 
@@ -421,12 +428,13 @@ $$ P_{\text{segment}} = \text{clamp}_{[0,1]}\left(\frac{\text{segmentCount} / \t
 #### 5.2.7 评分示例
 
 **场景 1：安静环境**
-- p50Dbfs = -60 dBFS, threshold = -50 dBFS
+
+- p50Dbfs = -60 dBFS, threshold = -40 dBFS
 - overRatioDbfs = 0.05 (5%)
 - segmentCount = 1, duration = 30s
 
 ```
-sustainedPenalty = clamp01((-60 - (-50)) / 6) = clamp01(-10/6) = 0
+sustainedPenalty = clamp01((-60 - (-40)) / 6) = clamp01(-20/6) = 0
 timePenalty = clamp01(0.05 / 0.3) = 0.167
 segmentPenalty = clamp01((1/0.5) / 6) = clamp01(2/6) = 0.333
 
@@ -435,18 +443,24 @@ Score = 100 × (1 - 0.15) = 85 分
 ```
 
 **场景 2：嘈杂环境**
-- p50Dbfs = -45 dBFS, threshold = -50 dBFS
+
+- p50Dbfs = -35 dBFS, threshold = -40 dBFS
 - overRatioDbfs = 0.40 (40%)
 - segmentCount = 8, duration = 30s
 
 ```
+sustainedPenalty = clamp01((-35 - (-40)) / 6) = clamp01(5/6) = 0.833
+
+```
+
 sustainedPenalty = clamp01((-45 - (-50)) / 6) = clamp01(5/6) = 0.833
 timePenalty = clamp01(0.40 / 0.3) = 1.0
 segmentPenalty = clamp01((8/0.5) / 6) = clamp01(16/6) = 1.0
 
 TotalPenalty = 0.4×0.833 + 0.3×1.0 + 0.3×1.0 = 0.933
 Score = 100 × (1 - 0.933) = 6.7 分
-```
+
+````
 
 ---
 
@@ -459,6 +473,7 @@ Score = 100 × (1 - 0.933) = 6.7 分
 存储键：`noise-slices`
 
 **隐私说明：**
+
 - 存储内容：时间戳、噪音统计（不包含音频数据）
 - 风险：可能泄露位置/日程信息
 - 建议：在 UI 中提供"清除历史"功能
@@ -477,6 +492,7 @@ Score = 100 × (1 - 0.933) = 6.7 分
 #### 6.1.4 数据规范化与校验
 
 **精度控制：**
+
 - dBFS：3 位小数
 - overRatioDbfs：4 位小数
 - 显示分贝：2 位小数
@@ -491,6 +507,7 @@ Score = 100 × (1 - 0.933) = 6.7 分
 #### 7.1.1 与课表关联逻辑
 
 **关联规则：**
+
 1. 按日期分组切片
 2. 对每个日期的每个课时，查找重叠的切片
 3. 计算该课时的平均评分
@@ -498,10 +515,10 @@ Score = 100 × (1 - 0.933) = 6.7 分
 #### 7.1.2 时段平均评分计算（加权平均）
 
 **公式：**
-$$ \text{avgScore} = \frac{\sum_{i} \text{score}_i \times \text{effectiveMs}_i}{\sum_{i} \text{effectiveMs}_i} $$
+$$ \text{avgScore} = \frac{\sum*{i} \text{score}\_i \times \text{effectiveMs}\_i}{\sum*{i} \text{effectiveMs}\_i} $$
 
 其中：
-$$ \text{effectiveMs}_i = \text{sampledDurationMs}_i \times \frac{\text{overlapMs}_i}{\text{sliceMs}_i} $$
+$$ \text{effectiveMs}\_i = \text{sampledDurationMs}\_i \times \frac{\text{overlapMs}\_i}{\text{sliceMs}\_i} $$
 
 #### 7.1.3 覆盖率计算
 
@@ -513,6 +530,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 #### 7.1.4 日期时间处理
 
 **时区说明：**
+
 - 使用本地时区
 - 内部存储使用 UTC 时间戳
 - 对外展示使用本地时间
@@ -542,6 +560,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 #### 8.1.1 订阅/发布模式
 
 **模式：** 观察者模式
+
 - 多个组件可同时订阅
 - 最后一个订阅者取消时自动停止采集
 
@@ -556,6 +575,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 #### 8.1.4 设置热更新响应
 
 **需要重启的参数：**
+
 - frameMs
 - sliceSec
 - scoreThresholdDbfs
@@ -563,6 +583,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 - maxSegmentsPerMin
 
 **无需重启的参数：**
+
 - maxLevelDb
 - showRealtimeDb
 - alertSoundEnabled
@@ -572,7 +593,7 @@ $$ \text{coverageRatio} = \frac{\text{totalMs}}{\text{periodMs}} $$
 #### 8.1.5 时间加权平均
 
 **公式：**
-$$ \text{avg} = \frac{\sum_{i} v_i \times (t_{i+1} - t_i)}{\sum_{i} (t_{i+1} - t_i)} $$
+$$ \text{avg} = \frac{\sum*{i} v_i \times (t*{i+1} - t*i)}{\sum*{i} (t\_{i+1} - t_i)} $$
 
 ---
 
@@ -583,20 +604,20 @@ $$ \text{avg} = \frac{\sum_{i} v_i \times (t_{i+1} - t_i)}{\sum_{i} (t_{i+1} - t
 #### 9.1.1 分析参数
 
 ```typescript
-NOISE_ANALYSIS_SLICE_SEC = 30;           // 切片时长 30 秒
-NOISE_ANALYSIS_FRAME_MS = 50;            // 帧间隔 50ms
-NOISE_SCORE_THRESHOLD_DBFS = -50;        // 评分阈值 -50dBFS
-NOISE_SCORE_SEGMENT_MERGE_GAP_MS = 500;  // 事件段合并间隔 500ms
-NOISE_SCORE_MAX_SEGMENTS_PER_MIN = 6;    // 每分钟最大事件段数 6
-NOISE_REALTIME_CHART_SLICE_COUNT = 1;     // 实时图表切片数 1
-```
+NOISE_ANALYSIS_SLICE_SEC = 30; // 切片时长 30 秒
+NOISE_ANALYSIS_FRAME_MS = 50; // 帧间隔 50ms
+NOISE_SCORE_THRESHOLD_DBFS = -40; // 评分阈值 -40dBFS
+NOISE_SCORE_SEGMENT_MERGE_GAP_MS = 500; // 事件段合并间隔 500ms
+NOISE_SCORE_MAX_SEGMENTS_PER_MIN = 30; // 每分钟最大事件段数 30
+NOISE_REALTIME_CHART_SLICE_COUNT = 1; // 实时图表切片数 1
+````
 
 #### 9.1.2 报告参数
 
 ```typescript
-DEFAULT_NOISE_REPORT_RETENTION_DAYS = 14;        // 默认保留 14 天
-MIN_NOISE_REPORT_RETENTION_DAYS = 1;             // 最小保留 1 天
-MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365;  // 最大保留 365 天
+DEFAULT_NOISE_REPORT_RETENTION_DAYS = 14; // 默认保留 14 天
+MIN_NOISE_REPORT_RETENTION_DAYS = 1; // 最小保留 1 天
+MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365; // 最大保留 365 天
 ```
 
 ### 9.2 设置管理
@@ -604,6 +625,7 @@ MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365;  // 最大保留 365 天
 #### 9.2.1 固定参数
 
 为保证评分口径稳定，避免用户通过调整参数"刷分"，以下参数固定为程序内常量：
+
 - sliceSec
 - frameMs
 - scoreThresholdDbfs
@@ -612,13 +634,13 @@ MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365;  // 最大保留 365 天
 
 #### 9.2.2 可配置参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| maxLevelDb | number | 55 | 最大允许噪音级别（显示分贝） |
-| baselineDb | number | 40 | 手动基准显示分贝 |
-| showRealtimeDb | boolean | true | 是否显示实时分贝 |
-| avgWindowSec | number | 1 | 噪音平均时间窗（秒） |
-| alertSoundEnabled | boolean | false | 超阈值提示音开关 |
+| 参数              | 类型    | 默认值 | 说明                         |
+| ----------------- | ------- | ------ | ---------------------------- |
+| maxLevelDb        | number  | 55     | 最大允许噪音级别（显示分贝） |
+| baselineDb        | number  | 40     | 手动基准显示分贝             |
+| showRealtimeDb    | boolean | true   | 是否显示实时分贝             |
+| avgWindowSec      | number  | 1      | 噪音平均时间窗（秒）         |
+| alertSoundEnabled | boolean | false  | 超阈值提示音开关             |
 
 ---
 
@@ -630,10 +652,10 @@ MAX_NOISE_REPORT_RETENTION_DAYS_FALLBACK = 365;  // 最大保留 365 天
 
 ```typescript
 interface NoiseFrameSample {
-  t: number;        // 时间戳
-  rms: number;      // 均方根值
-  dbfs: number;     // 分贝值 (dBFS)
-  peak?: number;    // 峰值
+  t: number; // 时间戳
+  rms: number; // 均方根值
+  dbfs: number; // 分贝值 (dBFS)
+  peak?: number; // 峰值
 }
 ```
 
@@ -641,15 +663,15 @@ interface NoiseFrameSample {
 
 ```typescript
 interface NoiseSliceRawStats {
-  avgDbfs: number;              // 平均分贝
-  maxDbfs: number;              // 最大分贝
-  p50Dbfs: number;             // 中位数分贝
-  p95Dbfs: number;             // 95分位数分贝
-  overRatioDbfs: number;        // 超阈值比例
-  segmentCount: number;         // 事件段数量
-  sampledDurationMs?: number;   // 采样时长
-  gapCount?: number;            // 缺口数量
-  maxGapMs?: number;            // 最大缺口时长
+  avgDbfs: number; // 平均分贝
+  maxDbfs: number; // 最大分贝
+  p50Dbfs: number; // 中位数分贝
+  p95Dbfs: number; // 95分位数分贝
+  overRatioDbfs: number; // 超阈值比例
+  segmentCount: number; // 事件段数量
+  sampledDurationMs?: number; // 采样时长
+  gapCount?: number; // 缺口数量
+  maxGapMs?: number; // 最大缺口时长
 }
 ```
 
@@ -657,8 +679,8 @@ interface NoiseSliceRawStats {
 
 ```typescript
 interface NoiseSliceDisplayStats {
-  avgDb: number;    // 平均显示分贝
-  p95Db: number;    // 95分位数显示分贝
+  avgDb: number; // 平均显示分贝
+  p95Db: number; // 95分位数显示分贝
 }
 ```
 
@@ -666,21 +688,21 @@ interface NoiseSliceDisplayStats {
 
 ```typescript
 interface NoiseScoreBreakdown {
-  sustainedPenalty: number;      // 持续噪音惩罚
-  timePenalty: number;           // 时间惩罚
-  segmentPenalty: number;        // 事件段惩罚
+  sustainedPenalty: number; // 持续噪音惩罚
+  timePenalty: number; // 时间惩罚
+  segmentPenalty: number; // 事件段惩罚
   thresholdsUsed: {
-    scoreThresholdDbfs: number;      // 使用的评分阈值
-    segmentMergeGapMs: number;       // 使用的合并间隔
-    maxSegmentsPerMin: number;       // 使用的最大事件段数
+    scoreThresholdDbfs: number; // 使用的评分阈值
+    segmentMergeGapMs: number; // 使用的合并间隔
+    maxSegmentsPerMin: number; // 使用的最大事件段数
   };
-  sustainedLevelDbfs: number;    // 持续电平
-  overRatioDbfs: number;         // 超阈值比例
-  segmentCount: number;          // 事件段数量
-  minutes: number;               // 时长（分钟）
-  durationMs?: number;           // 物理时长
-  sampledDurationMs?: number;    // 采样时长
-  coverageRatio?: number;        // 覆盖率
+  sustainedLevelDbfs: number; // 持续电平
+  overRatioDbfs: number; // 超阈值比例
+  segmentCount: number; // 事件段数量
+  minutes: number; // 时长（分钟）
+  durationMs?: number; // 物理时长
+  sampledDurationMs?: number; // 采样时长
+  coverageRatio?: number; // 覆盖率
 }
 ```
 
@@ -688,13 +710,13 @@ interface NoiseScoreBreakdown {
 
 ```typescript
 interface NoiseSliceSummary {
-  start: number;                      // 开始时间戳
-  end: number;                        // 结束时间戳
-  frames: number;                     // 帧数
-  raw: NoiseSliceRawStats;            // 原始统计
-  display: NoiseSliceDisplayStats;    // 显示统计
-  score: number;                      // 评分
-  scoreDetail: NoiseScoreBreakdown;   // 评分明细
+  start: number; // 开始时间戳
+  end: number; // 结束时间戳
+  frames: number; // 帧数
+  raw: NoiseSliceRawStats; // 原始统计
+  display: NoiseSliceDisplayStats; // 显示统计
+  score: number; // 评分
+  scoreDetail: NoiseScoreBreakdown; // 评分明细
 }
 ```
 
@@ -702,8 +724,8 @@ interface NoiseSliceSummary {
 
 ```typescript
 interface NoiseRealtimePoint {
-  t: number;        // 时间戳
-  dbfs: number;     // 分贝值 (dBFS)
+  t: number; // 时间戳
+  dbfs: number; // 分贝值 (dBFS)
   displayDb: number; // 显示分贝
 }
 ```
@@ -712,13 +734,13 @@ interface NoiseRealtimePoint {
 
 ```typescript
 interface NoiseStreamSnapshot {
-  status: NoiseStreamStatus;          // 流状态
-  realtimeDisplayDb: number;          // 实时显示分贝
-  realtimeDbfs: number;               // 实时分贝 (dBFS)
-  maxLevelDb: number;                 // 最大允许级别
-  showRealtimeDb: boolean;            // 是否显示实时分贝
-  alertSoundEnabled: boolean;         // 提示音开关
-  ringBuffer: NoiseRealtimePoint[];   // 环形缓冲区快照
+  status: NoiseStreamStatus; // 流状态
+  realtimeDisplayDb: number; // 实时显示分贝
+  realtimeDbfs: number; // 实时分贝 (dBFS)
+  maxLevelDb: number; // 最大允许级别
+  showRealtimeDb: boolean; // 是否显示实时分贝
+  alertSoundEnabled: boolean; // 提示音开关
+  ringBuffer: NoiseRealtimePoint[]; // 环形缓冲区快照
   latestSlice: NoiseSliceSummary | null; // 最新切片
 }
 ```
@@ -727,11 +749,11 @@ interface NoiseStreamSnapshot {
 
 ```typescript
 type NoiseStreamStatus =
-  | "initializing"      // 初始化中
-  | "quiet"             // 安静
-  | "noisy"             // 嘈杂
+  | "initializing" // 初始化中
+  | "quiet" // 安静
+  | "noisy" // 嘈杂
   | "permission-denied" // 权限拒绝
-  | "error";            // 错误
+  | "error"; // 错误
 ```
 
 ---
@@ -740,26 +762,26 @@ type NoiseStreamStatus =
 
 ### A. 术语表
 
-| 术语 | 英文 | 说明 |
-|------|------|------|
-| 均方根 | RMS (Root Mean Square) | 衡量音频信号强度的标准方法 |
-| 分贝满刻度 | dBFS (Decibels relative to Full Scale) | 数字音频的标准分贝单位，范围 -100 到 0 dB |
-| 显示分贝 | Display dB | 用于用户界面展示的分贝值，范围 20 到 100 dB |
-| 切片 | Slice | 固定时间窗口（默认 30 秒）内的噪音数据聚合 |
-| 帧 | Frame | 单次音频采样（默认 50ms） |
-| 事件段 | Segment | 独立的噪音事件，通过合并窗口（500ms）合并 |
+| 术语       | 英文                                   | 说明                                        |
+| ---------- | -------------------------------------- | ------------------------------------------- |
+| 均方根     | RMS (Root Mean Square)                 | 衡量音频信号强度的标准方法                  |
+| 分贝满刻度 | dBFS (Decibels relative to Full Scale) | 数字音频的标准分贝单位，范围 -100 到 0 dB   |
+| 显示分贝   | Display dB                             | 用于用户界面展示的分贝值，范围 20 到 100 dB |
+| 切片       | Slice                                  | 固定时间窗口（默认 30 秒）内的噪音数据聚合  |
+| 帧         | Frame                                  | 单次音频采样（默认 50ms）                   |
+| 事件段     | Segment                                | 独立的噪音事件，通过合并窗口（500ms）合并   |
 
 ### B. 参数固定策略
 
 为保证统计口径稳定，当前版本将"分析与评分"的高级参数固定为程序内常量：
 
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| frameMs | 50ms | 约 20fps |
-| sliceSec | 30s | 切片时长 |
-| scoreThresholdDbfs | -50 dBFS | 评分阈值 |
-| segmentMergeGapMs | 500ms | 事件段合并间隔 |
-| maxSegmentsPerMin | 6 | 每分钟最大事件段数 |
+| 参数               | 值       | 说明               |
+| ------------------ | -------- | ------------------ |
+| frameMs            | 50ms     | 约 20fps           |
+| sliceSec           | 30s      | 切片时长           |
+| scoreThresholdDbfs | -40 dBFS | 评分阈值           |
+| segmentMergeGapMs  | 500ms    | 事件段合并间隔     |
+| maxSegmentsPerMin  | 30       | 每分钟最大事件段数 |
 
 ### C. 技术栈
 
@@ -768,5 +790,3 @@ type NoiseStreamStatus =
 - **前端框架**：React 18
 - **构建工具**：Vite 5
 - **类型系统**：TypeScript 5.4
-
-
