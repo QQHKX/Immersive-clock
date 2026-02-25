@@ -28,7 +28,7 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 
 1.  **评分只依赖原始 DBFS（设备输出的相对电平）**
     - 评分的三项核心指标（`p50Dbfs`、`overRatioDbfs`、`segmentCount`）都来自原始 `dbfs` 统计。
-    - “超阈时长占比”判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-50 dBFS`），与校准无关。
+    - “超阈时长占比”判定条件固定为：`dbfs > scoreThresholdDbfs`（阈值默认 `-40 dBFS`），与校准无关。
     - 这意味着即使用户把“显示分贝基准”调高/调低，评分侧的 `dbfs` 不会变化，因此得分与超阈时长也不会被“调参刷分”。
 
 2.  **校准仅影响 Display dB（UI 展示口径），不进入评分链路**
@@ -47,7 +47,7 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 - `sliceSec = 30s`
 - `scoreThresholdDbfs = -50 dBFS`（评分用阈值）
 - `segmentMergeGapMs = 500ms`
-- `maxSegmentsPerMin = 6`
+- `maxSegmentsPerMin = 30`
 
 ## 3. 三大核心指标
 
@@ -90,7 +90,7 @@ $$ \text{TotalPenalty} = 0.40 \times P*{\text{sustained}} + 0.30 \times P*{\text
 | :------------------------------------ | :------ | :--------------------------------------------------------------------- |
 | **持续噪音** ($P_{\text{sustained}}$) | **40%** | 中位数电平（`p50Dbfs`）超过阈值（`scoreThresholdDbfs`）**6 dBFS** 以上 |
 | **超阈时长** ($P_{\text{time}}$)      | **30%** | 超阈时间占比达到 **30%**                                               |
-| **打断频次** ($P_{\text{segment}}$)   | **30%** | 打断次数达到 **6 次/分钟**                                             |
+| **打断频次** ($P_{\text{segment}}$)   | **30%** | 打断次数达到 **30 次/分钟**                                            |
 
 ### 权重解读
 
