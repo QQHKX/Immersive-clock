@@ -47,7 +47,7 @@ Immersive Clock 的噪音监测系统不仅仅是一个简单的分贝计，它�
 - `sliceSec = 30s`
 - `scoreThresholdDbfs = -50 dBFS`（评分用阈值）
 - `segmentMergeGapMs = 500ms`
-- `maxSegmentsPerMin = 30`
+- `maxSegmentsPerMin = 6`
 
 ## 3. 三大核心指标
 
