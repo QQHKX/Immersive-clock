@@ -608,7 +608,7 @@ NOISE_ANALYSIS_SLICE_SEC = 30; // 切片时长 30 秒
 NOISE_ANALYSIS_FRAME_MS = 50; // 帧间隔 50ms
 NOISE_SCORE_THRESHOLD_DBFS = -40; // 评分阈值 -40dBFS
 NOISE_SCORE_SEGMENT_MERGE_GAP_MS = 500; // 事件段合并间隔 500ms
-NOISE_SCORE_MAX_SEGMENTS_PER_MIN = 30; // 每分钟最大事件段数 30
+NOISE_SCORE_MAX_SEGMENTS_PER_MIN = 6; // 每分钟最大事件段数 6
 NOISE_REALTIME_CHART_SLICE_COUNT = 1; // 实时图表切片数 1
 ````
 
@@ -781,7 +781,7 @@ type NoiseStreamStatus =
 | sliceSec           | 30s      | 切片时长           |
 | scoreThresholdDbfs | -40 dBFS | 评分阈值           |
 | segmentMergeGapMs  | 500ms    | 事件段合并间隔     |
-| maxSegmentsPerMin  | 30       | 每分钟最大事件段数 |
+| maxSegmentsPerMin  | 6        | 每分钟最大事件段数 |
 
 ### C. 技术栈
 
