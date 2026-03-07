@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
 import { QuoteSourceConfig, HitokotoResponse } from "../../types";
+import { httpGetJson } from "../../services/httpClient";
 import { logger } from "../../utils/logger";
 
 import styles from "./MotivationalQuote.module.css";
@@ -26,6 +27,7 @@ export function MotivationalQuote() {
   // 通过 Vite 的 import.meta.glob 收集所有 quotes-*.json 源作为备用
   const fallbackSourcesRef = useRef<QuoteSourceConfig[] | null>(null);
   const [fallbackSourcesLoaded, setFallbackSourcesLoaded] = useState(false);
+  const onlineQuotePoolRef = useRef<Record<string, string[]>>({});
 
   /**
    * 动态加载备用数据源
@@ -131,6 +133,21 @@ export function MotivationalQuote() {
     [dispatch]
   );
 
+  const pushOnlineQuoteToPool = useCallback((sourceId: string, quote: string) => {
+    if (!quote.trim()) return;
+    const current = onlineQuotePoolRef.current[sourceId] || [];
+    if (current.includes(quote)) return;
+    const next = [...current, quote].slice(-30);
+    onlineQuotePoolRef.current[sourceId] = next;
+  }, []);
+
+  const getOnlineQuoteFromPool = useCallback((sourceId: string): string | null => {
+    const current = onlineQuotePoolRef.current[sourceId] || [];
+    if (current.length === 0) return null;
+    const idx = Math.floor(Math.random() * current.length);
+    return current[idx] ?? null;
+  }, []);
+
   /**
    * 构建一言API请求URL，支持多分类选择
    */
@@ -158,20 +175,19 @@ export function MotivationalQuote() {
     async (source: QuoteSourceConfig): Promise<string | null> => {
       try {
         const url = buildHitokotoUrl(source);
-        const res = await fetch(url, {
-          cache: "no-store",
-          signal: AbortSignal.timeout(5000), // 5秒超时
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = (await res.json()) as HitokotoResponse;
+        const data = (await httpGetJson(url, undefined, 5000, {
+          apiClass: "hitokoto",
+          requestKey: `hitokoto:${url}`,
+          minIntervalMs: 10000,
+          softTtlMs: 15000,
+        })) as HitokotoResponse;
         const text = (data?.hitokoto || "").trim();
         if (!text) return null;
 
         const from = (data?.from || "").trim();
         let final = text;
         if (from) final = `${text} ——${from}`;
+        pushOnlineQuoteToPool(source.id, final);
 
         return final;
       } catch (e) {
@@ -179,7 +195,7 @@ export function MotivationalQuote() {
         return null;
       }
     },
-    [buildHitokotoUrl]
+    [buildHitokotoUrl, pushOnlineQuoteToPool]
   );
 
   /**
@@ -217,7 +233,7 @@ export function MotivationalQuote() {
   /**
    * 统一更新语录逻辑：按权重挑源 -> 获取内容（优先线上，失败回退本地） -> 启动动画
    */
-  const updateQuote = useCallback(async () => {
+  const updateQuote = useCallback(async (preferRemote = false) => {
     const source = pickWeightedSource();
     if (!source) {
       const fallback = "保持热爱，奔赴山海。\n——系统提示";
@@ -229,10 +245,17 @@ export function MotivationalQuote() {
     let text: string | null = null;
 
     if (source.onlineFetch) {
-      text = await fetchOnlineQuote(source);
+      if (preferRemote) {
+        text = await fetchOnlineQuote(source);
+      }
       if (!text) {
-        // 线上失败则回退到本地
+        text = getOnlineQuoteFromPool(source.id);
+      }
+      if (!text) {
         text = getLocalQuote(source);
+      }
+      if (!preferRemote) {
+        void fetchOnlineQuote(source);
       }
     } else {
       text = getLocalQuote(source);
@@ -251,7 +274,7 @@ export function MotivationalQuote() {
   /** 手动刷新 */
   const handleClick = useCallback(() => {
     if (!isTyping) {
-      void updateQuote();
+      void updateQuote(true);
     }
   }, [isTyping, updateQuote]);
 

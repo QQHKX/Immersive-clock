@@ -228,6 +228,7 @@ immersive-clock/
 ## 🔗 友情链接
 
 - <img src="https://sectl.top/logo.svg" width="16px"> [SECTL](https://sectl.top/)
+- [阑山桌面](https://github.com/wwiinnddyy/LanMountainDesktop)
 
 ## ⭐️ Star 历史
 

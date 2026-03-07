@@ -43,5 +43,8 @@ export function buildQWeatherHeaders(): Record<string, string> {
  */
 export async function qweatherGetJson(pathWithQuery: string, timeoutMs = 10000): Promise<unknown> {
   const url = `https://${getQWeatherHost()}${pathWithQuery}`;
-  return httpGetJson(url, buildQWeatherHeaders(), timeoutMs);
+  return httpGetJson(url, buildQWeatherHeaders(), timeoutMs, {
+    apiClass: "qweather",
+    requestKey: `qweather:${pathWithQuery}`,
+  });
 }

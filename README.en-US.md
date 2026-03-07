@@ -253,6 +253,7 @@ The algorithm is not just a simple decibel meter, but quantifies the interferenc
 ## 🔗 Friendly Links
 
 - <img src="https://sectl.top/logo.svg" width="16px"> [SECTL](https://sectl.top/)
+- [LanMountainDesktop](https://github.com/wwiinnddyy/LanMountainDesktop)
 
 ## ⭐️ Star History
 

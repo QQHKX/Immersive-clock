@@ -233,7 +233,12 @@ export async function getCoordsViaGeolocation(): Promise<Coords | null> {
 export async function getCoordsViaAmapIP(): Promise<Coords | null> {
   const url = `https://restapi.amap.com/v3/ip?key=${encodeURIComponent(getAmapKey())}`;
   try {
-    const data = (await httpGetJson(url)) as AmapIpResponse;
+    const data = (await httpGetJson(url, undefined, 10000, {
+      apiClass: "amap",
+      requestKey: "amap:ip",
+      softTtlMs: 30 * 60 * 1000,
+      minIntervalMs: 3 * 60 * 1000,
+    })) as AmapIpResponse;
     if (String(data?.status) !== "1") {
       return null;
     }
@@ -268,7 +273,12 @@ export async function getCoordsViaIP(): Promise<Coords | null> {
   ];
   for (const [url, keys] of sources) {
     try {
-      const data = (await httpGetJson(url)) as Record<string, unknown>;
+      const data = (await httpGetJson(url, undefined, 10000, {
+        apiClass: "free",
+        requestKey: `ip:${url}`,
+        softTtlMs: 20 * 60 * 1000,
+        minIntervalMs: 60 * 1000,
+      })) as Record<string, unknown>;
       if (keys.length === 1 && keys[0] === "loc") {
         const loc = (data as IpInfoResponse)?.loc;
         if (loc && loc.includes(",")) {
@@ -373,7 +383,13 @@ async function resolveManualCoordsFromSettings(): Promise<
 export async function reverseGeocodeOSM(lat: number, lon: number): Promise<AddressInfo> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
   try {
-    const data = (await httpGetJson(url)) as OsmReverseResponse;
+    const data = (await httpGetJson(url, undefined, 10000, {
+      apiClass: "free",
+      requestKey: `osm:reverse:${lat.toFixed(3)},${lon.toFixed(3)}`,
+      softTtlMs: 4 * 60 * 60 * 1000,
+      minIntervalMs: 0,
+      bypassSoftCache: true,
+    })) as OsmReverseResponse;
     const addr: OsmAddress = data?.address || {};
     const parts: string[] = [];
     if (addr.road) parts.push(addr.road);
@@ -399,7 +415,13 @@ export async function reverseGeocodeAmap(lat: number, lon: number): Promise<Addr
     `${lon},${lat}`
   )}&radius=100&extensions=base`;
   try {
-    const data = (await httpGetJson(url)) as AmapReverseResponse;
+    const data = (await httpGetJson(url, undefined, 10000, {
+      apiClass: "amap",
+      requestKey: `amap:reverse:${lat.toFixed(3)},${lon.toFixed(3)}`,
+      softTtlMs: 12 * 60 * 60 * 1000,
+      minIntervalMs: 0,
+      bypassSoftCache: true,
+    })) as AmapReverseResponse;
     if (String(data?.status) !== "1") {
       return {
         error: String(data?.info || "Amap reverse geocode failed"),
@@ -523,15 +545,15 @@ async function resolveCoordsAndLocation(options?: LocationFlowOptions): Promise<
   }
 
   if (!coords) {
-    const a = await getCoordsViaAmapIP();
-    if (a) {
-      coords = a;
-      coordsSource = "amap_ip";
+    const i = await getCoordsViaIP();
+    if (i) {
+      coords = i;
+      coordsSource = "ip";
     } else {
-      const i = await getCoordsViaIP();
-      if (i) {
-        coords = i;
-        coordsSource = "ip";
+      const a = await getCoordsViaAmapIP();
+      if (a) {
+        coords = a;
+        coordsSource = "amap_ip";
       }
     }
     if (coords && coordsSource) {
@@ -551,9 +573,9 @@ async function resolveCoordsAndLocation(options?: LocationFlowOptions): Promise<
     city = cachedLoc.city || null;
     addressInfo = { address: cachedLoc.address, source: cachedLoc.addressSource };
   } else {
-    let tmp = await reverseGeocodeAmap(coords.lat, coords.lon);
+    let tmp = await reverseGeocodeOSM(coords.lat, coords.lon);
     if (!tmp.address) {
-      const fb = await reverseGeocodeOSM(coords.lat, coords.lon);
+      const fb = await reverseGeocodeAmap(coords.lat, coords.lon);
       if (fb?.address) tmp = fb;
     }
     addressInfo = tmp;

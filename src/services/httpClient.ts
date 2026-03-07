@@ -1,8 +1,22 @@
+import { executeGovernedRequest, type GovernedRequestOptions } from "./apiGovernance";
+
 /**
  * 通过 fetch 获取 JSON 数据
  * 包含超时控制与异常处理
  */
 export async function httpGetJson(
+  url: string,
+  headers?: Record<string, string>,
+  timeoutMs = 10000,
+  governance?: GovernedRequestOptions
+): Promise<unknown> {
+  if (governance) {
+    return executeGovernedRequest(governance, () => requestJson(url, headers, timeoutMs));
+  }
+  return requestJson(url, headers, timeoutMs);
+}
+
+async function requestJson(
   url: string,
   headers?: Record<string, string>,
   timeoutMs = 10000
