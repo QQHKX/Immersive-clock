@@ -57,6 +57,7 @@
   font-family: var(--font-ui);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   font-weight: 500;
+  display: inline-block;
   height: 2.2em;
   /* 固定高度，匹配单行文本高度 */
   overflow: hidden;
@@ -274,8 +275,6 @@
   }
 
   .quoteSection {
-    width: 100%;
-    max-width: none;
     font-size: clamp(0.75rem, 1.6vw, 0.9rem);
   }
 }

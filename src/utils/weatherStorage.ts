@@ -58,6 +58,7 @@ export interface WeatherCache {
     location: string; // 位置 (lon,lat)
     updatedAt: number;
     lastApiFetchAt?: number; // 上次 API 请求时间
+    lastCriticalFetchAt?: number; // 上次关键窗口加密请求时间
   };
 
   // 4.1 三日天气预报缓存
@@ -281,6 +282,21 @@ export function updateMinutelyLastFetch(lastApiFetchAt: number) {
       minutely: {
         ...current.minutely,
         lastApiFetchAt,
+      },
+    };
+  });
+}
+
+/**
+ * 更新分钟级降水关键窗口最后请求时间
+ */
+export function updateMinutelyCriticalFetch(lastCriticalFetchAt: number) {
+  saveWeatherCache((current) => {
+    if (!current.minutely) return {};
+    return {
+      minutely: {
+        ...current.minutely,
+        lastCriticalFetchAt,
       },
     };
   });

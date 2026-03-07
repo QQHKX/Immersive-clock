@@ -108,7 +108,7 @@ describe("noiseScoreEngine", () => {
       { scoreThresholdDbfs: -45 }
     );
 
-    expect(score).toBeCloseTo(96.0, 6);
+    expect(score).toBeCloseTo(95.5, 6);
     expect(score * 10).toBeCloseTo(Math.round(score * 10), 8);
   });
 

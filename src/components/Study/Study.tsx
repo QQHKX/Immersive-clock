@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 
 import { useAppState } from "../../contexts/AppContext";
 import { useTimer } from "../../hooks/useTimer";
@@ -197,36 +197,99 @@ export function Study() {
       return d;
     };
 
-    const buildDailyLine = (
-      label: string,
-      item?: { textDay?: string; textNight?: string; tempMin?: string; tempMax?: string }
-    ) => {
-      const day = item?.textDay || "--";
-      const night = item?.textNight || "--";
-      const tMin = item?.tempMin || "--";
-      const tMax = item?.tempMax || "--";
-      return `${label}：${day}/${night} ${tMin}~${tMax}°`;
+    /** 构建未来1小时天气文案（函数级注释：从小时级缓存中汇总未来1小时天气、温度区间与降水信息） */
+    const buildNextHourLine = (label: string) => {
+      const list = hourly72h?.hourly || [];
+      const nowMs = now.getTime();
+      const targetEndMs = nowMs + 60 * 60 * 1000;
+
+      const hourlySegments = list
+        .map((item) => {
+          const ms = item.fxTime ? Date.parse(item.fxTime) : NaN;
+          if (!Number.isFinite(ms)) return null;
+          if (ms <= nowMs || ms > targetEndMs) return null;
+          return {
+            ms,
+            text: item.text || "",
+            tempNum: Number(item.temp),
+            popNum: Number(item.pop),
+            precipNum: Number(item.precip),
+          };
+        })
+        .filter(Boolean) as Array<{
+        ms: number;
+        text: string;
+        tempNum: number;
+        popNum: number;
+        precipNum: number;
+      }>;
+
+      if (hourlySegments.length === 0) {
+        return `${label}：暂无小时级天气数据，请稍后刷新天气`;
+      }
+
+      const sorted = [...hourlySegments].sort((a, b) => a.ms - b.ms);
+      const first = new Date(sorted[0].ms);
+      const last = new Date(sorted[sorted.length - 1].ms);
+      const timeRange = `${pad2(first.getHours())}:${pad2(first.getMinutes())}-${pad2(last.getHours())}:${pad2(last.getMinutes())}`;
+
+      const weatherList = Array.from(
+        new Set(
+          sorted
+            .map((item) => item.text.trim())
+            .filter((item) => item.length > 0)
+            .slice(0, 2)
+        )
+      );
+      const weatherText = weatherList.length > 0 ? weatherList.join("/") : "--";
+
+      const tempList = sorted
+        .map((item) => item.tempNum)
+        .filter((item) => Number.isFinite(item)) as number[];
+      const tempText =
+        tempList.length > 0
+          ? `${Math.min(...tempList)}~${Math.max(...tempList)}°`
+          : "--";
+
+      const popList = sorted
+        .map((item) => item.popNum)
+        .filter((item) => Number.isFinite(item)) as number[];
+      const maxPop = popList.length > 0 ? Math.max(...popList) : null;
+
+      const precipTotal = sorted
+        .map((item) => item.precipNum)
+        .filter((item) => Number.isFinite(item) && item > 0)
+        .reduce((sum, item) => sum + item, 0);
+
+      const precipText = (() => {
+        const parts: string[] = [];
+        if (maxPop !== null) {
+          parts.push(`降水概率最高${maxPop}%`);
+        }
+        if (precipTotal > 0) {
+          parts.push(`累计降水约${precipTotal.toFixed(1)}mm`);
+        }
+        return parts.length > 0 ? `，${parts.join("，")}` : "";
+      })();
+
+      return `${label}（${timeRange}）：${weatherText}，${tempText}${precipText}`;
     };
 
-    const buildMorningLine = (label: string, targetDate: string) => {
-      const list = hourly72h?.hourly || [];
-      const segments = list
-        .map((h) => {
-          const ms = h.fxTime ? Date.parse(h.fxTime) : NaN;
-          if (!Number.isFinite(ms)) return null;
-          const d = new Date(ms);
-          const dateStr = formatLocalDate(d);
-          const hour = d.getHours();
-          if (dateStr !== targetDate) return null;
-          if (hour < 5 || hour > 8) return null;
-          const timeText = `${pad2(hour)}:${pad2(d.getMinutes())}`;
-          const tempText = h.temp ? `${h.temp}°` : "--";
-          const popText = h.pop ? `${h.pop}%` : "--";
-          const text = h.text || "--";
-          return `${timeText} ${text} ${tempText} ${popText}`;
-        })
-        .filter(Boolean) as string[];
-      return segments.length > 0 ? `${label}：${segments.join("　")}` : `${label}：--`;
+    /** 构建明天天气文案（函数级注释：基于3日预报中的明天数据生成白天夜间与温度区间信息） */
+    const buildTomorrowLine = (label: string) => {
+      const tomorrow = daily3d?.daily?.[1];
+      if (!tomorrow) {
+        return `${label}：暂无日级天气数据，请稍后刷新天气`;
+      }
+      const dayText = tomorrow.textDay || "--";
+      const nightText = tomorrow.textNight || "--";
+      const tMin = tomorrow.tempMin || "--";
+      const tMax = tomorrow.tempMax || "--";
+      const precipText =
+        typeof tomorrow.precip === "string" && tomorrow.precip.trim().length > 0
+          ? `，降水量约${tomorrow.precip}mm`
+          : "";
+      return `${label}：白天${dayText}，夜间${nightText}，${tMin}~${tMax}°${precipText}`;
     };
 
     for (const p of schedule) {
@@ -253,21 +316,10 @@ export function Study() {
         const alreadyPopped = lastForecastPopupPeriodIdRef.current === p.id;
         if (alreadyPopped) break;
 
-        const tomorrow = daily3d?.daily?.[1];
-        const dayAfter = daily3d?.daily?.[2];
-        const dayAfterDate = String(dayAfter?.fxDate || "");
-        const fallbackDayAfter = (() => {
-          const d = getAdjustedDate();
-          d.setDate(d.getDate() + 2);
-          return formatLocalDate(d);
-        })();
-        const targetMorningDate = dayAfterDate || fallbackDayAfter;
-
         const message = (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div>{buildDailyLine("明天", tomorrow)}</div>
-            <div>{buildDailyLine("后天", dayAfter)}</div>
-            <div>{buildMorningLine("后天早上(5-8)", targetMorningDate)}</div>
+            <div>{buildNextHourLine("未来1小时")}</div>
+            <div>{buildTomorrowLine("明天")}</div>
           </div>
         );
 
@@ -354,22 +406,71 @@ export function Study() {
     ];
   })();
 
+  const display = useMemo(
+    () =>
+      study.display || {
+        showStatusBar: true,
+        showNoiseMonitor: true,
+        showCountdown: true,
+        showQuote: true,
+        showTime: true,
+        showDate: true,
+      },
+    [study.display]
+  );
+
+  /** 测量倒计时可视项尺寸（函数级注释：优先读取当前轮播项宽度，避免父容器在小屏断点下残留旧宽度导致语录宽度不同步） */
+  const measureCountdown = useCallback(() => {
+    const el = countdownRef.current;
+    if (!el) {
+      setCountdownWidth(0);
+      setItemHeight(0);
+      return;
+    }
+    const trackEl = el.firstElementChild as HTMLDivElement | null;
+    const activeItemEl =
+      trackEl && trackEl.children.length > 0
+        ? (trackEl.children[Math.min(activeIndex, trackEl.children.length - 1)] as HTMLElement)
+        : null;
+    const widthRect = activeItemEl?.getBoundingClientRect() ?? el.getBoundingClientRect();
+    const containerRect = el.getBoundingClientRect();
+    const nextWidth = Math.round(widthRect.width);
+    const nextHeight = Math.round(containerRect.height);
+    setCountdownWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+    setItemHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [activeIndex]);
+
   // 容器尺寸与宽度测量
   useEffect(() => {
-    const measure = () => {
-      const el = countdownRef.current;
-      if (!el) {
-        setCountdownWidth(0);
-        setItemHeight(0);
-        return;
-      }
-      setCountdownWidth(el.offsetWidth);
-      setItemHeight(el.clientHeight);
+    if (!display.showCountdown) {
+      setCountdownWidth(0);
+      setItemHeight(0);
+      return;
+    }
+
+    const measureWithRaf = () => {
+      requestAnimationFrame(() => measureCountdown());
     };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [countdownItems.length, activeIndex]);
+
+    measureWithRaf();
+
+    const el = countdownRef.current;
+    const observer = el ? new ResizeObserver(measureWithRaf) : null;
+    if (el && observer) {
+      observer.observe(el);
+    }
+
+    window.addEventListener("resize", measureWithRaf);
+    window.addEventListener("orientationchange", measureWithRaf);
+    window.addEventListener("study-fonts-updated", measureWithRaf as EventListener);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measureWithRaf);
+      window.removeEventListener("orientationchange", measureWithRaf);
+      window.removeEventListener("study-fonts-updated", measureWithRaf as EventListener);
+    };
+  }, [display.showCountdown, measureCountdown, countdownItems.length, activeIndex]);
 
   // 自动轮播：按配置间隔切换
   useEffect(() => {
@@ -453,15 +554,6 @@ export function Study() {
     setReportOpen(true);
     setReportFromHistory(true); // 标记来源为历史记录
   }, []);
-
-  const display = study.display || {
-    showStatusBar: true,
-    showNoiseMonitor: true,
-    showCountdown: true,
-    showQuote: true,
-    showTime: true,
-    showDate: true,
-  };
 
   // 计算每个项的文案与天数（函数级注释：生成倒计时项的显示文本，其中高考事件强制包含年份并采用“距离YYYY高考仅xx天”的格式）
   const renderItem = (item: (typeof countdownItems)[number]) => {

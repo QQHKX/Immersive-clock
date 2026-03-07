@@ -21,6 +21,7 @@ import {
   updateGeolocationDiagnostics,
   updateLocationCache,
   updateMinutelyCache,
+  updateMinutelyCriticalFetch,
   updateMinutelyLastFetch,
   updateAlertTag,
   updateWeatherNowSnapshot,
@@ -122,13 +123,16 @@ describe("weatherStorage", () => {
     expect(cache.alertMetadata?.lastTag).toBe("tag-1");
   });
 
-  it("updateMinutelyCache 与 updateMinutelyLastFetch 会保留/更新 lastApiFetchAt", () => {
+  it("updateMinutelyCache 与分钟级请求时间写入函数会保留/更新元数据", () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
     updateMinutelyCache("121.5,31.2", { code: "200", summary: "ok" }, 900);
     expect(getWeatherCache().minutely?.lastApiFetchAt).toBe(900);
 
     updateMinutelyLastFetch(1200);
     expect(getWeatherCache().minutely?.lastApiFetchAt).toBe(1200);
+
+    updateMinutelyCriticalFetch(1300);
+    expect(getWeatherCache().minutely?.lastCriticalFetchAt).toBe(1300);
   });
 
   it("updateHourly72hCache 与 updateHourly72hLastFetch 会保留/更新 lastApiFetchAt", () => {

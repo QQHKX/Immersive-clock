@@ -62,7 +62,7 @@ export function computeNoiseSliceScore(
   const timePenalty = clamp01(raw.overRatioDbfs / 0.3);
   const segmentPenalty = clamp01(segmentsPerMin / Math.max(1e-6, opt.maxSegmentsPerMin));
 
-  const penalty = 0.4 * sustainedPenalty + 0.3 * timePenalty + 0.3 * segmentPenalty;
+  const penalty = 0.45 * sustainedPenalty + 0.25 * timePenalty + 0.3 * segmentPenalty;
   const rawScore = 100 * (1 - penalty);
   const score = Math.max(0, Math.min(100, Math.round(rawScore * 10) / 10));
 
