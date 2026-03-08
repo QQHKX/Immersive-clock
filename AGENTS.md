@@ -4,12 +4,12 @@
 
 ## 项目概述
 
-**沉浸式时钟** 是一个基于 React 18 + TypeScript 5 + Vite 4 构建的轻量级时钟应用。支持时钟、倒计时、秒表和自习模式，具有天气监测、噪音分析、励志语录和多目标倒计时轮播等功能。
+**沉浸式时钟** 是一个基于 React 19 + TypeScript 5.9 + Vite 7 构建的轻量级时钟应用。支持时钟、倒计时、秒表和自习模式，具有天气监测、噪音分析、励志语录和多目标倒计时轮播等功能。
 
 **技术栈：**
 
-- React 18.2.0 + TypeScript 5.4.0 + React Router 6
-- Vite 4.1.0 构建工具
+- React 19.2.0 + TypeScript 5.9 + React Router 7
+- Vite 7 构建工具
 - PWA 支持（vite-plugin-pwa）
 - Electron 桌面应用支持
 - 测试：Vitest（单元测试）+ Playwright（端到端测试）
@@ -21,25 +21,25 @@
 ### 开发
 
 ```bash
-npm run dev                 # 启动 Web 开发服务器 (http://localhost:3005)
-npm run dev:electron        # 启动 Electron 开发环境
+cnpm run dev                 # 启动 Web 开发服务器 (http://127.0.0.1:3005)
+cnpm run dev:electron        # 启动 Electron 开发环境
 ```
 
 ### 构建
 
 ```bash
-npm run build               # 构建 Web 版本
-npm run build:electron      # 构建 Electron 版本
-npm run dist:electron       # 构建并打包 Electron 安装包
-npm run preview             # 预览生产构建
+cnpm run build               # 构建 Web 版本
+cnpm run build:electron      # 构建 Electron 版本
+cnpm run dist:electron       # 构建并打包 Electron 安装包
+cnpm run preview             # 预览生产构建
 ```
 
 ### 代码检查和格式化
 
 ```bash
-npm run lint                # 对 src 目录运行 ESLint
-npm run lint:fix            # 自动修复 ESLint 问题
-npm run format              # 使用 Prettier 格式化代码
+cnpm run lint                # 对 src 目录运行 ESLint
+cnpm run lint:fix            # 自动修复 ESLint 问题
+cnpm run format              # 使用 Prettier 格式化代码
 ```
 
 ### 测试
@@ -47,17 +47,17 @@ npm run format              # 使用 Prettier 格式化代码
 **单元测试（Vitest）：**
 
 ```bash
-npm run test                # 运行所有单元测试
-npm test -- path/to/file    # 运行单个测试文件
-npm test -- -t "测试名称"   # 运行匹配模式的测试
-npm run test:coverage       # 运行测试并生成覆盖率报告
+cnpm run test                # 运行所有单元测试
+cnpm run test -- path/to/file    # 运行单个测试文件
+cnpm run test -- -t "测试名称"   # 运行匹配模式的测试
+cnpm run test:coverage       # 运行测试并生成覆盖率报告
 ```
 
 **端到端测试（Playwright）：**
 
 ```bash
-npm run test:e2e:install    # 安装 Playwright 浏览器
-npm run test:e2e            # 运行端到端测试（自动启动开发服务器）
+cnpm run test:e2e:install    # 安装 Playwright 浏览器
+cnpm run test:e2e            # 运行端到端测试（自动启动开发服务器）
 npx playwright test --ui    # 使用 Playwright UI 运行
 npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 ```
@@ -79,16 +79,17 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 | `src/main.tsx`         | Web 入口   | 应用挂载、PWA Service Worker 注册                                            |
 | `src/App.tsx`          | 路由容器   | 路由配置、全局公告弹窗容器                                                   |
 | `src/pages/ClockPage/` | 主控页面   | 模式切换逻辑、全局弹窗堆叠管理、HUD 显隐控制                                 |
-| `src/contexts/`        | 状态核心   | `AppContext`(运行时状态), `appReducer`(状态转换逻辑)                         |
+| `src/contexts/`        | 状态核心   | `AppContext`(运行时状态 + 内置 reducer 状态转换)                              |
 | `src/components/`      | UI 组件库  | `Modal`(统一模态), `FormComponents`, `LightControls`                         |
-| `src/hooks/`           | 逻辑复用   | `useTimer`(高精度计时), `useAudio`(音效), `useBattery`                       |
-| `src/utils/`           | 工具与服务 | `appSettings.ts`(配置管理), `timeSync.ts`(校时), `noiseDataService.ts`(噪音) |
+| `src/hooks/`           | 逻辑复用   | `useTimer`(高精度计时), `useAudio`(音效), `useNoiseStream`                    |
+| `src/utils/`           | 工具与服务 | `appSettings.ts`(配置管理), `timeSync.ts`(校时), `noiseSliceService.ts`(噪音) |
 
 ### 关键 Utils 模块
 
 - **`appSettings.ts`**: 统一配置管理中心（CRUD/持久化）
 - **`timeSync.ts`**: 网络校时与本地偏移管理，统一"当前时间"来源
-- **`noiseDataService.ts`**: 噪音采集、存储 (LocalStorage) 与事件分发
+- **`noiseSliceService.ts`**: 噪音切片摘要存储 (LocalStorage) 与事件分发（仅保存摘要，不保存高频原始数据）
+- **`noiseScoreEngine.ts`**: 基于原始 DBFS 统计的纪律评分引擎（纯函数，可单测）
 - **`db.ts`**: IndexedDB 封装，用于存储大体积数据（如自定义字体）
 - **`announcementStorage.ts`**: 公告版本控制与已读状态管理
 
@@ -109,9 +110,9 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 
 ### 噪音监测系统
 
-- **数据流**：Web Audio API (AudioContext) -> 实时 RMS/dB 计算 -> `noiseDataService`
-- **存储策略**：采用**滑动窗口**机制，在 `localStorage` 中存储最近 24 小时的样本 (`NoiseSample[]`)
-- **解耦设计**：采集服务与 UI 完全解耦，通过 `window.dispatchEvent` 触发 `noise-samples-updated` 事件驱动图表更新
+- **数据流**：Web Audio API (AudioContext) -> 帧采样（rms/dbfs/peak）-> 切片聚合（默认 30s）-> 评分引擎 -> 切片摘要落库（`noise-slices`）
+- **存储策略**：高频帧不落库；在 `localStorage` 存储切片摘要（`NoiseSliceSummary[]`），并按保留天数与容量阈值自动裁剪
+- **解耦设计**：采集服务与 UI 解耦，通过 `window.dispatchEvent` 触发 `noise-slices-updated` 事件驱动报告与统计更新
 - **提示音提醒**：当平均 dB 超过阈值且在设置中开启时播放提示音（默认关闭）
 
 ### 事件总线
@@ -121,7 +122,7 @@ npx playwright test tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 | 事件名                  | 触发源                 | 监听者          | 作用                           |
 | ----------------------- | ---------------------- | --------------- | ------------------------------ |
 | `settingsSaved`         | SettingsPanel          | 业务组件        | 通知配置已变更（如刷新语录源） |
-| `noise-samples-updated` | noiseDataService       | NoiseChart      | 通知噪音历史数据已更新         |
+| `noise-slices-updated`  | noiseSliceService      | Report/Stats    | 通知噪音切片摘要已更新         |
 | `timeSync:syncNow`      | SettingsPanel/用户操作 | timeSync 管理器 | 触发一次立即校时               |
 | `timeSync:updated`      | timeSync 管理器        | SettingsPanel   | 通知校时状态已更新（刷新显示） |
 | `storage`               | 浏览器                 | AppContext      | 多标签页状态同步（部分实现）   |
@@ -361,9 +362,9 @@ try {
 **运行：**
 
 ```bash
-npm run test                # 运行所有单测
-npm test -- path/to/file    # 运行单个测试文件
-npm run test:coverage       # 生成覆盖率报告
+cnpm run test                # 运行所有单测
+cnpm run test -- path/to/file    # 运行单个测试文件
+cnpm run test:coverage       # 生成覆盖率报告
 ```
 
 **编写规范：**
@@ -384,20 +385,20 @@ npm run test:coverage       # 生成覆盖率报告
 **运行：**
 
 ```bash
-npm run test:e2e            # 运行所有 E2E
-npm run test:e2e -- tests/e2e/clock.e2e.spec.ts  # 运行单个测试
+cnpm run test:e2e            # 运行所有 E2E
+cnpm run test:e2e -- tests/e2e/clock.e2e.spec.ts  # 运行单个测试
 ```
 
 **编写规范：**
 
-- 默认启动 `npm run dev`，baseURL 为 `http://127.0.0.1:3005`
+- 默认启动 `cnpm run dev`，baseURL 为 `http://127.0.0.1:3005`
 - 选择器稳定性优先：优先使用语义化定位（如 `getByRole`、可访问名称）
 - 每个用例只覆盖一个关键用户路径；复杂流程拆成多个用例
 
 **本地开发：**
 
 - 默认使用系统 Edge（避免自动下载 Playwright 浏览器）
-- 可视化运行：`npm run test:e2e -- --headed`
+- 可视化运行：`cnpm run test:e2e -- --headed`
 - 如需使用 chromium/firefox/webkit，设置 `PW_BUNDLED_BROWSERS=1` 后运行
 
 ### 测试地图
@@ -455,8 +456,8 @@ useTimer(callback, isActive, 1000); // 1秒间隔
 ## 重要注意事项
 
 1. **禁止 console.log：** 使用 `logger` 工具（ESLint 强制执行）
-2. **JSX 中导入 React：** 不需要（React 18 自动支持）
-3. **导入排序：** 关键 - 使用 `npm run lint:fix` 自动修复
+2. **JSX 中导入 React：** 不需要（React 19 自动支持）
+3. **导入排序：** 关键 - 使用 `cnpm run lint:fix` 自动修复
 4. **未使用变量：** 加 `_` 前缀或修复（警告级别）
 5. **PWA 缓存：** 版本缓存插件处理资源版本化（`?v=<version>`）
 6. **Electron 模式：** 使用 `--mode electron` 进行 Electron 构建
@@ -545,12 +546,12 @@ services:
 
 | 任务               | 命令                                                  |
 | ------------------ | ----------------------------------------------------- |
-| 运行单个单元测试   | `npm test -- path/to/file.test.ts`                    |
-| 按名称运行测试     | `npm test -- -t "pattern"`                            |
+| 运行单个单元测试   | `cnpm run test -- path/to/file.test.ts`               |
+| 按名称运行测试     | `cnpm run test -- -t "pattern"`                       |
 | 运行单个端到端测试 | `npx playwright test tests/e2e/file.e2e.spec.ts`      |
-| 修复代码检查问题   | `npm run lint:fix`                                    |
-| 覆盖率报告         | `npm run test:coverage`（打开 `coverage/index.html`） |
-| 本地开发可视化测试 | `npm run test:e2e -- --headed`                        |
+| 修复代码检查问题   | `cnpm run lint:fix`                                   |
+| 覆盖率报告         | `cnpm run test:coverage`（打开 `coverage/index.html`） |
+| 本地开发可视化测试 | `cnpm run test:e2e -- --headed`                       |
 
 ---
 

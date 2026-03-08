@@ -2,11 +2,11 @@
 
 ## 运行入口
 
-- 单元测试：`npm run test`
-- 单测 + 覆盖率：`npm run test:coverage`
-- 端到端测试：`npm run test:e2e`
+- 单元测试：`cnpm run test`
+- 单测 + 覆盖率：`cnpm run test:coverage`
+- 端到端测试：`cnpm run test:e2e`
   - 默认使用系统 Edge（项目：`msedge`），不自动下载 Playwright 浏览器
-  - 如需运行 Playwright 自带浏览器：设置 `PW_BUNDLED_BROWSERS=1` 后再运行 `npm run test:e2e`（会执行 `playwright install`）
+  - 如需运行 Playwright 自带浏览器：设置 `PW_BUNDLED_BROWSERS=1` 后再运行 `cnpm run test:e2e`（会执行 `playwright install`）
 
 ## Vitest（单元测试）
 
@@ -28,7 +28,9 @@
   - 时间源测量与中位数聚合：[timeSync.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/timeSync.test.ts) → [timeSync.ts](file:///d:/Desktop/Immersive-clock/src/utils/timeSync.ts)
   - NTP 客户端（mock dns/dgram）：[ntpClient.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/ntpClient.test.ts) → [ntpClient.ts](file:///d:/Desktop/Immersive-clock/src/utils/ntpClient.ts)
 - **噪音**
-  - 噪音样本存储与事件通知：[noiseDataService.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseDataService.test.ts) → [noiseDataService.ts](file:///d:/Desktop/Immersive-clock/src/utils/noiseDataService.ts)
+  - 噪音切片存储与事件通知：[noiseSliceService.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseSliceService.test.ts) → [noiseSliceService.ts](file:///d:/Desktop/Immersive-clock/src/utils/noiseSliceService.ts)
+  - 噪音评分引擎：[noiseScoreEngine.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseScoreEngine.test.ts) → [noiseScoreEngine.ts](file:///d:/Desktop/Immersive-clock/src/utils/noiseScoreEngine.ts)
+  - 噪音历史构建：[noiseHistoryBuilder.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/noiseHistoryBuilder.test.ts) → [noiseHistoryBuilder.ts](file:///d:/Desktop/Immersive-clock/src/utils/noiseHistoryBuilder.ts)
 - **公告**
   - 公告隐藏一周逻辑/版本强制显示：[announcementStorage.test.ts](file:///d:/Desktop/Immersive-clock/src/utils/__tests__/announcementStorage.test.ts) → [announcementStorage.ts](file:///d:/Desktop/Immersive-clock/src/utils/announcementStorage.ts)
 - **通用**
