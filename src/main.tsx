@@ -12,10 +12,22 @@ import { initializeStorage } from "./utils/storageInitializer";
 import "./styles/global.css";
 import "./styles/tour.css";
 
-// 初始化 Microsoft Clarity
-if (import.meta.env.PROD) {
-  Clarity.init("sfsiwls4dz");
+/**
+ * 初始化埋点服务
+ * 仅在生产环境且显式开启时初始化，避免受网络策略影响产生无效报错
+ */
+function initAnalytics(): void {
+  const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID?.trim();
+  const enableClarity = import.meta.env.VITE_ENABLE_CLARITY === "true";
+
+  if (!import.meta.env.PROD || !enableClarity || !clarityProjectId) {
+    return;
+  }
+
+  Clarity.init(clarityProjectId);
 }
+
+initAnalytics();
 
 // 在应用启动前初始化本地存储
 initializeStorage();

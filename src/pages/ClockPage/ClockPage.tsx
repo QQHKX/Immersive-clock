@@ -77,7 +77,9 @@ export function ClockPage() {
       if (prevTimerId) {
         clearTimeout(prevTimerId);
       }
-      setGlobalPopups((prev) => prev.map((item) => (item.id === id ? { ...item, isOpen: false } : item)));
+      setGlobalPopups((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, isOpen: false } : item))
+      );
       timerMap[id] = window.setTimeout(() => {
         setGlobalPopups((prev) => prev.filter((item) => item.id !== id));
         delete popupCloseTimerMapRef.current[id];

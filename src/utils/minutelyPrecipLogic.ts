@@ -74,7 +74,9 @@ export function computeMinutelyRainStats(
   const horizon = items.filter((x) => x.t >= nowMs);
   const horizonWithNow = isRainingNow && currentItem ? [currentItem, ...horizon] : horizon;
   const totalSlots = horizonWithNow.length > 0 ? horizonWithNow.length : items.length;
-  const rainySlots = (horizonWithNow.length > 0 ? horizonWithNow : items).filter((x) => x.precip > 0);
+  const rainySlots = (horizonWithNow.length > 0 ? horizonWithNow : items).filter(
+    (x) => x.precip > 0
+  );
   const probability = totalSlots > 0 ? Math.round((rainySlots.length / totalSlots) * 100) : 0;
 
   if (rainySlots.length === 0) {
@@ -207,10 +209,20 @@ export function shouldTriggerCriticalRefresh(params: {
   if (elapsed >= baseIntervalMs) return false;
   if (nowMs - lastCriticalFetchAt < minCriticalGapMs) return false;
 
-  if (phase === "PRE_RAIN" && leadMinutes != null && leadMinutes > 0 && leadMinutes <= criticalWindowMinutes) {
+  if (
+    phase === "PRE_RAIN" &&
+    leadMinutes != null &&
+    leadMinutes > 0 &&
+    leadMinutes <= criticalWindowMinutes
+  ) {
     return true;
   }
-  if (phase === "RAINING" && remainingMinutes != null && remainingMinutes > 0 && remainingMinutes <= criticalWindowMinutes) {
+  if (
+    phase === "RAINING" &&
+    remainingMinutes != null &&
+    remainingMinutes > 0 &&
+    remainingMinutes <= criticalWindowMinutes
+  ) {
     return true;
   }
   return false;

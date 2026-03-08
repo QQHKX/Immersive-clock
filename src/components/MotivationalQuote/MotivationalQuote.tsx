@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import { useAppState, useAppDispatch } from "../../contexts/AppContext";
-import { QuoteSourceConfig, HitokotoResponse } from "../../types";
 import { httpGetJson } from "../../services/httpClient";
+import { QuoteSourceConfig, HitokotoResponse } from "../../types";
 import { logger } from "../../utils/logger";
 
 import styles from "./MotivationalQuote.module.css";
@@ -233,43 +233,46 @@ export function MotivationalQuote() {
   /**
    * 统一更新语录逻辑：按权重挑源 -> 获取内容（优先线上，失败回退本地） -> 启动动画
    */
-  const updateQuote = useCallback(async (preferRemote = false) => {
-    const source = pickWeightedSource();
-    if (!source) {
-      const fallback = "保持热爱，奔赴山海。\n——系统提示";
-      setCurrentQuote(fallback);
-      typewriterEffect(fallback);
-      return;
-    }
-
-    let text: string | null = null;
-
-    if (source.onlineFetch) {
-      if (preferRemote) {
-        text = await fetchOnlineQuote(source);
+  const updateQuote = useCallback(
+    async (preferRemote = false) => {
+      const source = pickWeightedSource();
+      if (!source) {
+        const fallback = "保持热爱，奔赴山海。\n——系统提示";
+        setCurrentQuote(fallback);
+        typewriterEffect(fallback);
+        return;
       }
-      if (!text) {
-        text = getOnlineQuoteFromPool(source.id);
-      }
-      if (!text) {
+
+      let text: string | null = null;
+
+      if (source.onlineFetch) {
+        if (preferRemote) {
+          text = await fetchOnlineQuote(source);
+        }
+        if (!text) {
+          text = getOnlineQuoteFromPool(source.id);
+        }
+        if (!text) {
+          text = getLocalQuote(source);
+        }
+        if (!preferRemote) {
+          void fetchOnlineQuote(source);
+        }
+      } else {
         text = getLocalQuote(source);
       }
-      if (!preferRemote) {
-        void fetchOnlineQuote(source);
+
+      // 兜底
+      if (!text) {
+        text = "保持热爱，奔赴山海。\n——系统提示";
       }
-    } else {
-      text = getLocalQuote(source);
-    }
 
-    // 兜底
-    if (!text) {
-      text = "保持热爱，奔赴山海。\n——系统提示";
-    }
-
-    // 先记录完整文本，再启动动画。渲染时会根据 isTyping 决定显示 displayText，避免闪现
-    setCurrentQuote(text);
-    typewriterEffect(text);
-  }, [fetchOnlineQuote, getLocalQuote, pickWeightedSource, typewriterEffect]);
+      // 先记录完整文本，再启动动画。渲染时会根据 isTyping 决定显示 displayText，避免闪现
+      setCurrentQuote(text);
+      typewriterEffect(text);
+    },
+    [fetchOnlineQuote, getLocalQuote, getOnlineQuoteFromPool, pickWeightedSource, typewriterEffect]
+  );
 
   /** 手动刷新 */
   const handleClick = useCallback(() => {

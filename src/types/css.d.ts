@@ -13,6 +13,10 @@ interface ImportMetaEnv {
   readonly VITE_AMAP_API_KEY: string;
   /** 应用版本号 */
   readonly VITE_APP_VERSION: string;
+  /** 是否启用 Clarity 埋点 */
+  readonly VITE_ENABLE_CLARITY?: string;
+  /** Clarity 项目 ID */
+  readonly VITE_CLARITY_PROJECT_ID?: string;
   /** 私有域主机（推荐） */
   readonly VITE_QWEATHER_API_HOST?: string;
   /** 兼容备用命名 */

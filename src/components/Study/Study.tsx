@@ -247,9 +247,7 @@ export function Study() {
         .map((item) => item.tempNum)
         .filter((item) => Number.isFinite(item)) as number[];
       const tempText =
-        tempList.length > 0
-          ? `${Math.min(...tempList)}~${Math.max(...tempList)}°`
-          : "--";
+        tempList.length > 0 ? `${Math.min(...tempList)}~${Math.max(...tempList)}°` : "--";
 
       const popList = sorted
         .map((item) => item.popNum)

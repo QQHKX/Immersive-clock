@@ -117,10 +117,8 @@ export function createNoiseSliceAggregator(
 
   let sliceStart: number | null = null;
   let frames = 0;
-  let sumDbfs = 0;
   let sumDisplayDb = 0;
   let maxDbfs = -Infinity;
-  let aboveFrames = 0;
   let aboveDurationMs = 0;
   let segmentCount = 0;
   let lastAbove = false;
@@ -138,10 +136,8 @@ export function createNoiseSliceAggregator(
   const reset = () => {
     sliceStart = null;
     frames = 0;
-    sumDbfs = 0;
     sumDisplayDb = 0;
     maxDbfs = -Infinity;
-    aboveFrames = 0;
     aboveDurationMs = 0;
     segmentCount = 0;
     lastAbove = false;
@@ -221,7 +217,6 @@ export function createNoiseSliceAggregator(
     }
 
     frames += 1;
-    sumDbfs += frame.dbfs;
     sumDisplayDb += displayDb;
     if (frame.dbfs > maxDbfs) maxDbfs = frame.dbfs;
     dbfsValues.push(frame.dbfs);
@@ -229,7 +224,6 @@ export function createNoiseSliceAggregator(
 
     const isAbove = frame.dbfs > scoreOpt.scoreThresholdDbfs;
     if (isAbove) {
-      aboveFrames += 1;
       aboveDurationMs += frameMs;
       if (!lastAbove) {
         const merged =

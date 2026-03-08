@@ -291,7 +291,9 @@ const Weather: React.FC = () => {
       const pulledAtMs = cache.fetchedAt ?? nowMs;
       const pulledAtText = formatTimestampHm(pulledAtMs);
       const rainEndText = stats.rainEndAt ? formatTimestampHm(stats.rainEndAt) : "--:--";
-      const rainStartText = stats.nextRainStartAt ? formatTimestampHm(stats.nextRainStartAt) : "--:--";
+      const rainStartText = stats.nextRainStartAt
+        ? formatTimestampHm(stats.nextRainStartAt)
+        : "--:--";
 
       if (stats.isRainingNow) {
         const line1 = `正在${stats.intensityLabel}，预计${rainEndText}前后结束。`;
@@ -329,7 +331,11 @@ const Weather: React.FC = () => {
    * 发送分钟级降水弹窗（函数级中文注释：统一处理打开与内容刷新）
    */
   const emitMinutelyPopup = useCallback(
-    (cache: MinutelyPrecipCacheLike, stats: MinutelyRainStats, opts?: { showUpdatedHint?: boolean }) => {
+    (
+      cache: MinutelyPrecipCacheLike,
+      stats: MinutelyRainStats,
+      opts?: { showUpdatedHint?: boolean }
+    ) => {
       const message = buildMinutelyPrecipPopupMessage(cache, stats, {
         showUpdatedHint: opts?.showUpdatedHint,
       });
@@ -386,8 +392,12 @@ const Weather: React.FC = () => {
       const popupDismissed = safeReadSessionFlag(MINUTELY_PRECIP_POPUP_DISMISSED_KEY);
       const popupOpen = safeReadSessionFlag(MINUTELY_PRECIP_POPUP_OPEN_KEY);
       const rainStartAt = stats.rainStartAt ?? 0;
-      const preNotifiedStartAt = Number(safeReadSessionValue(MINUTELY_PRECIP_PRE_NOTIFIED_START_KEY) || "0");
-      const rainNotifiedStartAt = Number(safeReadSessionValue(MINUTELY_PRECIP_RAIN_NOTIFIED_START_KEY) || "0");
+      const preNotifiedStartAt = Number(
+        safeReadSessionValue(MINUTELY_PRECIP_PRE_NOTIFIED_START_KEY) || "0"
+      );
+      const rainNotifiedStartAt = Number(
+        safeReadSessionValue(MINUTELY_PRECIP_RAIN_NOTIFIED_START_KEY) || "0"
+      );
 
       const shouldOpenPreRain =
         !!opts?.allowOpen &&
@@ -396,7 +406,11 @@ const Weather: React.FC = () => {
         rainStartAt > 0 &&
         preNotifiedStartAt !== rainStartAt;
       const shouldOpenRaining =
-        (!!opts?.allowOpen && !popupDismissed && phase === "RAINING" && rainStartAt > 0 && rainNotifiedStartAt !== rainStartAt) ||
+        (!!opts?.allowOpen &&
+          !popupDismissed &&
+          phase === "RAINING" &&
+          rainStartAt > 0 &&
+          rainNotifiedStartAt !== rainStartAt) ||
         (!!opts?.forceRainingPopup && phase === "RAINING");
 
       if (shouldOpenPreRain || shouldOpenRaining) {
@@ -503,8 +517,9 @@ const Weather: React.FC = () => {
       const incomingStats = computeMinutelyRainStats(incomingCache, nowMs);
       const shouldWriteByDiff =
         !!existing &&
-        Math.abs(computeMinutelyRainStats(existing, nowMs).probability - incomingStats.probability) >=
-        MINUTELY_PRECIP_DIFF_THRESHOLD_PROB;
+        Math.abs(
+          computeMinutelyRainStats(existing, nowMs).probability - incomingStats.probability
+        ) >= MINUTELY_PRECIP_DIFF_THRESHOLD_PROB;
       if (!existing || opts?.forceApi || shouldWriteByDiff || incomingStats.hasRain) {
         writeMinutelyCache(minResp, nowMs);
       }
