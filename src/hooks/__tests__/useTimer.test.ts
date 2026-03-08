@@ -7,6 +7,40 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { useTimer, useHighFrequencyTimer, useAccumulatingTimer } from "../useTimer";
 
+function ensureRafApis() {
+  const w = window as Window & typeof globalThis;
+  const raf = (cb: FrameRequestCallback) => w.setTimeout(() => cb(Date.now()), 16);
+  const caf = (id: number) => w.clearTimeout(id);
+  if (typeof w.requestAnimationFrame !== "function") {
+    Object.defineProperty(w, "requestAnimationFrame", {
+      configurable: true,
+      writable: true,
+      value: raf,
+    });
+  }
+  if (typeof w.cancelAnimationFrame !== "function") {
+    Object.defineProperty(w, "cancelAnimationFrame", {
+      configurable: true,
+      writable: true,
+      value: caf,
+    });
+  }
+  if (typeof globalThis.requestAnimationFrame !== "function") {
+    Object.defineProperty(globalThis, "requestAnimationFrame", {
+      configurable: true,
+      writable: true,
+      value: raf,
+    });
+  }
+  if (typeof globalThis.cancelAnimationFrame !== "function") {
+    Object.defineProperty(globalThis, "cancelAnimationFrame", {
+      configurable: true,
+      writable: true,
+      value: caf,
+    });
+  }
+}
+
 describe("useTimer", () => {
   let rafCallbacks: Map<number, () => void>;
   let rafId = 0;
@@ -24,25 +58,23 @@ describe("useTimer", () => {
   };
 
   beforeEach(() => {
+    ensureRafApis();
     rafCallbacks = new Map();
     rafId = 1;
     now = 1;
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
       rafCallbacks.set(id, () => cb(now));
       return id;
     });
 
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation((id) => {
       rafCallbacks.delete(id as number);
     });
-
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   it("应该在指定间隔触发回调函数", () => {
@@ -96,7 +128,7 @@ describe("useTimer", () => {
 
     unmount();
 
-    expect(window.cancelAnimationFrame).toHaveBeenCalled();
+    expect(globalThis.cancelAnimationFrame).toHaveBeenCalled();
   });
 
   it("回调更新时应该使用最新的回调函数", () => {
@@ -161,25 +193,23 @@ describe("useHighFrequencyTimer", () => {
   };
 
   beforeEach(() => {
+    ensureRafApis();
     rafCallbacks = new Map();
     rafId = 1;
     now = 1;
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
       rafCallbacks.set(id, () => cb(now));
       return id;
     });
 
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation((id) => {
       rafCallbacks.delete(id as number);
     });
-
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   it("应该使用 10ms 高频间隔", () => {
@@ -210,25 +240,23 @@ describe("useAccumulatingTimer", () => {
   };
 
   beforeEach(() => {
+    ensureRafApis();
     rafCallbacks = new Map();
     rafId = 1;
     now = 1;
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
       const id = rafId++;
       rafCallbacks.set(id, () => cb(now));
       return id;
     });
 
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation((id) => {
       rafCallbacks.delete(id as number);
     });
-
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   it("应该传递累积次数给回调函数", () => {

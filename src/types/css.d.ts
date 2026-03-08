@@ -9,6 +9,11 @@ declare const __ENABLE_PWA__: boolean;
 
 /** Vite 环境变量类型定义 */
 interface ImportMetaEnv {
+  readonly MODE: string;
+  readonly BASE_URL: string;
+  readonly DEV: boolean;
+  readonly PROD: boolean;
+  readonly SSR: boolean;
   /** 高德地图 API Key */
   readonly VITE_AMAP_API_KEY: string;
   /** 应用版本号 */
@@ -30,4 +35,5 @@ interface ImportMetaEnv {
 /** 扩展 ImportMeta 接口 */
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+  readonly glob: <T = unknown>(pattern: string) => Record<string, () => Promise<T>>;
 }

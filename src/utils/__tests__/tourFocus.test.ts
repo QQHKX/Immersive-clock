@@ -30,7 +30,7 @@ const createActiveDriverMockImpl = (): Driver => ({
   isActive: () => true,
 });
 
-const driverMock = vi.fn<[Config?], Driver>(() => createDriverMockImpl());
+const driverMock = vi.fn((_config?: Config): Driver => createDriverMockImpl());
 
 vi.mock("driver.js", async () => {
   const actual = await vi.importActual<typeof import("driver.js")>("driver.js");

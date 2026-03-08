@@ -14,7 +14,7 @@ function Trigger(props: {
   label: string;
   onClick: () => void;
   id: string;
-  buttonRef: React.RefObject<HTMLButtonElement>;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const { open } = useDropdownContext();
   const { width, disabled, variant, label, onClick, id, buttonRef } = props;
@@ -47,7 +47,7 @@ function Menu(props: {
   onSelect: (opt: DropdownOption) => void;
   mode: "single" | "multiple";
   value: DropdownValue | DropdownValue[] | undefined;
-  triggerRef: React.RefObject<HTMLButtonElement>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
   portalContainer?: HTMLElement | null;
 }) {
   const {

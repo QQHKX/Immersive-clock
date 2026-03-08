@@ -36,12 +36,12 @@ export function MotivationalQuote() {
     if (fallbackSourcesRef.current !== null) return;
 
     try {
-      const modules = import.meta.glob("../../data/quotes-*.json");
+      const modules = import.meta.glob<{ default: QuoteSourceConfig }>("../../data/quotes-*.json");
       const loadedSources: QuoteSourceConfig[] = [];
 
       for (const [path, loader] of Object.entries(modules)) {
         try {
-          const module = (await loader()) as { default: QuoteSourceConfig };
+          const module = await loader();
           const config = module.default;
 
           // 过滤非法配置，权重与来源字段校验

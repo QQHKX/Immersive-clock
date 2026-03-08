@@ -35,6 +35,13 @@ describe("weatherService - flow", () => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.resetModules();
+    vi.clearAllMocks();
+    weatherStorageMocks.getValidCoords.mockReset();
+    weatherStorageMocks.updateCoordsCache.mockReset();
+    weatherStorageMocks.getValidLocation.mockReset();
+    weatherStorageMocks.updateLocationCache.mockReset();
+    weatherStorageMocks.updateGeolocationDiagnostics.mockReset();
+    localStorage.clear();
 
     vi.stubEnv("VITE_QWEATHER_API_HOST", "api.example.com");
     vi.stubEnv("VITE_QWEATHER_API_KEY", "test-qweather-key");

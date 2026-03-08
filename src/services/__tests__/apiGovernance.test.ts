@@ -26,7 +26,7 @@ describe("apiGovernance", () => {
   });
 
   it("同一请求键并发时复用 in-flight Promise", async () => {
-    let resolveTask: ((v: number) => void) | null = null;
+    let resolveTask: (v: number) => void = () => {};
     const runner = vi.fn(
       () =>
         new Promise<number>((resolve) => {
@@ -44,7 +44,7 @@ describe("apiGovernance", () => {
     );
 
     expect(runner).toHaveBeenCalledTimes(1);
-    resolveTask?.(7);
+    resolveTask(7);
     await expect(p1).resolves.toBe(7);
     await expect(p2).resolves.toBe(7);
   });

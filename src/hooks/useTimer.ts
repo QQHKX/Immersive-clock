@@ -1,5 +1,20 @@
 import { useEffect, useRef } from "react";
 
+const scheduleAnimationFrame = (callback: FrameRequestCallback): number => {
+  if (typeof globalThis.requestAnimationFrame === "function") {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return Number(globalThis.setTimeout(() => callback(globalThis.performance.now()), 16));
+};
+
+const clearScheduledAnimationFrame = (id: number): void => {
+  if (typeof globalThis.cancelAnimationFrame === "function") {
+    globalThis.cancelAnimationFrame(id);
+    return;
+  }
+  globalThis.clearTimeout(id);
+};
+
 /**
  * 高精度计时器钩子
  * 使用 requestAnimationFrame 实现平滑的计时器更新
@@ -26,7 +41,7 @@ export function useTimer(callback: () => void, isActive: boolean, interval: numb
   useEffect(() => {
     if (!isActive) {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = 0;
       }
       lastTimeRef.current = 0;
@@ -58,15 +73,15 @@ export function useTimer(callback: () => void, isActive: boolean, interval: numb
       }
 
       if (isActive) {
-        animationFrameRef.current = requestAnimationFrame(tick);
+        animationFrameRef.current = scheduleAnimationFrame(tick);
       }
     };
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    animationFrameRef.current = scheduleAnimationFrame(tick);
 
     return () => {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
       }
     };
   }, [isActive]);
@@ -106,7 +121,7 @@ export function useAccumulatingTimer(
   useEffect(() => {
     if (!isActive) {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = 0;
       }
       lastTimeRef.current = 0;
@@ -126,14 +141,14 @@ export function useAccumulatingTimer(
         }
       }
       if (isActive) {
-        animationFrameRef.current = requestAnimationFrame(tick);
+        animationFrameRef.current = scheduleAnimationFrame(tick);
       }
     };
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    animationFrameRef.current = scheduleAnimationFrame(tick);
     return () => {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
       }
     };
   }, [isActive]);

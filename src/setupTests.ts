@@ -30,6 +30,26 @@ function setupTestingEnvironment() {
       }),
     });
   }
+
+  const raf = (callback: FrameRequestCallback): number =>
+    win.setTimeout(() => callback(win.performance.now()), 16);
+  const caf = (id: number): void => {
+    win.clearTimeout(id);
+  };
+
+  if (typeof win.requestAnimationFrame !== "function") {
+    Object.defineProperty(win, "requestAnimationFrame", { writable: true, value: raf });
+  }
+  if (typeof win.cancelAnimationFrame !== "function") {
+    Object.defineProperty(win, "cancelAnimationFrame", { writable: true, value: caf });
+  }
+
+  if (typeof globalThis.requestAnimationFrame !== "function") {
+    Object.defineProperty(globalThis, "requestAnimationFrame", { writable: true, value: raf });
+  }
+  if (typeof globalThis.cancelAnimationFrame !== "function") {
+    Object.defineProperty(globalThis, "cancelAnimationFrame", { writable: true, value: caf });
+  }
 }
 
 setupTestingEnvironment();

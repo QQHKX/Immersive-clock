@@ -21,7 +21,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "npm run dev",
+    command: "cnpm run dev",
     url: "http://127.0.0.1:3005",
     reuseExistingServer: !process.env.CI,
     timeout: 60 * 1000,
