@@ -18,7 +18,19 @@
     {
       "source": "/",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "all" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "all"
+        }
+      ]
+    },
+    {
+      "source": "/docs/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
       ]
     },
     {
@@ -82,7 +94,6 @@
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
         }
-        
       ]
     },
     {

@@ -1,6 +1,13 @@
 /* 通用选项卡组件样式 */
 
 .tabs {
+  position: relative;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tabsTrack {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -9,7 +16,68 @@
 .scrollable {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px; /* 为下划线留出空间 */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  scroll-behavior: auto;
+  padding-bottom: 4px;
+  /* 为下划线留出空间 */
+}
+
+/* 渐变遮罩（左右） */
+.fadeLeft,
+.fadeRight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--tabs-fade-width, 24px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.fadeLeft {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--hud-background, rgba(20, 20, 20, 0.95)) 0%,
+    rgba(20, 20, 20, 0) 100%
+  );
+}
+
+.fadeRight {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--hud-background, rgba(20, 20, 20, 0.95)) 0%,
+    rgba(20, 20, 20, 0) 100%
+  );
+}
+
+.hasLeft .fadeLeft {
+  opacity: 1;
+}
+
+.hasRight .fadeRight {
+  opacity: 1;
+}
+
+/* 滚动阴影状态（细微） */
+.isScrolling {
+  box-shadow: inset 0 -2px 8px var(--tabs-shadow-color, rgba(0, 0, 0, 0.25));
+}
+
+/* 顶部粘性支持 */
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-modal, 1000);
+  background: var(--hud-background, rgba(20, 20, 20, 0.95));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  /* 新增：顶部安全空间与裁剪，容纳微小上移与遮挡边缘渐变 */
+  padding-top: var(--tabs-safe-top, 0);
+  overflow: hidden;
 }
 
 /* 变体：下划线 */
@@ -23,14 +91,16 @@
   background: transparent;
   border: none;
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 0.95rem;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  transition: color var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  transition:
+    color var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
 }
 
 .tabButton:hover:not(:disabled) {
@@ -44,13 +114,13 @@
 }
 
 .tabButtonActive.underlinedIndicator::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0.5rem;
   right: 0.5rem;
   bottom: -1px;
   height: 2px;
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   border-radius: 2px;
 }
 
@@ -63,34 +133,95 @@
 }
 
 .pill .tabButtonActive {
-  background: var(--accent-color, #03DAC6);
+  background: var(--accent-color, #03dac6);
   color: var(--background-color, #121212);
   border-color: transparent;
+}
+
+/* 变体：公告风格（与公告弹窗一致） */
+.announcement {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.announcement .tabButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--secondary-color);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  transition:
+    background var(--transition-fast, 0.2s),
+    color var(--transition-fast, 0.2s),
+    border-color var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
+}
+
+.announcement .tabButton:hover:not(:disabled) {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+  /* 恢复微小上移动效 */
+}
+
+.announcement .tabButtonActive {
+  color: var(--text-color);
+  border-bottom-color: var(--accent-color);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.announcement .tabButton:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .tabIcon {
   display: inline-flex;
   margin-right: 0.375rem;
+  opacity: 0.85;
 }
 
 /* 尺寸 */
-.sm .tabButton { font-size: 0.85rem; padding: 0.4rem 0.6rem; }
-.md .tabButton { font-size: 0.95rem; padding: 0.5rem 0.75rem; }
-.lg .tabButton { font-size: 1.05rem; padding: 0.6rem 0.9rem; }
+.sm .tabButton {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.md .tabButton {
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.lg .tabButton {
+  font-size: 1.05rem;
+  padding: 0.6rem 0.9rem;
+}
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .tabs {
+  .tabsTrack {
     gap: 0.375rem;
   }
-  .md .tabButton { font-size: 0.9rem; padding: 0.45rem 0.6rem; }
+
+  .md .tabButton {
+    font-size: 0.9rem;
+    padding: 0.45rem 0.6rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .tabs {
+  .tabsTrack {
     gap: 0.25rem;
   }
-  .md .tabButton { font-size: 0.85rem; padding: 0.4rem 0.5rem; }
+
+  .md .tabButton {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.5rem;
+  }
 }
 
 /* 高对比度模式支持 */
@@ -98,6 +229,7 @@
   .underlined {
     border-bottom-color: rgba(255, 255, 255, 0.4);
   }
+
   .pill .tabButton {
     border-color: rgba(255, 255, 255, 0.4);
   }
@@ -105,10 +237,14 @@
 
 /* 浏览器标签页风格 */
 .browser {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2px 0 0 0;
+  /* 提供顶部缓冲，避免悬浮位移产生割裂 */
+}
+
+.browser .tabsTrack {
   align-items: flex-end;
   gap: 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 2px 0 0 0; /* 提供顶部缓冲，避免悬浮位移产生割裂 */
 }
 
 .browser .tabButton {
@@ -118,14 +254,19 @@
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   padding: 0.45rem 0.75rem;
-  margin-top: 1px; /* 适度上边距，提升悬浮安全空间 */
-  margin-bottom: -1px; /* 将标签底部与条带边线贴合 */
-  transition: background var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  margin-top: 1px;
+  /* 适度上边距，提升悬浮安全空间 */
+  margin-bottom: -1px;
+  /* 将标签底部与条带边线贴合 */
+  transition:
+    background var(--transition-fast, 0.2s),
+    transform var(--transition-fast, 0.2s);
 }
 
 .browser .tabButton:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
-  transform: none; /* 取消上移，避免越界造成视觉割裂 */
+  transform: none;
+  /* 取消上移，避免越界造成视觉割裂 */
 }
 
 .browser .tabButtonActive {
@@ -135,14 +276,55 @@
 }
 
 .browser .tabButton:focus-visible {
-  outline: 2px solid var(--accent-color, #03DAC6);
+  outline: 2px solid var(--accent-color, #03dac6);
   outline-offset: -2px;
 }
 
 @media (max-width: 768px) {
-  .browser .tabButton { padding: 0.4rem 0.6rem; }
+  .browser .tabButton {
+    padding: 0.4rem 0.6rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .browser .tabButton { padding: 0.35rem 0.5rem; }
+  .browser .tabButton {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* 回弹动画 */
+@keyframes tabsBounceLeft {
+  0% {
+    transform: translateX(12px);
+  }
+
+  60% {
+    transform: translateX(-2px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes tabsBounceRight {
+  0% {
+    transform: translateX(-12px);
+  }
+
+  60% {
+    transform: translateX(2px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.bounceLeft {
+  animation: tabsBounceLeft 300ms ease-out;
+}
+
+.bounceRight {
+  animation: tabsBounceRight 300ms ease-out;
 }

@@ -1,4 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
+
+const scheduleAnimationFrame = (callback: FrameRequestCallback): number => {
+  if (typeof globalThis.requestAnimationFrame === "function") {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return Number(globalThis.setTimeout(() => callback(globalThis.performance.now()), 16));
+};
+
+const clearScheduledAnimationFrame = (id: number): void => {
+  if (typeof globalThis.cancelAnimationFrame === "function") {
+    globalThis.cancelAnimationFrame(id);
+    return;
+  }
+  globalThis.clearTimeout(id);
+};
 
 /**
  * 高精度计时器钩子
@@ -7,11 +22,7 @@ import { useEffect, useRef } from 'react';
  * @param isActive 计时器是否激活
  * @param interval 计时器间隔（毫秒），默认为1000ms
  */
-export function useTimer(
-  callback: () => void,
-  isActive: boolean,
-  interval: number = 1000
-): void {
+export function useTimer(callback: () => void, isActive: boolean, interval: number = 1000): void {
   const callbackRef = useRef(callback);
   const intervalRef = useRef(interval);
   const lastTimeRef = useRef<number>(0);
@@ -30,7 +41,7 @@ export function useTimer(
   useEffect(() => {
     if (!isActive) {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = 0;
       }
       lastTimeRef.current = 0;
@@ -62,15 +73,15 @@ export function useTimer(
       }
 
       if (isActive) {
-        animationFrameRef.current = requestAnimationFrame(tick);
+        animationFrameRef.current = scheduleAnimationFrame(tick);
       }
     };
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    animationFrameRef.current = scheduleAnimationFrame(tick);
 
     return () => {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
       }
     };
   }, [isActive]);
@@ -81,10 +92,7 @@ export function useTimer(
  * @param callback 回调函数
  * @param isActive 是否激活
  */
-export function useHighFrequencyTimer(
-  callback: () => void,
-  isActive: boolean
-): void {
+export function useHighFrequencyTimer(callback: () => void, isActive: boolean): void {
   return useTimer(callback, isActive, 10); // 10ms 间隔
 }
 
@@ -113,7 +121,7 @@ export function useAccumulatingTimer(
   useEffect(() => {
     if (!isActive) {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = 0;
       }
       lastTimeRef.current = 0;
@@ -133,14 +141,14 @@ export function useAccumulatingTimer(
         }
       }
       if (isActive) {
-        animationFrameRef.current = requestAnimationFrame(tick);
+        animationFrameRef.current = scheduleAnimationFrame(tick);
       }
     };
 
-    animationFrameRef.current = requestAnimationFrame(tick);
+    animationFrameRef.current = scheduleAnimationFrame(tick);
     return () => {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        clearScheduledAnimationFrame(animationFrameRef.current);
       }
     };
   }, [isActive]);

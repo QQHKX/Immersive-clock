@@ -1,6 +1,8 @@
 export {
   FormSection,
   FormInput,
+  FormFilePicker,
+  FormTextarea,
   FormButton,
   FormButtonGroup,
   FormRow,
@@ -8,12 +10,14 @@ export {
   FormCheckbox,
   FormRadio,
   FormSlider,
-  FormSegmented
-} from './FormComponents';
+  FormSegmented,
+} from "./FormComponents";
 
 export type {
   FormSectionProps,
   FormInputProps,
+  FormFilePickerProps,
+  FormTextareaProps,
   FormButtonProps,
   FormButtonGroupProps,
   FormRowProps,
@@ -22,5 +26,5 @@ export type {
   FormRadioProps,
   FormSliderProps,
   FormSegmentedProps,
-  FormSegmentedOption
-} from './FormComponents';
+  FormSegmentedOption,
+} from "./FormComponents";

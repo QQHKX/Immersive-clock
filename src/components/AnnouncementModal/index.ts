@@ -1,1 +1,1 @@
-export { default } from './AnnouncementModal';
+export { default } from "./AnnouncementModal";

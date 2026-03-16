@@ -33,14 +33,6 @@
   gap: 0.375rem;
 }
 
-.groupTitle::before {
-  content: '';
-  width: 4px;
-  height: 1.2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 2px;
-}
-
 .section {
   margin-bottom: 1.5rem;
 }
@@ -111,8 +103,15 @@
 .editForm {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.editFormCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
 }
 
 .timeSeparator {
@@ -134,6 +133,40 @@
 
   .editActions {
     flex-direction: column;
+  }
+}
+
+/* 滑块与说明信息左右分栏布局 */
+.sliderWithInfo {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.sliderWrapper {
+  flex: 0 0 60%;
+  min-width: 300px;
+}
+
+.infoSide {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-family: var(--font-ui);
+}
+
+@media (max-width: 768px) {
+  .sliderWithInfo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .sliderWrapper {
+    flex: none;
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -163,6 +196,27 @@
   font-family: var(--font-ui);
 }
 
+/* 统一链接样式，避免浏览器默认蓝色 */
+.infoText a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition:
+    color var(--transition-normal, 0.2s),
+    text-decoration-color var(--transition-normal, 0.2s);
+}
+
+.infoText a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+
+.infoText a:focus-visible {
+  outline: 2px solid var(--accent-color, #03dac6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* 状态徽标：已校准/未校准指示点 */
 .statusDot {
   width: 8px;
@@ -171,11 +225,15 @@
   display: inline-block;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
+
 .statusCalibrated {
-  background: #4caf50; /* 绿色：已校准 */
+  background: #4caf50;
+  /* 绿色：已校准 */
 }
+
 .statusUncalibrated {
-  background: #f44336; /* 红色：未校准 */
+  background: #f44336;
+  /* 红色：未校准 */
 }
 
 .helpText {
@@ -186,63 +244,21 @@
   font-family: var(--font-ui);
 }
 
-/* 金句刷新设置样式 */
-.quoteRefreshInfo {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* 字体选择下拉（复用面板风格） */
+.selectOverride {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  min-width: 240px;
+  font-family: var(--font-ui);
 }
 
-.quoteRefreshSlider {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
-  outline: none;
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.quoteRefreshSlider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.quoteRefreshSlider::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.quoteRefreshSlider:focus {
-  background: rgba(255, 255, 255, 0.15);
+.selectOverride:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .sliderContainer {
@@ -373,6 +389,21 @@
   .periodItem {
     animation: none;
     transform: none;
+  }
+}
+
+/* Checkbox Grid Layout */
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .checkboxGrid {
+    grid-template-columns: 1fr;
   }
 }
 

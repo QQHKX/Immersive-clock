@@ -1,59 +1,76 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { FormSection } from '../FormComponents';
-import styles from './NoiseSettings.module.css';
-import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import React, { useEffect, useMemo, useState } from "react";
 
-const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const getThreshold = () => getNoiseControlSettings().maxLevelDb;
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../../constants/noiseReport";
+import { getNoiseReportSettings } from "../../utils/noiseReportSettings";
+import { readNoiseSlices, subscribeNoiseSlicesUpdated } from "../../utils/noiseSliceService";
+import { SETTINGS_EVENTS, subscribeSettingsEvent } from "../../utils/settingsEvents";
+import { FormSection } from "../FormComponents";
 
-interface NoiseSample {
-  t: number;
-  v: number;
-  s: 'quiet' | 'noisy';
-}
+import styles from "./NoiseSettings.module.css";
 
 export const NoiseAlertHistory: React.FC = () => {
   const [tick, setTick] = useState(0);
+  const [settingsTick, setSettingsTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 3000);
-    return () => clearInterval(id);
+    const unsubscribe = subscribeNoiseSlicesUpdated(() => setTick((t) => t + 1));
+    setTick((t) => t + 1);
+    return unsubscribe;
   }, []);
 
-  const alerts = useMemo(() => {
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseReportSettingsUpdated, () => {
+      setSettingsTick((t) => t + 1);
+    });
+    return off;
+  }, []);
+
+  const { items, totalSegments, retentionDays } = useMemo(() => {
+    void tick;
+    void settingsTick;
     try {
-      const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
-      const all: NoiseSample[] = raw ? JSON.parse(raw) : [];
-      const list: { t: number; v: number }[] = [];
-      for (let i = 1; i < all.length; i++) {
-        const prev = all[i - 1];
-        const cur = all[i];
-        const threshold = getThreshold();
-        if (prev.v <= threshold && cur.v > threshold) {
-          list.push({ t: cur.t, v: cur.v });
-        }
-      }
-      return list.reverse();
+      const retentionDays = getNoiseReportSettings().retentionDays;
+      const cutoff = Date.now() - Math.max(1, Math.round(retentionDays)) * 24 * 60 * 60 * 1000;
+      const recent = readNoiseSlices()
+        .filter((s) => s.end >= cutoff)
+        .sort((a, b) => b.end - a.end);
+
+      const rows = recent
+        .filter((s) => s.raw.segmentCount > 0 || s.raw.overRatioDbfs > 0)
+        .slice(0, 60)
+        .map((s) => ({
+          time: new Date(s.end).toLocaleString(),
+          segments: s.raw.segmentCount,
+          overRatio: s.raw.overRatioDbfs,
+          score: s.score,
+        }));
+
+      const totalSegments = recent.reduce((acc, s) => acc + (s.raw.segmentCount || 0), 0);
+      return { items: rows, totalSegments, retentionDays };
     } catch {
-      return [];
+      return { items: [], totalSegments: 0, retentionDays: DEFAULT_NOISE_REPORT_RETENTION_DAYS };
     }
-  }, [tick]);
+  }, [tick, settingsTick]);
 
   return (
-    <FormSection title="历史记录面板">
-      <div className={styles.historyList} aria-live="polite">
-        {alerts.length === 0 ? (
-          <div className={styles.empty}>暂无提醒记录</div>
+    <FormSection title="提醒记录">
+      <div className={styles.alertHeader}>
+        <div>
+          最近{retentionDays}天事件段数：{totalSegments}
+        </div>
+      </div>
+      <div className={styles.alertList}>
+        {items.length === 0 ? (
+          <div className={styles.empty}>暂无记录</div>
         ) : (
-          alerts.map((a, idx) => (
-            <div key={idx} className={styles.historyItem}>
-              <span className={styles.historyTime}>{new Date(a.t).toLocaleString()}</span>
-              <span className={styles.historyBadge}>超标 {a.v.toFixed(1)} dB</span>
+          items.map((it, idx) => (
+            <div key={idx} className={styles.alertItem}>
+              <span className={styles.alertTime}>{it.time}</span>
+              <span className={styles.alertValue}>
+                段{it.segments} / {(it.overRatio * 100).toFixed(0)}% / {it.score.toFixed(1)}分
+              </span>
             </div>
           ))
         )}
-      </div>
-      <div className={styles.sourceNote} aria-live="polite">
-        数据来源时间：最近24小时提醒记录
       </div>
     </FormSection>
   );

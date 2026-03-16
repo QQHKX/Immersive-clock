@@ -24,7 +24,9 @@
 
 /* 主题切换时的平滑过渡 */
 .app {
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
 }
 
 /* 高对比度模式支持 */

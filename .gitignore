@@ -4,6 +4,15 @@ node_modules
 # 构建输出
 dist
 dist-ssr
+dist-electron
+release
+out
+build
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
 
 # 日志文件
 logs
@@ -38,11 +47,14 @@ coverage
 
 # 缓存目录
 .cache
+.npm-cache
 .temp
 .vercel
 
-# Trae AI 配置文件夹
+# AI 配置文件夹
 .trae
+.github/*instructions.md
+.github/skills/
 
 # 其他
 .env
@@ -53,4 +65,11 @@ coverage
 .stylelintcache
 dev-dist/
 Thumbs.db
+desktop.ini
 *.tsbuildinfo
+.history/
+
+# Playwright 测试报告
+playwright-report/
+test-results/
+blob-report/

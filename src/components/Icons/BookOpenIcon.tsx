@@ -1,18 +1,19 @@
-import React from 'react';
-import { IconProps } from './index';
+import React from "react";
+
+import { IconProps } from "./index";
 
 /**
  * 书本图标组件
- * 用于晚自习模式
+ * 用于自习模式
  * 引用 public/icons/ui/book-open.svg 文件
  */
 export const BookOpenIcon: React.FC<IconProps> = ({
   size = 24,
-  color = 'currentColor',
-  className = '',
+  color = "currentColor",
+  className = "",
   style = {},
   onClick,
-  'aria-hidden': ariaHidden = true,
+  "aria-hidden": ariaHidden = true,
   title,
   ...props
 }) => {
@@ -20,8 +21,8 @@ export const BookOpenIcon: React.FC<IconProps> = ({
     width: size,
     height: size,
     color: color,
-    display: 'inline-block',
-    verticalAlign: 'middle',
+    display: "inline-block",
+    verticalAlign: "middle",
     flexShrink: 0,
     ...style,
   };

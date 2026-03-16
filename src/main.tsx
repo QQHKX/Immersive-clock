@@ -1,19 +1,44 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { AppContextProvider } from './contexts/AppContext';
-import { App } from './App';
-import './styles/global.css';
-// PWA Service Worker 注册（自动更新与离线支持）
-import { registerSW } from 'virtual:pwa-register'
+import Clarity from "@microsoft/clarity";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+
+import { App } from "./App";
+import { AppContextProvider } from "./contexts/AppContext";
+import { getAppSettings } from "./utils/appSettings";
+import { initErrorCenterGlobalCapture, setErrorCenterMode } from "./utils/errorCenter";
+import { initializeStorage } from "./utils/storageInitializer";
+
+import "./styles/global.css";
+import "./styles/tour.css";
+
+/**
+ * 初始化埋点服务
+ * 仅在生产环境且显式开启时初始化，避免受网络策略影响产生无效报错
+ */
+function initAnalytics(): void {
+  const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID?.trim();
+  const enableClarity = import.meta.env.VITE_ENABLE_CLARITY === "true";
+
+  if (!import.meta.env.PROD || !enableClarity || !clarityProjectId) {
+    return;
+  }
+
+  Clarity.init(clarityProjectId);
+}
+
+initAnalytics();
+
+// 在应用启动前初始化本地存储
+initializeStorage();
+setErrorCenterMode(getAppSettings().study.alerts.errorCenterMode);
+initErrorCenterGlobalCapture();
 
 /**
  * 应用程序入口点
  * 设置React根节点，包装应用程序的提供者和路由
  */
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 
 root.render(
   <React.StrictMode>
@@ -30,7 +55,7 @@ root.render(
  * 在React应用渲染完成后执行
  */
 setTimeout(() => {
-  const loadingScreen = document.getElementById('loading-screen');
+  const loadingScreen = document.getElementById("loading-screen");
   if (loadingScreen) {
     // 确保DOM完全渲染后再隐藏加载动画
     requestAnimationFrame(() => {
@@ -39,17 +64,10 @@ setTimeout(() => {
   }
 }, 200);
 
-// 注册 Service Worker（生产与开发均启用，devOptions.enabled 已在 VitePWA 中设置）
-if ('serviceWorker' in navigator) {
-  registerSW({
-    immediate: true,
-    onNeedRefresh() {
-      // 可选：提示用户有新版本可用
-      // console.log('New content available, please refresh.')
-    },
-    onOfflineReady() {
-      // 可选：提示用户已可离线使用
-      // console.log('App ready to work offline.')
-    },
+// 注册 Service Worker（仅在 Web 模式下）
+// @ts-ignore
+if (__ENABLE_PWA__) {
+  import("./pwa-register").then(({ initPWA }) => {
+    initPWA();
   });
 }

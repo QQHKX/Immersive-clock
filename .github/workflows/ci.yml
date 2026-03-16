@@ -1,0 +1,307 @@
+name: CI Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NODE_VERSION: "22"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test
+
+  build-web:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Web
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Package Web dist
+        run: |
+          cd dist
+          zip -r ../immersive-clock-web.zip .
+          cd ..
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: immersive-clock-web.zip
+          if-no-files-found: error
+
+  build-electron-windows:
+    runs-on: windows-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron
+            ~\AppData\Local\electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package.json', 'electron-builder.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Cleanup broken NSIS cache
+        shell: pwsh
+        run: |
+          $nsisResourcesDir = Join-Path $env:LOCALAPPDATA "electron-builder\Cache\nsis\nsis-resources-3.4.1"
+          $wrongArchive = Join-Path $nsisResourcesDir "nsis-resources.7z"
+
+          if (Test-Path $wrongArchive) {
+            Write-Host "Detected legacy/broken NSIS resources cache ($wrongArchive). Removing $nsisResourcesDir to force re-download."
+            Remove-Item -Recurse -Force $nsisResourcesDir
+          }
+
+      - name: Create .env file from secrets
+        run: |
+          $content = @"
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          "@
+          
+          Set-Content -Path .env -Value $content
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+          DEBUG: electron-builder
+        run: |
+          $maxAttempts = 3
+
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "Build attempt $attempt of $maxAttempts..."
+
+            npm run build:electron
+            if ($LASTEXITCODE -ne 0) {
+              if ($attempt -eq $maxAttempts) {
+                throw "build:electron failed after $maxAttempts attempts"
+              }
+              Write-Host "build:electron failed, retrying in 10 seconds..."
+              Start-Sleep -Seconds 10
+              continue
+            }
+
+            npm run pack:electron
+            if ($LASTEXITCODE -eq 0) {
+              break
+            }
+
+            if ($attempt -eq $maxAttempts) {
+              throw "pack:electron failed after $maxAttempts attempts"
+            }
+
+            Write-Host "pack:electron failed, retrying in 10 seconds..."
+            Start-Sleep -Seconds 10
+          }
+        timeout-minutes: 30
+
+      - name: Verify Windows artifacts
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "release")) {
+            throw "release directory not found"
+          }
+
+          $setupFiles = Get-ChildItem -Path "release" -Filter "*-Setup.exe" -File -ErrorAction SilentlyContinue
+          $portableFiles = Get-ChildItem -Path "release" -Filter "*-Portable.exe" -File -ErrorAction SilentlyContinue
+
+          if (($setupFiles.Count + $portableFiles.Count) -eq 0) {
+            Get-ChildItem -Path "release" -Force | Format-Table -AutoSize | Out-String | Write-Host
+            throw "No Windows installer files found in release/"
+          }
+
+      - name: Upload Windows NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nsis-installer
+          path: release/*-Setup.exe
+          if-no-files-found: error
+
+      - name: Upload Windows Portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: release/*-Portable.exe
+          if-no-files-found: error
+
+  build-electron-linux:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package.json', 'electron-builder.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Create .env file from secrets
+        run: |
+          cat > .env << EOF
+          VITE_QWEATHER_API_HOST=${{ secrets.VITE_QWEATHER_API_HOST }}
+          VITE_QWEATHER_API_KEY=${{ secrets.VITE_QWEATHER_API_KEY }}
+          VITE_AMAP_API_KEY=${{ secrets.VITE_AMAP_API_KEY }}
+          EOF
+
+      - name: Build Electron app
+        env:
+          NODE_ENV: production
+        run: |
+          npm run build:electron
+          npm run pack:electron
+
+      - name: Verify Linux artifacts
+        shell: bash
+        run: |
+          if [ ! -d "release" ]; then
+            echo "release directory not found"
+            exit 1
+          fi
+
+          ls -la release
+
+          shopt -s nullglob
+          files=(release/*.AppImage release/*.deb release/*.rpm)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Linux artifacts found in release/"
+            exit 1
+          fi
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: release/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload Linux DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: release/*.deb
+          if-no-files-found: error
+
+      - name: Upload Linux RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: release/*.rpm
+          if-no-files-found: error
+
+  build-docker:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: build-web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push multi-arch Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

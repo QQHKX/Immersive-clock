@@ -1,14 +1,19 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { Modal } from '../Modal';
-import { FormButton, FormButtonGroup } from '../FormComponents';
-import { Tabs } from '../Tabs/Tabs';
-import styles from './SettingsPanel.module.css';
-import BasicSettingsPanel from './sections/BasicSettingsPanel';
-import StudySettingsPanel from './sections/StudySettingsPanel';
-import ContentSettingsPanel from './sections/ContentSettingsPanel';
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
-// 分区逻辑已拆分到子组件中
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { logger } from "../../utils/logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "../../utils/settingsEvents";
+import { FormButton, FormButtonGroup } from "../FormComponents";
+import { Modal } from "../Modal";
+import modalStyles from "../Modal/Modal.module.css";
+import { Tabs } from "../Tabs/Tabs";
+
+import AboutSettingsPanel from "./sections/AboutSettingsPanel";
+import BasicSettingsPanel from "./sections/BasicSettingsPanel";
+import ContentSettingsPanel from "./sections/ContentSettingsPanel";
+import StudySettingsPanel from "./sections/StudySettingsPanel";
+import WeatherSettingsPanel from "./sections/WeatherSettingsPanel";
+import styles from "./SettingsPanel.module.css";
 
 /**
  * 设置面板属性
@@ -21,115 +26,161 @@ interface SettingsPanelProps {
 }
 
 /**
- * 设置面板组件
- * 提供目标年份设置和课程表管理功能
- */
-/**
  * 设置面板主组件
- * 将基础设置、学习功能与内容管理分区委托给子组件，
- * 保留目标年份持久化与选项卡切换逻辑。
+ * 提供各功能分区的设置界面
  */
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { study } = useAppState();
   const dispatch = useAppDispatch();
-  
-  const [activeCategory, setActiveCategory] = useState<'basic' | 'study' | 'content'>('basic');
+
+  const [activeCategory, setActiveCategory] = useState<
+    "basic" | "weather" | "monitor" | "quotes" | "about"
+  >("basic");
   const [targetYear, setTargetYear] = useState(study.targetYear);
-  // 其余状态由子组件管理
   // 分区保存注册
   const basicSaveRef = useRef<() => void>(() => {});
-  const studySaveRef = useRef<() => void>(() => {});
-  const contentSaveRef = useRef<() => void>(() => {});
-  
-  // 其余逻辑由子组件管理
+  const weatherSaveRef = useRef<() => void>(() => {});
+  const monitorSaveRef = useRef<() => void>(() => {});
+  const quotesSaveRef = useRef<() => void>(() => {});
+  const aboutSaveRef = useRef<() => void>(() => {});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   /**
-   * 保存所有设置
+   * 统一关闭处理：广播面板关闭事件
    */
+  const handleClose = useCallback(() => {
+    try {
+      broadcastSettingsEvent(SETTINGS_EVENTS.SettingsPanelClosed);
+    } finally {
+      onClose();
+    }
+  }, [onClose]);
+
+  /** 保存所有设置 */
   const handleSaveAll = useCallback(() => {
-    // 保存目标年份（仅在高考模式下生效，但统一持久化）
-    dispatch({ type: 'SET_TARGET_YEAR', payload: targetYear });
-    // 统一调用各分区的保存逻辑
+    // 目标年份持久化（基础设置中会调整，但此处统一写入）
+    dispatch({ type: "SET_TARGET_YEAR", payload: targetYear });
     try {
       basicSaveRef.current?.();
-      studySaveRef.current?.();
-      contentSaveRef.current?.();
+      weatherSaveRef.current?.();
+      monitorSaveRef.current?.();
+      quotesSaveRef.current?.();
+      aboutSaveRef.current?.();
     } catch (e) {
-      console.error('保存分区设置失败:', e);
-      alert('保存设置时出现错误，请重试');
+      logger.error("保存分区设置失败:", e);
+      alert("保存设置时出现错误，请重试");
       return;
     }
-    // 关闭设置面板
-    onClose();
-  }, [targetYear, dispatch, onClose]);
-  
-  // 已移除：设置面板的噪音与天气处理，由子组件负责
-  
-  // 组件打开时加载数据
+    // 广播：保存完成事件（包含关键摘要）
+    broadcastSettingsEvent(SETTINGS_EVENTS.SettingsSaved, { targetYear });
+    handleClose();
+  }, [targetYear, dispatch, handleClose]);
+
+  // 打开时默认分区与数据
   useEffect(() => {
     if (isOpen) {
       setTargetYear(study.targetYear);
-      // 打开时默认显示基础设置
-      setActiveCategory('basic');
+      setActiveCategory("basic");
     }
   }, [isOpen, study.targetYear]);
-  
+
+  // 切换分区时滚动到顶部
+  useEffect(() => {
+    if (!isOpen) return;
+    const bodyEl = containerRef.current?.closest(`.${modalStyles.modalBody}`) as HTMLElement | null;
+    if (bodyEl) bodyEl.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeCategory, isOpen]);
+
   if (!isOpen) return null;
-  
+
   return (
     <>
-      <Modal 
-        isOpen={isOpen} 
-        onClose={onClose} 
-        title="设置" 
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="设置"
         maxWidth="lg"
+        headerDivider={false}
+        compactBodyTop
         footer={
           <FormButtonGroup align="right">
-            <FormButton variant="secondary" onClick={onClose}>
+            <FormButton id="settings-close-btn" variant="secondary" onClick={handleClose}>
               取消
             </FormButton>
-            <FormButton variant="primary" onClick={handleSaveAll}>
+            <FormButton id="settings-save-btn" variant="primary" onClick={handleSaveAll}>
               保存
             </FormButton>
           </FormButtonGroup>
         }
       >
-        <div className={styles.settingsContainer}>
-        {/* 顶部分类选项卡 */}
-        <Tabs
-          items={[
-            { key: 'basic', label: '基础设置' },
-            { key: 'study', label: '学习功能' },
-            { key: 'content', label: '内容管理' }
-          ]}
-          activeKey={activeCategory}
-          onChange={(key) => setActiveCategory(key as 'basic' | 'study' | 'content')}
-          variant="browser"
-          size="md"
-          scrollable
-        />
-
-        {/* 基础设置区域 */}
-        {activeCategory === 'basic' && (
-          <BasicSettingsPanel 
-            targetYear={targetYear} 
-            onTargetYearChange={setTargetYear}
-            onRegisterSave={(fn) => { basicSaveRef.current = fn; }}
+        <div id="settings-panel-container" ref={containerRef} className={styles.settingsContainer}>
+          {/* 顶部分类选项卡 */}
+          <Tabs
+            items={[
+              { key: "basic", label: "基础设置" },
+              { key: "weather", label: "天气设置" },
+              { key: "monitor", label: "监测设置" },
+              { key: "quotes", label: "语录设置" },
+              { key: "about", label: "关于" },
+            ]}
+            activeKey={activeCategory}
+            onChange={(key) =>
+              setActiveCategory(key as "basic" | "weather" | "monitor" | "quotes" | "about")
+            }
+            variant="announcement"
+            size="md"
+            scrollable
+            sticky
           />
-        )}
 
-        {/* 学习功能区域 */}
-        {activeCategory === 'study' && (
-          <StudySettingsPanel onRegisterSave={(fn) => { studySaveRef.current = fn; }} />
-        )}
+          {/* 基础设置 */}
+          {activeCategory === "basic" && (
+            <BasicSettingsPanel
+              targetYear={targetYear}
+              onTargetYearChange={setTargetYear}
+              onRegisterSave={(fn) => {
+                basicSaveRef.current = fn;
+              }}
+            />
+          )}
 
-        {/* 内容管理区域 */}
-        {activeCategory === 'content' && (
-          <ContentSettingsPanel onRegisterSave={(fn) => { contentSaveRef.current = fn; }} />
-        )}
+          {/* 天气设置 */}
+          {activeCategory === "weather" && (
+            <WeatherSettingsPanel
+              onRegisterSave={(fn) => {
+                weatherSaveRef.current = fn;
+              }}
+            />
+          )}
+
+          {/* 监测设置（噪音相关） */}
+          {activeCategory === "monitor" && (
+            <StudySettingsPanel
+              onRegisterSave={(fn) => {
+                monitorSaveRef.current = fn;
+              }}
+            />
+          )}
+
+          {/* 语录设置 */}
+          {activeCategory === "quotes" && (
+            <ContentSettingsPanel
+              onRegisterSave={(fn) => {
+                quotesSaveRef.current = fn;
+              }}
+            />
+          )}
+
+          {/* 关于 */}
+          {activeCategory === "about" && (
+            <AboutSettingsPanel
+              onRegisterSave={(fn) => {
+                aboutSaveRef.current = fn;
+              }}
+            />
+          )}
         </div>
       </Modal>
-      {/* 已移除：设置面板内的开发者测试噪音报告弹窗挂载 */}
     </>
   );
 }

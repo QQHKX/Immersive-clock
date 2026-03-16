@@ -1,12 +1,31 @@
 /* 学习组件样式（绝对定位布局） */
 
-.study {
+.study,
+.container {
   width: 100%;
   height: 100vh;
   position: relative;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--background-color);
+  color: var(--text-color);
   overflow: hidden;
+}
+
+/* 背景渐变覆层：与时钟页面保持一致的微弱中心高亮 */
+.container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.01) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* 进度条下方左侧 - 天气和噪音监测 */
@@ -23,7 +42,7 @@
   align-items: flex-start;
 }
 
-/* 进度条下方右侧 - 高考倒计时和励志金句 */
+/* 进度条下方右侧 - 高考倒计时和励志语录 */
 .topRight {
   position: absolute;
   top: 50px;
@@ -33,24 +52,45 @@
   z-index: 10;
 }
 
-.gaokaoCountdown {
+/* 轮播容器：固定高度与隐藏溢出 */
+.countdownCarousel {
   font-family: var(--font-ui);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
-  color: var(--text-primary);
   font-weight: 500;
+  display: inline-block;
+  height: 2.2em;
+  /* 固定高度，匹配单行文本高度 */
+  overflow: hidden;
+}
+
+/* 轮播轨道：按列排列，滚动切换 */
+.carouselTrack {
+  display: flex;
+  flex-direction: column;
+  transition: transform 300ms ease;
+  /* 滚动切换动画 */
+}
+
+/* 单项样式（继承原gaokaoCountdown样式） */
+.carouselItem {
+  color: var(--text-color);
   margin-bottom: 0;
+  line-height: 2.2em;
+  /* 与容器高度一致，确保每项高度一致 */
 }
 
 .days {
   color: var(--accent-color);
   font-weight: 700;
   font-size: 1.2em;
+  font-family: var(--font-main);
 }
 
 .quoteSection {
-  max-width: 300px;
+  /* 让容器宽度由父级内容内联样式控制（Study.tsx 设置 width） */
+  width: auto;
   font-size: clamp(0.9rem, 2vw, 1.1rem);
-  color: var(--text-secondary);
+  color: var(--secondary-color);
   line-height: 1.4;
   text-align: left !important;
 }
@@ -58,7 +98,7 @@
 /* 中央 - 时间显示 */
 .centerTime {
   position: absolute;
-  top: 45%;
+  top: 49%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -85,19 +125,8 @@
   transition: all var(--transition-normal);
 }
 
-
-
-
-
-
-
-
-
-
-/* 响应式设计 */
 /* 响应式设计 - 与时钟界面保持一致 */
 @media (max-width: 1024px) {
-
   .topLeft,
   .topRight {
     top: 45px;
@@ -111,18 +140,17 @@
     right: 15px;
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1rem, 2.5vw, 1.5rem);
   }
 
   .quoteSection {
-    max-width: 250px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
   }
 }
 
 @media (max-width: 768px) {
-
   .topLeft,
   .topRight {
     top: 40px;
@@ -144,13 +172,13 @@
     font-size: clamp(0.9rem, 3vw, 1.3rem);
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
     margin-bottom: 0;
   }
 
   .quoteSection {
-    max-width: 250px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.85rem, 2vw, 1.1rem);
     line-height: 1.5;
   }
@@ -173,7 +201,6 @@
 }
 
 @media (max-width: 480px) {
-
   .topLeft,
   .topRight {
     top: 35px;
@@ -187,13 +214,13 @@
     right: 8px;
   }
 
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1rem, 2.5vw, 1.4rem);
     margin-bottom: 0;
   }
 
   .quoteSection {
-    max-width: 200px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
     line-height: 1.5;
   }
@@ -203,32 +230,51 @@
   }
 }
 
+/* 高对比度模式支持：与时钟页面一致，禁用渐变并切换为纯黑白 */
+@media (prefers-contrast: high) {
+  .container {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .container::before {
+    display: none;
+  }
+}
+
+/* 打印样式：与时钟页面一致 */
+@media print {
+  .container {
+    background: white;
+    color: black;
+  }
+
+  .container::before {
+    display: none;
+  }
+}
+
 /* 竖屏显示优化 */
 @media (orientation: portrait) and (max-width: 768px) {
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.2rem, 3.2vw, 1.8rem);
     margin-bottom: 0;
   }
 
   .quoteSection {
-    max-width: 280px;
+    /* 避免覆盖由 JS 设定的宽度，仅调整字号与行高 */
     font-size: clamp(0.8rem, 1.8vw, 1rem);
     line-height: 1.5;
-  }
-
-  .days {
-    font-size: 1.3em;
   }
 }
 
 @media (orientation: portrait) and (max-width: 480px) {
-  .gaokaoCountdown {
+  .countdownCarousel {
     font-size: clamp(1.1rem, 2.8vw, 1.6rem);
     margin-bottom: 0;
   }
 
   .quoteSection {
-    max-width: 240px;
     font-size: clamp(0.75rem, 1.6vw, 0.9rem);
   }
 }

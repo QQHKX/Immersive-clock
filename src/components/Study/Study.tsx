@@ -1,37 +1,90 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useTimer } from '../../hooks/useTimer';
-import { formatClock } from '../../utils/formatTime';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 
-import StudyStatus from '../StudyStatus';
-import NoiseMonitor from '../NoiseMonitor';
-import { MotivationalQuote } from '../MotivationalQuote';
-import styles from './Study.module.css';
-import NoiseReportModal, { NoiseReportPeriod } from '../NoiseReportModal/NoiseReportModal';
-import NoiseHistoryModal from '../NoiseHistoryModal/NoiseHistoryModal';
-import { DEFAULT_SCHEDULE, StudyPeriod } from '../StudyStatus/StudyStatus';
-import { getAutoPopupSetting } from '../../utils/noiseReportSettings';
+import { useAppState } from "../../contexts/AppContext";
+import { useTimer } from "../../hooks/useTimer";
+import { CountdownItem } from "../../types";
+import { DEFAULT_SCHEDULE, StudyPeriod } from "../../types/studySchedule";
+import { formatClock } from "../../utils/formatTime";
+import { getAutoPopupSetting } from "../../utils/noiseReportSettings";
+import { readStudyBackground } from "../../utils/studyBackgroundStorage";
+import { ensureInjectedFonts } from "../../utils/studyFontStorage";
+import { readStudySchedule } from "../../utils/studyScheduleStorage";
+import { getAdjustedDate } from "../../utils/timeSync";
+import { getValidCoords, getValidDaily3d, getValidHourly72h } from "../../utils/weatherStorage";
+import { MotivationalQuote } from "../MotivationalQuote";
+import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
+import NoiseMonitor from "../NoiseMonitor";
+import NoiseReportModal, { NoiseReportPeriod } from "../NoiseReportModal/NoiseReportModal";
+import StudyStatus from "../StudyStatus";
+
+import styles from "./Study.module.css";
+
+// 颜色工具：#rrggbb/#rgb 转 rgba(r,g,b,a)
+function hexToRgba(hex: string, alpha: number = 1): string {
+  if (!hex) return hex;
+  const h = hex.trim();
+  const clampA = Math.max(0, Math.min(1, alpha));
+  const short = /^#([A-Fa-f0-9]{3})$/;
+  const long = /^#([A-Fa-f0-9]{6})$/;
+  if (short.test(h)) {
+    const m = h.match(short)!;
+    const r = parseInt(m[1][0] + m[1][0], 16);
+    const g = parseInt(m[1][1] + m[1][1], 16);
+    const b = parseInt(m[1][2] + m[1][2], 16);
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  if (long.test(h)) {
+    const m = h.match(long)!;
+    const r = parseInt(m[1].slice(0, 2), 16);
+    const g = parseInt(m[1].slice(2, 4), 16);
+    const b = parseInt(m[1].slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  // 对 rgb(...) 直接加透明度
+  const rgb = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
+  const rm = h.match(rgb);
+  if (rm) {
+    const r = Math.max(0, Math.min(255, parseInt(rm[1], 10)));
+    const g = Math.max(0, Math.min(255, parseInt(rm[2], 10)));
+    const b = Math.max(0, Math.min(255, parseInt(rm[3], 10)));
+    return `rgba(${r}, ${g}, ${b}, ${clampA})`;
+  }
+  // 若已是 rgba(...) 或其他格式，则原样返回
+  return h;
+}
 
 /**
- * 晚自习组件
- * 显示当前时间和高考倒计时
+ * 自习组件
+ * 显示当前时间和倒计时轮播
  */
 export function Study() {
   const { study } = useAppState();
-  const dispatch = useAppDispatch();
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [currentTime, setCurrentTime] = useState<Date>(getAdjustedDate());
   const [reportOpen, setReportOpen] = useState(false);
   const [reportPeriod, setReportPeriod] = useState<NoiseReportPeriod | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // [新增] 记录报告是否从历史记录界面打开
+  const [reportFromHistory, setReportFromHistory] = useState(false);
   // 记录当前课时是否已弹出过报告，以及是否被手动关闭以避免重复弹出
   const lastPopupPeriodIdRef = useRef<string | null>(null);
   const dismissedPeriodIdRef = useRef<string | null>(null);
+  const forecastPopupRef = useRef<{ periodId: string; popupId: string } | null>(null);
+  const lastForecastPopupPeriodIdRef = useRef<string | null>(null);
+
+  // 背景设置
+  const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
+
+  // 轮播：容器与尺寸测量
+  const countdownRef = useRef<HTMLDivElement | null>(null);
+  const [countdownWidth, setCountdownWidth] = useState<number>(0);
+  const [itemHeight, setItemHeight] = useState<number>(0);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
   /**
-   * 更新当前时间
+   * 更新时间
    */
   const updateTime = useCallback(() => {
-    setCurrentTime(new Date());
+    setCurrentTime(getAdjustedDate());
   }, []);
 
   // 使用计时器每秒更新时间
@@ -42,25 +95,39 @@ export function Study() {
     updateTime();
   }, [updateTime]);
 
+  // 监听背景设置更新事件
+  useEffect(() => {
+    const handler = () => setBackgroundSettings(readStudyBackground());
+    window.addEventListener("study-background-updated", handler as EventListener);
+    return () => window.removeEventListener("study-background-updated", handler as EventListener);
+  }, []);
+
+  /**
+   * 注入已导入字体（函数级注释：组件挂载时确保本地导入的字体已通过 @font-face 注入到页面）
+   */
+  useEffect(() => {
+    ensureInjectedFonts().catch(console.error);
+    const onFontsUpdated = () => {
+      ensureInjectedFonts().catch(console.error);
+    };
+    window.addEventListener("study-fonts-updated", onFontsUpdated as EventListener);
+    return () => window.removeEventListener("study-fonts-updated", onFontsUpdated as EventListener);
+  }, []);
+
   // 自动在本节课结束前1分钟弹出统计报告（不自动关闭；若手动关闭则在该课时结束前不再弹出）
   useEffect(() => {
-    const scheduleRaw = localStorage.getItem('study-schedule') || localStorage.getItem('studySchedule');
     let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
     try {
-      if (scheduleRaw) {
-        const parsed = JSON.parse(scheduleRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          schedule = parsed;
-        }
-      }
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) schedule = data;
     } catch {}
 
-    const now = new Date();
+    const now = getAdjustedDate();
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
     const toDate = (timeStr: string) => {
-      const [h, m] = timeStr.split(':').map(Number);
-      const d = new Date();
+      const [h, m] = timeStr.split(":").map(Number);
+      const d = getAdjustedDate();
       d.setHours(h, m, 0, 0);
       return d;
     };
@@ -82,16 +149,17 @@ export function Study() {
       }
 
       // 正在本节课内，并且进入结束前1分钟窗口（[end-1min, end)）
-      if (nowMin >= startMin && nowMin < endMin && (endMin - nowMin) <= 1) {
+      if (nowMin >= startMin && nowMin < endMin && endMin - nowMin <= 1) {
         // 检查是否启用自动弹出设置
         const autoPopupEnabled = getAutoPopupSetting();
-        
+
         // 若本课时已经弹出过，或被手动关闭过，或设置中禁用了自动弹出，则不再重复弹出
         const alreadyPopped = lastPopupPeriodIdRef.current === p.id;
         const dismissed = dismissedPeriodIdRef.current === p.id;
         if (!alreadyPopped && !dismissed && autoPopupEnabled) {
           setReportPeriod({ id: p.id, name: p.name, start, end });
           setReportOpen(true);
+          setReportFromHistory(false); // 自动弹出不属于历史记录来源
           lastPopupPeriodIdRef.current = p.id;
         }
         break;
@@ -99,65 +167,352 @@ export function Study() {
     }
   }, [currentTime, reportOpen]);
 
-  /**
-   * 计算距离高考的天数（基于最近的目标年份）
-   */
-  const calculateDaysToGaokao = useCallback(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    let gaokaoDate: Date;
+  useEffect(() => {
+    if (!study.classEndForecastEnabled) return;
 
-    // 目标年份为当年，若已过6月7日则使用下一年
-    if (study.targetYear === currentYear) {
-      const thisYearGaokao = new Date(currentYear, 5, 7);
-      gaokaoDate = now > thisYearGaokao ? new Date(currentYear + 1, 5, 7) : thisYearGaokao;
-    } else {
-      gaokaoDate = new Date(study.targetYear, 5, 7);
-      // 如果选择的目标年份已过当前日期，仍按该年6月7日计算剩余天数（可能为0）
+    let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
+    try {
+      const data = readStudySchedule();
+      if (Array.isArray(data) && data.length > 0) schedule = data;
+    } catch {}
+
+    const now = getAdjustedDate();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    const coords = getValidCoords();
+    if (!coords) return;
+    const locationParam = `${coords.lon},${coords.lat}`;
+
+    const daily3d = getValidDaily3d(locationParam);
+    const hourly72h = getValidHourly72h(locationParam);
+
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const formatLocalDate = (d: Date) =>
+      `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+    const toDate = (timeStr: string) => {
+      const [h, m] = timeStr.split(":").map(Number);
+      const d = getAdjustedDate();
+      d.setHours(h, m, 0, 0);
+      return d;
+    };
+
+    /** 构建未来1小时天气文案（函数级注释：从小时级缓存中汇总未来1小时天气、温度区间与降水信息） */
+    const buildNextHourLine = (label: string) => {
+      const list = hourly72h?.hourly || [];
+      const nowMs = now.getTime();
+      const targetEndMs = nowMs + 60 * 60 * 1000;
+
+      const hourlySegments = list
+        .map((item) => {
+          const ms = item.fxTime ? Date.parse(item.fxTime) : NaN;
+          if (!Number.isFinite(ms)) return null;
+          if (ms <= nowMs || ms > targetEndMs) return null;
+          return {
+            ms,
+            text: item.text || "",
+            tempNum: Number(item.temp),
+            popNum: Number(item.pop),
+            precipNum: Number(item.precip),
+          };
+        })
+        .filter(Boolean) as Array<{
+        ms: number;
+        text: string;
+        tempNum: number;
+        popNum: number;
+        precipNum: number;
+      }>;
+
+      if (hourlySegments.length === 0) {
+        return `${label}：暂无小时级天气数据，请稍后刷新天气`;
+      }
+
+      const sorted = [...hourlySegments].sort((a, b) => a.ms - b.ms);
+      const first = new Date(sorted[0].ms);
+      const last = new Date(sorted[sorted.length - 1].ms);
+      const timeRange = `${pad2(first.getHours())}:${pad2(first.getMinutes())}-${pad2(last.getHours())}:${pad2(last.getMinutes())}`;
+
+      const weatherList = Array.from(
+        new Set(
+          sorted
+            .map((item) => item.text.trim())
+            .filter((item) => item.length > 0)
+            .slice(0, 2)
+        )
+      );
+      const weatherText = weatherList.length > 0 ? weatherList.join("/") : "--";
+
+      const tempList = sorted
+        .map((item) => item.tempNum)
+        .filter((item) => Number.isFinite(item)) as number[];
+      const tempText =
+        tempList.length > 0 ? `${Math.min(...tempList)}~${Math.max(...tempList)}°` : "--";
+
+      const popList = sorted
+        .map((item) => item.popNum)
+        .filter((item) => Number.isFinite(item)) as number[];
+      const maxPop = popList.length > 0 ? Math.max(...popList) : null;
+
+      const precipTotal = sorted
+        .map((item) => item.precipNum)
+        .filter((item) => Number.isFinite(item) && item > 0)
+        .reduce((sum, item) => sum + item, 0);
+
+      const precipText = (() => {
+        const parts: string[] = [];
+        if (maxPop !== null) {
+          parts.push(`降水概率最高${maxPop}%`);
+        }
+        if (precipTotal > 0) {
+          parts.push(`累计降水约${precipTotal.toFixed(1)}mm`);
+        }
+        return parts.length > 0 ? `，${parts.join("，")}` : "";
+      })();
+
+      return `${label}（${timeRange}）：${weatherText}，${tempText}${precipText}`;
+    };
+
+    /** 构建明天天气文案（函数级注释：基于3日预报中的明天数据生成白天夜间与温度区间信息） */
+    const buildTomorrowLine = (label: string) => {
+      const tomorrow = daily3d?.daily?.[1];
+      if (!tomorrow) {
+        return `${label}：暂无日级天气数据，请稍后刷新天气`;
+      }
+      const dayText = tomorrow.textDay || "--";
+      const nightText = tomorrow.textNight || "--";
+      const tMin = tomorrow.tempMin || "--";
+      const tMax = tomorrow.tempMax || "--";
+      const precipText =
+        typeof tomorrow.precip === "string" && tomorrow.precip.trim().length > 0
+          ? `，降水量约${tomorrow.precip}mm`
+          : "";
+      return `${label}：白天${dayText}，夜间${nightText}，${tMin}~${tMax}°${precipText}`;
+    };
+
+    for (const p of schedule) {
+      const start = toDate(p.startTime);
+      const end = toDate(p.endTime);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = end.getHours() * 60 + end.getMinutes();
+
+      if (nowMin >= endMin) {
+        if (lastForecastPopupPeriodIdRef.current === p.id) {
+          lastForecastPopupPeriodIdRef.current = null;
+        }
+        if (forecastPopupRef.current?.periodId === p.id) {
+          window.dispatchEvent(
+            new CustomEvent("messagePopup:close", {
+              detail: { id: forecastPopupRef.current.popupId, dismiss: false },
+            })
+          );
+          forecastPopupRef.current = null;
+        }
+      }
+
+      if (nowMin >= startMin && nowMin < endMin && endMin - nowMin <= 5) {
+        const alreadyPopped = lastForecastPopupPeriodIdRef.current === p.id;
+        if (alreadyPopped) break;
+
+        const message = (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div>{buildNextHourLine("未来1小时")}</div>
+            <div>{buildTomorrowLine("明天")}</div>
+          </div>
+        );
+
+        const popupId = `weather:classEndForecast:${p.id}:${formatLocalDate(now)}`;
+        window.dispatchEvent(
+          new CustomEvent("messagePopup:open", {
+            detail: {
+              id: popupId,
+              type: "weatherForecast",
+              title: "下课前天气预报",
+              message,
+            },
+          })
+        );
+        lastForecastPopupPeriodIdRef.current = p.id;
+        forecastPopupRef.current = { periodId: p.id, popupId };
+        break;
+      }
     }
+  }, [currentTime, study.classEndForecastEnabled]);
 
-    const diffTime = gaokaoDate.getTime() - now.getTime();
+  /** 工具函数：计算到指定日期的剩余天数（YYYY-MM-DD） */
+  const calcDaysToDate = useCallback((dateStr?: string) => {
+    if (!dateStr) return 0;
+    const now = getAdjustedDate();
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!y || !m || !d) return 0;
+    const target = new Date(y, m - 1, d);
+    const diffTime = target.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, []);
+
+  /** 计算到最近一次高考（6月7日）的剩余天数（函数级注释：根据设置的目标年份计算到6月7日的剩余天数，返回非负整数） */
+  const calcDaysToNextGaokao = useCallback(() => {
+    const now = getAdjustedDate();
+    const year = study.targetYear || now.getFullYear();
+    const target = new Date(year, 5, 7);
+    const diffTime = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return Math.max(0, diffDays);
   }, [study.targetYear]);
 
-  /**
-   * 计算距离自定义事件的天数
-   */
-  const calculateDaysToCustom = useCallback(() => {
-    const now = new Date();
-    if (!study.customDate) return 0;
-    const [y, m, d] = study.customDate.split('-').map(Number);
-    if (!y || !m || !d) return 0;
-    const eventDate = new Date(y, (m - 1), d);
-    const diffTime = eventDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  }, [study.customDate]);
-
-
-
-
-
-
-
   const timeString = formatClock(currentTime);
-  const dateString = currentTime.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
+  const dateString = currentTime.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
   });
-  const daysToGaokao = calculateDaysToGaokao();
-  const daysToCustom = calculateDaysToCustom();
 
-  const isCustom = (study.countdownType ?? 'gaokao') === 'custom';
-  const countdownLabel = isCustom
-    ? `距离${(study.customName && study.customName.trim()) || '自定义事件'}仅`
-    : `距离${study.targetYear}年高考仅`;
-  const countdownDays = isCustom ? daysToCustom : daysToGaokao;
+  /** 构建轮播项（兼容旧配置） */
+  const countdownItems: CountdownItem[] = (() => {
+    const list = (study.countdownItems || []) as CountdownItem[];
 
-  
+    if (list && list.length > 0) {
+      return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    // 兼容旧版：仅一个倒计时
+    const isCustom = (study.countdownType ?? "gaokao") === "custom";
+    if (isCustom && study.customDate) {
+      return [
+        {
+          id: "legacy-custom",
+          kind: "custom",
+          name: study.customName || "自定义事件",
+          targetDate: study.customDate,
+          order: 0,
+          bgColor: undefined,
+          textColor: undefined,
+        },
+      ];
+    }
+    return [
+      {
+        id: "legacy-gaokao",
+        kind: "gaokao",
+        name: `高考倒计时`,
+        order: 0,
+        bgColor: undefined,
+        textColor: undefined,
+      },
+    ];
+  })();
+
+  const display = useMemo(
+    () =>
+      study.display || {
+        showStatusBar: true,
+        showNoiseMonitor: true,
+        showCountdown: true,
+        showQuote: true,
+        showTime: true,
+        showDate: true,
+      },
+    [study.display]
+  );
+
+  /** 测量倒计时可视项尺寸（函数级注释：优先读取当前轮播项宽度，避免父容器在小屏断点下残留旧宽度导致语录宽度不同步） */
+  const measureCountdown = useCallback(() => {
+    const el = countdownRef.current;
+    if (!el) {
+      setCountdownWidth(0);
+      setItemHeight(0);
+      return;
+    }
+    const trackEl = el.firstElementChild as HTMLDivElement | null;
+    const activeItemEl =
+      trackEl && trackEl.children.length > 0
+        ? (trackEl.children[Math.min(activeIndex, trackEl.children.length - 1)] as HTMLElement)
+        : null;
+    const widthRect = activeItemEl?.getBoundingClientRect() ?? el.getBoundingClientRect();
+    const containerRect = el.getBoundingClientRect();
+    const nextWidth = Math.round(widthRect.width);
+    const nextHeight = Math.round(containerRect.height);
+    setCountdownWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+    setItemHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, [activeIndex]);
+
+  // 容器尺寸与宽度测量
+  useEffect(() => {
+    if (!display.showCountdown) {
+      setCountdownWidth(0);
+      setItemHeight(0);
+      return;
+    }
+
+    const measureWithRaf = () => {
+      requestAnimationFrame(() => measureCountdown());
+    };
+
+    measureWithRaf();
+
+    const el = countdownRef.current;
+    const observer = el ? new ResizeObserver(measureWithRaf) : null;
+    if (el && observer) {
+      observer.observe(el);
+    }
+
+    window.addEventListener("resize", measureWithRaf);
+    window.addEventListener("orientationchange", measureWithRaf);
+    window.addEventListener("study-fonts-updated", measureWithRaf as EventListener);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measureWithRaf);
+      window.removeEventListener("orientationchange", measureWithRaf);
+      window.removeEventListener("study-fonts-updated", measureWithRaf as EventListener);
+    };
+  }, [display.showCountdown, measureCountdown, countdownItems.length, activeIndex]);
+
+  // 自动轮播：按配置间隔切换
+  useEffect(() => {
+    const total = countdownItems.length;
+    if (total <= 1) return;
+    const intervalSec = Math.max(1, Math.min(60, study.carouselIntervalSec ?? 6));
+    const timer = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % total);
+    }, intervalSec * 1000);
+    return () => clearInterval(timer);
+  }, [countdownItems.length, study.carouselIntervalSec]);
+
+  // 背景样式
+  const backgroundStyle: React.CSSProperties = (() => {
+    const style: React.CSSProperties = {};
+    if (backgroundSettings?.type === "image" && backgroundSettings.imageDataUrl) {
+      style.backgroundImage = `url(${backgroundSettings.imageDataUrl})`;
+      style.backgroundSize = "cover";
+      style.backgroundPosition = "center";
+      style.backgroundRepeat = "no-repeat";
+    } else if (backgroundSettings?.type === "color" && backgroundSettings.color) {
+      style.backgroundImage = "none";
+      const a =
+        typeof backgroundSettings.colorAlpha === "number" ? backgroundSettings.colorAlpha : 1;
+      style.backgroundColor = hexToRgba(backgroundSettings.color, a);
+    }
+    return style;
+  })();
+
+  /** 构造容器样式（函数级注释：合并背景样式并按自习设置覆盖 CSS 字体变量，确保数字与文本分别使用对应的字体家族） */
+  type ContainerStyle = React.CSSProperties & {
+    ["--font-main"]?: string;
+    ["--font-ui"]?: string;
+  };
+  const containerStyle: ContainerStyle = (() => {
+    const style: ContainerStyle = { ...(backgroundStyle as React.CSSProperties) };
+    if (study.numericFontFamily && study.numericFontFamily.trim().length > 0) {
+      style["--font-main"] = study.numericFontFamily;
+    }
+    if (study.textFontFamily && study.textFontFamily.trim().length > 0) {
+      style["--font-ui"] = study.textFontFamily;
+    }
+    return style;
+  })();
 
   // 手动关闭报告：记录当前课时的关闭标记，避免在窗口内重复弹出
   const handleCloseReport = useCallback(() => {
@@ -167,50 +522,159 @@ export function Study() {
     setReportOpen(false);
   }, [reportPeriod]);
 
-  // 点击状态文本时打开历史记录弹窗
-  const handleOpenHistory = useCallback(() => {
+  /** 返回历史记录（函数级注释：仅在从历史记录进入报告时提供“返回历史记录”按钮，避免关闭按钮产生隐式跳转） */
+  const handleBackToHistory = useCallback(() => {
+    if (reportPeriod) {
+      dismissedPeriodIdRef.current = reportPeriod.id;
+    }
+    setReportOpen(false);
     setHistoryOpen(true);
-  }, []);
+    setReportFromHistory(false);
+  }, [reportPeriod]);
 
   const handleCloseHistory = useCallback(() => {
     setHistoryOpen(false);
   }, []);
 
+  /**
+   * 打开噪音历史记录（函数级注释：由噪音监测“呼吸灯”触发，进入历史记录管理界面）
+   */
+  const handleOpenHistory = useCallback(() => {
+    setHistoryOpen(true);
+  }, []);
+
+  /**
+   * 从历史列表查看详情（函数级注释：关闭历史弹窗并打开报告弹窗，复用统一的统计报告 UI）
+   */
+  const handleViewHistoryDetail = useCallback((period: NoiseReportPeriod) => {
+    setHistoryOpen(false);
+    setReportPeriod(period);
+    setReportOpen(true);
+    setReportFromHistory(true); // 标记来源为历史记录
+  }, []);
+
+  // 计算每个项的文案与天数（函数级注释：生成倒计时项的显示文本，其中高考事件强制包含年份并采用“距离YYYY高考仅xx天”的格式）
+  const renderItem = (item: (typeof countdownItems)[number]) => {
+    const days = item.kind === "gaokao" ? calcDaysToNextGaokao() : calcDaysToDate(item.targetDate);
+    // 高考事件：优先从名称中解析年份，否则使用设置中的目标年份
+    let nameText: string;
+    if (item.kind === "gaokao") {
+      const rawName = (item.name || "").trim();
+      const m = rawName.match(/\b(19|20)\d{2}\b/); // 尝试从名称中提取四位年份
+      const year = m ? parseInt(m[0], 10) : study.targetYear || getAdjustedDate().getFullYear();
+      nameText = `${year}高考`;
+    } else {
+      nameText = item.name && item.name.trim().length > 0 ? item.name!.trim() : "自定义事件";
+    }
+    const textCol = item.textColor
+      ? hexToRgba(item.textColor, typeof item.textOpacity === "number" ? item.textOpacity : 1)
+      : undefined;
+    const bgCol = item.bgColor
+      ? hexToRgba(item.bgColor, typeof item.bgOpacity === "number" ? item.bgOpacity : 0)
+      : undefined;
+    const digitBaseColor = item.digitColor ?? study.digitColor;
+    const digitAlpha =
+      typeof item.digitOpacity === "number"
+        ? item.digitOpacity
+        : typeof study.digitOpacity === "number"
+          ? study.digitOpacity
+          : 1;
+    const digitCol = digitBaseColor ? hexToRgba(digitBaseColor, digitAlpha) : undefined;
+    return (
+      <div
+        key={item.id}
+        className={styles.carouselItem}
+        style={{
+          color: textCol,
+          backgroundColor: bgCol,
+          borderRadius: item.bgColor ? 6 : undefined,
+          padding: item.bgColor ? "0 8px" : undefined,
+        }}
+      >
+        距离{nameText}仅{" "}
+        <span className={styles.days} style={{ color: digitCol }}>
+          {days}
+        </span>{" "}
+        天
+      </div>
+    );
+  };
+
   return (
-    <div className={styles.study}>
-      {/* 智能晚自习状态管理 */}
-      <StudyStatus />
-      
-      {/* 左上角 - 噪音监测 */}
-      <div className={styles.topLeft}>
-        <NoiseMonitor onStatusClick={handleOpenHistory} />
-      </div>
-      
-      {/* 右上角 - 倒计时和励志金句 */}
-      <div className={styles.topRight}>
-        <div className={styles.gaokaoCountdown}>
-          {countdownLabel} <span className={styles.days}>{countdownDays}</span> 天
+    <div className={styles.container} style={containerStyle}>
+      {/* 左上角：状态栏与噪音监测（分别可隐藏） */}
+      {(display.showStatusBar || display.showNoiseMonitor) && (
+        <div className={styles.topLeft}>
+          {display.showStatusBar && <StudyStatus />}
+          {display.showNoiseMonitor && (
+            <NoiseMonitor
+              onBreathingLightClick={handleOpenHistory}
+              onStatusClick={handleOpenHistory}
+            />
+          )}
         </div>
-        <div className={styles.quoteSection}>
-          <MotivationalQuote />
+      )}
+
+      {/* 右上角：倒计时与励志语录（分别可隐藏） */}
+      {(display.showCountdown || display.showQuote) && (
+        <div className={styles.topRight}>
+          {display.showCountdown && (
+            <div className={styles.countdownCarousel} ref={countdownRef} aria-live="polite">
+              <div
+                className={styles.carouselTrack}
+                style={{ transform: `translateY(-${activeIndex * (itemHeight || 0)}px)` }}
+              >
+                {countdownItems.map(renderItem)}
+              </div>
+            </div>
+          )}
+          {display.showQuote && (
+            <div
+              className={styles.quoteSection}
+              style={{ width: display.showCountdown ? countdownWidth || undefined : undefined }}
+            >
+              <MotivationalQuote />
+            </div>
+          )}
         </div>
-      </div>
-      
-      {/* 中央 - 时间显示 */}
+      )}
+
+      {/* 居中：时间始终显示，日期可隐藏 */}
       <div className={styles.centerTime}>
-        <div className={styles.currentTime}>{timeString}</div>
-        <div className={styles.currentDate}>{dateString}</div>
+        <div
+          className={styles.currentTime}
+          style={study.timeColor ? { color: study.timeColor } : undefined}
+        >
+          {timeString}
+        </div>
+        {display.showDate && (
+          <div
+            className={styles.currentDate}
+            style={study.dateColor ? { color: study.dateColor } : undefined}
+          >
+            {dateString}
+          </div>
+        )}
       </div>
 
-      {/* 统计报告弹窗 */}
-      <NoiseReportModal 
-        isOpen={reportOpen} 
-        onClose={handleCloseReport} 
-        period={reportPeriod} 
-      />
+      {/* 噪音报告弹窗 */}
+      {reportOpen && reportPeriod && (
+        <NoiseReportModal
+          isOpen={reportOpen}
+          onClose={handleCloseReport}
+          onBack={reportFromHistory ? handleBackToHistory : undefined}
+          period={reportPeriod}
+        />
+      )}
 
-      {/* 历史记录弹窗 */}
-      <NoiseHistoryModal isOpen={historyOpen} onClose={handleCloseHistory} />
+      {/* 噪音历史记录弹窗 */}
+      {historyOpen && (
+        <NoiseHistoryModal
+          isOpen={historyOpen}
+          onClose={handleCloseHistory}
+          onViewDetail={handleViewHistoryDetail}
+        />
+      )}
     </div>
   );
 }
