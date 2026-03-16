@@ -146,14 +146,6 @@ export const BasicSettingsPanel: React.FC<BasicSettingsPanelProps> = ({ targetYe
           <p className={styles.infoText}>风向：{localStorage.getItem('weather.now.windDir') || '未获取'}  风力：{localStorage.getItem('weather.now.windScale') || '未获取'}  风速：{localStorage.getItem('weather.now.windSpeed') ? `${localStorage.getItem('weather.now.windSpeed')} km/h` : '未获取'}</p>
           <p className={styles.infoText}>湿度：{localStorage.getItem('weather.now.humidity') ? `${localStorage.getItem('weather.now.humidity')}%` : '未获取'}  气压：{localStorage.getItem('weather.now.pressure') ? `${localStorage.getItem('weather.now.pressure')} hPa` : '未获取'}</p>
           <p className={styles.infoText}>降水：{localStorage.getItem('weather.now.precip') ? `${localStorage.getItem('weather.now.precip')} mm` : '未获取'}  能见度：{localStorage.getItem('weather.now.vis') ? `${localStorage.getItem('weather.now.vis')} km` : '未获取'}  云量：{localStorage.getItem('weather.now.cloud') || '未获取'}</p>
-          <p className={styles.infoText}>分钟级降水预警：{(() => {
-            const level = localStorage.getItem('weather.minutely.level');
-            const probability = localStorage.getItem('weather.minutely.probability');
-            const expectedMm = localStorage.getItem('weather.minutely.expectedMm');
-            const reason = localStorage.getItem('weather.minutely.reason');
-            if (!level || !probability || !expectedMm || !reason) return '未获取';
-            return `${level}（概率 ${probability}% / 30分钟约 ${expectedMm}mm）- ${reason}`;
-          })()}</p>
           <p className={styles.infoText}>露点：{localStorage.getItem('weather.now.dew') || '未获取'}</p>
           <p className={styles.infoText}>数据源：{(() => {
             const sources = localStorage.getItem('weather.refer.sources');
