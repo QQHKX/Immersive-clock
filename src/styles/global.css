@@ -1,5 +1,5 @@
 /* 导入 CSS 变量 */
-@import './variables.css';
+@import "./variables.css";
 
 /* 重置与基础样式 */
 *,
@@ -129,7 +129,6 @@ img[loading="lazy"] {
 
 /* 动画关键帧 */
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;

@@ -1,27 +1,47 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import styles from '../SettingsPanel.module.css';
-import { FormSection, FormButton, FormButtonGroup, FormCheckbox, FormInput, FormRow, FormSlider } from '../../FormComponents';
-import { PlusIcon, TrashIcon, SaveIcon, VolumeIcon, VolumeMuteIcon } from '../../Icons';
-import RealTimeNoiseChart from '../../NoiseSettings/RealTimeNoiseChart';
-import NoiseStatsSummary from '../../NoiseSettings/NoiseStatsSummary';
-import { StudyPeriod, DEFAULT_SCHEDULE } from '../../StudyStatus';
-import { getNoiseReportSettings, setAutoPopupSetting } from '../../../utils/noiseReportSettings';
-import { readStudySchedule, writeStudySchedule } from '../../../utils/studyScheduleStorage';
-import { getNoiseControlSettings, saveNoiseControlSettings } from '../../../utils/noiseControlSettings';
+import React, { useCallback, useEffect, useState } from "react";
+
+import { DEFAULT_NOISE_REPORT_RETENTION_DAYS } from "../../../constants/noiseReport";
+import { useAppState } from "../../../contexts/AppContext";
+import { getAppSettings, updateNoiseSettings } from "../../../utils/appSettings";
+import { pushErrorCenterRecord } from "../../../utils/errorCenter";
+import { logger } from "../../../utils/logger";
+import {
+  getNoiseControlSettings,
+  saveNoiseControlSettings,
+} from "../../../utils/noiseControlSettings";
+import {
+  estimateMaxRetentionDaysByQuota,
+  getNoiseReportSettings,
+  setAutoPopupSetting,
+  setRetentionDaysSetting,
+} from "../../../utils/noiseReportSettings";
+import {
+  broadcastSettingsEvent,
+  SETTINGS_EVENTS,
+  subscribeSettingsEvent,
+} from "../../../utils/settingsEvents";
+import {
+  FormSection,
+  FormButton,
+  FormButtonGroup,
+  FormCheckbox,
+  FormInput,
+  FormSlider,
+  FormRow,
+} from "../../FormComponents";
+import { VolumeIcon, VolumeMuteIcon } from "../../Icons";
+import { NoiseStatsSummary } from "../../NoiseSettings/NoiseStatsSummary";
+import { RealTimeNoiseChart } from "../../NoiseSettings/RealTimeNoiseChart";
+import styles from "../SettingsPanel.module.css";
 
 /**
  * 学习功能分段组件的属性
  * - `onScheduleSave`：保存课程表后的回调
  */
 export interface StudySettingsPanelProps {
-  onScheduleSave?: (schedule: StudyPeriod[]) => void;
   onRegisterSave?: (fn: () => void) => void;
 }
 
-const BASELINE_NOISE_KEY = 'noise-monitor-baseline';
-const BASELINE_RMS_KEY = 'noise-monitor-baseline-rms';
-const BASELINE_DB = 40;
-
 /**
  * 学习功能分段组件
  * - 噪音校准与报告设置
@@ -34,46 +54,89 @@ const BASELINE_DB = 40;
  * - 噪音图表与历史
  * - 课程表编辑
  */
-export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onScheduleSave, onRegisterSave }) => {
+export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onRegisterSave }) => {
+  const { study } = useAppState();
+  const [_effectiveBaselineRms, setEffectiveBaselineRms] = useState<number>(() => {
+    return getAppSettings().noiseControl.baselineRms ?? 0;
+  });
   const [noiseBaseline, setNoiseBaseline] = useState<number>(() => {
-    const saved = localStorage.getItem(BASELINE_NOISE_KEY);
-    return saved ? parseFloat(saved) : 0;
+    const s = getAppSettings().noiseControl;
+    return s.baselineRms > 0 ? s.baselineDisplayDb : 0;
   });
   const [baselineRms, setBaselineRms] = useState<number>(() => {
-    const savedRms = localStorage.getItem(BASELINE_RMS_KEY);
-    return savedRms ? parseFloat(savedRms) : 0;
+    return getAppSettings().noiseControl.baselineRms ?? 0;
   });
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [calibrationProgress, setCalibrationProgress] = useState<number>(0);
-  const [calibrationError, setCalibrationError] = useState<string | null>(null);
-  const [autoPopupReport, setAutoPopupReport] = useState<boolean>(() => getNoiseReportSettings().autoPopup);
+  const [, setCalibrationError] = useState<string | null>(null);
+  const [autoPopupReport, setAutoPopupReport] = useState<boolean>(
+    () => getNoiseReportSettings().autoPopup
+  );
+  const [reportRetentionDays, setReportRetentionDays] = useState<number>(
+    () => getNoiseReportSettings().retentionDays
+  );
+  const [maxReportRetentionDays, setMaxReportRetentionDays] = useState<number | null>(null);
 
   // 噪音控制（自动噪音限制 & 手动基准噪音）
   const initialControl = getNoiseControlSettings();
   const [draftMaxNoiseLevel, setDraftMaxNoiseLevel] = useState<number>(initialControl.maxLevelDb);
-  const [draftManualBaselineDb, setDraftManualBaselineDb] = useState<number>(initialControl.baselineDb);
-  const [draftShowRealtimeDb, setDraftShowRealtimeDb] = useState<boolean>(initialControl.showRealtimeDb);
+  const [draftManualBaselineDb, setDraftManualBaselineDb] = useState<number>(
+    initialControl.baselineDb
+  );
+  const [draftShowRealtimeDb, setDraftShowRealtimeDb] = useState<boolean>(
+    initialControl.showRealtimeDb
+  );
+  const [draftAvgWindowSec, setDraftAvgWindowSec] = useState<number>(initialControl.avgWindowSec);
+  const [draftAlertSoundEnabled, setDraftAlertSoundEnabled] = useState<boolean>(
+    initialControl.alertSoundEnabled ?? false
+  );
 
-  const [schedule, setSchedule] = useState<StudyPeriod[]>(DEFAULT_SCHEDULE);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const openMessagePopup = useCallback(
+    (detail: { type: "general" | "error"; title: string; message: string }) => {
+      if (detail.type === "error") {
+        pushErrorCenterRecord({
+          level: "error",
+          source: "noise",
+          title: detail.title,
+          message: detail.message,
+        });
+        if (!study.errorPopupEnabled) return;
+      }
+      window.dispatchEvent(
+        new CustomEvent("messagePopup:open", {
+          detail,
+        })
+      );
+    },
+    [study.errorPopupEnabled]
+  );
 
-  // 加载课程表与噪音设置为草稿
+  // 初始化噪音设置为草稿
   useEffect(() => {
-    const data = readStudySchedule();
-    setSchedule(Array.isArray(data) && data.length > 0 ? data : DEFAULT_SCHEDULE);
-    const savedDb = localStorage.getItem(BASELINE_NOISE_KEY);
-    const savedRms = localStorage.getItem(BASELINE_RMS_KEY);
-    const savedDbValue = savedDb ? parseFloat(savedDb) : 0;
-    const savedRmsValue = savedRms ? parseFloat(savedRms) : 0;
-    // 优先显示DB；若仅有RMS则显示为当前手动显示基准
+    const noiseSettings = getAppSettings().noiseControl;
     const currentControl = getNoiseControlSettings();
-    setNoiseBaseline(savedDbValue > 0 ? savedDbValue : (savedRmsValue > 0 ? currentControl.baselineDb : 0));
-    setBaselineRms(savedRmsValue);
+    setEffectiveBaselineRms(noiseSettings.baselineRms ?? 0);
+    setBaselineRms(noiseSettings.baselineRms ?? 0);
+    setNoiseBaseline(noiseSettings.baselineRms > 0 ? noiseSettings.baselineDisplayDb : 0);
     setAutoPopupReport(getNoiseReportSettings().autoPopup);
-    // 同步噪音控制默认值
+    setReportRetentionDays(getNoiseReportSettings().retentionDays);
     setDraftMaxNoiseLevel(currentControl.maxLevelDb);
     setDraftManualBaselineDb(currentControl.baselineDb);
     setDraftShowRealtimeDb(currentControl.showRealtimeDb);
+    setDraftAvgWindowSec(currentControl.avgWindowSec);
+    setDraftAlertSoundEnabled(currentControl.alertSoundEnabled ?? false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const maxDays = await estimateMaxRetentionDaysByQuota();
+      if (cancelled) return;
+      setMaxReportRetentionDays(maxDays);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 在已存在 RMS 校准的情况下，当前校准显示应与滑块的显示基准保持同步
@@ -83,33 +146,61 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
     }
   }, [draftManualBaselineDb, baselineRms]);
 
+  // 订阅“已生效基线”的变更：用于显示当前生效的 RMS（保存后/自动校准后都能实时刷新）
+  useEffect(() => {
+    const off = subscribeSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, (evt: CustomEvent) => {
+      try {
+        const detail = evt.detail as { baselineRms?: unknown } | undefined;
+        const nextRms =
+          detail && typeof detail.baselineRms === "number" ? detail.baselineRms : undefined;
+        if (typeof nextRms === "number") {
+          setEffectiveBaselineRms(nextRms);
+          return;
+        }
+        setEffectiveBaselineRms(getAppSettings().noiseControl.baselineRms ?? 0);
+      } catch {
+        setEffectiveBaselineRms(getAppSettings().noiseControl.baselineRms ?? 0);
+      }
+    });
+    return off;
+  }, []);
+
   const handleClearNoiseBaseline = useCallback(() => {
-    if (confirm('确定要清除噪音校准吗？这将重置为未校准状态。')) {
+    if (confirm("确定要清除噪音校准吗？这将重置为未校准状态。")) {
       setNoiseBaseline(0);
       setBaselineRms(0);
-      alert('噪音校准已清除（未保存）');
+      openMessagePopup({ type: "general", title: "提示", message: "噪音校准已清除（未保存）" });
     }
-  }, []);
+  }, [openMessagePopup]);
 
   const performCalibration = useCallback(async () => {
     setCalibrationError(null);
     setIsCalibrating(true);
     setCalibrationProgress(0);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContextCtor = window as unknown as {
+        AudioContext?: typeof AudioContext;
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const Ctor = audioContextCtor.AudioContext || audioContextCtor.webkitAudioContext;
+      if (!Ctor) {
+        logger.warn("当前环境不支持 WebAudio");
+        return;
+      }
+      const audioContext = new Ctor();
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.25;
       // 简易A加权近似：80Hz高通 + 8kHz低通
       const highpass = audioContext.createBiquadFilter();
-      highpass.type = 'highpass';
+      highpass.type = "highpass";
       highpass.frequency.value = 80;
       highpass.Q.value = 0.7;
       const lowpass = audioContext.createBiquadFilter();
-      lowpass.type = 'lowpass';
+      lowpass.type = "lowpass";
       lowpass.frequency.value = 8000;
       lowpass.Q.value = 0.7;
 
@@ -124,7 +215,7 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
       const totalSamples = Math.floor(sampleDuration / sampleInterval);
 
       for (let i = 0; i < totalSamples; i++) {
-        await new Promise(resolve => setTimeout(resolve, sampleInterval));
+        await new Promise((resolve) => setTimeout(resolve, sampleInterval));
         const dataArray = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(dataArray);
         let sumSq = 0;
@@ -142,241 +233,301 @@ export const StudySettingsPanel: React.FC<StudySettingsPanelProps> = ({ onSchedu
       highpass.disconnect();
       lowpass.disconnect();
       audioContext.close();
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
 
       if (rmsSamples.length > 0) {
         const avgRms = rmsSamples.reduce((s, x) => s + x, 0) / rmsSamples.length;
         setBaselineRms(avgRms);
         // 使用当前手动显示基准作为校准后的显示基线
         setNoiseBaseline(draftManualBaselineDb);
-        alert(`噪音校准完成！基准值设置为 ${draftManualBaselineDb}dB（未保存）`);
+        openMessagePopup({
+          type: "general",
+          title: "噪音校准完成",
+          message: `基准值设置为 ${draftManualBaselineDb}dB（未保存）`,
+        });
       } else {
-        throw new Error('校准过程中未能获取有效的音频数据');
+        throw new Error("校准过程中未能获取有效的音频数据");
       }
     } catch (error) {
-      console.error('校准失败:', error);
+      logger.error("校准失败:", error);
       if (error instanceof Error) {
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          setCalibrationError('需要麦克风权限才能进行噪音校准');
-          alert('校准失败：需要麦克风权限才能进行噪音校准');
+        if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+          const isElectronRuntime = (() => {
+            try {
+              return typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
+            } catch {
+              return false;
+            }
+          })();
+          const msg = isElectronRuntime
+            ? "需要麦克风权限才能进行噪音校准（请在系统设置中允许麦克风）"
+            : "需要麦克风权限才能进行噪音校准";
+          setCalibrationError(msg);
+          openMessagePopup({ type: "error", title: "校准失败", message: msg });
         } else {
           setCalibrationError(error.message);
-          alert(`校准失败：${error.message}`);
+          openMessagePopup({ type: "error", title: "校准失败", message: error.message });
         }
       } else {
-        setCalibrationError('未知错误');
-        alert('校准失败：未知错误');
+        setCalibrationError("未知错误");
+        openMessagePopup({ type: "error", title: "校准失败", message: "未知错误" });
       }
     } finally {
       setIsCalibrating(false);
     }
-  }, [draftManualBaselineDb]);
+  }, [draftManualBaselineDb, openMessagePopup]);
 
   const handleRecalibrate = useCallback(async () => {
     if (isCalibrating) return;
-    if (confirm('确定要开始/重新校准噪音基准吗？请确保当前环境安静，校准过程约3秒。')) {
+    if (confirm("确定要开始/重新校准噪音基准吗？请确保当前环境安静，校准过程约3秒。")) {
       await performCalibration();
     }
   }, [performCalibration, isCalibrating]);
 
-  // 课程表交互
-  const handleAddPeriod = useCallback(() => {
-    const newPeriod: StudyPeriod = {
-      id: Date.now().toString(),
-      name: '新课程',
-      startTime: '19:00',
-      endTime: '21:00'
-    };
-    const newSchedule = [...schedule, newPeriod];
-    setSchedule(newSchedule);
-    setEditingId(newPeriod.id);
-  }, [schedule]);
-
-  const handleDeletePeriod = useCallback((id: string) => {
-    const newSchedule = schedule.filter(period => period.id !== id);
-    setSchedule(newSchedule);
-    if (editingId === id) setEditingId(null);
-  }, [schedule, editingId]);
-
-  const handleUpdatePeriod = useCallback((id: string, field: keyof StudyPeriod, value: string) => {
-    const newSchedule = schedule.map(period => 
-      period.id === id ? { ...period, [field]: value } : period
-    );
-    setSchedule(newSchedule);
-  }, [schedule]);
-
-  const isValidTime = (time: string): boolean => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-  const isValidPeriod = (period: StudyPeriod): boolean => {
-    if (!period.name.trim() || !isValidTime(period.startTime) || !isValidTime(period.endTime)) return false;
-    const start = new Date(`2000-01-01 ${period.startTime}`);
-    const end = new Date(`2000-01-01 ${period.endTime}`);
-    return start < end;
-  };
-
-  const handleSaveSchedule = useCallback(() => {
-    const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
-    if (invalidPeriods.length > 0) {
-      alert('请检查课程时段设置，确保名称不为空且时间格式正确');
-      return;
-    }
-    // 不直接持久化，统一由主面板的“保存”进行写入
-    alert('课程表已更新为草稿，最终请点击面板下方“保存”应用变更');
-  }, [schedule, onScheduleSave]);
-
+  // 课表编辑功能已迁移到基础设置面板
   // 注册保存：在父组件点击保存时统一写入持久化存储
   useEffect(() => {
     onRegisterSave?.(() => {
       // 噪音基线：统一持久化为 RMS 与显示DB
       if (baselineRms > 0) {
-        localStorage.setItem(BASELINE_RMS_KEY, baselineRms.toString());
-        // 将显示DB写入为滑块设定的值，保持与全局设置一致
-        localStorage.setItem(BASELINE_NOISE_KEY, draftManualBaselineDb.toString());
+        updateNoiseSettings({
+          baselineRms,
+          baselineDisplayDb: draftManualBaselineDb,
+        });
+        setEffectiveBaselineRms(baselineRms);
+        // 广播基线更新，便于其他组件立即刷新
+        broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, {
+          baselineDb: draftManualBaselineDb,
+          baselineRms,
+        });
       } else {
-        localStorage.removeItem(BASELINE_RMS_KEY);
-        localStorage.removeItem(BASELINE_NOISE_KEY);
+        updateNoiseSettings({
+          baselineRms: 0,
+          baselineDisplayDb: 0,
+        });
+        setEffectiveBaselineRms(0);
+        broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, {
+          baselineDb: 0,
+          baselineRms: 0,
+        });
       }
+
       // 自动弹出报告设置
       setAutoPopupSetting(autoPopupReport);
+      if (maxReportRetentionDays && maxReportRetentionDays > 0) {
+        setRetentionDaysSetting(Math.max(1, Math.min(maxReportRetentionDays, reportRetentionDays)));
+      } else {
+        setRetentionDaysSetting(Math.max(1, reportRetentionDays));
+      }
       // 噪音控制设置
       saveNoiseControlSettings({
         maxLevelDb: draftMaxNoiseLevel,
         baselineDb: draftManualBaselineDb,
         showRealtimeDb: draftShowRealtimeDb,
+        avgWindowSec: draftAvgWindowSec,
+        alertSoundEnabled: draftAlertSoundEnabled,
       });
-      // 课程表
-      const invalidPeriods = schedule.filter(period => !isValidPeriod(period));
-      if (invalidPeriods.length === 0) {
-        writeStudySchedule(schedule);
-        onScheduleSave?.(schedule);
-      }
     });
-  }, [onRegisterSave, baselineRms, autoPopupReport, schedule, onScheduleSave, draftManualBaselineDb, draftMaxNoiseLevel]);
+  }, [
+    onRegisterSave,
+    baselineRms,
+    autoPopupReport,
+    reportRetentionDays,
+    maxReportRetentionDays,
+    draftManualBaselineDb,
+    draftMaxNoiseLevel,
+    draftShowRealtimeDb,
+    draftAvgWindowSec,
+    draftAlertSoundEnabled,
+  ]);
 
-  const handleResetSchedule = useCallback(() => {
-    if (confirm('确定要重置课程表吗？这将恢复到默认设置。')) {
-      setSchedule(DEFAULT_SCHEDULE);
-      setEditingId(null);
-    }
-  }, []);
+  // 课表重置功能已迁移到基础设置面板
 
   return (
-    <div className={styles.settingsGroup} id="study-panel" role="tabpanel" aria-labelledby="study">
-      <h3 className={styles.groupTitle}>学习功能</h3>
-
+    <div id="study-panel" role="tabpanel" aria-labelledby="study">
       <FormSection title="噪音控制">
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>自动噪音限制：最大允许 {draftMaxNoiseLevel.toFixed(0)}dB</p>
-          <p className={styles.helpText}>超过该阈值时将判定为“吵闹”，用于提醒与报告统计。</p>
-        </div>
-      <FormSlider
-        label="最大允许噪音级别"
-        value={draftMaxNoiseLevel}
-        min={40}
-        max={80}
-        step={1}
-        onChange={setDraftMaxNoiseLevel}
-        formatValue={(v: number) => `${v.toFixed(0)}dB`}
-        showRange={true}
-        rangeLabels={["40dB", "80dB"]}
-      />
-      <FormCheckbox
-        label="显示实时分贝"
-        checked={draftShowRealtimeDb}
-        onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
-      />
-    </FormSection>
+        <p className={styles.helpText}>仅用于调整噪音状态的显示与提示音触发，不会影响评分结果。</p>
 
-      <FormSection title="噪音基准与校准">
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>显示基准：{draftManualBaselineDb.toFixed(0)}dB</p>
-          <p className={styles.helpText}>显示基准用于相对 dB 映射；与校准得到的 RMS 结合后，形成稳定且可比较的分贝显示。</p>
-        </div>
-        <FormSlider
-          label="基准噪音显示值"
-          value={draftManualBaselineDb}
-          min={30}
-          max={60}
-          step={1}
-          onChange={setDraftManualBaselineDb}
-          formatValue={(v: number) => `${v.toFixed(0)}dB`}
-          showRange={true}
-          rangeLabels={["30dB", "60dB"]}
-        />
-
-        <div className={styles.noiseCalibrationInfo}>
-          <p className={styles.infoText}>
-            <span
-              className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
-              aria-label={baselineRms > 0 ? '已校准' : '未校准'}
-              title={baselineRms > 0 ? '已校准' : '未校准'}
+        <FormRow gap="md" align="start">
+          <div style={{ flex: 1, paddingRight: 15 }}>
+            <FormSlider
+              label="判定阈值"
+              value={draftMaxNoiseLevel}
+              min={40}
+              max={80}
+              step={1}
+              onChange={setDraftMaxNoiseLevel}
+              formatValue={(v: number) => `${v.toFixed(0)}dB`}
+              showRange={true}
+              rangeLabels={["40dB", "80dB"]}
             />
-            当前校准：{noiseBaseline > 0 ? `${noiseBaseline.toFixed(1)}dB 基准` : '未校准'}
-          </p>
-          <p className={styles.helpText}>校准会采样约 3 秒的环境声音并计算 RMS；显示将以上方的“基准噪音显示值”作为基准进行映射，使不同设备下的监测更稳定、更可比较。</p>
-          {isCalibrating && (
-            <p className={styles.helpText} aria-live="polite">正在校准… 进度 {calibrationProgress}% ，请保持环境安静。</p>
-          )}
-          {calibrationError && (
-            <p className={styles.errorText}>校准失败：{calibrationError}</p>
-          )}
-        </div>
-        <FormButtonGroup align="left">
-          <FormButton variant="secondary" onClick={handleRecalibrate} disabled={isCalibrating} icon={<VolumeIcon size={16} />}>{noiseBaseline > 0 ? '重新校准' : '开始校准'}</FormButton>
-          <FormButton variant="danger" onClick={handleClearNoiseBaseline} disabled={noiseBaseline === 0 && baselineRms === 0} icon={<VolumeMuteIcon size={16} />}>清除校准</FormButton>
-        </FormButtonGroup>
+            <p className={styles.helpText} style={{ marginTop: 4 }}>
+              环境声音超过此值时会显示为“吵闹”，并在开启提示音时播放提示音（不影响评分）。
+            </p>
+          </div>
+
+          <div style={{ flex: 1, paddingLeft: 15 }}>
+            <FormSlider
+              label="噪音数值平滑"
+              value={draftAvgWindowSec}
+              min={0.5}
+              max={10}
+              step={0.5}
+              onChange={setDraftAvgWindowSec}
+              formatValue={(v: number) => `${v.toFixed(1)}秒`}
+              showRange={true}
+              rangeLabels={["灵敏", "平缓"]}
+            />
+            <p className={styles.helpText} style={{ marginTop: 4 }}>
+              数值越大，数字跳动越平缓。
+            </p>
+          </div>
+        </FormRow>
+
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="显示实时分贝"
+            checked={draftShowRealtimeDb}
+            onChange={(e) => setDraftShowRealtimeDb(e.target.checked)}
+          />
+        </FormRow>
+
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="超过阈值播放提示音"
+            checked={draftAlertSoundEnabled}
+            onChange={(e) => setDraftAlertSoundEnabled(e.target.checked)}
+          />
+        </FormRow>
       </FormSection>
 
-  <FormSection title="噪音报告设置">
-    <FormCheckbox
-      label="自动弹出噪音报告"
-      checked={autoPopupReport}
-      onChange={(e) => {
-        const checked = e.target.checked;
-        setAutoPopupReport(checked);
-      }}
-    />
-        <p className={styles.helpText}>开启后，在学习结束时会自动弹出噪音报告界面。关闭后，需要手动点击噪音状态文字查看报告。</p>
-  </FormSection>
+      <FormSection title="校准与修正">
+        <div data-tour="noise-calibration">
+          <p className={styles.helpText}>
+            请一定在安静环境下校准，或手动选择你认为当前环境所处的噪音水平。(需要麦克风权限)
+          </p>
 
-      <RealTimeNoiseChart />
-      <NoiseStatsSummary />
+          {/* 手动构建 Slider 头部以实现自定义布局 */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 4,
+              fontSize: "14px",
+              color: "var(--text-primary)",
+            }}
+          >
+            <span>基准噪音值</span>
+            <span>{draftManualBaselineDb.toFixed(0)}dB</span>
+          </div>
 
-      <FormSection title="课程表设置（草稿）">
-        <FormButtonGroup align="right" className={styles.sectionActions}>
-          <FormButton variant="secondary" onClick={handleResetSchedule}>重置</FormButton>
-          <FormButton variant="primary" onClick={handleAddPeriod} icon={<PlusIcon size={16} />}>添加</FormButton>
-        </FormButtonGroup>
-        <div className={styles.scheduleList}>
-          {schedule.map((period) => (
-            <div key={period.id} className={styles.periodItem}>
-              {editingId === period.id ? (
-                <div className={styles.editForm}>
-                  <FormInput type="text" value={period.name} onChange={(e) => handleUpdatePeriod(period.id, 'name', e.target.value)} placeholder="课程名称" />
-                  <FormRow gap="sm">
-                    <FormInput type="time" value={period.startTime} onChange={(e) => handleUpdatePeriod(period.id, 'startTime', e.target.value)} variant="time" />
-                    <span className={styles.timeSeparator}>-</span>
-                    <FormInput type="time" value={period.endTime} onChange={(e) => handleUpdatePeriod(period.id, 'endTime', e.target.value)} variant="time" />
-                  </FormRow>
-                  <FormButtonGroup align="right">
-                    <FormButton variant="success" onClick={() => setEditingId(null)} icon={<SaveIcon size={14} />} size="sm" />
-                    <FormButton variant="danger" onClick={() => handleDeletePeriod(period.id)} icon={<TrashIcon size={14} />} size="sm" />
-                  </FormButtonGroup>
-                </div>
-              ) : (
-                <div className={styles.periodDisplay} onClick={() => setEditingId(period.id)}>
-                  <div className={styles.periodInfo}>
-                    <span className={styles.periodName}>{period.name}</span>
-                    <span className={styles.periodTime}>{period.startTime} - {period.endTime}</span>
-                  </div>
-                  <FormButton variant="danger" onClick={(e) => { e.stopPropagation(); handleDeletePeriod(period.id); }} icon={<TrashIcon size={14} />} size="sm" />
-                </div>
-              )}
+          <FormRow gap="md" align="center">
+            <div
+              className={styles.noiseCalibrationInfo}
+              style={{
+                margin: 0,
+                padding: "0 12px",
+                height: "36px", // 与 Slider 轨道区域高度大致匹配
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: "auto",
+                borderRadius: "4px",
+              }}
+            >
+              <p
+                className={styles.infoText}
+                style={{ margin: 0, fontSize: "13px" }}
+                data-tour="noise-calibration-status"
+              >
+                <span
+                  className={`${styles.statusDot} ${baselineRms > 0 ? styles.statusCalibrated : styles.statusUncalibrated}`}
+                />
+                {baselineRms > 0 ? "已校准" : "未校准"}
+                {isCalibrating && ` (${calibrationProgress}%)`}
+              </p>
             </div>
-          ))}
+
+            <div style={{ flex: 1 }} id="tour-noise-baseline-slider">
+              <FormSlider
+                // 移除 label 以隐藏内置头部
+                value={draftManualBaselineDb}
+                min={30}
+                max={60}
+                step={1}
+                onChange={setDraftManualBaselineDb}
+                showRange={false}
+                className={styles.compactSlider} // 可选：如果需要微调样式
+              />
+            </div>
+          </FormRow>
+
+          <FormButtonGroup align="left">
+            <FormButton
+              id="tour-noise-calibrate-btn"
+              variant="secondary"
+              onClick={handleRecalibrate}
+              disabled={isCalibrating}
+              icon={<VolumeIcon size={16} />}
+            >
+              {noiseBaseline > 0 ? "重新校准" : "开始校准"}
+            </FormButton>
+            <FormButton
+              variant="danger"
+              onClick={handleClearNoiseBaseline}
+              disabled={noiseBaseline === 0 && baselineRms === 0}
+              icon={<VolumeMuteIcon size={16} />}
+            >
+              清除校准
+            </FormButton>
+          </FormButtonGroup>
         </div>
-        <FormButtonGroup align="right">
-          <FormButton variant="primary" onClick={handleSaveSchedule} icon={<SaveIcon size={14} />}>保存课程表</FormButton>
-        </FormButtonGroup>
+      </FormSection>
+
+      <FormSection title="噪音报告">
+        <FormRow gap="sm" align="center">
+          <FormCheckbox
+            label="自动弹出报告"
+            checked={autoPopupReport}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setAutoPopupReport(checked);
+            }}
+          />
+        </FormRow>
+        <FormRow gap="sm" align="center">
+          <FormInput
+            label="历史保存天数"
+            type="number"
+            value={String(reportRetentionDays)}
+            onChange={(e) => {
+              const next = parseInt(e.target.value, 10);
+              const normalized = Number.isFinite(next) ? Math.max(1, next) : 1;
+              const capped =
+                maxReportRetentionDays && maxReportRetentionDays > 0
+                  ? Math.min(maxReportRetentionDays, normalized)
+                  : normalized;
+              setReportRetentionDays(capped);
+            }}
+            min={1}
+            max={maxReportRetentionDays ?? undefined}
+          />
+        </FormRow>
+        <p className={styles.helpText}>学习结束后自动显示噪音分析报告。</p>
+        <p className={styles.helpText}>
+          默认 {DEFAULT_NOISE_REPORT_RETENTION_DAYS}{" "}
+          天；实际最大可保存范围会受本地容量限制（按可用容量的 90% 自动裁剪旧数据）。
+          {maxReportRetentionDays ? ` 当前建议上限：${maxReportRetentionDays} 天。` : ""}
+        </p>
+      </FormSection>
+
+      {/* 背景设置已迁移到基础设置 */}
+
+      <FormSection title="实时监控">
+        <RealTimeNoiseChart />
+      </FormSection>
+      <FormSection title="统计数据">
+        <NoiseStatsSummary />
       </FormSection>
     </div>
   );

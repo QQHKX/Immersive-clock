@@ -1,12 +1,4 @@
-/* 金句渠道管理组件样式 */
-
-.channelManagerInfo {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--border-radius-md);
-}
+/* 语录渠道管理组件样式 */
 
 .infoText {
   color: var(--text-secondary);
@@ -31,8 +23,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .channelList {
@@ -53,7 +50,7 @@
 }
 
 .channelItem::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -149,7 +146,7 @@
   font-size: 0.85rem !important;
   line-height: 1.2 !important;
   border-radius: 6px !important;
-  
+
   /* 隐藏默认的数字输入框箭头 */
   -webkit-appearance: none;
   -moz-appearance: textfield;
@@ -165,7 +162,7 @@
 }
 
 /* 隐藏 Firefox 的数字输入框微调箭头 */
-.weightInput[type=number] {
+.weightInput[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -234,7 +231,7 @@
 }
 
 .categoryTitle::before {
-  content: '🏷️';
+  content: "🏷️";
   font-size: var(--font-size-sm);
 }
 
@@ -302,6 +299,71 @@
   font-size: var(--font-size-md);
 }
 
+/* 语录编辑器区域 */
+.editorSection {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.editorTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.importInfo {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quoteList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.quoteItem {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.quoteInput {
+  flex: 1;
+}
+
+/* 单文本框编辑模式样式 */
+.quoteTextarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+}
+
+.quoteActions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.errorText {
+  color: #ff6b6b;
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .channelHeader {
@@ -309,24 +371,29 @@
     align-items: stretch;
     gap: var(--spacing-sm);
   }
-  
+
   .channelControls {
     justify-content: space-between;
   }
-  
+
   .categoryGrid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: var(--spacing-xs);
   }
-  
+
   .weightControl {
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
   }
-  
+
   .weightInput {
     width: 80px !important;
+  }
+
+  .quoteItem {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -335,11 +402,11 @@
   .channelItem {
     border-width: 2px;
   }
-  
+
   .toggleIconEnabled {
     color: var(--success-color-high-contrast, #00aa00);
   }
-  
+
   .toggleIconDisabled {
     color: var(--text-secondary-high-contrast, #666666);
   }
@@ -350,7 +417,7 @@
   .loadingIcon {
     animation: none;
   }
-  
+
   .channelItem,
   .toggleButton,
   .settingsButton,

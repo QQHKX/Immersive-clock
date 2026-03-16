@@ -2,55 +2,78 @@
  * 噪音控制设置存储工具
  * 管理用户的最大允许噪音级别与手动基准噪音显示值
  */
+import {
+  NOISE_ANALYSIS_FRAME_MS,
+  NOISE_ANALYSIS_SLICE_SEC,
+  NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+  NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  NOISE_SCORE_THRESHOLD_DBFS,
+} from "../constants/noise";
 
-// localStorage 键名
-const NOISE_MAX_LEVEL_KEY = 'noise-control-max-level-db';
-const NOISE_BASELINE_DB_KEY = 'noise-control-baseline-db';
-const NOISE_SHOW_REALTIME_DB_KEY = 'noise-control-show-realtime-db';
+import { getAppSettings, updateNoiseSettings } from "./appSettings";
+import { logger } from "./logger";
+import { broadcastSettingsEvent, SETTINGS_EVENTS } from "./settingsEvents";
+
+// localStorage 键名 (不再使用，保留注释或直接移除)
+// ...
 
 export interface NoiseControlSettings {
-  maxLevelDb: number; // 最大允许噪音级别（阈值）
+  maxLevelDb: number; // 最大允许噪音级别
   baselineDb: number; // 手动基准显示分贝
-  showRealtimeDb: boolean; // 是否显示实时分贝副文本
+  showRealtimeDb: boolean; // 是否显示实时分贝
+  avgWindowSec: number; // 噪音平均时间窗（秒）
+  sliceSec: number;
+  frameMs: number;
+  scoreThresholdDbfs: number;
+  segmentMergeGapMs: number;
+  maxSegmentsPerMin: number;
+  alertSoundEnabled: boolean; // 超过阈值时播放提示音
 }
+
+const FIXED_NOISE_ANALYSIS_SETTINGS: Pick<
+  NoiseControlSettings,
+  "sliceSec" | "frameMs" | "scoreThresholdDbfs" | "segmentMergeGapMs" | "maxSegmentsPerMin"
+> = {
+  sliceSec: NOISE_ANALYSIS_SLICE_SEC,
+  frameMs: NOISE_ANALYSIS_FRAME_MS,
+  scoreThresholdDbfs: NOISE_SCORE_THRESHOLD_DBFS,
+  segmentMergeGapMs: NOISE_SCORE_SEGMENT_MERGE_GAP_MS,
+  maxSegmentsPerMin: NOISE_SCORE_MAX_SEGMENTS_PER_MIN,
+};
 
 const DEFAULT_SETTINGS: NoiseControlSettings = {
   maxLevelDb: 55,
   baselineDb: 40,
   showRealtimeDb: true,
+  avgWindowSec: 1,
+  ...FIXED_NOISE_ANALYSIS_SETTINGS,
+  alertSoundEnabled: false,
 };
 
+/**
+ * 将“分析与评分”的高级参数固定为程序内配置，避免被设置面板或旧缓存覆盖。
+ */
+function applyFixedNoiseAnalysisSettings(settings: NoiseControlSettings): NoiseControlSettings {
+  return { ...settings, ...FIXED_NOISE_ANALYSIS_SETTINGS };
+}
+
 export function getNoiseControlSettings(): NoiseControlSettings {
-  try {
-    const maxLevel = localStorage.getItem(NOISE_MAX_LEVEL_KEY);
-    const baselineDb = localStorage.getItem(NOISE_BASELINE_DB_KEY);
-    const showRealtimeDb = localStorage.getItem(NOISE_SHOW_REALTIME_DB_KEY);
-    return {
-      maxLevelDb: maxLevel !== null ? parseFloat(maxLevel) : DEFAULT_SETTINGS.maxLevelDb,
-      baselineDb: baselineDb !== null ? parseFloat(baselineDb) : DEFAULT_SETTINGS.baselineDb,
-      showRealtimeDb: showRealtimeDb !== null ? showRealtimeDb === 'true' : DEFAULT_SETTINGS.showRealtimeDb,
-    };
-  } catch (error) {
-    console.warn('读取噪音控制设置失败:', error);
-    return DEFAULT_SETTINGS;
-  }
+  return applyFixedNoiseAnalysisSettings(getAppSettings().noiseControl as NoiseControlSettings);
 }
 
 export function saveNoiseControlSettings(settings: Partial<NoiseControlSettings>): void {
   try {
-    const current = getNoiseControlSettings();
-    const next = { ...current, ...settings };
-    if (settings.maxLevelDb !== undefined) {
-      localStorage.setItem(NOISE_MAX_LEVEL_KEY, next.maxLevelDb.toString());
-    }
+    updateNoiseSettings({ ...settings, ...FIXED_NOISE_ANALYSIS_SETTINGS });
+
+    const next = getAppSettings().noiseControl;
+
+    // 广播：噪音控制设置更新
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, { settings: next });
     if (settings.baselineDb !== undefined) {
-      localStorage.setItem(NOISE_BASELINE_DB_KEY, next.baselineDb.toString());
-    }
-    if (settings.showRealtimeDb !== undefined) {
-      localStorage.setItem(NOISE_SHOW_REALTIME_DB_KEY, next.showRealtimeDb ? 'true' : 'false');
+      broadcastSettingsEvent(SETTINGS_EVENTS.NoiseBaselineUpdated, { baselineDb: next.baselineDb });
     }
   } catch (error) {
-    console.error('保存噪音控制设置失败:', error);
+    logger.error("保存噪音控制设置失败:", error);
   }
 }
 
@@ -78,12 +101,22 @@ export function setShowRealtimeDb(show: boolean): void {
   saveNoiseControlSettings({ showRealtimeDb: show });
 }
 
+export function getAvgWindowSec(): number {
+  return getNoiseControlSettings().avgWindowSec;
+}
+
+export function setAvgWindowSec(sec: number): void {
+  saveNoiseControlSettings({ avgWindowSec: sec });
+}
+
 export function resetNoiseControlSettings(): void {
   try {
-    localStorage.removeItem(NOISE_MAX_LEVEL_KEY);
-    localStorage.removeItem(NOISE_BASELINE_DB_KEY);
-    localStorage.removeItem(NOISE_SHOW_REALTIME_DB_KEY);
+    updateNoiseSettings(DEFAULT_SETTINGS);
+    // 广播：重置后也应通知订阅者使用默认值
+    broadcastSettingsEvent(SETTINGS_EVENTS.NoiseControlSettingsUpdated, {
+      settings: getNoiseControlSettings(),
+    });
   } catch (error) {
-    console.error('重置噪音控制设置失败:', error);
+    logger.error("重置噪音控制设置失败:", error);
   }
 }

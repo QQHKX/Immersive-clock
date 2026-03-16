@@ -1,0 +1,146 @@
+/* 覆盖 driver.js 默认样式，适配深色沉浸式风格 */
+
+/* 弹窗容器 */
+.driver-popover {
+  background-color: var(--hud-background, rgba(40, 40, 40, 0.95)) !important;
+  color: var(--text-color, #e0e0e0) !important;
+  border-radius: var(--border-radius-lg, 12px) !important;
+  padding: 20px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--font-ui, "Inter", sans-serif) !important;
+  max-width: 320px !important;
+}
+
+/* 箭头颜色适配背景 */
+.driver-popover-arrow {
+  border-width: 8px !important;
+}
+
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--hud-background, rgba(40, 40, 40, 0.95)) !important;
+}
+
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--hud-background, rgba(40, 40, 40, 0.95)) !important;
+}
+
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--hud-background, rgba(40, 40, 40, 0.95)) !important;
+}
+
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--hud-background, rgba(40, 40, 40, 0.95)) !important;
+}
+
+/* 标题 */
+.driver-popover-title {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: var(--primary-color, #ffffff) !important;
+  margin-bottom: 8px !important;
+  line-height: 1.4 !important;
+}
+
+/* 描述文本 */
+.driver-popover-description {
+  font-size: 0.9rem !important;
+  color: var(--secondary-color, #bbbbbb) !important;
+  line-height: 1.5 !important;
+  margin-bottom: 16px !important;
+}
+
+/* 底部按钮区域 */
+.driver-popover-footer {
+  margin-top: 16px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+/* 通用按钮样式 - 增加权重 */
+.driver-popover .driver-popover-footer button {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--border-radius-sm, 4px) !important;
+  padding: 6px 16px !important; /* 稍微增加内边距 */
+  font-size: 0.85rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-shadow: none !important;
+  font-family: var(--font-ui, "Inter", sans-serif) !important;
+  line-height: 1.5 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 下一步/完成按钮 (Primary) - 增加权重并使用 background */
+.driver-popover .driver-popover-footer .driver-popover-next-btn,
+.driver-popover .driver-popover-footer .driver-popover-done-btn {
+  background: var(--button-primary-color, #03dac6) !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  border: 1px solid var(--button-primary-color, #03dac6) !important;
+}
+
+.driver-popover .driver-popover-footer .driver-popover-next-btn:hover,
+.driver-popover .driver-popover-footer .driver-popover-done-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(3, 218, 198, 0.3) !important;
+}
+
+/* 上一步/关闭按钮 (Ghost/Secondary) - 增加权重 */
+.driver-popover .driver-popover-footer .driver-popover-prev-btn,
+.driver-popover .driver-popover-footer .driver-popover-close-btn {
+  background: transparent !important;
+  color: #ffffff !important; /* 提高对比度，使用纯白 */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important; /* 稍微调亮边框 */
+}
+
+.driver-popover .driver-popover-footer .driver-popover-prev-btn:hover,
+.driver-popover .driver-popover-footer .driver-popover-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 关闭按钮 (右上角 X) */
+.driver-popover-close-btn {
+  color: var(--secondary-color, #bbbbbb) !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+  /* 确保位置在右上角，不被 padding 挤压 */
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 10 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: var(--warning-color, #cf6679) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 进度提示 */
+.driver-popover-progress-text {
+  color: var(--secondary-color, #bbbbbb) !important;
+  font-size: 0.75rem !important;
+  opacity: 0.8;
+}
+
+/* 遮罩层 */
+#driver-page-overlay {
+  opacity: 0.7 !important;
+  background: #000 !important;
+}

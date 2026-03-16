@@ -1,9 +1,11 @@
-import React, { useCallback } from 'react';
-import { useAppState, useAppDispatch } from '../../contexts/AppContext';
-import { useAccumulatingTimer } from '../../hooks/useTimer';
-import { STOPWATCH_TICK_MS } from '../../constants/timer';
-import { formatStopwatch } from '../../utils/formatTime';
-import styles from './Stopwatch.module.css';
+import React, { useCallback } from "react";
+
+import { STOPWATCH_TICK_MS } from "../../constants/timer";
+import { useAppState, useAppDispatch } from "../../contexts/AppContext";
+import { useAccumulatingTimer } from "../../hooks/useTimer";
+import { formatStopwatch } from "../../utils/formatTime";
+
+import styles from "./Stopwatch.module.css";
 
 /**
  * 秒表组件
@@ -17,10 +19,13 @@ export function Stopwatch() {
   /**
    * 秒表递增处理函数
    */
-  const handleTick = useCallback((count: number) => {
-    // 一次性派发补偿量，减少多次 dispatch
-    dispatch({ type: 'TICK_STOPWATCH_BY', payload: count });
-  }, [dispatch]);
+  const handleTick = useCallback(
+    (count: number) => {
+      // 一次性派发补偿量，减少多次 dispatch
+      dispatch({ type: "TICK_STOPWATCH_BY", payload: count });
+    },
+    [dispatch]
+  );
 
   // 使用累积计时器：按10ms间隔计算应触发次数，一次性派发
   useAccumulatingTimer(handleTick, stopwatch.isActive, STOPWATCH_TICK_MS);
@@ -31,10 +36,8 @@ export function Stopwatch() {
 
   return (
     <div className={styles.stopwatch}>
-      <div 
-        className={`${styles.time} ${
-          stopwatch.isActive ? styles.running : ''
-        }`}
+      <div
+        className={`${styles.time} ${stopwatch.isActive ? styles.running : ""}`}
         aria-live="polite"
       >
         {stopwatch.elapsedTime === 0 ? (
@@ -43,18 +46,12 @@ export function Stopwatch() {
           timeString
         )}
       </div>
-      
+
       {stopwatch.elapsedTime > 0 && !stopwatch.isActive && (
-        <div className={styles.status}>
-          已暂停
-        </div>
+        <div className={styles.status}>已暂停</div>
       )}
-      
-      {isLongDuration && (
-        <div className={styles.milestone}>
-          🎉 已超过1小时！
-        </div>
-      )}
+
+      {isLongDuration && <div className={styles.milestone}>🎉 已超过1小时！</div>}
     </div>
   );
 }

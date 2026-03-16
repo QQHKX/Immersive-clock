@@ -1,0 +1,62 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.piece {
+  position: absolute;
+  top: -12vh;
+  left: var(--left);
+  width: var(--w);
+  height: var(--h);
+  background: var(--color);
+  opacity: 0.95;
+  border-radius: 2px;
+  transform: translate3d(0, 0, 0) rotate(var(--rot));
+  animation:
+    fall var(--dur) linear var(--delay) forwards,
+    drift calc(var(--dur) * 0.9) ease-in-out var(--delay) forwards,
+    spin calc(var(--dur) * 0.6) linear var(--delay) forwards;
+  will-change: transform;
+}
+
+@keyframes fall {
+  from {
+    transform: translate3d(0, -12vh, 0) rotate(var(--rot));
+  }
+
+  to {
+    transform: translate3d(0, 112vh, 0) rotate(calc(var(--rot) + 540deg));
+  }
+}
+
+@keyframes drift {
+  0% {
+    margin-left: 0;
+  }
+
+  50% {
+    margin-left: var(--drift);
+  }
+
+  100% {
+    margin-left: calc(var(--drift) * -0.4);
+  }
+}
+
+@keyframes spin {
+  from {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.15);
+  }
+
+  to {
+    filter: brightness(1);
+  }
+}

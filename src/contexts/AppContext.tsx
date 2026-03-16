@@ -1,97 +1,69 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AppState, AppAction, AppMode, StudyState, QuoteChannelState, QuoteSourceConfig, QuoteSettingsState } from '../types';
-import { nowMs } from '../utils/timeSource';
-import { STOPWATCH_TICK_MS } from '../constants/timer';
+import React, { createContext, useContext, useReducer, ReactNode } from "react";
+
+import { STOPWATCH_TICK_MS } from "../constants/timer";
+import { AppState, AppAction, StudyState, QuoteChannelState, QuoteSettingsState } from "../types";
+import { getAppSettings, updateAppSettings, updateStudySettings } from "../utils/appSettings";
+import { setErrorCenterMode } from "../utils/errorCenter";
+import { getStartupModeFromSettings } from "../utils/startupMode";
+import { nowMs } from "../utils/timeSource";
 
 /**
- * 从本地存储加载金句设置状态
+ * 从本地存储加载语录设置状态
  */
 function loadQuoteSettingsState(): QuoteSettingsState {
-  try {
-    const savedInterval = localStorage.getItem('quote-auto-refresh-interval');
-    if (savedInterval) {
-      const interval = parseInt(savedInterval, 10);
-      return {
-        autoRefreshInterval: isNaN(interval) ? 600 : interval // 默认10分钟
-      };
-    }
-  } catch (error) {
-    console.warn('Failed to load quote settings from localStorage:', error);
-  }
-  
+  const settings = getAppSettings();
   return {
-    autoRefreshInterval: 600 // 默认10分钟
+    autoRefreshInterval: settings.general.quote.autoRefreshInterval,
   };
 }
 
 /**
- * 从本地存储加载金句渠道配置
+ * 从本地存储加载语录渠道配置
  */
 function loadQuoteChannelState(): QuoteChannelState {
-  try {
-    const savedChannels = localStorage.getItem('quote-channels');
-    if (savedChannels) {
-      const parsed = JSON.parse(savedChannels);
-      return {
-        channels: parsed.channels || [],
-        lastUpdated: parsed.lastUpdated || Date.now()
-      };
-    }
-  } catch (error) {
-    console.warn('Failed to load quote channels from localStorage:', error);
-  }
-  
-  // 返回默认配置，从文件中加载
+  const settings = getAppSettings();
   return {
-    channels: [],
-    lastUpdated: Date.now()
+    channels: settings.general.quote.channels,
+    lastUpdated: settings.general.quote.lastUpdated,
   };
 }
 
-
 /**
- * 从本地存储加载晚自习状态
+ * 从本地存储加载自习状态
  */
 function loadStudyState(): StudyState {
-  try {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const thisYearGaokao = new Date(currentYear, 5, 7); // 月份从0开始，6月为5
-    const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
+  const settings = getAppSettings();
+  const study = settings.study;
 
-    const savedTargetYear = localStorage.getItem('study-target-year');
-    const savedCountdownType = localStorage.getItem('countdown-type') as 'gaokao' | 'custom' | null;
-    const savedCustomName = localStorage.getItem('custom-countdown-name');
-    const savedCustomDate = localStorage.getItem('custom-countdown-date');
-
-    const targetYear = savedTargetYear ? parseInt(savedTargetYear, 10) : nearestGaokaoYear;
-
-    return {
-      targetYear,
-      countdownType: savedCountdownType ?? 'gaokao',
-      customName: savedCustomName ?? '',
-      customDate: savedCustomDate ?? ''
-    };
-  } catch (error) {
-    console.warn('Failed to load study state from localStorage:', error);
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const thisYearGaokao = new Date(currentYear, 5, 7);
-    const nearestGaokaoYear = now > thisYearGaokao ? currentYear + 1 : currentYear;
-    return {
-      targetYear: nearestGaokaoYear,
-      countdownType: 'gaokao',
-      customName: '',
-      customDate: ''
-    };
-  }
+  return {
+    targetYear: study.targetYear,
+    countdownType: study.countdownType,
+    customName: study.customCountdown.name,
+    customDate: study.customCountdown.date,
+    display: study.display,
+    countdownItems: study.countdownItems,
+    carouselIntervalSec: study.carouselIntervalSec,
+    digitColor: study.style.digitColor,
+    digitOpacity: study.style.digitOpacity,
+    numericFontFamily: study.style.numericFontFamily,
+    textFontFamily: study.style.textFontFamily,
+    timeColor: study.style.timeColor,
+    dateColor: study.style.dateColor,
+    weatherAlertEnabled: study.alerts.weatherAlert,
+    minutelyPrecipEnabled: study.alerts.minutelyPrecip,
+    errorPopupEnabled: study.alerts.errorPopup,
+    errorCenterMode: study.alerts.errorCenterMode,
+    airQualityAlertEnabled: study.alerts.airQuality,
+    sunriseSunsetAlertEnabled: study.alerts.sunriseSunset,
+    classEndForecastEnabled: study.alerts.classEndForecast,
+  };
 }
 
 /**
  * 应用初始状态
  */
 const initialState: AppState = {
-  mode: 'clock',
+  mode: getStartupModeFromSettings(),
   isHudVisible: false,
   countdown: {
     initialTime: 0,
@@ -107,12 +79,17 @@ const initialState: AppState = {
   quoteSettings: loadQuoteSettingsState(),
   announcement: {
     isVisible: false,
-    activeTab: 'announcement',
+    activeTab: "announcement",
     dontShowAgain: false,
-    lastShownTime: 0
+    lastShownTime: 0,
   },
   isModalOpen: false,
 };
+
+/**
+ * 导出用于测试的默认状态
+ */
+export const getInitialState = (): AppState => initialState;
 
 /**
  * 应用状态减速器
@@ -122,7 +99,7 @@ const initialState: AppState = {
  */
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_MODE':
+    case "SET_MODE":
       return {
         ...state,
         mode: action.payload,
@@ -130,25 +107,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
         isHudVisible: false,
       };
 
-    case 'TOGGLE_HUD':
+    case "TOGGLE_HUD":
       return {
         ...state,
         isHudVisible: !state.isHudVisible,
       };
 
-    case 'SHOW_HUD':
+    case "SHOW_HUD":
       return {
         ...state,
         isHudVisible: true,
       };
 
-    case 'HIDE_HUD':
+    case "HIDE_HUD":
       return {
         ...state,
         isHudVisible: false,
       };
 
-    case 'SET_COUNTDOWN':
+    case "SET_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -160,7 +137,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'START_COUNTDOWN':
+    case "START_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -170,7 +147,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'PAUSE_COUNTDOWN':
+    case "PAUSE_COUNTDOWN":
       // 暂停时根据结束时间戳收敛一次剩余时间，并清除结束时间戳
       const remaining = state.countdown.endTimestamp
         ? Math.max(0, Math.ceil((state.countdown.endTimestamp - nowMs()) / 1000))
@@ -185,7 +162,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'RESET_COUNTDOWN':
+    case "RESET_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -198,7 +175,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     // 删除 TICK_COUNTDOWN 分支（组件级局部刷新已接管）
 
-    case 'START_STOPWATCH':
+    case "START_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -207,7 +184,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'PAUSE_STOPWATCH':
+    case "PAUSE_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -216,7 +193,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'RESET_STOPWATCH':
+    case "RESET_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -225,7 +202,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'TICK_STOPWATCH':
+    case "TICK_STOPWATCH":
       return {
         ...state,
         stopwatch: {
@@ -234,7 +211,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'TICK_STOPWATCH_BY':
+    case "TICK_STOPWATCH_BY":
       return {
         ...state,
         stopwatch: {
@@ -243,7 +220,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'FINISH_COUNTDOWN':
+    case "FINISH_COUNTDOWN":
       return {
         ...state,
         countdown: {
@@ -254,121 +231,495 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
-    case 'OPEN_MODAL':
+    case "OPEN_MODAL":
       return {
         ...state,
         isModalOpen: true,
       };
 
-    case 'CLOSE_MODAL':
+    case "CLOSE_MODAL":
       return {
         ...state,
         isModalOpen: false,
       };
 
-    case 'SET_TARGET_YEAR':
+    case "SET_TARGET_YEAR":
       const newStudyState = {
         ...state.study,
-        targetYear: action.payload
+        targetYear: action.payload,
       };
       // 保存到本地存储
-      localStorage.setItem('study-target-year', action.payload.toString());
+      updateStudySettings({ targetYear: action.payload });
       return {
         ...state,
         study: newStudyState,
       };
 
-    case 'SET_COUNTDOWN_TYPE':
+    case "SET_COUNTDOWN_TYPE":
       const typeUpdatedStudy = {
         ...state.study,
-        countdownType: action.payload
+        countdownType: action.payload,
       };
-      localStorage.setItem('countdown-type', action.payload);
+      updateStudySettings({ countdownType: action.payload });
       return {
         ...state,
         study: typeUpdatedStudy,
       };
 
-    case 'SET_CUSTOM_COUNTDOWN':
+    case "SET_CUSTOM_COUNTDOWN":
       const customUpdatedStudy = {
         ...state.study,
         customName: action.payload.name,
-        customDate: action.payload.date
+        customDate: action.payload.date,
       };
-      localStorage.setItem('custom-countdown-name', action.payload.name);
-      localStorage.setItem('custom-countdown-date', action.payload.date);
+      updateStudySettings({ customCountdown: action.payload });
       return {
         ...state,
         study: customUpdatedStudy,
       };
 
-    case 'UPDATE_QUOTE_CHANNELS':
+    case "SET_STUDY_DISPLAY":
+      const displayUpdatedStudy = {
+        ...state.study,
+        display: {
+          ...(state.study.display || {}),
+          ...action.payload,
+        },
+      };
+      updateStudySettings({ display: displayUpdatedStudy.display });
+      return {
+        ...state,
+        study: displayUpdatedStudy,
+      };
+
+    case "SET_COUNTDOWN_ITEMS":
+      const itemsUpdatedStudy = {
+        ...state.study,
+        countdownItems: action.payload,
+      };
+      updateStudySettings({ countdownItems: action.payload });
+      return {
+        ...state,
+        study: itemsUpdatedStudy,
+      };
+
+    case "SET_CAROUSEL_INTERVAL":
+      const intervalUpdatedStudy = {
+        ...state.study,
+        carouselIntervalSec: action.payload,
+      };
+      updateStudySettings({ carouselIntervalSec: action.payload });
+      return {
+        ...state,
+        study: intervalUpdatedStudy,
+      };
+
+    case "SET_COUNTDOWN_DIGIT_COLOR":
+      const digitColorUpdatedStudy = {
+        ...state.study,
+        digitColor: action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            digitColor: action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: digitColorUpdatedStudy,
+      };
+
+    case "SET_COUNTDOWN_DIGIT_OPACITY":
+      const digitOpacityUpdatedStudy = {
+        ...state.study,
+        digitOpacity:
+          typeof action.payload === "number" ? Math.max(0, Math.min(1, action.payload)) : 1,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            digitOpacity: digitOpacityUpdatedStudy.digitOpacity,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: digitOpacityUpdatedStudy,
+      };
+
+    case "SET_STUDY_NUMERIC_FONT":
+      const numericFontUpdatedStudy = {
+        ...state.study,
+        numericFontFamily: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            numericFontFamily: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: numericFontUpdatedStudy,
+      };
+
+    case "SET_STUDY_TEXT_FONT":
+      const textFontUpdatedStudy = {
+        ...state.study,
+        textFontFamily: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            textFontFamily: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: textFontUpdatedStudy,
+      };
+
+    case "SET_STUDY_TIME_COLOR":
+      const timeColorUpdatedStudy = {
+        ...state.study,
+        timeColor: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            timeColor: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: timeColorUpdatedStudy,
+      };
+
+    case "SET_STUDY_DATE_COLOR":
+      const dateColorUpdatedStudy = {
+        ...state.study,
+        dateColor: action.payload || undefined,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          style: {
+            ...current.study.style,
+            dateColor: action.payload || undefined,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: dateColorUpdatedStudy,
+      };
+
+    case "SET_WEATHER_ALERT_ENABLED":
+      const alertUpdatedStudy = {
+        ...state.study,
+        weatherAlertEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            weatherAlert: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: alertUpdatedStudy,
+      };
+
+    case "SET_MINUTELY_PRECIP_ENABLED":
+      const precipUpdatedStudy = {
+        ...state.study,
+        minutelyPrecipEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            minutelyPrecip: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: precipUpdatedStudy,
+      };
+
+    case "SET_ERROR_POPUP_ENABLED":
+      const errorPopupUpdatedStudy = {
+        ...state.study,
+        errorPopupEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            errorPopup: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: errorPopupUpdatedStudy,
+      };
+
+    case "SET_ERROR_CENTER_MODE":
+      const errorCenterUpdatedStudy = {
+        ...state.study,
+        errorCenterMode: action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            errorCenterMode: action.payload,
+          },
+        },
+      }));
+      setErrorCenterMode(action.payload);
+      return {
+        ...state,
+        study: errorCenterUpdatedStudy,
+      };
+
+    case "SET_AIR_QUALITY_ALERT_ENABLED":
+      const airQualityUpdatedStudy = {
+        ...state.study,
+        airQualityAlertEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            airQuality: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: airQualityUpdatedStudy,
+      };
+
+    case "SET_SUNRISE_SUNSET_ALERT_ENABLED":
+      const sunriseSunsetUpdatedStudy = {
+        ...state.study,
+        sunriseSunsetAlertEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            sunriseSunset: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: sunriseSunsetUpdatedStudy,
+      };
+
+    case "SET_CLASS_END_FORECAST_ENABLED":
+      const classEndForecastUpdatedStudy = {
+        ...state.study,
+        classEndForecastEnabled: !!action.payload,
+      };
+      updateAppSettings((current) => ({
+        study: {
+          ...current.study,
+          alerts: {
+            ...current.study.alerts,
+            classEndForecast: !!action.payload,
+          },
+        },
+      }));
+      return {
+        ...state,
+        study: classEndForecastUpdatedStudy,
+      };
+
+    case "UPDATE_QUOTE_CHANNELS":
       const newQuoteChannelState = {
         channels: action.payload,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
       // 保存到本地存储
-      localStorage.setItem('quote-channels', JSON.stringify(newQuoteChannelState));
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: action.payload,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
       return {
         ...state,
         quoteChannels: newQuoteChannelState,
       };
 
-    case 'TOGGLE_QUOTE_CHANNEL':
-      const updatedChannels = state.quoteChannels.channels.map(channel =>
-        channel.id === action.payload
-          ? { ...channel, enabled: !channel.enabled }
-          : channel
+    case "TOGGLE_QUOTE_CHANNEL":
+      const updatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload ? { ...channel, enabled: !channel.enabled } : channel
       );
       const toggledChannelState = {
         channels: updatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(toggledChannelState));
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: updatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
       return {
         ...state,
         quoteChannels: toggledChannelState,
       };
 
-    case 'UPDATE_QUOTE_CHANNEL_WEIGHT':
-      const weightUpdatedChannels = state.quoteChannels.channels.map(channel =>
-        channel.id === action.payload.id
-          ? { ...channel, weight: action.payload.weight }
-          : channel
+    case "UPDATE_QUOTE_CHANNEL_WEIGHT":
+      const weightUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id ? { ...channel, weight: action.payload.weight } : channel
       );
       const weightUpdatedState = {
         channels: weightUpdatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(weightUpdatedState));
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: weightUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
       return {
         ...state,
         quoteChannels: weightUpdatedState,
       };
 
-    case 'UPDATE_QUOTE_CHANNEL_CATEGORIES':
-      const categoriesUpdatedChannels = state.quoteChannels.channels.map(channel =>
+    case "UPDATE_QUOTE_CHANNEL_CATEGORIES":
+      const categoriesUpdatedChannels = state.quoteChannels.channels.map((channel) =>
         channel.id === action.payload.id
           ? { ...channel, hitokotoCategories: action.payload.categories }
           : channel
       );
       const categoriesUpdatedState = {
         channels: categoriesUpdatedChannels,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem('quote-channels', JSON.stringify(categoriesUpdatedState));
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: categoriesUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
       return {
         ...state,
         quoteChannels: categoriesUpdatedState,
       };
 
-    case 'SET_QUOTE_AUTO_REFRESH_INTERVAL':
+    case "UPDATE_QUOTE_CHANNEL_ORDER_MODE":
+      const orderModeUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id
+          ? { ...channel, orderMode: action.payload.orderMode }
+          : channel
+      );
+      const orderModeUpdatedState = {
+        channels: orderModeUpdatedChannels,
+        lastUpdated: Date.now(),
+      };
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: orderModeUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
+      return {
+        ...state,
+        quoteChannels: orderModeUpdatedState,
+      };
+
+    case "UPDATE_QUOTE_CHANNEL_INDEX":
+      const indexUpdatedChannels = state.quoteChannels.channels.map((channel) =>
+        channel.id === action.payload.id
+          ? { ...channel, currentQuoteIndex: action.payload.index }
+          : channel
+      );
+      const indexUpdatedState = {
+        channels: indexUpdatedChannels,
+        lastUpdated: Date.now(),
+      };
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            channels: indexUpdatedChannels,
+            lastUpdated: Date.now(),
+          },
+        },
+      }));
+      return {
+        ...state,
+        quoteChannels: indexUpdatedState,
+      };
+
+    case "SET_QUOTE_AUTO_REFRESH_INTERVAL":
       const newQuoteSettings = {
         ...state.quoteSettings,
-        autoRefreshInterval: action.payload
+        autoRefreshInterval: action.payload,
       };
       // 保存到本地存储
-      localStorage.setItem('quote-auto-refresh-interval', action.payload.toString());
+      updateAppSettings((current) => ({
+        general: {
+          ...current.general,
+          quote: {
+            ...current.general.quote,
+            autoRefreshInterval: action.payload,
+          },
+        },
+      }));
       return {
         ...state,
         quoteSettings: newQuoteSettings,
@@ -403,15 +754,9 @@ interface AppContextProviderProps {
 export function AppContextProvider({ children }: AppContextProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-
-
-
-
   return (
     <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
+      <AppDispatchContext.Provider value={dispatch}>{children}</AppDispatchContext.Provider>
     </AppStateContext.Provider>
   );
 }
@@ -423,7 +768,7 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
 export function useAppState(): AppState {
   const context = useContext(AppStateContext);
   if (context === undefined) {
-    throw new Error('useAppState must be used within an AppContextProvider');
+    throw new Error("useAppState must be used within an AppContextProvider");
   }
   return context;
 }
@@ -435,7 +780,7 @@ export function useAppState(): AppState {
 export function useAppDispatch(): React.Dispatch<AppAction> {
   const context = useContext(AppDispatchContext);
   if (context === undefined) {
-    throw new Error('useAppDispatch must be used within an AppContextProvider');
+    throw new Error("useAppDispatch must be used within an AppContextProvider");
   }
   return context;
 }
@@ -447,3 +792,8 @@ export function useAppDispatch(): React.Dispatch<AppAction> {
 export function useAppContext(): [AppState, React.Dispatch<AppAction>] {
   return [useAppState(), useAppDispatch()];
 }
+
+/**
+ * 导出 Reducer 以便测试使用
+ */
+export { appReducer };

@@ -1,1 +1,1 @@
-export { QuoteChannelManager } from './QuoteChannelManager';
+export { QuoteChannelManager } from "./QuoteChannelManager";

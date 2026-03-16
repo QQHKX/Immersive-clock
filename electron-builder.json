@@ -1,0 +1,47 @@
+{
+  "appId": "com.qqhkx.immersive-clock",
+  "productName": "沉浸式时钟",
+  "copyright": "Copyright © 2025 QQHKX",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": ["dist/**/*", "dist-electron/**/*", "public/**/*", "package.json"],
+  "extraResources": [],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/favicon.ico",
+    "artifactName": "immersive-clock-${version}-${arch}-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "沉浸式时钟",
+    "installerIcon": "public/favicon.ico",
+    "uninstallerIcon": "public/favicon.ico",
+    "installerHeaderIcon": "public/favicon.ico",
+    "deleteAppDataOnUninstall": false
+  },
+  "portable": {
+    "artifactName": "immersive-clock-${version}-${arch}-Portable.${ext}"
+  },
+  "linux": {
+    "target": ["AppImage", "deb", "rpm"],
+    "icon": "public/favicon.png",
+    "category": "Utility",
+    "artifactName": "immersive-clock-${version}-${arch}.${ext}"
+  },
+  "publish": null
+}

@@ -1,4 +1,4 @@
-/* 智能晚自习状态管理组件样式 */
+/* 智能自习状态管理组件样式 */
 .studyStatus {
   position: fixed;
   top: 0.25rem;
@@ -38,7 +38,7 @@
 
 .progressContainer {
   width: 100%;
-  max-width: calc(100vw - 800px);
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -61,7 +61,7 @@
 
 /* 进度条发光效果 */
 .progressFill::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: 0;

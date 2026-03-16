@@ -1,200 +1,271 @@
-<h1 align="center">
-  <br/>
-  <img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
-  <br/>
-  Immersive Clock ⏰
-</h1>
-
-<p align="center">
-  <a href="https://qqhkx.com">Website</a> ｜ <a href="https://github.com/QQHKX/immersive-clock">GitHub</a> ｜ <a href="https://clock.qqhkx.com">Live Demo</a>
-</p>
-
-<p align="center">
-  <a href="./README.md">简体中文</a> ｜ English
-</p>
-
 <div align="center">
+<img src="public/favicon.svg" width="160" height="160" alt="Immersive Clock Logo" />
+<h1>Immersive Clock | 沉浸式时钟 ⏰</h1>
 
-[![](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://github.com/QQHKX/immersive-clock)
-[![](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![](https://img.shields.io/badge/React-18.2.0-61dafb.svg)](https://reactjs.org/)
-[![](https://img.shields.io/badge/TypeScript-4.9.3-blue.svg)](https://www.typescriptlang.org/)
-[![](https://img.shields.io/badge/Vite-4.1.0-646CFF.svg)](https://vitejs.dev/)
-[![](https://img.shields.io/badge/PWA-enabled-5A0FC8.svg)](https://web.dev/progressive-web-apps/)
+[![](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
+[![](https://img.shields.io/badge/React-19.2.0-61dafb?logo=react)](https://reactjs.org/)
+[![](https://img.shields.io/badge/TypeScript-5.9.3-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![](https://img.shields.io/badge/Vite-7.3.1-9135ff?logo=vite)](https://vitejs.dev/)
+[![](https://img.shields.io/badge/Electron-40.8.0-9feaf9?logo=electron)](https://www.electronjs.org/)
+[![](https://img.shields.io/badge/Platform-Win%20%7C%20Mac%20%7C%20Linux-blue)](https://github.com/QQHKX/immersive-clock/releases)
+[![](https://img.shields.io/badge/PWA-enabled-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QQHKX/Immersive-clock)
+![Deploy Badge](https://deploy-badge.vercel.app/?url=https://github.com/QQHKX/Immersive-clock&logo=vercel&name=Vercel)
+
+[🖥️ Live Demo](https://clock.qqhkx.com) | 🇨🇳 [简体中文](README.md) ｜ 🇺🇸 English
+
+<pre>
+Elegant time management, focused studying
+</pre>
 
 </div>
 
+> **⏸️ Maintenance Notice**
+>
+> Because the author is in the final year of high school, the project is paused for non-essential development and maintenance. Pull requests and issues are welcome, but processing and merging may be slow.
+
+
+
+
+---
+
+## 📑 Table of Contents
+
+- [🕒 Overview](#overview)
+- [🌠 Gallery](#gallery)
+- [🚀 Quick Start Guide](#quick-start-guide)
+- [💡 Features](#features)
+- [📘 Usage](#usage)
+- [♿ Accessibility](#accessibility)
+- [🗂️ Project Structure](#project-structure)
+- [❓ FAQ](#faq)
+- [💬 Feedback & Discussion](#feedback--discussion)
+- [🤝 Contributing & Development](#contributing--development)
+- [📄 License & Author](#license--author)
+- [🧬 Derivative Projects](#derivative-projects)
+- [🔗 Friendly Links](#friendly-links)
+- [⭐️ Star History](#star-history)
+
+---
+
+## 🕒 Overview
+
+**Immersive Clock** is a lightweight desktop/web clock app built with **React + TypeScript + Vite**.  
+It supports Clock, Countdown, Stopwatch, and Study Mode with built-in weather monitoring, noise analysis, multi-channel motivational quotes, and multi-target countdown carousel features.  
+With PWA technology, it supports offline use, automatic updates, and desktop installation experience.
+
+> Use cases: campus self-study, focused learning, Pomodoro timer, presentation dashboard, desktop clock.
+
+## 🌠 Gallery
+
 <div align="center">
-  <strong>Elegant time management, focused studying</strong>
+  <img src="docs/demo/极简界面.jpeg" width="48%" alt="Minimal Interface" />
+  <img src="docs/demo/晚自习功能.jpeg" width="48%" alt="Study Mode" />
 </div>
 
----
+<div align="center">
+  <img src="docs/demo/噪音走势图.jpeg" width="80%" alt="Noise Trend Chart" />
+</div>
 
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Install & Run](#install--run)
-- [Usage](#usage)
-- [Config & Caching](#config--caching)
-- [Deployment](#deployment)
-- [Accessibility](#accessibility)
-- [Project Structure](#project-structure)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License & Author](#license--author)
-- [Star History](#star-history)
+<div align="center">
+  <img src="docs/demo/丰富的自习报告.jpeg" width="80%" alt="Rich Study Report" />
+</div>
 
----
+<div align="center">
+  <img src="docs/demo/高帧率采样.jpeg" width="32%" alt="High Frame Rate Sampling" />
+  <img src="docs/demo/丰富的自定义设置.jpeg" width="32%" alt="Rich Customization" />
+  <img src="docs/demo/励志语录自定义.jpeg" width="32%" alt="Quote Customization" />
+</div>
 
-## Overview
+<div align="center">
+  <img src="docs/demo/友好的新手引导.jpeg" width="48%" alt="Friendly Onboarding" />
+  <img src="docs/demo/公告-更新日志弹窗.jpeg" width="48%" alt="Announcement & Changelog Modal" />
+</div>
 
-Immersive Clock is a lightweight desktop/web clock app built with React + TypeScript + Vite. It supports Clock, Countdown, Stopwatch, and Study Mode. It comes with weather, noise monitoring, motivational quotes, schedule management, and an announcement/changelog modal. With PWA, it works offline and updates automatically.
+## 💡 Features
 
-> Use cases: campus self-study, focused learning, Pomodoro, dashboard displays, desktop clock.
+### ⏰ Time Management Modes
 
-## Features
+- **Mode Switching**: Clock / Countdown / Stopwatch / Study Mode with one-click switching
+- **Smart HUD**: Immersive interaction; show on click or keypress, auto-hide after ~8 seconds of inactivity
+- **Advanced Countdown**:
+  - Single and goal-based countdown (e.g., college entrance exam, postgraduate entrance exam)
+  - **Multi-event Carousel**: Add multiple important dates and auto-rotate display at set intervals
+  - **Customization**: Independent configuration for each countdown item's background color, opacity, and font style
 
-### Time Management Modes
-- Switch among Clock / Countdown / Stopwatch / Study Mode
-- HUD smart control: show on click or keypress, auto-hide in ~8s
+### 📚 Study Dashboard
 
-### Study Dashboard
-- Weather with manual refresh
-- Noise monitoring: mic calibration, baseline adjustment, report & history
-- Motivational quotes: channel management and refresh interval
-- Target-year countdown (e.g., National Exam)
+- **Environment Awareness**:
+  - **Real-time Weather**: Integration with QWeather API for minute-level precipitation alerts and weather alerts
+  - **Noise Monitoring**: High frame-rate real-time sampling based on Web Audio API, built-in scoring engine, baseline calibration, maximum threshold settings, and detailed study report with trend charts
+- **Focus Atmosphere**:
+  - **Motivational Quotes**: Multi-channel sources support, configurable channel weights and auto-refresh frequency
+  - **Component Toggles**: Freely hide noise, quotes, large time display, etc., to customize your study interface
+  - **Background Customization**: Support solid colors, radial gradients, and upload local images as background
+  - **Custom Fonts**: Support uploading custom font files (.ttf/.woff2) for comfortable reading experience
+  - **Schedule Import**: Support Excel schedule file import for one-click sync of study plans
 
-### Performance & UX
-- Cache by asset type (images / fonts / audio)
-- PWA: offline, auto updates, desktop install
-- Accessibility (ARIA) and shortcuts (Space / Enter to show HUD)
+### 🚀 Performance & Experience
 
----
-
-## Install & Run
-
-Requirements: Node.js ≥ 16 (Recommended 18+), npm ≥ 8
-
-```bash
-# Install deps
-npm install
-
-# Start dev (default port 3005)
-npm run dev
-
-# Build production
-npm run build
-
-# Preview build
-npm run preview
-```
+- **PWA Support**: Offline caching, desktop installation, automatic updates
+- **User-Friendly**: Friendly first-time-use guidance to help users quickly master core features
+- **Resource Optimization**: Tiered caching strategy for static resources (images/fonts/audio), fast loading
+- **Accessibility**: Full keyboard navigation support (Space/Enter to show HUD), optimized ARIA attributes
 
 ---
 
-## Usage
+## 🚀 Quick Start Guide
 
-- Mode switch: click page or press `Space/Enter` to show HUD
-- Countdown: double-click time to configure; presets and chimes supported
-- Stopwatch: start, pause, accumulate
-- Study Mode: show weather, noise monitoring, quotes, and target-year countdown
-- Settings Panel: adjust target year, noise baseline, quote refresh, schedule
+We offer multiple usage options for different scenarios.
 
-More details:
+### 📱 Option 1: PWA Installation (Highly Recommended)
+
+With PWA technology, you can install this clock like a native app, with **offline use**, **desktop icon launch**, and **automatic updates**, without downloading a large installation package.
+
+**Installation Steps:**
+
+1. Open the demo site with Chrome, Edge, or other modern browsers
+2. Click the **"Install Immersive Clock"** icon on the right side of the address bar (usually a small monitor icon with a plus sign)
+3. After confirmation, the app will run in a standalone window and automatically create an icon on your desktop/start menu
+
+### 🌐 Option 2: Browser Direct Usage
+
+If you don't want to install anything, you can use the web version directly.
+
+> It's recommended to use the latest versions of **Chrome**, **Edge**, or **Safari** for the best performance and animation experience.
+
+### 💻 Option 3: Electron Desktop Version
+
+If you need a more traditional desktop software experience (Windows/macOS/Linux), you can download the Electron packaged version.
+
+- **Download**: [GitHub Releases](https://github.com/QQHKX/immersive-clock/releases/latest)
+- **Installation**:
+  - **Windows**: Download and run the `.exe` installer
+  - **macOS**: Download the `.dmg` file and drag the app to Applications folder
+  - **Linux**: `.AppImage` or `.deb` packages available
+
+---
+
+## 📘 Usage
+
+- **Mode Switch**: Click page or press `Space/Enter` to show HUD
+- **Countdown**: Double-click time to configure; supports presets and chimes
+- **Stopwatch**: Start, pause, accumulate records
+- **Study Mode**:
+  - **Multi-target Carousel**: Add multiple countdown events in settings to auto-rotate display
+  - **Environment Monitoring**: Enable noise monitoring to automatically record and alert on threshold; rain/snow weather triggers warning popops
+- **Settings Panel**: Adjust target year, noise baseline, quote refresh interval, custom background, etc.
+
+For detailed instructions:
 
 - [Usage Guide (English)](docs/usage.en-US.md)
-- [使用说明（中文）](docs/usage.zh-CN.md)
-- [FAQ (English)](docs/faq.en-US.md)
-- [常见问题（中文）](docs/faq.zh-CN.md)
+- [🎙️ Scoring System Guide](public/docs/noise-scoring.md)
 
 ---
 
-## Config & Caching
+## ♿ Accessibility
 
-- Env Vars
-  - `VITE_APP_VERSION`: app version (defaults to `package.json`)
-- Caching
-  - Images/Fonts/Audio: `CacheFirst`
-  - Docs: `NetworkFirst`
-  - Ignore version param `v` for better offline experience
-
----
-
-## Deployment
-
-```bash
-# Upload the dist folder to any static hosting platform
-# e.g., Vercel / Netlify / GitHub Pages
-```
-
-Use HTTPS to enable full PWA features. `vercel.json` is provided for one-click import.
+| Shortcut          | Action                     |
+| ----------------- | -------------------------- |
+| `Space / Enter`   | Show HUD                   |
+| `Enter / Esc`     | Confirm or close modal     |
+| Double click time | Open countdown settings    |
+| Double tap        | Mobile interaction support |
 
 ---
 
-## Accessibility
-
-| Shortcut         | Action               |
-|------------------|----------------------|
-| `Space / Enter`  | Show HUD             |
-| `Enter / Esc`    | Confirm / Close modals |
-| Double click time| Open countdown settings |
-| Double tap       | Mobile interaction support |
-
----
-
-## Project Structure
+## 🗂️ Project Structure
 
 ```text
 immersive-clock/
+├── electron/          # Electron main process and preload scripts
 ├── public/            # Static assets (icons, audio, PWA manifest, docs)
-├── src/               # Source (components, styles, hooks, utils)
-│  ├── components/     # UI and feature components
-│  ├── hooks/          # Custom hooks (timer, fullscreen, audio)
-│  ├── utils/          # Utilities and local storage managers
-│  ├── styles/         # Global and variables CSS
-│  └── pages/          # Pages
-├── docs/              # Usage and FAQ
-├── scripts/           # Post-build scripts (sitemap date updates)
+├── src/               # Source code
+│  ├── components/     # UI component library (Clock, HUD, NoiseMonitor, etc.)
+│  ├── contexts/       # Global state management (Reducer/Context)
+│  ├── hooks/          # Custom hooks (high-precision timer, audio, etc.)
+│  ├── services/       # Business services
+│  │  ├── noise/       # Noise analysis and scoring engine (core)
+│  │  └── ...          # Weather, location services
+│  ├── utils/          # Utilities and local storage (includes Excel import, font management)
+│  ├── styles/         # Global styles and variables
+│  └── pages/          # Page containers
+├── tests/             # E2E test cases (Playwright)
+├── docs/              # Usage instructions and FAQ
+├── scripts/           # Post-build scripts
 ├── vite.config.ts     # Vite config (PWA and version injection)
 └── package.json       # Project metadata and scripts
 ```
 
 ---
 
-## FAQ
+## ❓ FAQ
 
-- City location missing? Check browser permission or use manual refresh.
-- No noise data? Ensure mic is granted and your device supports it.
-- HUD not appearing? Make sure no modal is open; click or press `Space/Enter`.
-- How to view announcement and changelog? Click the version at bottom-right or open the modal from menu.
+- Can't locate city? Check browser location permissions or use manual refresh.
+- No noise monitoring data? Ensure microphone is granted and your device supports it.
+- HUD not showing? Make sure no modal is open; click page or press `Space/Enter`.
+- How to view announcements and changelog? Click the version number at bottom-right or open the modal from menu.
 
-More Q&A in [docs/faq.en-US.md](docs/faq.en-US.md).
-
----
-
-## Contributing
-
-We welcome all forms of contribution (feature enhancements, bug fixes, docs improvements).
-
-1. Fork and create a feature branch
-2. Keep code style consistent and changes minimal
-3. Submit a PR with brief description and screenshots
-4. Report issues and suggestions in [Issues](https://github.com/QQHKX/immersive-clock/issues)
+More Q&A in [FAQ](docs/faq.en-US.md).
 
 ---
 
-## License & Author
+## 💬 Feedback & Discussion
 
-- License: MIT
-- Author: **QQHKX**
-  - 🌐 [Website](https://qqhkx.com)
-  - 💻 [GitHub](https://github.com/QQHKX)
+Welcome to join our official communication group to share experiences, report bugs, or suggest features.
+
+- QQ Group: [965931796](https://qm.qq.com/q/fawykipRhm)
+
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/assets/qq-group-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="public/assets/qq-group-light.png" />
+    <img alt="QQ Group" src="public/assets/qq-group-light.png" width="400px" />
+  </picture>
+
+You can also provide feedback through the following channels (it's recommended to include reproduction steps, screenshots, or screen recordings for quick resolution):
+
+- [GitHub Issues](https://github.com/QQHKX/immersive-clock/issues)
+- In-app Feedback: Click the "version number" at bottom-right to open the announcement modal → switch to "Feedback"
+- [Tencent Survey](https://wj.qq.com/s2/25666249/lj9p/)
+
+## 🤝 Contributing & Development
+
+If you want to contribute code, fix issues, or do secondary development locally, please read the [Contribution Guide](CONTRIBUTING.en-US.md).
 
 ---
 
-## Star History
+## 📄 License & Author
+
+- License: GPL v3
+- Author: [**QQHKX**](https://github.com/QQHKX)
+  - 🌐 [Personal Website](https://qqhkx.com)
+
+## 🧬 Derivative Projects
+
+### Immersive Noise Monitoring (Immersive-clock-monitor)
+
+- **Project Address**: [https://github.com/QQHKX/Immersive-clock-monitor](https://github.com/QQHKX/Immersive-clock-monitor)
+
+This project extracts and independently maintains the noise monitoring module from **Immersive Clock**, aiming to publicly release a high-quality noise monitoring algorithm implementation reference based on psychoacoustics and focus theory.
+
+The algorithm is not just a simple decibel meter, but quantifies the interference level of environmental noise on learning flow through a multi-dimensional weighted deduction system.
+
+## 🔗 Friendly Links
+
+- <img src="https://sectl.top/logo.svg" width="16px"> [SECTL](https://sectl.top/)
+- [LanMountainDesktop](https://github.com/wwiinnddyy/LanMountainDesktop)
+
+## ⭐️ Star History
 
 <div align="center">
-  <a href="https://star-history.com/#QQHKX/Immersive-clock" target="_blank">
-    <img src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=Date" alt="Star History Chart" />
+  <a href="https://www.star-history.com/#QQHKX/Immersive-clock&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QQHKX/Immersive-clock&type=date&legend=top-left" />
+  </picture>
   </a>
+  <p>
+    If this project is helpful to you, please light the Star ⭐
+  </p>
 </div>

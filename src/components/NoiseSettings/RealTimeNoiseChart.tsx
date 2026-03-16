@@ -1,139 +1,154 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { FormSection } from '../FormComponents';
-import styles from './NoiseSettings.module.css';
-import { getNoiseControlSettings } from '../../utils/noiseControlSettings';
+import React, { useMemo } from "react";
 
-const NOISE_SAMPLE_STORAGE_KEY = 'noise-samples';
-const getThreshold = () => getNoiseControlSettings().maxLevelDb;
+import {
+  NOISE_ANALYSIS_FRAME_MS,
+  NOISE_ANALYSIS_SLICE_SEC,
+  NOISE_REALTIME_CHART_SLICE_COUNT,
+} from "../../constants/noise";
+import { useNoiseStream } from "../../hooks/useNoiseStream";
 
-interface NoiseSample {
-  t: number;
-  v: number;
-  s: 'quiet' | 'noisy';
-}
+import styles from "./NoiseSettings.module.css";
 
 export const RealTimeNoiseChart: React.FC = () => {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 2000);
-    return () => clearInterval(id);
-  }, []);
+  const { ringBuffer, maxLevelDb, status } = useNoiseStream();
 
-  const samples = useMemo<NoiseSample[]>(() => {
-    try {
-      const raw = localStorage.getItem(NOISE_SAMPLE_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  }, [tick]);
+  const { points, threshold, latest, width, height, margin, yTicks, yScale, path, thresholdY } =
+    useMemo(() => {
+      const points = ringBuffer.filter(
+        (p) => Number.isFinite(p.t) && Number.isFinite(p.displayDb) && Number.isFinite(p.dbfs)
+      );
+      const threshold = maxLevelDb;
+      const latest = points.length ? points[points.length - 1] : null;
 
-  const chart = useMemo(() => {
-    const width = 600;
-    const height = 160;
-    const padding = 24;
-    // 固定窗口范围：最近5分钟
-    const now = Date.now();
-    const windowMs = 5 * 60 * 1000;
-    const cutoff = now - windowMs;
+      const width = 640;
+      const height = 160;
+      const margin = { top: 12, right: 12, bottom: 22, left: 36 };
 
-    if (!samples.length) {
-      return { width, height, padding, path: '', startTs: cutoff, endTs: now, xTicks: [], yTicks: [] };
-    }
+      const values = points.map((p) => p.displayDb);
+      const minV = values.length ? Math.min(...values, threshold) : threshold - 10;
+      const maxV = values.length ? Math.max(...values, threshold) : threshold + 10;
+      const pad = Math.max(2, (maxV - minV) * 0.1);
+      const yMin = Math.max(20, Math.floor(minV - pad));
+      const yMax = Math.min(100, Math.ceil(maxV + pad));
 
-    // 仅显示最近5分钟的数据
-    const recent = samples.filter(s => s.t >= cutoff);
-    if (!recent.length) {
-      return { width, height, padding, path: '', startTs: cutoff, endTs: now, xTicks: [], yTicks: [] };
-    }
+      const fallbackSpanMs = Math.max(
+        1,
+        NOISE_ANALYSIS_SLICE_SEC * NOISE_REALTIME_CHART_SLICE_COUNT * 1000
+      );
+      const endTs = points.length ? points[points.length - 1].t : Date.now();
+      const startTs = endTs - fallbackSpanMs;
+      const span = fallbackSpanMs;
 
-    // 为了获得稳定的时间范围映射，使用固定窗口[start=cutoff, end=now]
-    const minTs = cutoff;
-    const maxTs = now;
-    const span = Math.max(1, maxTs - minTs);
-    const maxDb = 80;
-    const minDb = 0;
-    const mapX = (t: number) => padding + ((t - minTs) / span) * (width - padding * 2);
-    const mapY = (v: number) => {
-      const clamped = Math.max(minDb, Math.min(maxDb, v));
-      const ratio = (clamped - minDb) / (maxDb - minDb);
-      return height - padding - ratio * (height - padding * 2);
-    };
-    // 直接使用原始采样值绘制折线（去除平滑）
-    const pts = recent.map((s) => `${mapX(s.t)},${mapY(s.v)}`);
-    const path = pts.map((p, i) => (i === 0 ? `M ${p}` : `L ${p}`)).join(' ');
-
-    // 生成与报告一致的刻度
-    const xTickCount = 5;
-    const xTicks = Array.from({ length: xTickCount }, (_, i) => {
-      const t = minTs + (span * i) / (xTickCount - 1);
-      return {
-        x: mapX(t),
-        y: height - padding,
-        label: new Date(t).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })
+      const xScale = (t: number) => {
+        const x0 = margin.left;
+        const x1 = width - margin.right;
+        return x0 + ((t - startTs) / span) * (x1 - x0);
       };
-    });
+      const yScale = (v: number) => {
+        const y0 = height - margin.bottom;
+        const y1 = margin.top;
+        return y0 - ((v - yMin) / (yMax - yMin)) * (y0 - y1);
+      };
 
-    const yTickValues = [0, 20, 40, 60, 80];
-    const yTicks = yTickValues.map((v) => ({
-      x: padding,
-      y: mapY(v),
-      label: `${v}`
-    }));
+      const niceTicks = (min: number, max: number, count: number) => {
+        const step = (max - min) / count;
+        const pow10 = Math.pow(10, Math.floor(Math.log10(step)));
+        const niceStep = Math.max(1, Math.round(step / pow10) * pow10);
+        const start = Math.ceil(min / niceStep) * niceStep;
+        const ticks: number[] = [];
+        for (let v = start; v <= max; v += niceStep) ticks.push(v);
+        return ticks;
+      };
+      const yTicks = niceTicks(yMin, yMax, 5);
 
-    const thresholdY = mapY(getThreshold());
+      const gapThresholdMs = Math.max(500, NOISE_ANALYSIS_FRAME_MS * 8);
+      let path = "";
+      for (let i = 0; i < points.length; i++) {
+        const prev = i > 0 ? points[i - 1] : null;
+        const p = points[i];
+        const isGap = prev ? p.t - prev.t > gapThresholdMs : true;
+        path += `${isGap ? "M" : "L"} ${xScale(p.t)} ${yScale(p.displayDb)} `;
+      }
+      path = path.trim();
 
-    return { width, height, padding, path, startTs: minTs, endTs: maxTs, xTicks, yTicks, thresholdY };
-  }, [samples]);
+      const thresholdY = yScale(threshold);
+
+      return { points, threshold, latest, width, height, margin, yTicks, yScale, path, thresholdY };
+    }, [ringBuffer, maxLevelDb]);
 
   return (
-    <FormSection title="实时噪音曲线图">
-      {chart.path ? (
-        <svg width={chart.width} height={chart.height} className={styles.chart}>
-          {/* 轴线 */}
-          <line x1={chart.padding} y1={chart.height - chart.padding} x2={chart.width - chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
-          <line x1={chart.padding} y1={chart.padding} x2={chart.padding} y2={chart.height - chart.padding} className={styles.axis} />
-
-          {/* 横向网格线 */}
-          {chart.yTicks?.map((t: any, idx: number) => (
-            <line key={`yg-${idx}`} x1={chart.padding} y1={t.y} x2={chart.width - chart.padding} y2={t.y} className={styles.gridLine} />
-          ))}
-
-          {/* X轴刻度与时间标签 */}
-          {chart.xTicks?.map((t: any, idx: number) => (
-            <g key={`xt-${idx}`}>
-              <line x1={t.x} y1={chart.height - chart.padding - 4} x2={t.x} y2={chart.height - chart.padding + 4} className={styles.tick} />
-              <text x={t.x} y={chart.height - chart.padding + 18} className={styles.tickLabel} textAnchor="middle">{t.label}</text>
-            </g>
-          ))}
-
-          {/* Y轴刻度与分贝标签 */}
-          {chart.yTicks?.map((t: any, idx: number) => (
-            <g key={`yt-${idx}`}>
-              <line x1={chart.padding - 4} y1={t.y} x2={chart.padding + 4} y2={t.y} className={styles.tick} />
-              <text x={chart.padding - 8} y={t.y + 4} className={styles.tickLabel} textAnchor="end">{t.label}</text>
-            </g>
-          ))}
-
-          {/* 阈值线 */}
-          <line 
-            x1={chart.padding} 
-            x2={chart.width - chart.padding} 
-            y1={chart.thresholdY} 
-            y2={chart.thresholdY} 
-            className={styles.threshold} 
-          />
-
-          {/* 折线路径 */}
-          <path d={chart.path} className={styles.line} />
-        </svg>
-      ) : (
-        <div className={styles.empty}>暂无采样数据或未授权麦克风。</div>
-      )}
-      <div className={styles.sourceNote} aria-live="polite">
-        数据来源时间：{chart.path ? `${new Date(chart.startTs).toLocaleTimeString()} - ${new Date(chart.endTs).toLocaleTimeString()}` : '最近5分钟'}
+    <>
+      <div className={styles.chartHeader}>
+        <div>阈值：{threshold.toFixed(0)} dB</div>
+        <div>
+          当前：
+          {latest && (status === "quiet" || status === "noisy")
+            ? `${latest.displayDb.toFixed(1)} dB`
+            : "—"}
+        </div>
       </div>
-    </FormSection>
+      <div className={styles.chart}>
+        {points.length === 0 ? (
+          <div className={styles.empty}>暂无数据</div>
+        ) : (
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="实时噪音折线图"
+          >
+            {yTicks.map((yt, i) => (
+              <g key={`ytick-${i}`}>
+                <line
+                  x1={margin.left}
+                  x2={width - margin.right}
+                  y1={yScale(yt)}
+                  y2={yScale(yt)}
+                  className={styles.gridLine}
+                />
+                <text
+                  x={margin.left - 8}
+                  y={yScale(yt)}
+                  dy="0.32em"
+                  textAnchor="end"
+                  className={styles.tickLabel}
+                >
+                  {yt.toFixed(0)}
+                </text>
+              </g>
+            ))}
+
+            <line
+              x1={margin.left}
+              x2={width - margin.right}
+              y1={thresholdY}
+              y2={thresholdY}
+              className={styles.threshold}
+            />
+
+            <path d={path} className={styles.line} />
+
+            <line
+              x1={margin.left}
+              x2={width - margin.right}
+              y1={height - margin.bottom}
+              y2={height - margin.bottom}
+              className={styles.axis}
+            />
+            <line
+              x1={margin.left}
+              x2={margin.left}
+              y1={margin.top}
+              y2={height - margin.bottom}
+              className={styles.axis}
+            />
+          </svg>
+        )}
+      </div>
+      <div className={styles.sourceNote}>
+        显示最近 1 个切片时长（{NOISE_ANALYSIS_SLICE_SEC}秒）的高帧率实时分贝（不落库）。
+      </div>
+    </>
   );
 };
 

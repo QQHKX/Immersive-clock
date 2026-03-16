@@ -78,7 +78,6 @@
 
 /* 脉冲动画（吵闹状态） */
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -93,7 +92,6 @@
 
 /* 淡入淡出动画（初始化状态） */
 @keyframes fadeInOut {
-
   0%,
   100% {
     opacity: 0.6;
@@ -154,7 +152,6 @@
 
 /* 安静状态呼吸动画 */
 @keyframes breatheQuiet {
-
   0%,
   100% {
     opacity: 0.5;
@@ -169,7 +166,6 @@
 
 /* 吵闹状态呼吸动画 */
 @keyframes breatheNoisy {
-
   0%,
   100% {
     opacity: 0.6;
@@ -186,7 +182,6 @@
 
 /* 错误状态呼吸动画 */
 @keyframes breatheError {
-
   0%,
   100% {
     opacity: 0.5;
@@ -201,7 +196,6 @@
 
 /* 初始化状态呼吸动画 */
 @keyframes breatheInitializing {
-
   0%,
   100% {
     opacity: 0.4;
@@ -216,7 +210,6 @@
 
 /* 校准状态呼吸动画 */
 @keyframes breatheCalibrating {
-
   0%,
   100% {
     opacity: 0.5;
@@ -229,9 +222,7 @@
   }
 }
 
-/* 调试信息已移除 */
-
-/* 响应式设计 */
+/* 说明：以下为响应式与交互可用性相关样式 */
 @media (max-width: 768px) {
   .noiseMonitor {
     position: relative;
@@ -262,7 +253,7 @@
     height: 12px;
   }
 
-  /* 调试信息已移除 */
+  /* 移动端：通过更大点击区域提升可用性 */
 }
 
 @media (max-width: 480px) {
@@ -299,7 +290,7 @@
     /* 抵消padding的视觉影响 */
   }
 
-  /* 调试信息已移除 */
+  /* 移动端（超小屏）：进一步扩大点击与可视区域 */
 }
 
 /* 竖屏显示优化 */

@@ -2,34 +2,26 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": ["node", "vite/client", "vite-plugin-pwa/client"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite-plugin-pwa/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@testing-library/react": ["node_modules/@testing-library/react/types/index.d.ts"],
+      "react-router-dom": ["node_modules/react-router-dom/dist/index.d.ts"]
+    },
     "module": "ESNext",
     "skipLibCheck": true,
-    /* Bundler mode */
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "react-jsx",
-    /* Linting */
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "src"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  "include": ["src"]
 }

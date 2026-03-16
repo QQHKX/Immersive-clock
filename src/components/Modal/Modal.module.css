@@ -58,10 +58,15 @@
   flex-shrink: 0;
 }
 
+/* 允许去除头部与内容的分隔线，以便 Tabs 无缝贴合 */
+.modalHeaderNoDivider {
+  border-bottom: none;
+}
+
 .modalTitle {
   margin: 0;
   color: var(--text-color, #ffffff);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -95,6 +100,20 @@
   max-height: 64vh;
   overflow-y: auto;
   flex: 1;
+}
+
+/* 针对粘性 Tabs 的顶部补偿类，消除与头部的空隙 */
+.bodyCompactTop {
+  padding-top: 0;
+  /* 让粘性 Tabs 紧贴头部 */
+  --tabs-safe-top: 0;
+  /* 覆盖 Tabs 的安全顶部内边距，移除多余间隙 */
+}
+
+/* 无分隔线时自动压缩内容区顶部，统一横竖屏逻辑 */
+.modalHeaderNoDivider + .modalBody {
+  padding-top: 0;
+  --tabs-safe-top: 0;
 }
 
 .modalFooter {
@@ -173,7 +192,6 @@
 
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
-
   .modal,
   .modalContent {
     animation: none;

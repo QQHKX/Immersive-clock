@@ -1,2 +1,2 @@
-export { MotivationalQuote } from './MotivationalQuote';
-export { default } from './MotivationalQuote';
+export { MotivationalQuote } from "./MotivationalQuote";
+export { default } from "./MotivationalQuote";
