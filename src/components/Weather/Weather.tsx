@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './Weather.module.css';
-import { buildWeatherFlow } from '../../services/weatherService';
+import { buildWeatherFlow, calculateMinutelyPrecipAlert } from '../../services/weatherService';
 
 // 天气数据接口
 export interface WeatherData {
@@ -109,6 +109,7 @@ const Weather: React.FC = () => {
       }
 
       const now = result.weather.now;
+      const minutelyAlert = calculateMinutelyPrecipAlert(now);
       const temperature = now?.temp ?? '';
       const text = now?.text ?? '';
       const locationName = result.city || '未知';
@@ -144,6 +145,11 @@ const Weather: React.FC = () => {
         if (now.vis != null) localStorage.setItem('weather.now.vis', String(now.vis));
         if (now.cloud != null) localStorage.setItem('weather.now.cloud', String(now.cloud));
         if (now.dew != null) localStorage.setItem('weather.now.dew', String(now.dew));
+        localStorage.setItem('weather.minutely.level', minutelyAlert.level);
+        localStorage.setItem('weather.minutely.probability', String(minutelyAlert.probability));
+        localStorage.setItem('weather.minutely.expectedMm', String(minutelyAlert.expectedMm));
+        localStorage.setItem('weather.minutely.shouldAlert', String(minutelyAlert.shouldAlert));
+        localStorage.setItem('weather.minutely.reason', minutelyAlert.reason);
         if (result.weather?.refer?.sources) localStorage.setItem('weather.refer.sources', (result.weather.refer.sources || []).join(','));
         if (result.weather?.refer?.license) localStorage.setItem('weather.refer.license', (result.weather.refer.license || []).join(','));
       }
@@ -156,6 +162,7 @@ const Weather: React.FC = () => {
           ts,
           coords: result.coords || null,
           now,
+          minutelyAlert,
           refer: result.weather?.refer || null,
         },
       });

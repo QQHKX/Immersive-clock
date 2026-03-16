@@ -34,6 +34,14 @@ export interface WeatherNow {
   error?: string;
 }
 
+export interface MinutelyPrecipAlert {
+  level: 'none' | 'watch' | 'warning' | 'danger';
+  probability: number;
+  expectedMm: number;
+  shouldAlert: boolean;
+  reason: string;
+}
+
 export interface AddressInfo {
   address?: string;
   source?: string;
@@ -305,4 +313,46 @@ export async function buildWeatherFlow(): Promise<{
   const locationParam = locationId || `${coords.lon},${coords.lat}`;
   const weather = await fetchWeatherNow(locationParam);
   return { coords, coordsSource, city, locationId, addressInfo: addrInfo, weather };
+}
+
+/**
+ * 分钟级降水预警（本地演算）
+ * 使用实时天气字段在本地估算未来 10~30 分钟的短时降水风险。
+ */
+export function calculateMinutelyPrecipAlert(now?: WeatherNow['now']): MinutelyPrecipAlert {
+  const precip = Number.parseFloat(now?.precip ?? '0');
+  const humidity = Number.parseFloat(now?.humidity ?? '0');
+  const cloud = Number.parseFloat(now?.cloud ?? '0');
+  const text = String(now?.text ?? '').trim();
+
+  const safePrecip = Number.isFinite(precip) ? precip : 0;
+  const safeHumidity = Number.isFinite(humidity) ? humidity : 0;
+  const safeCloud = Number.isFinite(cloud) ? cloud : 0;
+
+  const isRainyText = /雨|雷|阵雨|暴雨|冰雹/.test(text);
+  const isSnowyText = /雪|雨夹雪/.test(text);
+
+  // 估算未来 10 分钟降水概率（0~100）
+  const probability = Math.max(
+    0,
+    Math.min(
+      100,
+      safePrecip * 40 + safeHumidity * 0.35 + safeCloud * 0.25 + (isRainyText ? 25 : 0) + (isSnowyText ? 10 : 0)
+    )
+  );
+
+  // 折算未来 30 分钟预估降水量（mm）
+  const expectedMm = Math.max(0, Number((safePrecip * 0.5 + probability * 0.01).toFixed(2)));
+
+  if (probability >= 85 || expectedMm >= 5) {
+    return { level: 'danger', probability: Math.round(probability), expectedMm, shouldAlert: true, reason: '短时强降水风险高' };
+  }
+  if (probability >= 70 || expectedMm >= 2) {
+    return { level: 'warning', probability: Math.round(probability), expectedMm, shouldAlert: true, reason: '未来半小时可能出现明显降水' };
+  }
+  if (probability >= 45 || expectedMm >= 0.5) {
+    return { level: 'watch', probability: Math.round(probability), expectedMm, shouldAlert: false, reason: '存在短时降水可能，建议留意' };
+  }
+
+  return { level: 'none', probability: Math.round(probability), expectedMm, shouldAlert: false, reason: '短时降水风险低' };
 }
