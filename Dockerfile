@@ -1,7 +1,7 @@
 # 预定义各架构的运行时镜像
 FROM node:24-alpine AS builder-amd64
 FROM node:24-alpine AS builder-arm64
-# FROM arm32v7/node:22-alpine AS builder-arm
+FROM arm32v7/node:22-alpine AS builder-arm
 # FROM s390x/node:24-alpine AS builder-s390x
 # FROM ppc64le/node:24-slim AS builder-ppc64le
 
