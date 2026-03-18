@@ -1,5 +1,12 @@
-# Stage 1: Build the application
-FROM node:22-alpine AS builder
+# 预定义各架构的运行时镜像
+FROM node:24-alpine AS builder-amd64
+FROM node:24-alpine AS builder-arm64
+# FROM arm32v7/node:22-alpine AS builder-arm
+# FROM s390x/node:24-alpine AS builder-s390x
+# FROM ppc64le/node:24-slim AS builder-ppc64le
+
+# 根据 TARGETARCH 选择对应的构建时镜像
+FROM builder-${TARGETARCH} AS builder
 
 # Set working directory
 WORKDIR /app
@@ -8,7 +15,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+RUN npm ci || npm install
 
 # Copy source code
 COPY . .
