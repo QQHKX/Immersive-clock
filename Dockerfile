@@ -26,7 +26,11 @@ RUN if [ "${TARGETARCH}" = "arm" ]; then \
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci || npm install
+RUN if [ "${TARGETARCH}" = "arm" ]; then \
+        npm ci --no-optional || npm install --no-optional; \
+    else \
+        npm ci || npm install; \
+    fi
 
 # Copy source code
 COPY . .
