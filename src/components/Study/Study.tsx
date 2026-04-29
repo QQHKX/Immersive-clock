@@ -10,7 +10,6 @@ import { readStudyBackground } from "../../utils/studyBackgroundStorage";
 import { ensureInjectedFonts } from "../../utils/studyFontStorage";
 import { readStudySchedule } from "../../utils/studyScheduleStorage";
 import { getAdjustedDate } from "../../utils/timeSync";
-import { getValidCoords, getValidDaily3d, getValidHourly72h } from "../../utils/weatherStorage";
 import { MotivationalQuote } from "../MotivationalQuote";
 import NoiseHistoryModal from "../NoiseHistoryModal/NoiseHistoryModal";
 import NoiseMonitor from "../NoiseMonitor";
@@ -68,8 +67,6 @@ export function Study() {
   // 记录当前课时是否已弹出过报告，以及是否被手动关闭以避免重复弹出
   const lastPopupPeriodIdRef = useRef<string | null>(null);
   const dismissedPeriodIdRef = useRef<string | null>(null);
-  const forecastPopupRef = useRef<{ periodId: string; popupId: string } | null>(null);
-  const lastForecastPopupPeriodIdRef = useRef<string | null>(null);
 
   // 背景设置
   const [backgroundSettings, setBackgroundSettings] = useState(readStudyBackground());
@@ -166,178 +163,6 @@ export function Study() {
       }
     }
   }, [currentTime, reportOpen]);
-
-  useEffect(() => {
-    if (!study.classEndForecastEnabled) return;
-
-    let schedule: StudyPeriod[] = DEFAULT_SCHEDULE;
-    try {
-      const data = readStudySchedule();
-      if (Array.isArray(data) && data.length > 0) schedule = data;
-    } catch {}
-
-    const now = getAdjustedDate();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-
-    const coords = getValidCoords();
-    if (!coords) return;
-    const locationParam = `${coords.lon},${coords.lat}`;
-
-    const daily3d = getValidDaily3d(locationParam);
-    const hourly72h = getValidHourly72h(locationParam);
-
-    const pad2 = (n: number) => String(n).padStart(2, "0");
-    const formatLocalDate = (d: Date) =>
-      `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-
-    const toDate = (timeStr: string) => {
-      const [h, m] = timeStr.split(":").map(Number);
-      const d = getAdjustedDate();
-      d.setHours(h, m, 0, 0);
-      return d;
-    };
-
-    /** 构建未来1小时天气文案（函数级注释：从小时级缓存中汇总未来1小时天气、温度区间与降水信息） */
-    const buildNextHourLine = (label: string) => {
-      const list = hourly72h?.hourly || [];
-      const nowMs = now.getTime();
-      const targetEndMs = nowMs + 60 * 60 * 1000;
-
-      const hourlySegments = list
-        .map((item) => {
-          const ms = item.fxTime ? Date.parse(item.fxTime) : NaN;
-          if (!Number.isFinite(ms)) return null;
-          if (ms <= nowMs || ms > targetEndMs) return null;
-          return {
-            ms,
-            text: item.text || "",
-            tempNum: Number(item.temp),
-            popNum: Number(item.pop),
-            precipNum: Number(item.precip),
-          };
-        })
-        .filter(Boolean) as Array<{
-        ms: number;
-        text: string;
-        tempNum: number;
-        popNum: number;
-        precipNum: number;
-      }>;
-
-      if (hourlySegments.length === 0) {
-        return `${label}：暂无小时级天气数据，请稍后刷新天气`;
-      }
-
-      const sorted = [...hourlySegments].sort((a, b) => a.ms - b.ms);
-      const first = new Date(sorted[0].ms);
-      const last = new Date(sorted[sorted.length - 1].ms);
-      const timeRange = `${pad2(first.getHours())}:${pad2(first.getMinutes())}-${pad2(last.getHours())}:${pad2(last.getMinutes())}`;
-
-      const weatherList = Array.from(
-        new Set(
-          sorted
-            .map((item) => item.text.trim())
-            .filter((item) => item.length > 0)
-            .slice(0, 2)
-        )
-      );
-      const weatherText = weatherList.length > 0 ? weatherList.join("/") : "--";
-
-      const tempList = sorted
-        .map((item) => item.tempNum)
-        .filter((item) => Number.isFinite(item)) as number[];
-      const tempText =
-        tempList.length > 0 ? `${Math.min(...tempList)}~${Math.max(...tempList)}°` : "--";
-
-      const popList = sorted
-        .map((item) => item.popNum)
-        .filter((item) => Number.isFinite(item)) as number[];
-      const maxPop = popList.length > 0 ? Math.max(...popList) : null;
-
-      const precipTotal = sorted
-        .map((item) => item.precipNum)
-        .filter((item) => Number.isFinite(item) && item > 0)
-        .reduce((sum, item) => sum + item, 0);
-
-      const precipText = (() => {
-        const parts: string[] = [];
-        if (maxPop !== null) {
-          parts.push(`降水概率最高${maxPop}%`);
-        }
-        if (precipTotal > 0) {
-          parts.push(`累计降水约${precipTotal.toFixed(1)}mm`);
-        }
-        return parts.length > 0 ? `，${parts.join("，")}` : "";
-      })();
-
-      return `${label}（${timeRange}）：${weatherText}，${tempText}${precipText}`;
-    };
-
-    /** 构建明天天气文案（函数级注释：基于3日预报中的明天数据生成白天夜间与温度区间信息） */
-    const buildTomorrowLine = (label: string) => {
-      const tomorrow = daily3d?.daily?.[1];
-      if (!tomorrow) {
-        return `${label}：暂无日级天气数据，请稍后刷新天气`;
-      }
-      const dayText = tomorrow.textDay || "--";
-      const nightText = tomorrow.textNight || "--";
-      const tMin = tomorrow.tempMin || "--";
-      const tMax = tomorrow.tempMax || "--";
-      const precipText =
-        typeof tomorrow.precip === "string" && tomorrow.precip.trim().length > 0
-          ? `，降水量约${tomorrow.precip}mm`
-          : "";
-      return `${label}：白天${dayText}，夜间${nightText}，${tMin}~${tMax}°${precipText}`;
-    };
-
-    for (const p of schedule) {
-      const start = toDate(p.startTime);
-      const end = toDate(p.endTime);
-      const startMin = start.getHours() * 60 + start.getMinutes();
-      const endMin = end.getHours() * 60 + end.getMinutes();
-
-      if (nowMin >= endMin) {
-        if (lastForecastPopupPeriodIdRef.current === p.id) {
-          lastForecastPopupPeriodIdRef.current = null;
-        }
-        if (forecastPopupRef.current?.periodId === p.id) {
-          window.dispatchEvent(
-            new CustomEvent("messagePopup:close", {
-              detail: { id: forecastPopupRef.current.popupId, dismiss: false },
-            })
-          );
-          forecastPopupRef.current = null;
-        }
-      }
-
-      if (nowMin >= startMin && nowMin < endMin && endMin - nowMin <= 5) {
-        const alreadyPopped = lastForecastPopupPeriodIdRef.current === p.id;
-        if (alreadyPopped) break;
-
-        const message = (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div>{buildNextHourLine("未来1小时")}</div>
-            <div>{buildTomorrowLine("明天")}</div>
-          </div>
-        );
-
-        const popupId = `weather:classEndForecast:${p.id}:${formatLocalDate(now)}`;
-        window.dispatchEvent(
-          new CustomEvent("messagePopup:open", {
-            detail: {
-              id: popupId,
-              type: "weatherForecast",
-              title: "下课前天气预报",
-              message,
-            },
-          })
-        );
-        lastForecastPopupPeriodIdRef.current = p.id;
-        forecastPopupRef.current = { periodId: p.id, popupId };
-        break;
-      }
-    }
-  }, [currentTime, study.classEndForecastEnabled]);
 
   /** 工具函数：计算到指定日期的剩余天数（YYYY-MM-DD） */
   const calcDaysToDate = useCallback((dateStr?: string) => {

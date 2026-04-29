@@ -6,7 +6,6 @@ import {
   buildWeatherFlow,
   fetchWeatherAlertsByCoords,
   fetchMinutelyPrecip,
-  fetchWeatherHourly72h,
 } from "../../services/weatherService";
 import type { WeatherFlowOptions } from "../../services/weatherService";
 import type { MinutelyPrecipResponse } from "../../types/weather";
@@ -32,8 +31,6 @@ import {
   getValidCoords,
   updateMinutelyLastFetch,
   updateMinutelyCriticalFetch,
-  updateHourly72hCache,
-  updateHourly72hLastFetch,
   updateAlertTag,
   updateDaily3dCache,
   updateAirQualityCache,
@@ -57,7 +54,6 @@ const MINUTELY_PRECIP_DIFF_THRESHOLD_PROB = 10;
 const MINUTELY_PRECIP_LOCAL_TICK_MS = 30 * 1000;
 const WEATHER_LOCATION_REFRESH_EVENT = "weatherLocationRefresh";
 const WEATHER_LOCATION_REFRESH_DONE_EVENT = "weatherLocationRefreshDone";
-const CLASS_END_FORECAST_HOURLY_REFRESH_MS = 30 * 60 * 1000;
 
 function clampInt(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
@@ -793,25 +789,6 @@ const Weather: React.FC = () => {
           updateAirQualityCache(result.coords.lat, result.coords.lon, result.airQuality);
         }
 
-        if (study.classEndForecastEnabled) {
-          const cache2 = getWeatherCache();
-          const lastFetchAt = cache2.hourly72h?.lastApiFetchAt || 0;
-          const withinInterval =
-            lastFetchAt > 0 && ts - lastFetchAt < CLASS_END_FORECAST_HOURLY_REFRESH_MS;
-          const sameLocation = cache2.hourly72h?.location === locationParam;
-          if (!withinInterval || !sameLocation) {
-            try {
-              const hourlyResp = await fetchWeatherHourly72h(locationParam);
-              if (!hourlyResp.error && hourlyResp.code === "200") {
-                updateHourly72hLastFetch(ts);
-                updateHourly72hCache(locationParam, hourlyResp, ts);
-              }
-            } catch (e) {
-              logger.warn("小时预报拉取失败:", e);
-            }
-          }
-        }
-
         // 广播刷新完成事件
         const geoDiag = getWeatherCache().geolocation?.diagnostics || null;
         const event = new CustomEvent("weatherRefreshDone", {
@@ -857,7 +834,6 @@ const Weather: React.FC = () => {
     [
       mapWeatherToIcon,
       maybeOpenErrorPopup,
-      study.classEndForecastEnabled,
       study.airQualityAlertEnabled,
       study.sunriseSunsetAlertEnabled,
     ]
