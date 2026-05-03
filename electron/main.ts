@@ -1,7 +1,8 @@
-import { app, BrowserWindow, protocol, session, systemPreferences } from "electron";
 import fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+
+import { app, BrowserWindow, protocol, session, systemPreferences } from "electron";
 
 import { registerTimeSyncIpc } from "./ipc/registerTimeSyncIpc";
 
@@ -103,7 +104,8 @@ async function registerAppProtocol() {
       if (pathname === "/") pathname = "/index.html";
 
       let resolvedPath = path.normalize(path.join(distDir, pathname));
-      if (!resolvedPath.startsWith(distDir)) {
+      const relativePath = path.relative(distDir, resolvedPath);
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
         return new Response("Bad Request", { status: 400 });
       }
 
