@@ -81,7 +81,6 @@ export interface AppSettings {
       errorCenterMode: "off" | "memory" | "persist";
       airQuality: boolean;
       sunriseSunset: boolean;
-      classEndForecast: boolean;
     };
     schedule: StudyPeriod[];
     background: {
@@ -178,7 +177,6 @@ const DEFAULT_SETTINGS: AppSettings = {
       errorCenterMode: "off",
       airQuality: false,
       sunriseSunset: false,
-      classEndForecast: false,
     },
     schedule: DEFAULT_SCHEDULE,
     background: {
@@ -257,10 +255,6 @@ export function getAppSettings(): AppSettings {
         typeof parsedAlerts.sunriseSunset === "boolean"
           ? parsedAlerts.sunriseSunset
           : DEFAULT_SETTINGS.study.alerts.sunriseSunset,
-      classEndForecast:
-        typeof parsedAlerts.classEndForecast === "boolean"
-          ? parsedAlerts.classEndForecast
-          : DEFAULT_SETTINGS.study.alerts.classEndForecast,
     };
 
     // 可以在此添加简单的版本检查或结构校验逻辑

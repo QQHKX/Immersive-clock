@@ -185,7 +185,6 @@ export interface StudyState {
   errorCenterMode?: "off" | "memory" | "persist";
   airQualityAlertEnabled?: boolean;
   sunriseSunsetAlertEnabled?: boolean;
-  classEndForecastEnabled?: boolean;
 }
 
 /**
@@ -353,5 +352,4 @@ export type AppAction =
   | { type: "SET_ERROR_POPUP_ENABLED"; payload: boolean }
   | { type: "SET_ERROR_CENTER_MODE"; payload: "off" | "memory" | "persist" }
   | { type: "SET_AIR_QUALITY_ALERT_ENABLED"; payload: boolean }
-  | { type: "SET_SUNRISE_SUNSET_ALERT_ENABLED"; payload: boolean }
-  | { type: "SET_CLASS_END_FORECAST_ENABLED"; payload: boolean };
+  | { type: "SET_SUNRISE_SUNSET_ALERT_ENABLED"; payload: boolean };

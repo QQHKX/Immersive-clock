@@ -66,6 +66,7 @@ module.exports = [
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/purity': 'off',
       'react-hooks/immutability': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-expressions': 'off'
     }

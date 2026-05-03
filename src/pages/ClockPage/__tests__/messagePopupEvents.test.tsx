@@ -67,38 +67,38 @@ describe("消息弹窗事件关闭动画", () => {
       window.dispatchEvent(
         new CustomEvent("messagePopup:open", {
           detail: {
-            id: "weather:classEndForecast:test",
+            id: "weather:test:popup",
             type: "weatherForecast",
-            title: "下课前天气预报",
+            title: "天气提醒",
             message: "测试内容",
           },
         })
       );
     });
 
-    expect(screen.getByLabelText("下课前天气预报")).toBeInTheDocument();
+    expect(screen.getByLabelText("天气提醒")).toBeInTheDocument();
 
     act(() => {
       window.dispatchEvent(
         new CustomEvent("messagePopup:close", {
           detail: {
-            id: "weather:classEndForecast:test",
+            id: "weather:test:popup",
             dismiss: false,
           },
         })
       );
     });
 
-    expect(screen.getByLabelText("下课前天气预报")).toBeInTheDocument();
+    expect(screen.getByLabelText("天气提醒")).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(299);
     });
-    expect(screen.getByLabelText("下课前天气预报")).toBeInTheDocument();
+    expect(screen.getByLabelText("天气提醒")).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(1);
     });
-    expect(screen.queryByLabelText("下课前天气预报")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("天气提醒")).not.toBeInTheDocument();
   });
 });

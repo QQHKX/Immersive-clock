@@ -156,9 +156,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
   const [sunriseSunsetAlertEnabled, setSunriseSunsetAlertEnabled] = useState<boolean>(
     !!study.sunriseSunsetAlertEnabled
   );
-  const [classEndForecastEnabled, setClassEndForecastEnabled] = useState<boolean>(
-    !!study.classEndForecastEnabled
-  );
 
   const initialWeatherSettings = getAppSettings().general.weather;
   const [autoRefreshIntervalMin, setAutoRefreshIntervalMin] = useState<number>(() => {
@@ -231,7 +228,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
       dispatch({ type: "SET_MINUTELY_PRECIP_ENABLED", payload: minutelyPrecipEnabled });
       dispatch({ type: "SET_AIR_QUALITY_ALERT_ENABLED", payload: airQualityAlertEnabled });
       dispatch({ type: "SET_SUNRISE_SUNSET_ALERT_ENABLED", payload: sunriseSunsetAlertEnabled });
-      dispatch({ type: "SET_CLASS_END_FORECAST_ENABLED", payload: classEndForecastEnabled });
 
       const roundedInterval = Math.round(Number(autoRefreshIntervalMin));
       const intervalOptions = [15, 30, 60];
@@ -274,7 +270,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
     minutelyPrecipEnabled,
     airQualityAlertEnabled,
     sunriseSunsetAlertEnabled,
-    classEndForecastEnabled,
     autoRefreshIntervalMin,
     locationMode,
     manualType,
@@ -317,11 +312,6 @@ const WeatherSettingsPanel: React.FC<WeatherSettingsPanelProps> = ({ onRegisterS
             label="日出日落提醒"
             checked={sunriseSunsetAlertEnabled}
             onChange={(e) => setSunriseSunsetAlertEnabled(e.target.checked)}
-          />
-          <FormCheckbox
-            label="下课前5分钟预报提醒"
-            checked={classEndForecastEnabled}
-            onChange={(e) => setClassEndForecastEnabled(e.target.checked)}
           />
         </div>
       </FormSection>

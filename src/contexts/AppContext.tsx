@@ -55,7 +55,6 @@ function loadStudyState(): StudyState {
     errorCenterMode: study.alerts.errorCenterMode,
     airQualityAlertEnabled: study.alerts.airQuality,
     sunriseSunsetAlertEnabled: study.alerts.sunriseSunset,
-    classEndForecastEnabled: study.alerts.classEndForecast,
   };
 }
 
@@ -542,25 +541,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         study: sunriseSunsetUpdatedStudy,
-      };
-
-    case "SET_CLASS_END_FORECAST_ENABLED":
-      const classEndForecastUpdatedStudy = {
-        ...state.study,
-        classEndForecastEnabled: !!action.payload,
-      };
-      updateAppSettings((current) => ({
-        study: {
-          ...current.study,
-          alerts: {
-            ...current.study.alerts,
-            classEndForecast: !!action.payload,
-          },
-        },
-      }));
-      return {
-        ...state,
-        study: classEndForecastUpdatedStudy,
       };
 
     case "UPDATE_QUOTE_CHANNELS":

@@ -196,7 +196,7 @@ const ScheduleSettings: React.FC<ScheduleSettingsProps> = ({ isOpen, onClose, on
     try {
       setExcelBusy(true);
       const buffer = await file.arrayBuffer();
-      const result = parseStudyScheduleFromExcelArrayBuffer(buffer);
+      const result = await parseStudyScheduleFromExcelArrayBuffer(buffer);
       setExcelImport(result);
     } catch (e) {
       setExcelError(e instanceof Error ? e.message : "解析 Excel 失败");

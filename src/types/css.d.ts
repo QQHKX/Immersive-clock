@@ -1,6 +1,6 @@
-/** CSS Modules 类型定义 */
-declare module "*.module.css" {
-  const classes: { [key: string]: string };
+/** CSS Module 类型定义 */
+declare module "*.css" {
+  const classes: { readonly [key: string]: string };
   export default classes;
 }
 
