@@ -20,9 +20,12 @@ Elegant time management, focused studying
 
 </div>
 
-> **⏸️ Maintenance Notice**
+> **⏸️ Maintenance Notice: Immersive Clock has moved to v4**
 >
-> Because the author is in the final year of high school, the project is paused for non-essential development and maintenance. Pull requests and issues are welcome, but processing and merging may be slow.
+> This repository is the archived **Immersive Clock v3** codebase and is no longer maintained.
+> All future features, fixes, and releases are available in the new **Immersive Clock v4** repository.
+>
+> Please follow [Immersive Clock v4 | Qziky/Immersive-clock](https://github.com/Qziky/Immersive-clock) for the latest version.
 
 
 

@@ -20,6 +20,14 @@
 
 </div>
 
+> **⏸️ 维护说明：沉浸式时钟已升级至 v4**
+>
+> 本仓库为 **沉浸式时钟（Immersive Clock）v3** 的历史版本，现已停止维护。
+> 后续功能迭代、问题修复和最新下载版本均将在 **沉浸式时钟 v4** 新仓库发布。
+>
+> 请前往并关注新仓库：[沉浸式时钟 v4 | Qziky/Immersive-clock](https://github.com/Qziky/Immersive-clock)。
+> 欢迎 Star 新仓库，获取最新版的沉浸式时钟（Immersive Clock）。
+
 ## 📑 目录
 
 - [项目概述](#-项目概述)
